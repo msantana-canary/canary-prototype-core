@@ -20,27 +20,17 @@ This is **NOT** for production use, actual customer data, or engineering develop
 
 ### Required Reading
 
-**Before building ANY components or UI**, read:
+**Before building ANY components or UI**, read these files in the repo root:
 
-```
-/Users/miguelsantana/Documents/Claude-Projects/canary-prototype-core/AI_REFERENCE.md
-```
+1. **`AI_REFERENCE.md`** - Component library guide containing:
+   - Complete component inventory with correct import paths
+   - All available enums (`ButtonType`, `InputType`, `TagColor`, etc.)
+   - Pre-built sidebar tabs (`sidebarTabs.messages`, `sidebarTabs.checkIn`, etc.)
+   - Color, typography, and spacing tokens
+   - Icon naming conventions
+   - Do's and Don'ts
 
-This file contains:
-- Complete component inventory with correct import paths
-- All available enums (`ButtonType`, `InputType`, `TagColor`, etc.)
-- Pre-built sidebar tabs (`sidebarTabs.messages`, `sidebarTabs.checkIn`, etc.)
-- Color, typography, and spacing tokens
-- Icon naming conventions
-- Do's and Don'ts
-
-### Also Read
-
-```
-/Users/miguelsantana/Documents/Claude-Projects/canary-prototype-core/PLANNING.md
-```
-
-Architecture decisions, folder structure, contributor workflow.
+2. **`PLANNING.md`** - Architecture decisions, folder structure, contributor workflow
 
 ---
 
