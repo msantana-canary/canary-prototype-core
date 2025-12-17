@@ -13,7 +13,7 @@ importers:
         version: 0.71.2
       '@canary-ui/components':
         specifier: github:msantana-canary/canary-prototype-foundation
-        version: https://codeload.github.com/msantana-canary/canary-prototype-foundation/tar.gz/c199bf441afac2632fcb0ae55b7f4b97e6246ed2(@emotion/is-prop-valid@1.2.2)(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(tailwindcss@4.1.18)
+        version: https://codeload.github.com/msantana-canary/canary-prototype-foundation/tar.gz/db0065c355c97cf919e038e172da4fe4fc133dec(@emotion/is-prop-valid@1.2.2)(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(tailwindcss@4.1.18)
       '@mdi/js':
         specifier: ^7.4.47
         version: 7.4.47
@@ -74,8 +74,8 @@ packages:
     resolution: {integrity: sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==}
     engines: {node: '>=6.9.0'}
 
-  '@canary-ui/components@https://codeload.github.com/msantana-canary/canary-prototype-foundation/tar.gz/c199bf441afac2632fcb0ae55b7f4b97e6246ed2':
-    resolution: {tarball: https://codeload.github.com/msantana-canary/canary-prototype-foundation/tar.gz/c199bf441afac2632fcb0ae55b7f4b97e6246ed2}
+  '@canary-ui/components@https://codeload.github.com/msantana-canary/canary-prototype-foundation/tar.gz/db0065c355c97cf919e038e172da4fe4fc133dec':
+    resolution: {tarball: https://codeload.github.com/msantana-canary/canary-prototype-foundation/tar.gz/db0065c355c97cf919e038e172da4fe4fc133dec}
     version: 0.4.2
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
@@ -740,7 +740,7 @@ snapshots:
 
   '@babel/runtime@7.28.4': {}
 
-  '@canary-ui/components@https://codeload.github.com/msantana-canary/canary-prototype-foundation/tar.gz/c199bf441afac2632fcb0ae55b7f4b97e6246ed2(@emotion/is-prop-valid@1.2.2)(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(tailwindcss@4.1.18)':
+  '@canary-ui/components@https://codeload.github.com/msantana-canary/canary-prototype-foundation/tar.gz/db0065c355c97cf919e038e172da4fe4fc133dec(@emotion/is-prop-valid@1.2.2)(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(styled-components@6.1.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(tailwindcss@4.1.18)':
     dependencies:
       '@dnd-kit/core': 6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@dnd-kit/sortable': 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
