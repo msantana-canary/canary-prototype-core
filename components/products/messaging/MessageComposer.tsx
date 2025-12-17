@@ -10,7 +10,7 @@
 import React, { useState, KeyboardEvent } from 'react';
 import { CanarySwitch } from '@canary-ui/components';
 import Icon from '@mdi/react';
-import { mdiAttachment, mdiTranslate, mdiRoomServiceOutline, mdiFormatListBulleted } from '@mdi/js';
+import { mdiAttachment, mdiTranslate, mdiRoomServiceOutline, mdiFormatListBulleted, mdiUnfoldMoreHorizontal } from '@mdi/js';
 
 interface MessageComposerProps {
   onSend: (content: string) => void;
@@ -173,12 +173,7 @@ export function MessageComposer({
                   color: colorWhite,
                 }}
               >
-                <span
-                  className="material-symbols-outlined"
-                  style={{ fontSize: '20px' }}
-                >
-                  unfold_more
-                </span>
+                <Icon path={mdiUnfoldMoreHorizontal} size={0.83} color={colorWhite} />
               </button>
             </div>
           </div>
