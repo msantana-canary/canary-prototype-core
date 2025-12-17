@@ -1,0 +1,40 @@
+{
+  "name": "@canary/prototype-core",
+  "version": "1.0.0",
+  "description": "Canary hotel prototype suite for demos and PM/Designer testing",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "keywords": [
+    "canary",
+    "prototype",
+    "hotel",
+    "demo"
+  ],
+  "author": "Canary Technologies",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@10.14.0",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
+    "@canary-ui/components": "github:msantana-canary/canary-prototype-foundation",
+    "@mdi/js": "^7.4.47",
+    "@mdi/react": "^1.6.1",
+    "date-fns": "^4.1.0",
+    "next": "^16.0.10",
+    "postcss": "^8.5.6",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "tailwindcss": "^4.1.18",
+    "zustand": "^5.0.9"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^25.0.3",
+    "@types/react": "^19.2.7",
+    "typescript": "^5.9.3"
+  }
+}
