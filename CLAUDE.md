@@ -126,6 +126,32 @@ This ensures the same guest appears consistently across all products (Messaging,
 
 Never propose changes to code you haven't read. If you need to modify a file, use the Read tool first to understand the existing code.
 
+### 7. Never Use CSS @import with Tailwind CSS 4
+
+**Tailwind CSS 4 generates CSS that breaks `@import` placement.** The CSS spec requires `@import` rules to be at the very top of a file, before any other rules. When Tailwind processes imports, it can place `@import` statements after generated CSS, causing parsing errors.
+
+```css
+/* WRONG - will cause "Parsing CSS source code failed" error */
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Roboto...');
+
+/* CORRECT - load fonts via Next.js instead */
+```
+
+**For fonts**, use Next.js font optimization in `layout.tsx`:
+
+```tsx
+import { Roboto } from 'next/font/google';
+
+const roboto = Roboto({
+  variable: '--font-roboto',
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+});
+```
+
+**For external CSS**, use `<link>` tags in the HTML head instead of `@import`.
+
 ---
 
 ## Folder Structure
