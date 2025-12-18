@@ -142,7 +142,6 @@ export default function MessagesPage() {
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       onNewMessage={startNewConversation}
-      threads={threads}
     >
       <div className="flex h-full">
         {/* Thread List */}
