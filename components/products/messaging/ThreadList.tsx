@@ -95,15 +95,17 @@ export function ThreadList({
           </div>
         ) : (
           threads.map((thread) => {
-            const guest = guests[thread.guestId];
-            const reservation = reservations[thread.reservationId];
+            // Derive primary guest/reservation from first linked reservation
+            const primaryResId = thread.linkedReservationIds[0];
+            const primaryRes = primaryResId ? reservations[primaryResId] : undefined;
+            const primaryGuest = primaryRes ? guests[primaryRes.guestId] : undefined;
 
             return (
               <ThreadListItem
                 key={thread.id}
                 thread={thread}
-                guest={guest}
-                reservation={reservation}
+                guest={primaryGuest}
+                reservation={primaryRes}
                 isSelected={thread.id === selectedThreadId}
                 onClick={() => onSelectThread(thread.id)}
                 isTyping={thread.id === typingThreadId}

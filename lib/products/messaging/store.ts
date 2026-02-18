@@ -9,7 +9,6 @@
 import { create } from 'zustand';
 import { Thread, Message } from './types';
 import { mockThreads, mockMessages } from './mock-data';
-import { guests } from '@/lib/core/data/guests';
 
 interface MessagingState {
   // State
@@ -21,6 +20,7 @@ interface MessagingState {
   composingPhoneNumber: string;
   typingThreadId: string | null;
   isGuestInfoOpen: boolean;
+  isLinkReservationModalOpen: boolean;
   currentView: 'inbox' | 'archived' | 'blocked';
   searchQuery: string;
 
@@ -45,6 +45,10 @@ interface MessagingState {
   unblockThread: (threadId: string) => void;
   markThreadAsUnread: (threadId: string) => void;
   setSearchQuery: (query: string) => void;
+  openLinkReservationModal: () => void;
+  closeLinkReservationModal: () => void;
+  linkReservation: (threadId: string, reservationId: string) => void;
+  unlinkReservation: (threadId: string, reservationId: string) => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set, get) => ({
@@ -57,6 +61,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   composingPhoneNumber: '',
   typingThreadId: null,
   isGuestInfoOpen: false,
+  isLinkReservationModalOpen: false,
   currentView: 'inbox',
   searchQuery: '',
 
@@ -154,28 +159,16 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
       return null;
     }
 
-    // Create a temporary guest ID for the new phone number
-    const tempGuestId = `guest-phone-${Date.now()}`;
-
-    // Create new thread
+    // Create new thread with phone number only (no guest/reservation linked)
     const newThreadId = `thread-${Date.now()}`;
     const newThread: Thread = {
       id: newThreadId,
-      guestId: tempGuestId,
-      reservationId: '',
+      contactNumber: phoneNumber,
+      linkedReservationIds: [],
       lastMessage: '',
       lastMessageAt: new Date(),
       isUnread: false,
       status: 'inbox',
-    };
-
-    // Add a temporary guest to the store for display purposes
-    // In a real app, this would create a guest in the backend
-    (guests as Record<string, typeof guests[keyof typeof guests]>)[tempGuestId] = {
-      id: tempGuestId,
-      name: phoneNumber,
-      initials: '',
-      phone: phoneNumber,
     };
 
     // Add thread to beginning of list
@@ -305,5 +298,37 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   // Set search query
   setSearchQuery: (query: string) => {
     set({ searchQuery: query });
+  },
+
+  // Open link reservation modal
+  openLinkReservationModal: () => {
+    set({ isLinkReservationModalOpen: true });
+  },
+
+  // Close link reservation modal
+  closeLinkReservationModal: () => {
+    set({ isLinkReservationModalOpen: false });
+  },
+
+  // Link a reservation to a thread
+  linkReservation: (threadId: string, reservationId: string) => {
+    set((state) => ({
+      threads: state.threads.map((thread) =>
+        thread.id === threadId && !thread.linkedReservationIds.includes(reservationId)
+          ? { ...thread, linkedReservationIds: [...thread.linkedReservationIds, reservationId] }
+          : thread
+      ),
+    }));
+  },
+
+  // Unlink a reservation from a thread
+  unlinkReservation: (threadId: string, reservationId: string) => {
+    set((state) => ({
+      threads: state.threads.map((thread) =>
+        thread.id === threadId
+          ? { ...thread, linkedReservationIds: thread.linkedReservationIds.filter((id) => id !== reservationId) }
+          : thread
+      ),
+    }));
   },
 }));

@@ -10,10 +10,41 @@ import { Thread, Message } from './types';
  * Mock threads - link to canonical guest and reservation IDs
  */
 export const mockThreads: Thread[] = [
+  // Multi-reservation thread (1 auto-linked + 3 manually linked)
+  {
+    id: '14',
+    contactNumber: '+16507665555',
+    linkedReservationIds: ['res-john-jul', 'res-james-jul', 'res-ethan-jul', 'res-liam-aug'],
+    lastMessage: "Here are some nearby restaurant recommendations: Ithaca Ale House, Komonz Grill, MIX, Red's Place, and Chili's Grill & Bar. The hotel also recommends Il Ristorante Alga, Coltivare, Moosewood Restaurant, and Gola Osteria. Let me know if you need more assistance!",
+    lastMessageAt: new Date('2024-11-19T10:04:00'),
+    isUnread: true,
+    status: 'inbox',
+  },
+  // Single manually-linked reservation (phone doesn't match)
+  {
+    id: '15',
+    contactNumber: '+13305559999',
+    linkedReservationIds: ['res-emerson-jun'],
+    lastMessage: 'Hi, I wanted to confirm my reservation for next month.',
+    lastMessageAt: new Date('2024-11-19T09:50:00'),
+    isUnread: true,
+    status: 'inbox',
+  },
+  // Empty thread (no linked reservations)
+  {
+    id: '16',
+    contactNumber: '+12125550000',
+    linkedReservationIds: [],
+    lastMessage: 'Is there availability for this weekend?',
+    lastMessageAt: new Date('2024-11-19T09:30:00'),
+    isUnread: false,
+    status: 'inbox',
+  },
+  // Single auto-linked threads (existing guests — phone matches contactNumber)
   {
     id: '1',
-    guestId: 'guest-emily',
-    reservationId: 'res-emily-jul',
+    contactNumber: '+15005550012',
+    linkedReservationIds: ['res-emily-jul'],
     lastMessage: "Here are some nearby restaurant recommendations: Ithaca Ale House, Komonz Grill, MIX, Red's Place, and Chili's Grill & Bar. The hotel also recommends Il Ristorante Alga, Coltivare, Moosewood Restaurant, and Gola Osteria. Let me know if you need more assistance!",
     lastMessageAt: new Date('2024-11-19T10:04:00'),
     isUnread: true,
@@ -21,8 +52,8 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '2',
-    guestId: 'guest-miguel',
-    reservationId: 'res-miguel-nov',
+    contactNumber: '+15005550013',
+    linkedReservationIds: ['res-miguel-nov'],
     lastMessage: 'Can I have extra face towels to the room please?',
     lastMessageAt: new Date('2024-11-19T10:04:00'),
     isUnread: true,
@@ -30,8 +61,8 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '3',
-    guestId: 'guest-brooklyn',
-    reservationId: 'res-brooklyn-nov',
+    contactNumber: '+15005550014',
+    linkedReservationIds: ['res-brooklyn-nov'],
     lastMessage: 'Got it, thanks.',
     lastMessageAt: new Date('2024-11-19T10:04:00'),
     isUnread: false,
@@ -39,8 +70,8 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '4',
-    guestId: 'guest-marco',
-    reservationId: 'res-marco-nov',
+    contactNumber: '+15005550015',
+    linkedReservationIds: ['res-marco-nov'],
     lastMessage: 'What time will the pool close?',
     lastMessageAt: new Date('2024-11-19T10:04:00'),
     isUnread: false,
@@ -48,8 +79,8 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '5',
-    guestId: 'guest-kristin',
-    reservationId: 'res-kristin-nov',
+    contactNumber: '+15005550016',
+    linkedReservationIds: ['res-kristin-nov'],
     lastMessage: "Great. That's super helpful.",
     lastMessageAt: new Date('2024-11-19T10:04:00'),
     isUnread: false,
@@ -57,8 +88,8 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '6',
-    guestId: 'guest-liam',
-    reservationId: 'res-liam-nov',
+    contactNumber: '+15005550017',
+    linkedReservationIds: ['res-liam-nov'],
     lastMessage: 'Awesome! That really clears things up.',
     lastMessageAt: new Date('2024-11-19T10:04:00'),
     isUnread: false,
@@ -66,8 +97,8 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '7',
-    guestId: 'guest-olivia',
-    reservationId: 'res-olivia-nov',
+    contactNumber: '+15005550018',
+    linkedReservationIds: ['res-olivia-nov'],
     lastMessage: 'Fantastic! This is exactly what I needed.',
     lastMessageAt: new Date('2024-11-19T10:04:00'),
     isUnread: false,
@@ -75,8 +106,8 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '8',
-    guestId: 'guest-noah',
-    reservationId: 'res-noah-nov',
+    contactNumber: '+15005550019',
+    linkedReservationIds: ['res-noah-nov'],
     lastMessage: 'Perfect! This information is incredibly useful.',
     lastMessageAt: new Date('2024-11-19T10:04:00'),
     isUnread: false,
@@ -84,8 +115,8 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '9',
-    guestId: 'guest-emma',
-    reservationId: 'res-emma-nov',
+    contactNumber: '+15005550024',
+    linkedReservationIds: ['res-emma-nov'],
     lastMessage: 'Excellent! I appreciate your help with this.',
     lastMessageAt: new Date('2024-11-19T10:04:00'),
     isUnread: false,
@@ -94,8 +125,8 @@ export const mockThreads: Thread[] = [
   // Archived conversations
   {
     id: '10',
-    guestId: 'guest-sarah',
-    reservationId: 'res-sarah-nov',
+    contactNumber: '+15005550020',
+    linkedReservationIds: ['res-sarah-nov'],
     lastMessage: 'Thank you so much for the wonderful stay! Everything was perfect.',
     lastMessageAt: new Date('2024-11-15T11:30:00'),
     isUnread: false,
@@ -103,8 +134,8 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '11',
-    guestId: 'guest-james',
-    reservationId: 'res-james-nov',
+    contactNumber: '+15005550021',
+    linkedReservationIds: ['res-james-nov'],
     lastMessage: 'All set, thanks for resolving the WiFi issue.',
     lastMessageAt: new Date('2024-11-14T16:45:00'),
     isUnread: false,
@@ -112,8 +143,8 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '12',
-    guestId: 'guest-maria',
-    reservationId: 'res-maria-nov',
+    contactNumber: '+15005550022',
+    linkedReservationIds: ['res-maria-nov'],
     lastMessage: 'Perfect, the late checkout worked out great. See you next time!',
     lastMessageAt: new Date('2024-11-13T14:20:00'),
     isUnread: false,
@@ -121,8 +152,8 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '13',
-    guestId: 'guest-robert',
-    reservationId: 'res-robert-nov',
+    contactNumber: '+15005550023',
+    linkedReservationIds: ['res-robert-nov'],
     lastMessage: 'Appreciate all your help with the room upgrade and restaurant reservations!',
     lastMessageAt: new Date('2024-11-12T10:15:00'),
     isUnread: false,
@@ -134,6 +165,69 @@ export const mockThreads: Thread[] = [
  * Mock messages - organized by thread ID
  */
 export const mockMessages: Record<string, Message[]> = {
+  // Phone-only thread (no reservation linked)
+  '14': [
+    {
+      id: 'm100',
+      threadId: '14',
+      sender: 'guest',
+      content: 'I will arrive late today. My flight is delayed.',
+      timestamp: new Date('2024-11-19T17:10:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm101',
+      threadId: '14',
+      sender: 'ai',
+      content: 'Thanks for letting us know!',
+      timestamp: new Date('2024-11-19T17:25:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm102',
+      threadId: '14',
+      sender: 'guest',
+      content: 'Give me a list of nearby restaurants',
+      timestamp: new Date('2024-11-19T18:30:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm103',
+      threadId: '14',
+      sender: 'ai',
+      content: "Here are some nearby restaurant recommendations: Ithaca Ale House, Komonz Grill, MIX, Red's Place, and Chili's Grill & Bar. The hotel also recommends Il Ristorante Alga, Coltivare, Moosewood Restaurant, and Gola Osteria. Let me know if you need more assistance!",
+      timestamp: new Date('2024-11-19T18:32:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+  ],
+  // Thread 15 — single manually-linked reservation
+  '15': [
+    {
+      id: 'm104',
+      threadId: '15',
+      sender: 'guest',
+      content: 'Hi, I wanted to confirm my reservation for next month.',
+      timestamp: new Date('2024-11-19T09:50:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+  ],
+  // Thread 16 — empty/unlinked thread
+  '16': [
+    {
+      id: 'm105',
+      threadId: '16',
+      sender: 'guest',
+      content: 'Is there availability for this weekend?',
+      timestamp: new Date('2024-11-19T09:30:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+  ],
   // Emily Smith's conversation
   '1': [
     {

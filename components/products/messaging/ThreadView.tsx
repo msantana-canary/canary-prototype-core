@@ -12,7 +12,7 @@ import { Avatar } from './Avatar';
 import { MessageFeed } from './MessageFeed';
 import { MessageComposer } from './MessageComposer';
 import { GuestInfoSidebar } from './GuestInfoSidebar';
-import { Thread, Message } from '@/lib/products/messaging/types';
+import { Thread, Message, LinkedReservation } from '@/lib/products/messaging/types';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
 import { CanaryButton, ButtonType, ButtonSize, CanaryTag, TagSize, TagVariant } from '@canary-ui/components';
@@ -21,8 +21,9 @@ import { mdiBedOutline, mdiCalendarOutline, mdiInformationOutline, mdiDotsVertic
 
 interface ThreadViewProps {
   thread: Thread;
-  guest: Guest;
+  guest: Guest | null;
   reservation: Reservation | null;
+  linkedReservations: LinkedReservation[];
   messages: Message[];
   onSendMessage: (content: string) => void;
   aiEnabled: boolean;
@@ -34,6 +35,8 @@ interface ThreadViewProps {
   onBlock: () => void;
   onUnblock: () => void;
   onMarkUnread: () => void;
+  onOpenLinkModal: () => void;
+  onUnlinkReservation: (reservationId: string) => void;
   typingThreadId: string | null;
 }
 
@@ -41,6 +44,7 @@ export function ThreadView({
   thread,
   guest,
   reservation,
+  linkedReservations,
   messages,
   onSendMessage,
   aiEnabled,
@@ -52,6 +56,8 @@ export function ThreadView({
   onBlock,
   onUnblock,
   onMarkUnread,
+  onOpenLinkModal,
+  onUnlinkReservation,
   typingThreadId,
 }: ThreadViewProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -103,17 +109,17 @@ export function ThreadView({
       {/* Thread Header */}
       <div className="border-b border-gray-200 bg-white px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Guest Info */}
+          {/* Guest Info / Contact Number */}
           <div className="flex items-center gap-4">
             <Avatar
-              src={guest.avatar}
-              initials={guest.initials}
+              src={guest?.avatar}
+              initials={guest?.initials || ''}
               size="medium"
             />
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-['Roboto',sans-serif] font-medium text-base leading-[24px] text-black">
-                  {guest.name}
+                  {guest?.name || thread.contactNumber}
                 </h2>
                 {/* Archived Tag */}
                 {thread.status === 'archived' && (
@@ -142,7 +148,7 @@ export function ThreadView({
               </div>
               <div className="flex items-center gap-3 mt-1">
                 {/* Status Tag */}
-                {guest.statusTag && (
+                {guest?.statusTag && (
                   <CanaryTag
                     label={guest.statusTag.label}
                     size={TagSize.COMPACT}
@@ -195,6 +201,17 @@ export function ThreadView({
                 onClick={onArchive}
               >
                 Archive
+              </CanaryButton>
+            )}
+
+            {/* Link Reservation Button (when no reservations linked) */}
+            {linkedReservations.length === 0 && (
+              <CanaryButton
+                type={ButtonType.TEXT}
+                size={ButtonSize.NORMAL}
+                onClick={onOpenLinkModal}
+              >
+                Link reservation
               </CanaryButton>
             )}
 
@@ -288,10 +305,12 @@ export function ThreadView({
 
       {/* Guest Info Sidebar */}
       <GuestInfoSidebar
-        guest={guest}
-        reservation={reservation}
+        contactNumber={thread.contactNumber}
+        linkedReservations={linkedReservations}
         isOpen={isGuestInfoOpen}
         onClose={onCloseGuestInfo}
+        onOpenLinkModal={onOpenLinkModal}
+        onUnlinkReservation={onUnlinkReservation}
       />
     </div>
   );

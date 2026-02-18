@@ -7,13 +7,16 @@
  * Uses the canonical data layer and messaging-specific components.
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AppLayout } from '@/components/products/messaging/AppLayout';
 import { ThreadList } from '@/components/products/messaging/ThreadList';
 import { ThreadView } from '@/components/products/messaging/ThreadView';
+import { UnlinkReservationModal } from '@/components/products/messaging/UnlinkReservationModal';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { guests } from '@/lib/core/data/guests';
 import { reservations } from '@/lib/core/data/reservations';
+import { LinkedReservation } from '@/lib/products/messaging/types';
+import { LinkReservationModal } from '@/components/products/messaging/LinkReservationModal';
 import { generateGuestResponse, generateStaffResponse } from '@/lib/products/messaging/services/claude-api';
 
 export default function MessagesPage() {
@@ -44,6 +47,11 @@ export default function MessagesPage() {
     unblockThread,
     markThreadAsUnread,
     setSearchQuery,
+    isLinkReservationModalOpen,
+    openLinkReservationModal,
+    closeLinkReservationModal,
+    linkReservation,
+    unlinkReservation,
   } = useMessagingStore();
 
   // Get the selected thread
@@ -52,16 +60,31 @@ export default function MessagesPage() {
     return threads.find((t) => t.id === selectedThreadId) || null;
   }, [threads, selectedThreadId]);
 
-  // Get guest and reservation for selected thread
-  const selectedGuest = useMemo(() => {
-    if (!selectedThread) return null;
-    return guests[selectedThread.guestId] || null;
+  // Resolve all linked reservations with their guests and auto-link status
+  const linkedReservations: LinkedReservation[] = useMemo(() => {
+    if (!selectedThread) return [];
+    return selectedThread.linkedReservationIds
+      .map((resId) => {
+        const reservation = reservations[resId];
+        if (!reservation) return null;
+        const guest = guests[reservation.guestId];
+        if (!guest) return null;
+        return {
+          reservation,
+          guest,
+          isAutoLinked: guest.phone === selectedThread.contactNumber,
+        };
+      })
+      .filter((lr): lr is LinkedReservation => lr !== null);
   }, [selectedThread]);
 
-  const selectedReservation = useMemo(() => {
-    if (!selectedThread) return null;
-    return reservations[selectedThread.reservationId] || null;
-  }, [selectedThread]);
+  // Primary guest: first auto-linked, or first linked, or null
+  const primaryLinked = useMemo(() => {
+    return linkedReservations.find((lr) => lr.isAutoLinked) || linkedReservations[0] || null;
+  }, [linkedReservations]);
+
+  const selectedGuest = primaryLinked?.guest || null;
+  const selectedReservation = primaryLinked?.reservation || null;
 
   // Get messages for selected thread
   const selectedMessages = selectedThreadId ? messages[selectedThreadId] || [] : [];
@@ -73,13 +96,20 @@ export default function MessagesPage() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((thread) => {
-        const guest = guests[thread.guestId];
-        if (!guest) return false;
-        return (
-          guest.name.toLowerCase().includes(query) ||
-          guest.phone?.toLowerCase().includes(query) ||
-          guest.email?.toLowerCase().includes(query)
-        );
+        // Match on contact number
+        if (thread.contactNumber.toLowerCase().includes(query)) return true;
+        // Match on any linked reservation's guest info
+        return thread.linkedReservationIds.some((resId) => {
+          const res = reservations[resId];
+          if (!res) return false;
+          const guest = guests[res.guestId];
+          if (!guest) return false;
+          return (
+            guest.name.toLowerCase().includes(query) ||
+            guest.phone?.toLowerCase().includes(query) ||
+            guest.email?.toLowerCase().includes(query)
+          );
+        });
       });
     }
 
@@ -128,6 +158,21 @@ export default function MessagesPage() {
     }
   };
 
+  // Unlink modal state — tracks which reservation row was clicked
+  const [unlinkTarget, setUnlinkTarget] = useState<LinkedReservation | null>(null);
+
+  const handleRequestUnlink = (reservationId: string) => {
+    const lr = linkedReservations.find((r) => r.reservation.id === reservationId) || null;
+    setUnlinkTarget(lr);
+  };
+
+  const handleConfirmUnlink = () => {
+    if (unlinkTarget && selectedThreadId) {
+      unlinkReservation(selectedThreadId, unlinkTarget.reservation.id);
+    }
+    setUnlinkTarget(null);
+  };
+
   // Auto-select first thread on mount
   useEffect(() => {
     if (!selectedThreadId && filteredThreads.length > 0) {
@@ -162,11 +207,12 @@ export default function MessagesPage() {
 
         {/* Thread View */}
         <div className="flex-1">
-          {selectedThread && selectedGuest ? (
+          {selectedThread ? (
             <ThreadView
               thread={selectedThread}
               guest={selectedGuest}
               reservation={selectedReservation}
+              linkedReservations={linkedReservations}
               messages={selectedMessages}
               onSendMessage={handleSendMessage}
               aiEnabled={aiEnabled}
@@ -178,6 +224,8 @@ export default function MessagesPage() {
               onBlock={() => blockThread(selectedThread.id)}
               onUnblock={() => unblockThread(selectedThread.id)}
               onMarkUnread={() => markThreadAsUnread(selectedThread.id)}
+              onOpenLinkModal={openLinkReservationModal}
+              onUnlinkReservation={handleRequestUnlink}
               typingThreadId={typingThreadId}
             />
           ) : (
@@ -187,6 +235,26 @@ export default function MessagesPage() {
           )}
         </div>
       </div>
+
+      {/* Link Reservation Modal */}
+      <LinkReservationModal
+        isOpen={isLinkReservationModalOpen}
+        onClose={closeLinkReservationModal}
+        onLink={(resId) => {
+          if (selectedThreadId) linkReservation(selectedThreadId, resId);
+        }}
+        alreadyLinkedIds={selectedThread?.linkedReservationIds || []}
+      />
+
+      {/* Unlink Reservation Modal */}
+      <UnlinkReservationModal
+        isOpen={!!unlinkTarget}
+        onClose={() => setUnlinkTarget(null)}
+        onConfirmUnlink={handleConfirmUnlink}
+        guestName={unlinkTarget?.guest.name || ''}
+        contactNumber={selectedThread?.contactNumber || ''}
+        isAutoLinked={unlinkTarget?.isAutoLinked || false}
+      />
     </AppLayout>
   );
 }

@@ -147,6 +147,52 @@ export const guests: Record<string, Guest> = {
       textColor: 'white',
     },
   },
+  // Guests for link-reservation demo (multi-reservation threads)
+  'guest-john-s': {
+    id: 'guest-john-s',
+    name: 'John Smith',
+    initials: 'JS',
+    phone: '+16507665555',
+    email: 'johnsmith@gmail.com',
+    preferredLanguage: 'English',
+  },
+  'guest-james-b': {
+    id: 'guest-james-b',
+    name: 'James Brady',
+    initials: 'JB',
+    phone: '+14155554444',
+    email: 'james.brady@email.com',
+    preferredLanguage: 'English',
+  },
+  'guest-ethan-p': {
+    id: 'guest-ethan-p',
+    name: 'Ethan Parker',
+    initials: 'EP',
+    phone: '+14155552671',
+    email: 'ethan.parker@email.com',
+    preferredLanguage: 'English',
+  },
+  'guest-liam-c': {
+    id: 'guest-liam-c',
+    name: 'Liam Carter',
+    initials: 'LC',
+    phone: '+14155551234',
+    email: 'liam.carter@email.com',
+    preferredLanguage: 'English',
+  },
+  'guest-emerson-s': {
+    id: 'guest-emerson-s',
+    name: 'Emerson Smith',
+    initials: 'ES',
+    phone: '+13305551234',
+    email: 'emerson.smith@email.com',
+    preferredLanguage: 'English',
+    statusTag: {
+      label: 'GOLD ELITE',
+      color: '#C8B263',
+      textColor: 'white',
+    },
+  },
 };
 
 /**

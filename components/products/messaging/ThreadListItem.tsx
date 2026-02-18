@@ -34,9 +34,9 @@ export function ThreadListItem({
 }: ThreadListItemProps) {
   const formattedTime = format(thread.lastMessageAt, 'h:mm a').toUpperCase();
 
-  // Get guest name and extract first name
-  const guestName = guest?.name || 'Unknown Guest';
-  const firstName = guestName.split(' ')[0];
+  // For phone-only threads, display the contact number
+  const guestName = guest?.name || thread.contactNumber;
+  const firstName = guest ? guestName.split(' ')[0] : thread.contactNumber;
   const initials = guest?.initials || '';
 
   // Get room from reservation
