@@ -1,16 +1,16 @@
 /**
  * ArrivalCard Component
  *
- * Displays a guest arrival card in the right pane grid.
- * Shows guest photo, name, arrival time, room, and action buttons.
+ * Displays a guest arrival in the right pane grid.
+ * Compact layout: Avatar | Name + Time + Room | Actions
  */
 
 'use client';
 
 import React from 'react';
-import { CanaryTag, CanaryButton, TagSize, TagVariant, ButtonSize, ButtonType, colors } from '@canary-ui/components';
+import { CanaryButton, CanaryTag, ButtonSize, ButtonType, TagSize, TagVariant, colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
-import { mdiCellphoneKey, mdiCheckCircleOutline } from '@mdi/js';
+import { mdiKey, mdiCheck, mdiBedOutline } from '@mdi/js';
 import { Avatar } from '../messaging/Avatar';
 import { Arrival } from '@/lib/products/check-in/types';
 import { Guest } from '@/lib/core/types/guest';
@@ -34,96 +34,126 @@ export function ArrivalCard({
   onCheckIn,
 }: ArrivalCardProps) {
   const isCheckedIn = arrival.arrivalStatus === 'checked-in';
+  const hasRoom = Boolean(reservation?.room);
 
   return (
     <div
       onClick={onClick}
-      className={`
-        bg-white rounded-lg border border-gray-200 p-4 cursor-pointer
-        hover:shadow-md transition-shadow
-        ${isCheckedIn ? 'opacity-75' : ''}
-      `}
+      className="cursor-pointer hover:bg-gray-50 transition-colors p-3"
     >
-      {/* Guest Photo */}
-      <div className="flex justify-center mb-3">
-        <Avatar
-          src={guest.avatar}
-          initials={guest.initials}
-          size="large"
-        />
-      </div>
-
-      {/* Guest Name */}
-      <p
-        className="text-sm font-medium text-center truncate mb-2"
-        style={{ color: colors.colorBlack1 }}
-        title={guest.name}
-      >
-        {guest.name}
-      </p>
-
-      {/* Badges Row */}
-      <div className="flex items-center justify-center gap-2 mb-3 flex-wrap">
-        {/* Arrival Time Badge */}
-        {arrival.arrivalTime && (
-          <CanaryTag
-            label={isCheckedIn ? `In: ${arrival.checkInTime || arrival.arrivalTime}` : arrival.arrivalTime}
-            size={TagSize.COMPACT}
-            variant={TagVariant.OUTLINE}
-            customColor={{
-              backgroundColor: isCheckedIn ? colors.colorLightGreen5 : colors.colorBlack7,
-              borderColor: isCheckedIn ? colors.success : colors.colorBlack5,
-              fontColor: isCheckedIn ? colors.success : colors.colorBlack2,
-            }}
-            uppercase={false}
+      {/* Main Content Grid */}
+      <div className="flex flex-col gap-1">
+        {/* Avatar */}
+        <div className="flex justify-center mb-1">
+          <Avatar
+            src={guest.avatar}
+            initials={guest.initials}
+            size="medium"
           />
-        )}
+        </div>
 
-        {/* Room Number */}
-        {reservation?.room && (
-          <span
-            className="text-[11px] uppercase"
-            style={{ color: colors.colorBlack3 }}
-          >
-            {reservation.room}
-          </span>
-        )}
-      </div>
+        {/* Guest Name */}
+        <p
+          className="text-[14px] leading-[1.5] font-medium text-center truncate"
+          style={{ color: colors.colorBlack1 }}
+          title={guest.name}
+        >
+          {guest.name}
+        </p>
 
-      {/* Action Buttons */}
-      <div className="flex items-center justify-center gap-2">
-        {/* Mobile Key Button */}
-        {!isCheckedIn && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onMobileKey?.();
-            }}
-            className="w-8 h-8 flex items-center justify-center rounded border border-gray-300 hover:bg-gray-50 transition-colors"
-            title="Send mobile key"
-          >
-            <Icon path={mdiCellphoneKey} size={0.7} color={colors.colorBlack3} />
-          </button>
-        )}
+        {/* Arrival Strip: Time + Room */}
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          {isCheckedIn ? (
+            /* In house tag for checked-in guests */
+            <CanaryTag
+              label="In house"
+              size={TagSize.COMPACT}
+              variant={TagVariant.FILLED}
+              customColor={{
+                backgroundColor: colors.colorBlack6,
+                borderColor: colors.colorBlack4,
+                fontColor: colors.colorBlack2,
+              }}
+              uppercase={false}
+            />
+          ) : (
+            /* Arrival time badge */
+            arrival.arrivalTime && (
+              <CanaryTag
+                label={arrival.arrivalTime}
+                size={TagSize.COMPACT}
+                variant={TagVariant.FILLED}
+                customColor={{
+                  backgroundColor: colors.colorBlack6,
+                  fontColor: colors.colorBlack2,
+                }}
+                uppercase={false}
+              />
+            )
+          )}
 
-        {/* Checked In Button */}
-        {!isCheckedIn ? (
-          <CanaryButton
-            type={ButtonType.OUTLINED}
-            size={ButtonSize.COMPACT}
-            onClick={(e) => {
-              e.stopPropagation();
-              onCheckIn?.();
-            }}
-          >
-            Checked in?
-          </CanaryButton>
-        ) : (
-          <div className="flex items-center gap-1 text-xs" style={{ color: colors.success }}>
-            <Icon path={mdiCheckCircleOutline} size={0.6} />
-            <span>Checked in</span>
-          </div>
-        )}
+          {/* Room Number */}
+          {hasRoom && (
+            <div className="flex items-center gap-1">
+              <Icon
+                path={mdiBedOutline}
+                size={0.6}
+                color={colors.colorBlack3}
+              />
+              <span
+                className="text-[12px] leading-[1.5] font-medium"
+                style={{ color: colors.colorBlack3 }}
+              >
+                {reservation?.room}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-center gap-2 mt-2">
+          {isCheckedIn ? (
+            /* Checked in state */
+            <div
+              className="flex items-center gap-1 text-[12px] font-medium"
+              style={{ color: colors.success }}
+            >
+              <Icon path={mdiCheck} size={0.6} color={colors.success} />
+              <span>Checked In</span>
+            </div>
+          ) : hasRoom ? (
+            /* Has room - show action buttons */
+            <>
+              <CanaryButton
+                type={ButtonType.ICON_SECONDARY}
+                size={ButtonSize.COMPACT}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMobileKey?.();
+                }}
+                icon={<Icon path={mdiKey} size={0.8} color={colors.colorBlueDark1} />}
+              />
+              <CanaryButton
+                type={ButtonType.SHADED}
+                size={ButtonSize.COMPACT}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCheckIn?.();
+                }}
+              >
+                Checked in?
+              </CanaryButton>
+            </>
+          ) : (
+            /* No room assigned */
+            <span
+              className="text-[12px] font-medium"
+              style={{ color: colors.colorBlack3 }}
+            >
+              Room not assigned
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

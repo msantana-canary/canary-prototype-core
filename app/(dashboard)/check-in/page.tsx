@@ -159,17 +159,25 @@ export default function CheckInPage() {
         </div>
 
         {/* Right Pane - Arrivals Grid */}
-        <div className="flex-1 bg-gray-50 overflow-auto p-6">
+        <div className="flex-1 bg-white overflow-auto p-6">
+          {/* Main Title */}
+          <h2
+            className="text-[18px] font-medium mb-6"
+            style={{ color: colors.colorBlack1 }}
+          >
+            Ready for check-In
+          </h2>
+
           {/* Expected Today Section */}
           {expectedArrivals.length > 0 && (
             <div className="mb-8">
-              <h3
-                className="text-sm font-medium mb-4"
-                style={{ color: colors.colorBlack1 }}
+              <p
+                className="text-[14px] font-medium mb-4"
+                style={{ color: colors.colorBlack3 }}
               >
-                Ready for check-in ({expectedArrivals.length})
-              </h3>
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                Expected today ({expectedArrivals.length})
+              </p>
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
                 {expectedArrivals.map((arrival) => {
                   const guest = guests[arrival.guestId];
                   const reservation = reservations[arrival.reservationId];
@@ -191,15 +199,15 @@ export default function CheckInPage() {
           )}
 
           {/* Future Arrivals Section */}
-          {futureArrivals.length > 0 && (
-            <div className="mb-8">
-              <h3
-                className="text-sm font-medium mb-4"
-                style={{ color: colors.colorBlack1 }}
-              >
-                Future ({futureArrivals.length})
-              </h3>
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="mb-8">
+            <p
+              className="text-[14px] font-medium mb-4"
+              style={{ color: colors.colorBlack3 }}
+            >
+              Future ({futureArrivals.length})
+            </p>
+            {futureArrivals.length > 0 ? (
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
                 {futureArrivals.map((arrival) => {
                   const guest = guests[arrival.guestId];
                   const reservation = reservations[arrival.reservationId];
@@ -217,19 +225,23 @@ export default function CheckInPage() {
                   );
                 })}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-[13px]" style={{ color: colors.colorBlack4 }}>
+                No future verified guests
+              </p>
+            )}
+          </div>
 
           {/* Checked-in Today Section */}
-          {checkedInArrivals.length > 0 && (
-            <div className="mb-8">
-              <h3
-                className="text-sm font-medium mb-4"
-                style={{ color: colors.colorBlack1 }}
-              >
-                Checked-in today ({checkedInArrivals.length})
-              </h3>
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="mb-8">
+            <p
+              className="text-[14px] font-medium mb-4"
+              style={{ color: colors.colorBlack3 }}
+            >
+              Checked-in today ({checkedInArrivals.length})
+            </p>
+            {checkedInArrivals.length > 0 ? (
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
                 {checkedInArrivals.map((arrival) => {
                   const guest = guests[arrival.guestId];
                   const reservation = reservations[arrival.reservationId];
@@ -247,8 +259,12 @@ export default function CheckInPage() {
                   );
                 })}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-[13px]" style={{ color: colors.colorBlack4 }}>
+                No check-ins today
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>
