@@ -1,186 +1,225 @@
 /**
  * Check-In Mock Data
  *
- * Sample check-in submissions and arrivals for the dashboard.
+ * ~18 submissions across 5 statuses, unified data model.
+ * Right pane derives from verified/checked_in submissions.
  */
 
-import { CheckInSubmission, Arrival } from './types';
+import { CheckInSubmission, DEMO_TODAY } from './types';
 
 /**
- * Check-in submissions (left pane list)
- * These are guests who have submitted their check-in forms
+ * All check-in submissions — single source of truth for both panes.
+ *
+ * Status distribution:
+ *   submitted (4)           → Left pane: "Completed submissions"
+ *   partially_submitted (1) → Left pane: "Partial submissions"
+ *   pending (6)             → Left pane: "Pending"
+ *   verified (4)            → Right pane: "Expected today" (3) + "Future" (1)
+ *   checked_in (4)          → Right pane: "Checked-in today"
  */
 export const checkInSubmissions: CheckInSubmission[] = [
-  // Completed submissions
+  // ── Submitted (completed form, awaiting verification) ──────────────
   {
     id: 'sub-emily',
     reservationId: 'res-emily-jul',
     guestId: 'guest-emily',
-    status: 'completed',
+    status: 'submitted',
     arrivalTime: '3:00 PM',
-    submittedAt: new Date('2024-10-31T10:30:00'),
-    needsVerification: false,
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T10:30:00'),
     hasMobileKey: true,
   },
   {
     id: 'sub-brooklyn',
     reservationId: 'res-brooklyn-nov',
     guestId: 'guest-brooklyn',
-    status: 'completed',
+    status: 'submitted',
     arrivalTime: '2:00 PM',
-    submittedAt: new Date('2024-10-31T09:15:00'),
-    needsVerification: false,
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T09:15:00'),
     hasMobileKey: true,
   },
   {
-    id: 'sub-olivia',
-    reservationId: 'res-olivia-nov',
-    guestId: 'guest-olivia',
-    status: 'completed',
-    arrivalTime: '4:30 PM',
-    submittedAt: new Date('2024-10-31T11:00:00'),
-    needsVerification: false,
+    id: 'sub-sarah',
+    reservationId: 'res-sarah-checkin',
+    guestId: 'guest-sarah',
+    status: 'submitted',
+    arrivalTime: '4:00 PM',
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T14:00:00'),
     hasMobileKey: false,
+    isFlagged: true,
   },
   {
-    id: 'sub-noah',
-    reservationId: 'res-noah-nov',
-    guestId: 'guest-noah',
-    status: 'completed',
-    arrivalTime: '1:00 PM',
-    submittedAt: new Date('2024-10-30T16:45:00'),
-    needsVerification: false,
+    id: 'sub-james',
+    reservationId: 'res-james-checkin',
+    guestId: 'guest-james',
+    status: 'submitted',
+    arrivalTime: '1:30 PM',
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T16:45:00'),
     hasMobileKey: true,
   },
-  // Pending submissions (need verification)
+
+  // ── Partially submitted ────────────────────────────────────────────
   {
     id: 'sub-miguel',
     reservationId: 'res-miguel-nov',
     guestId: 'guest-miguel',
-    status: 'pending',
+    status: 'partially_submitted',
     arrivalTime: '3:30 PM',
-    submittedAt: new Date('2024-10-31T12:00:00'),
-    needsVerification: true,
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T12:00:00'),
     hasMobileKey: false,
   },
+
+  // ── Pending (form not yet started) ─────────────────────────────────
   {
     id: 'sub-marco',
     reservationId: 'res-marco-nov',
     guestId: 'guest-marco',
     status: 'pending',
-    arrivalTime: '5:00 PM',
-    submittedAt: new Date('2024-10-31T14:30:00'),
-    needsVerification: true,
-    hasMobileKey: false,
+    arrivalDate: '2024-11-22',
   },
   {
     id: 'sub-kristin',
     reservationId: 'res-kristin-nov',
     guestId: 'guest-kristin',
     status: 'pending',
-    arrivalTime: '2:30 PM',
-    submittedAt: new Date('2024-10-31T08:00:00'),
-    needsVerification: false,
-    hasMobileKey: false,
+    arrivalDate: '2024-11-19',
   },
   {
     id: 'sub-liam',
     reservationId: 'res-liam-nov',
     guestId: 'guest-liam',
     status: 'pending',
+    arrivalDate: '2024-11-19',
+  },
+  {
+    id: 'sub-maria',
+    reservationId: 'res-maria-checkin',
+    guestId: 'guest-maria',
+    status: 'pending',
+    arrivalDate: '2024-11-19',
+  },
+  {
+    id: 'sub-robert-pending',
+    reservationId: 'res-robert-checkin',
+    guestId: 'guest-robert',
+    status: 'pending',
+    arrivalDate: DEMO_TODAY,
+  },
+  {
+    id: 'sub-emma-pending',
+    reservationId: 'res-emma-nov',
+    guestId: 'guest-emma',
+    status: 'pending',
+    arrivalDate: '2024-11-19',
+  },
+
+  // ── Verified (right pane — expected today / future) ────────────────
+  {
+    id: 'sub-olivia-verified',
+    reservationId: 'res-olivia-nov',
+    guestId: 'guest-olivia',
+    status: 'verified',
+    arrivalTime: '4:30 PM',
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-16T11:00:00'),
+    hasMobileKey: true,
+  },
+  {
+    id: 'sub-noah-verified',
+    reservationId: 'res-noah-nov',
+    guestId: 'guest-noah',
+    status: 'verified',
+    arrivalTime: '1:00 PM',
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-16T16:45:00'),
+    hasMobileKey: true,
+    isFlagged: true,
+  },
+  {
+    id: 'sub-liam-verified',
+    reservationId: 'res-liam-nov',
+    guestId: 'guest-liam',
+    status: 'verified',
     arrivalTime: '6:00 PM',
-    submittedAt: new Date('2024-10-31T15:30:00'),
-    needsVerification: true,
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T15:30:00'),
+    hasMobileKey: false,
+  },
+  {
+    id: 'sub-emma-verified',
+    reservationId: 'res-emma-nov',
+    guestId: 'guest-emma',
+    status: 'verified',
+    arrivalTime: '11:00 AM',
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T09:00:00'),
+    hasMobileKey: false,
+    isFlagged: true,
+  },
+  {
+    id: 'sub-robert-verified',
+    reservationId: 'res-robert-checkin',
+    guestId: 'guest-robert',
+    status: 'verified',
+    arrivalTime: '5:00 PM',
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T08:00:00'),
+    hasMobileKey: false,
+  },
+  {
+    id: 'sub-maria-future',
+    reservationId: 'res-maria-checkin',
+    guestId: 'guest-maria',
+    status: 'verified',
+    arrivalTime: '2:00 PM',
+    arrivalDate: '2024-11-19',
+    submittedAt: new Date('2024-11-17T10:00:00'),
+    hasMobileKey: false,
+  },
+
+  // ── Checked in ─────────────────────────────────────────────────────
+  {
+    id: 'sub-emily-checkedin',
+    reservationId: 'res-emily-jul',
+    guestId: 'guest-emily',
+    status: 'checked_in',
+    arrivalTime: '3:00 PM',
+    arrivalDate: DEMO_TODAY,
+    checkInTime: '2:45 PM',
+    hasMobileKey: true,
+  },
+  {
+    id: 'sub-brooklyn-checkedin',
+    reservationId: 'res-brooklyn-nov',
+    guestId: 'guest-brooklyn',
+    status: 'checked_in',
+    arrivalTime: '2:00 PM',
+    arrivalDate: DEMO_TODAY,
+    checkInTime: '1:50 PM',
+    hasMobileKey: true,
+  },
+  {
+    id: 'sub-james-checkedin',
+    reservationId: 'res-james-checkin',
+    guestId: 'guest-james',
+    status: 'checked_in',
+    arrivalTime: '1:30 PM',
+    arrivalDate: DEMO_TODAY,
+    checkInTime: '1:15 PM',
+    hasMobileKey: true,
+  },
+  {
+    id: 'sub-kristin-checkedin',
+    reservationId: 'res-kristin-nov',
+    guestId: 'guest-kristin',
+    status: 'checked_in',
+    arrivalTime: '2:30 PM',
+    arrivalDate: DEMO_TODAY,
+    checkInTime: '2:20 PM',
     hasMobileKey: false,
   },
 ];
-
-/**
- * Arrivals (right pane grid)
- * These are guests expected to arrive today or in the future
- */
-export const arrivals: Arrival[] = [
-  // Expected today
-  {
-    id: 'arr-emily',
-    reservationId: 'res-emily-jul',
-    guestId: 'guest-emily',
-    arrivalStatus: 'expected',
-    arrivalTime: '3:00 PM',
-  },
-  {
-    id: 'arr-brooklyn',
-    reservationId: 'res-brooklyn-nov',
-    guestId: 'guest-brooklyn',
-    arrivalStatus: 'expected',
-    arrivalTime: '2:00 PM',
-  },
-  {
-    id: 'arr-miguel',
-    reservationId: 'res-miguel-nov',
-    guestId: 'guest-miguel',
-    arrivalStatus: 'expected',
-    arrivalTime: '3:30 PM',
-  },
-  {
-    id: 'arr-kristin',
-    reservationId: 'res-kristin-nov',
-    guestId: 'guest-kristin',
-    arrivalStatus: 'expected',
-    arrivalTime: '2:30 PM',
-  },
-  // Future arrivals
-  {
-    id: 'arr-marco',
-    reservationId: 'res-marco-nov',
-    guestId: 'guest-marco',
-    arrivalStatus: 'future',
-    arrivalTime: '5:00 PM',
-  },
-  {
-    id: 'arr-liam',
-    reservationId: 'res-liam-nov',
-    guestId: 'guest-liam',
-    arrivalStatus: 'future',
-    arrivalTime: '6:00 PM',
-  },
-  // Already checked in today
-  {
-    id: 'arr-olivia',
-    reservationId: 'res-olivia-nov',
-    guestId: 'guest-olivia',
-    arrivalStatus: 'checked-in',
-    arrivalTime: '4:30 PM',
-    checkInTime: '4:15 PM',
-  },
-  {
-    id: 'arr-noah',
-    reservationId: 'res-noah-nov',
-    guestId: 'guest-noah',
-    arrivalStatus: 'checked-in',
-    arrivalTime: '1:00 PM',
-    checkInTime: '12:45 PM',
-  },
-  {
-    id: 'arr-emma',
-    reservationId: 'res-emma-nov',
-    guestId: 'guest-emma',
-    arrivalStatus: 'checked-in',
-    arrivalTime: '11:00 AM',
-    checkInTime: '11:30 AM',
-  },
-];
-
-/**
- * Get submissions by status
- */
-export function getSubmissionsByStatus(status: 'pending' | 'completed'): CheckInSubmission[] {
-  return checkInSubmissions.filter(s => s.status === status);
-}
-
-/**
- * Get arrivals by status
- */
-export function getArrivalsByStatus(status: 'expected' | 'future' | 'checked-in'): Arrival[] {
-  return arrivals.filter(a => a.arrivalStatus === status);
-}

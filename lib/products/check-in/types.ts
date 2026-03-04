@@ -2,37 +2,39 @@
  * Check-In Types
  *
  * Types specific to the check-in product dashboard.
+ * 5 submission statuses matching production.
  */
 
-export type SubmissionStatus = 'pending' | 'completed';
+export type SubmissionStatus =
+  | 'pending'
+  | 'partially_submitted'
+  | 'submitted'        // "Completed submissions" in left pane
+  | 'verified'         // Moves to right pane ("Expected today" / "Future")
+  | 'checked_in';
 
-export type ArrivalStatus = 'expected' | 'future' | 'checked-in';
-
-/**
- * Check-in submission record for the left pane list
- */
 export interface CheckInSubmission {
   id: string;
   reservationId: string;
   guestId: string;
   status: SubmissionStatus;
-  arrivalTime?: string;      // e.g., "2:00 PM"
-  submittedAt?: Date;        // When form was submitted
-  needsVerification?: boolean;
+  arrivalTime?: string;        // e.g., "2:30 PM"
+  arrivalDate: string;         // ISO: "2024-11-18"
+  submittedAt?: Date;
   hasMobileKey?: boolean;
+  isFlagged?: boolean;         // Red flag icon next to room
+  isArchived?: boolean;        // Goes to "Other" section
+  checkInTime?: string;        // For checked-in: "4:15 PM"
+  // Tabled fields (keep for future):
+  isWalkIn?: boolean;
+  isTabletRegistration?: boolean;
+  isNewRegistration?: boolean;
 }
 
 /**
- * Arrival record for the right pane grid
+ * Demo date constant — all date comparisons use this
+ * so the prototype looks correct regardless of when it runs.
  */
-export interface Arrival {
-  id: string;
-  reservationId: string;
-  guestId: string;
-  arrivalStatus: ArrivalStatus;
-  arrivalTime?: string;
-  checkInTime?: string;      // Time when checked in
-}
+export const DEMO_TODAY = '2024-11-18';
 
 /**
  * Loyalty tier colors

@@ -5,25 +5,28 @@
  *
  * Staff dashboard for managing guest check-ins.
  * Two-pane layout: submission list (left) + arrivals grid (right).
+ * All data derives from a single checkInSubmissions array.
  */
 
 import React, { useState, useMemo } from 'react';
+import { parseISO } from 'date-fns';
 import { SubNav } from '@/components/products/check-in/SubNav';
 import { DateSelector } from '@/components/products/check-in/DateSelector';
 import { CheckInListItem } from '@/components/products/check-in/CheckInListItem';
 import { ArrivalCard } from '@/components/products/check-in/ArrivalCard';
-import { checkInSubmissions, getArrivalsByStatus } from '@/lib/products/check-in/mock-data';
+import { CollapsibleSection } from '@/components/products/check-in/CollapsibleSection';
+import { checkInSubmissions } from '@/lib/products/check-in/mock-data';
+import { DEMO_TODAY } from '@/lib/products/check-in/types';
 import { guests } from '@/lib/core/data/guests';
 import { reservations } from '@/lib/core/data/reservations';
 import { colors } from '@canary-ui/components';
 
 export default function CheckInPage() {
-  // State
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(parseISO(DEMO_TODAY));
 
-  // Filter submissions by search query
-  const filteredSubmissions = useMemo(() => {
+  // Filter all submissions by search query
+  const filtered = useMemo(() => {
     if (!searchQuery.trim()) return checkInSubmissions;
     const query = searchQuery.toLowerCase();
     return checkInSubmissions.filter((submission) => {
@@ -37,41 +40,45 @@ export default function CheckInPage() {
     });
   }, [searchQuery]);
 
-  // Group submissions by status
-  const completedSubmissions = useMemo(
-    () => filteredSubmissions.filter((s) => s.status === 'completed'),
-    [filteredSubmissions]
+  // ── Left pane sections ───────────────────────────────────────────
+  const submitted = useMemo(
+    () => filtered.filter(s => s.status === 'submitted' && !s.isArchived),
+    [filtered]
   );
-  const pendingSubmissions = useMemo(
-    () => filteredSubmissions.filter((s) => s.status === 'pending'),
-    [filteredSubmissions]
+  const partial = useMemo(
+    () => filtered.filter(s => s.status === 'partially_submitted' && !s.isArchived),
+    [filtered]
+  );
+  const pending = useMemo(
+    () => filtered.filter(s => s.status === 'pending' && !s.isArchived),
+    [filtered]
   );
 
-  // Group arrivals by status
-  const expectedArrivals = useMemo(() => getArrivalsByStatus('expected'), []);
-  const futureArrivals = useMemo(() => getArrivalsByStatus('future'), []);
-  const checkedInArrivals = useMemo(() => getArrivalsByStatus('checked-in'), []);
+  // ── Right pane sections (derived from verified/checked_in) ──────
+  const expectedToday = useMemo(
+    () => filtered.filter(s => s.status === 'verified' && s.arrivalDate === DEMO_TODAY),
+    [filtered]
+  );
+  const future = useMemo(
+    () => filtered.filter(s => s.status === 'verified' && s.arrivalDate > DEMO_TODAY),
+    [filtered]
+  );
+  const checkedInToday = useMemo(
+    () => filtered.filter(s => s.status === 'checked_in' && s.arrivalDate === DEMO_TODAY),
+    [filtered]
+  );
 
-  // Handlers
-  const handleVerify = (submissionId: string) => {
-    console.log('Verify:', submissionId);
-  };
+  // ── Handlers ─────────────────────────────────────────────────────
+  const handleVerify = (id: string) => console.log('Verify:', id);
+  const handleSendToTablet = (id: string) => console.log('Send to tablet:', id);
+  const handleMessage = (id: string) => console.log('Message:', id);
+  const handleMobileKey = (id: string) => console.log('Send mobile key:', id);
+  const handleCheckIn = (id: string) => console.log('Check in:', id);
 
-  const handleSendToTablet = (submissionId: string) => {
-    console.log('Send to tablet:', submissionId);
-  };
-
-  const handleMobileKey = (arrivalId: string) => {
-    console.log('Send mobile key:', arrivalId);
-  };
-
-  const handleArrivalCheckIn = (arrivalId: string) => {
-    console.log('Check in arrival:', arrivalId);
-  };
+  const hasLeftContent = submitted.length > 0 || partial.length > 0 || pending.length > 0;
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Sub Navigation */}
       <SubNav
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -80,27 +87,25 @@ export default function CheckInPage() {
         onNewCheckIn={() => console.log('New check-in clicked')}
       />
 
-      {/* Main Content - Two Pane Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Pane - Submissions List */}
+        {/* ── Left Pane — Submissions List ─────────────────────────── */}
         <div className="w-[480px] border-r border-gray-200 bg-white overflow-auto">
-          {/* Date Selector */}
           <DateSelector
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
           />
 
-          {/* Completed Submissions Section */}
-          {completedSubmissions.length > 0 && (
+          {/* Completed submissions */}
+          {submitted.length > 0 && (
             <div className="px-6 pb-6">
               <p
                 className="text-[13px] font-medium mb-2"
                 style={{ color: colors.colorBlack3 }}
               >
-                Completed submissions ({completedSubmissions.length})
+                Completed submissions ({submitted.length})
               </p>
               <ul className="border border-gray-200 rounded-lg divide-y divide-gray-200 overflow-hidden">
-                {completedSubmissions.map((submission) => {
+                {submitted.map((submission) => {
                   const guest = guests[submission.guestId];
                   const reservation = reservations[submission.reservationId];
                   if (!guest) return null;
@@ -112,7 +117,6 @@ export default function CheckInPage() {
                       reservation={reservation}
                       onClick={() => console.log('Selected:', submission.id)}
                       onVerify={() => handleVerify(submission.id)}
-                      onSendToTablet={() => handleSendToTablet(submission.id)}
                     />
                   );
                 })}
@@ -120,17 +124,17 @@ export default function CheckInPage() {
             </div>
           )}
 
-          {/* Pending Submissions Section */}
-          {pendingSubmissions.length > 0 && (
+          {/* Partial submissions */}
+          {partial.length > 0 && (
             <div className="px-6 pb-6">
               <p
                 className="text-[13px] font-medium mb-2"
                 style={{ color: colors.colorBlack3 }}
               >
-                Pending ({pendingSubmissions.length})
+                Partial submissions ({partial.length})
               </p>
               <ul className="border border-gray-200 rounded-lg divide-y divide-gray-200 overflow-hidden">
-                {pendingSubmissions.map((submission) => {
+                {partial.map((submission) => {
                   const guest = guests[submission.guestId];
                   const reservation = reservations[submission.reservationId];
                   if (!guest) return null;
@@ -141,8 +145,6 @@ export default function CheckInPage() {
                       guest={guest}
                       reservation={reservation}
                       onClick={() => console.log('Selected:', submission.id)}
-                      onVerify={() => handleVerify(submission.id)}
-                      onSendToTablet={() => handleSendToTablet(submission.id)}
                     />
                   );
                 })}
@@ -150,17 +152,49 @@ export default function CheckInPage() {
             </div>
           )}
 
-          {/* Empty State */}
-          {filteredSubmissions.length === 0 && (
+          {/* Pending */}
+          <div className="px-6 pb-6">
+            <p
+              className="text-[13px] font-medium mb-2"
+              style={{ color: colors.colorBlack3 }}
+            >
+              Pending ({pending.length})
+            </p>
+            {pending.length > 0 ? (
+              <ul className="border border-gray-200 rounded-lg divide-y divide-gray-200 overflow-hidden">
+                {pending.map((submission) => {
+                  const guest = guests[submission.guestId];
+                  const reservation = reservations[submission.reservationId];
+                  if (!guest) return null;
+                  return (
+                    <CheckInListItem
+                      key={submission.id}
+                      submission={submission}
+                      guest={guest}
+                      reservation={reservation}
+                      onClick={() => console.log('Selected:', submission.id)}
+                      onSendToTablet={() => handleSendToTablet(submission.id)}
+                    />
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-[13px]" style={{ color: colors.colorBlack4 }}>
+                No pending submissions
+              </p>
+            )}
+          </div>
+
+          {/* Empty state for all left-pane sections */}
+          {!hasLeftContent && (
             <div className="p-6 text-center text-gray-500">
               No submissions found
             </div>
           )}
         </div>
 
-        {/* Right Pane - Arrivals Grid */}
-        <div className="flex-1 bg-white overflow-auto p-6">
-          {/* Main Title */}
+        {/* ── Right Pane — Arrivals Grid ───────────────────────────── */}
+        <div className="flex-1 overflow-auto p-6" style={{ backgroundColor: colors.colorBlack8 }}>
           <h2
             className="text-[18px] font-medium mb-6"
             style={{ color: colors.colorBlack1 }}
@@ -168,29 +202,29 @@ export default function CheckInPage() {
             Ready for check-In
           </h2>
 
-          {/* Expected Today Section */}
-          {expectedArrivals.length > 0 && (
+          {/* Expected today */}
+          {expectedToday.length > 0 && (
             <div className="mb-8">
               <p
                 className="text-[14px] font-medium mb-4"
                 style={{ color: colors.colorBlack3 }}
               >
-                Expected today ({expectedArrivals.length})
+                Expected today ({expectedToday.length})
               </p>
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
-                {expectedArrivals.map((arrival) => {
-                  const guest = guests[arrival.guestId];
-                  const reservation = reservations[arrival.reservationId];
+              <div className="flex flex-wrap gap-2">
+                {expectedToday.map((submission) => {
+                  const guest = guests[submission.guestId];
+                  const reservation = reservations[submission.reservationId];
                   if (!guest) return null;
                   return (
                     <ArrivalCard
-                      key={arrival.id}
-                      arrival={arrival}
+                      key={submission.id}
+                      submission={submission}
                       guest={guest}
                       reservation={reservation}
-                      onClick={() => console.log('Arrival clicked:', arrival.id)}
-                      onMobileKey={() => handleMobileKey(arrival.id)}
-                      onCheckIn={() => handleArrivalCheckIn(arrival.id)}
+                      onClick={() => console.log('Card clicked:', submission.id)}
+                      onMobileKey={() => handleMobileKey(submission.id)}
+                      onCheckIn={() => handleCheckIn(submission.id)}
                     />
                   );
                 })}
@@ -198,63 +232,63 @@ export default function CheckInPage() {
             </div>
           )}
 
-          {/* Future Arrivals Section */}
+          {/* Future — collapsible */}
           <div className="mb-8">
-            <p
-              className="text-[14px] font-medium mb-4"
-              style={{ color: colors.colorBlack3 }}
+            <CollapsibleSection
+              title="Future"
+              count={future.length}
+              defaultCollapsed={true}
             >
-              Future ({futureArrivals.length})
-            </p>
-            {futureArrivals.length > 0 ? (
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
-                {futureArrivals.map((arrival) => {
-                  const guest = guests[arrival.guestId];
-                  const reservation = reservations[arrival.reservationId];
-                  if (!guest) return null;
-                  return (
-                    <ArrivalCard
-                      key={arrival.id}
-                      arrival={arrival}
-                      guest={guest}
-                      reservation={reservation}
-                      onClick={() => console.log('Arrival clicked:', arrival.id)}
-                      onMobileKey={() => handleMobileKey(arrival.id)}
-                      onCheckIn={() => handleArrivalCheckIn(arrival.id)}
-                    />
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-[13px]" style={{ color: colors.colorBlack4 }}>
-                No future verified guests
-              </p>
-            )}
+              {future.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {future.map((submission) => {
+                    const guest = guests[submission.guestId];
+                    const reservation = reservations[submission.reservationId];
+                    if (!guest) return null;
+                    return (
+                      <ArrivalCard
+                        key={submission.id}
+                        submission={submission}
+                        guest={guest}
+                        reservation={reservation}
+                        onClick={() => console.log('Card clicked:', submission.id)}
+                        onMobileKey={() => handleMobileKey(submission.id)}
+                        onCheckIn={() => handleCheckIn(submission.id)}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-[13px]" style={{ color: colors.colorBlack4 }}>
+                  No future verified guests
+                </p>
+              )}
+            </CollapsibleSection>
           </div>
 
-          {/* Checked-in Today Section */}
+          {/* Checked-in today */}
           <div className="mb-8">
             <p
               className="text-[14px] font-medium mb-4"
               style={{ color: colors.colorBlack3 }}
             >
-              Checked-in today ({checkedInArrivals.length})
+              Checked-in today ({checkedInToday.length})
             </p>
-            {checkedInArrivals.length > 0 ? (
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2">
-                {checkedInArrivals.map((arrival) => {
-                  const guest = guests[arrival.guestId];
-                  const reservation = reservations[arrival.reservationId];
+            {checkedInToday.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {checkedInToday.map((submission) => {
+                  const guest = guests[submission.guestId];
+                  const reservation = reservations[submission.reservationId];
                   if (!guest) return null;
                   return (
                     <ArrivalCard
-                      key={arrival.id}
-                      arrival={arrival}
+                      key={submission.id}
+                      submission={submission}
                       guest={guest}
                       reservation={reservation}
-                      onClick={() => console.log('Arrival clicked:', arrival.id)}
-                      onMobileKey={() => handleMobileKey(arrival.id)}
-                      onCheckIn={() => handleArrivalCheckIn(arrival.id)}
+                      onClick={() => console.log('Card clicked:', submission.id)}
+                      onMobileKey={() => handleMobileKey(submission.id)}
+                      onCheckIn={() => handleCheckIn(submission.id)}
                     />
                   );
                 })}

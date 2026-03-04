@@ -3,6 +3,7 @@
  *
  * Displays a single check-in submission in the left pane list.
  * 3-column layout: Avatar | Name+Tags | Action Button
+ * CTA varies by submission status.
  */
 
 'use client';
@@ -10,7 +11,7 @@
 import React from 'react';
 import { CanaryButton, CanaryTag, ButtonSize, ButtonType, TagSize, TagVariant, colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
-import { mdiBedOutline } from '@mdi/js';
+import { mdiBedOutline, mdiFlag } from '@mdi/js';
 import { Avatar } from '../messaging/Avatar';
 import { CheckInSubmission, loyaltyColors } from '@/lib/products/check-in/types';
 import { Guest } from '@/lib/core/types/guest';
@@ -23,6 +24,7 @@ interface CheckInListItemProps {
   onClick?: () => void;
   onVerify?: () => void;
   onSendToTablet?: () => void;
+  onMessage?: () => void;
 }
 
 export function CheckInListItem({
@@ -32,13 +34,13 @@ export function CheckInListItem({
   onClick,
   onVerify,
   onSendToTablet,
+  onMessage,
 }: CheckInListItemProps) {
-  // Get loyalty tier info
   const loyaltyLabel = guest.statusTag?.label;
   const shortLoyaltyLabel = loyaltyLabel?.replace(' ELITE', '');
   const loyaltyStyle = loyaltyLabel ? loyaltyColors[loyaltyLabel] || loyaltyColors[shortLoyaltyLabel || ''] : null;
 
-  const isCompleted = submission.status === 'completed';
+  const showTimeTag = submission.status === 'submitted' || submission.status === 'partially_submitted';
 
   return (
     <li
@@ -67,7 +69,6 @@ export function CheckInListItem({
             >
               {guest.name}
             </span>
-            {/* Loyalty Badge - inline */}
             {loyaltyStyle && shortLoyaltyLabel && (
               <CanaryTag
                 label={shortLoyaltyLabel}
@@ -83,10 +84,9 @@ export function CheckInListItem({
             )}
           </div>
 
-          {/* Row 2: Arrival Time + Room */}
+          {/* Row 2: Arrival Time + Room + Flag */}
           <div className="flex items-center gap-3 mt-0.5">
-            {/* Arrival Time - only on completed */}
-            {isCompleted && submission.arrivalTime && (
+            {showTimeTag && submission.arrivalTime && (
               <CanaryTag
                 label={submission.arrivalTime}
                 size={TagSize.COMPACT}
@@ -99,7 +99,6 @@ export function CheckInListItem({
               />
             )}
 
-            {/* Room with bed icon */}
             {reservation?.room && (
               <div className="flex items-center gap-1">
                 <Icon
@@ -113,6 +112,13 @@ export function CheckInListItem({
                 >
                   {reservation.room}
                 </span>
+                {submission.isFlagged && (
+                  <Icon
+                    path={mdiFlag}
+                    size={0.55}
+                    color={colors.error}
+                  />
+                )}
               </div>
             )}
           </div>
@@ -120,7 +126,7 @@ export function CheckInListItem({
 
         {/* Right: Action Button */}
         <div className="shrink-0">
-          {isCompleted ? (
+          {submission.status === 'submitted' && (
             <CanaryButton
               type={ButtonType.SHADED}
               size={ButtonSize.COMPACT}
@@ -131,7 +137,8 @@ export function CheckInListItem({
             >
               Verify
             </CanaryButton>
-          ) : (
+          )}
+          {submission.status === 'pending' && (
             <CanaryButton
               type={ButtonType.SHADED}
               size={ButtonSize.COMPACT}
@@ -143,6 +150,19 @@ export function CheckInListItem({
               Send to Tablet
             </CanaryButton>
           )}
+          {(submission.status === 'checked_in' || submission.isArchived) && (
+            <CanaryButton
+              type={ButtonType.SHADED}
+              size={ButtonSize.COMPACT}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMessage?.();
+              }}
+            >
+              Message
+            </CanaryButton>
+          )}
+          {/* partially_submitted: no button */}
         </div>
       </div>
     </li>
