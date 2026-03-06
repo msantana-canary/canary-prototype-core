@@ -8,28 +8,36 @@
  * All data derives from a single checkInSubmissions array.
  */
 
-import React, { useState, useMemo } from 'react';
-import { parseISO } from 'date-fns';
+import React, { useState, useMemo, useCallback } from 'react';
+import { parseISO, format } from 'date-fns';
 import { SubNav } from '@/components/products/check-in/SubNav';
 import { DateSelector } from '@/components/products/check-in/DateSelector';
 import { CheckInListItem } from '@/components/products/check-in/CheckInListItem';
 import { ArrivalCard } from '@/components/products/check-in/ArrivalCard';
 import { CollapsibleSection } from '@/components/products/check-in/CollapsibleSection';
-import { checkInSubmissions } from '@/lib/products/check-in/mock-data';
-import { DEMO_TODAY } from '@/lib/products/check-in/types';
+import { CheckInDetailPanel } from '@/components/products/check-in/CheckInDetailPanel';
+import { checkInSubmissions as initialSubmissions } from '@/lib/products/check-in/mock-data';
+import { CheckInSubmission, DEMO_TODAY } from '@/lib/products/check-in/types';
 import { guests } from '@/lib/core/data/guests';
 import { reservations } from '@/lib/core/data/reservations';
 import { colors } from '@canary-ui/components';
 
 export default function CheckInPage() {
+  const [submissions, setSubmissions] = useState<CheckInSubmission[]>(initialSubmissions);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(parseISO(DEMO_TODAY));
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
+
+  const selectedSubmission = useMemo(
+    () => selectedSubmissionId ? submissions.find(s => s.id === selectedSubmissionId) ?? null : null,
+    [selectedSubmissionId, submissions]
+  );
 
   // Filter all submissions by search query
   const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return checkInSubmissions;
+    if (!searchQuery.trim()) return submissions;
     const query = searchQuery.toLowerCase();
-    return checkInSubmissions.filter((submission) => {
+    return submissions.filter((submission) => {
       const guest = guests[submission.guestId];
       if (!guest) return false;
       return (
@@ -38,7 +46,7 @@ export default function CheckInPage() {
         guest.email?.toLowerCase().includes(query)
       );
     });
-  }, [searchQuery]);
+  }, [searchQuery, submissions]);
 
   // ── Left pane sections ───────────────────────────────────────────
   const submitted = useMemo(
@@ -73,12 +81,19 @@ export default function CheckInPage() {
   const handleSendToTablet = (id: string) => console.log('Send to tablet:', id);
   const handleMessage = (id: string) => console.log('Message:', id);
   const handleMobileKey = (id: string) => console.log('Send mobile key:', id);
-  const handleCheckIn = (id: string) => console.log('Check in:', id);
+
+  const handleCheckIn = useCallback((id: string) => {
+    setSubmissions(prev => prev.map(s =>
+      s.id === id
+        ? { ...s, status: 'checked_in' as const, checkInTime: format(new Date(), 'h:mm a') }
+        : s
+    ));
+  }, []);
 
   const hasLeftContent = submitted.length > 0 || partial.length > 0 || pending.length > 0;
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden relative">
       <SubNav
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -115,7 +130,7 @@ export default function CheckInPage() {
                       submission={submission}
                       guest={guest}
                       reservation={reservation}
-                      onClick={() => console.log('Selected:', submission.id)}
+                      onClick={() => setSelectedSubmissionId(submission.id)}
                       onVerify={() => handleVerify(submission.id)}
                     />
                   );
@@ -144,7 +159,7 @@ export default function CheckInPage() {
                       submission={submission}
                       guest={guest}
                       reservation={reservation}
-                      onClick={() => console.log('Selected:', submission.id)}
+                      onClick={() => setSelectedSubmissionId(submission.id)}
                     />
                   );
                 })}
@@ -172,7 +187,7 @@ export default function CheckInPage() {
                       submission={submission}
                       guest={guest}
                       reservation={reservation}
-                      onClick={() => console.log('Selected:', submission.id)}
+                      onClick={() => setSelectedSubmissionId(submission.id)}
                       onSendToTablet={() => handleSendToTablet(submission.id)}
                     />
                   );
@@ -222,7 +237,7 @@ export default function CheckInPage() {
                       submission={submission}
                       guest={guest}
                       reservation={reservation}
-                      onClick={() => console.log('Card clicked:', submission.id)}
+                      onClick={() => setSelectedSubmissionId(submission.id)}
                       onMobileKey={() => handleMobileKey(submission.id)}
                       onCheckIn={() => handleCheckIn(submission.id)}
                     />
@@ -251,7 +266,7 @@ export default function CheckInPage() {
                         submission={submission}
                         guest={guest}
                         reservation={reservation}
-                        onClick={() => console.log('Card clicked:', submission.id)}
+                        onClick={() => setSelectedSubmissionId(submission.id)}
                         onMobileKey={() => handleMobileKey(submission.id)}
                         onCheckIn={() => handleCheckIn(submission.id)}
                       />
@@ -286,7 +301,7 @@ export default function CheckInPage() {
                       submission={submission}
                       guest={guest}
                       reservation={reservation}
-                      onClick={() => console.log('Card clicked:', submission.id)}
+                      onClick={() => setSelectedSubmissionId(submission.id)}
                       onMobileKey={() => handleMobileKey(submission.id)}
                       onCheckIn={() => handleCheckIn(submission.id)}
                     />
@@ -301,6 +316,16 @@ export default function CheckInPage() {
           </div>
         </div>
       </div>
+
+      {/* Detail Panel — full-page overlay within this container */}
+      <CheckInDetailPanel
+        submission={selectedSubmission}
+        guest={selectedSubmission ? guests[selectedSubmission.guestId] ?? null : null}
+        reservation={selectedSubmission ? reservations[selectedSubmission.reservationId] : undefined}
+        isOpen={!!selectedSubmission}
+        onClose={() => setSelectedSubmissionId(null)}
+        onCheckIn={handleCheckIn}
+      />
     </div>
   );
 }

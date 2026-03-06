@@ -20,4 +20,5 @@ export interface Guest {
   email?: string;                // e.g., "emily.smith@gmail.com"
   preferredLanguage?: string;    // e.g., "English"
   statusTag?: StatusTag;         // Loyalty tier
+  idImage?: string;              // Path to full ID scan, e.g., "/id-scans/emily-id.png"
 }

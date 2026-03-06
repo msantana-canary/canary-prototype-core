@@ -5,7 +5,7 @@
  * Right pane derives from verified/checked_in submissions.
  */
 
-import { CheckInSubmission, DEMO_TODAY } from './types';
+import { CheckInSubmission, UpsellItem, DEMO_TODAY } from './types';
 
 /**
  * All check-in submissions — single source of truth for both panes.
@@ -223,3 +223,24 @@ export const checkInSubmissions: CheckInSubmission[] = [
     hasMobileKey: false,
   },
 ];
+
+/**
+ * Upsell requests per submission.
+ * Most submissions have no upsells — only a few do.
+ */
+export const submissionUpsells: Record<string, UpsellItem[]> = {
+  'sub-emily': [
+    { id: 'up-1', name: 'Early check-in (1PM)', quantity: 1, unitPrice: 30, status: 'pending' },
+    { id: 'up-2', name: 'Jacuzzi Pinot Noir 2015', quantity: 1, unitPrice: 40, status: 'pending' },
+  ],
+  'sub-brooklyn': [
+    { id: 'up-3', name: 'Late checkout (2PM)', quantity: 1, unitPrice: 50, status: 'pending' },
+    { id: 'up-4', name: 'Champagne & Strawberries', quantity: 1, unitPrice: 65, status: 'pending' },
+  ],
+  'sub-olivia-verified': [
+    { id: 'up-5', name: 'Late checkout (2PM)', quantity: 1, unitPrice: 50, status: 'approved' },
+  ],
+  'sub-james': [
+    { id: 'up-6', name: 'Airport shuttle', quantity: 1, unitPrice: 45, status: 'pending' },
+  ],
+};

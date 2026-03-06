@@ -36,6 +36,14 @@ export interface CheckInSubmission {
  */
 export const DEMO_TODAY = '2024-11-18';
 
+export interface UpsellItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  status: 'pending' | 'approved' | 'denied';
+}
+
 /**
  * Loyalty tier colors
  */

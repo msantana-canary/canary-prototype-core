@@ -125,11 +125,11 @@ export function ArrivalCard({
 
       {/* Separator — for text-only action states (not buttons which self-separate) */}
       {(isCheckedIn || !hasRoom) && (
-        <div className="border-t border-gray-200 mx-1" />
+        <div className="border-t border-gray-200" />
       )}
 
       {/* Action area */}
-      <div className="flex items-center justify-center">
+      <div className="flex items-center justify-center h-8">
         {isCheckedIn ? (
           <div
             className="flex items-center gap-1.5 text-[12px] font-medium"
