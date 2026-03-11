@@ -239,8 +239,10 @@ export const submissionUpsells: Record<string, UpsellItem[]> = {
   ],
   'sub-olivia-verified': [
     { id: 'up-5', name: 'Late checkout (2PM)', quantity: 1, unitPrice: 50, status: 'approved' },
+    { id: 'up-7', name: 'Champagne & Strawberries', quantity: 1, unitPrice: 65, status: 'approved' },
   ],
   'sub-james': [
     { id: 'up-6', name: 'Airport shuttle', quantity: 1, unitPrice: 45, status: 'pending' },
+    { id: 'up-8', name: 'Early check-in (1PM)', quantity: 1, unitPrice: 30, status: 'pending' },
   ],
 };

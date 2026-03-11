@@ -39,7 +39,6 @@ import {
   mdiPhoneOutline,
   mdiEmailOutline,
   mdiWeb,
-  mdiCheck,
   mdiKeyOutline,
   mdiPlusCircleOutline,
   mdiNoteTextOutline,
@@ -174,14 +173,25 @@ export function CheckInDetailPanel({
   const pendingCCChecks = !isVerified && !isPending && !isPartial && reservation?.paymentCard ? 1 : 0;
   const totalPendingChecks = pendingIdChecks + pendingCCChecks;
 
+  // Production: getTitle() returns dynamic title based on active verification steps
+  const hasId = !isPending;
+  const hasPayment = !isPending && !!reservation?.paymentCard;
+  // Production i18n: checkInDetails.cardTitles.paymentAndId = "Confirm ID and payment"
+  const sectionTitle = hasId && hasPayment
+    ? 'Confirm ID and payment'
+    : hasId
+      ? 'ID Verification'
+      : 'Payment Verification';
+
   return (
     <div
-      className={`absolute inset-0 z-50 flex flex-col overflow-hidden shadow-2xl bg-white
+      className={`absolute inset-0 z-50 flex flex-col overflow-hidden shadow-2xl
         transition-transform duration-500 ease-out
         ${animateIn ? 'translate-x-0' : 'translate-x-full'}`}
+      style={{ backgroundColor: colors.colorBlack8 }}
     >
       {/* ── Header ───────────────────────────────────────────────── */}
-      <div className="border-b border-gray-200 px-6 py-4">
+      <div className="border-b border-gray-200 px-6 py-4 bg-white">
         {/* 3-column: Avatar | Content Stack | Action Buttons */}
         <div className="flex items-center gap-3">
           {/* Column 1: Avatar */}
@@ -278,7 +288,7 @@ export function CheckInDetailPanel({
       </div>
 
       {/* ── Verification Bar ──────────────────────────────────────── */}
-      <section className="border-b border-gray-200">
+      <section className="border-b border-gray-200 bg-white">
         <div className="px-6 py-3 grid" style={{ gridTemplateColumns: '4fr 1fr', columnGap: 8, rowGap: 12 }}>
           {/* Row 1, Col 1: Steps progress bar — fill aligns to completed checkbox cells */}
           <div className="relative h-[3px]" style={{ backgroundColor: '#EAEAEA' }}>
@@ -370,9 +380,11 @@ export function CheckInDetailPanel({
       </section>
 
       {/* ── Main Content + Sidebar ───────────────────────────────── */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Main scrollable content */}
-        <div ref={scrollContainerRef} className="flex-1 overflow-auto p-6">
+      {/* Production: .checkInDetailsContent { display: flex; flex: 1; overflow-y: auto } */}
+      <div className="flex-1 flex overflow-y-auto">
+        {/* Main scrollable content — production: .detailsBody { margin: 24px; margin-right: 8px; gap: 8px } */}
+        {/* Production: .checkInDetailsBody { flex: 2 } */}
+        <div ref={scrollContainerRef} className="flex flex-col gap-2" style={{ flex: 2, margin: '24px 8px 24px 24px', minWidth: 600 }}>
           {isPending ? (
             /* Pending empty state */
             <CanaryCard hasBorder>
@@ -380,10 +392,10 @@ export function CheckInDetailPanel({
                 className="text-[15px] font-semibold mb-6"
                 style={{ color: colors.colorBlack1 }}
               >
-                Confirm ID and payment
+                Payment &amp; ID Verification
               </h3>
               <div
-                className="flex items-center justify-center h-[200px] rounded-lg bg-gray-50"
+                className="flex items-center justify-center h-[250px] rounded-lg bg-gray-50"
               >
                 <span className="text-[13px]" style={{ color: colors.colorBlack4 }}>
                   Waiting for guest to submit check-in form
@@ -392,57 +404,92 @@ export function CheckInDetailPanel({
             </CanaryCard>
           ) : (
             <>
-              {/* ── Confirm ID and Payment ── */}
+              {/* ── Payment & ID Verification ── */}
+              {/* Production: CheckInDetailsDocumentVerificationCard → CanaryContainer hasBorder */}
               <div ref={(el) => { sectionRefs.current['id'] = el; sectionRefs.current['cc'] = el; }} />
-              <CanaryCard hasBorder className="mb-6">
-                <div className="flex items-center gap-2 mb-5">
+              <CanaryCard hasBorder>
+                <div className="flex items-center gap-2 mb-4">
                   <h3
                     className="text-[15px] font-semibold"
                     style={{ color: colors.colorBlack1 }}
                   >
-                    Confirm ID and payment
+                    {sectionTitle}
                   </h3>
                   {isPartial && (
                     <CanaryTag
                       label="PENDING"
-                      color={TagColor.WARNING}
+                      color={TagColor.DEFAULT}
                       size={TagSize.COMPACT}
                     />
                   )}
                   {!isPartial && !isVerified && totalPendingChecks > 0 && (
                     <CanaryTag
-                      label={`${totalPendingChecks} PENDING`}
-                      color={TagColor.WARNING}
+                      label={`${totalPendingChecks} Pending`}
+                      color={TagColor.DEFAULT}
                       size={TagSize.COMPACT}
                     />
                   )}
                   {isVerified && (
                     <CanaryTag
-                      label="VERIFIED"
-                      color={TagColor.SUCCESS}
+                      label="Completed"
                       size={TagSize.COMPACT}
                     />
                   )}
                 </div>
 
-                {/* Side-by-side ID + Payment */}
-                <div className="flex gap-8 flex-wrap">
-                  <IDVerificationSection
-                    guest={guest}
-                    isVerified={isVerified}
-                    isReadOnly={isReadOnly}
-                  />
-                  <PaymentCardSection
-                    reservation={reservation}
-                    isVerified={isVerified}
-                    isReadOnly={isReadOnly}
-                  />
+                {/* Production: .overallContentContainer — CSS Grid, no gap.
+                    Each sub-section has own border; border-radius adjusted at breakpoints
+                    so the two merge into one visual rounded rectangle.
+                    Wide (default): ID rounds left; Payment rounds right. Adjacent borders = divider.
+                    Stacked (<1680px): ID rounds top, no bottom border; Payment rounds bottom.
+                    Matches production breakpoint exactly. */}
+                <style>{`
+                  .id-payment-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                  }
+                  .id-section-border {
+                    border: 1px solid ${colors.colorBlack6};
+                    border-radius: 8px 0 0 8px;
+                  }
+                  .payment-section-border {
+                    border: 1px solid ${colors.colorBlack6};
+                    border-radius: 0 8px 8px 0;
+                  }
+                  @media (max-width: 1680px) {
+                    .id-payment-grid {
+                      grid-template-columns: 1fr;
+                    }
+                    .id-section-border {
+                      border-radius: 8px 8px 0 0;
+                      border-bottom: none;
+                    }
+                    .payment-section-border {
+                      border-radius: 0 0 8px 8px;
+                    }
+                  }
+                `}</style>
+                <div className="id-payment-grid">
+                  <div className="id-section-border">
+                    <IDVerificationSection
+                      guest={guest}
+                      isVerified={isVerified}
+                      isReadOnly={isReadOnly}
+                    />
+                  </div>
+                  <div className="payment-section-border">
+                    <PaymentCardSection
+                      reservation={reservation}
+                      isVerified={isVerified}
+                      isReadOnly={isReadOnly}
+                    />
+                  </div>
                 </div>
               </CanaryCard>
 
               {/* ── Upsells ── */}
               <div ref={(el) => { sectionRefs.current['upsells'] = el; }} />
-              <CanaryCard hasBorder className="mb-6">
+              <CanaryCard hasBorder>
                 <UpsellsSection
                   upsells={localUpsells}
                   onApprove={handleApproveUpsell}
@@ -465,13 +512,14 @@ export function CheckInDetailPanel({
           )}
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar — production: .checkInDetailsSidebar { flex: 1; min-width: 332px; max-width: 600px }
+            Sidebar.vue: { gap: 16px; padding: 24px; padding-left: 16px } */}
         <div
-          className="w-[280px] shrink-0 border-l border-gray-200 overflow-auto p-5"
-          style={{ backgroundColor: colors.colorBlack8 }}
+          className="flex flex-col gap-4 shrink-0"
+          style={{ flex: 1, minWidth: 332, maxWidth: 600, padding: '24px 24px 24px 16px' }}
         >
           {/* Room key */}
-          <div className="mb-6">
+          <div>
             <div className="flex items-center justify-between mb-2">
               <h4
                 className="text-[13px] font-semibold"
@@ -499,8 +547,11 @@ export function CheckInDetailPanel({
             )}
           </div>
 
-          {/* Contact info */}
-          <div className="mb-6">
+          {/* Divider — production uses CanaryDivider */}
+          <div className="h-px w-full" style={{ backgroundColor: colors.colorBlack6 }} />
+
+          {/* Contact info — production: ReservationContactDetails */}
+          <div>
             {guest.phone && (
               <div className="flex items-center gap-2 mb-2">
                 <Icon path={mdiPhoneOutline} size={0.65} color={colors.colorBlack4} />
@@ -518,7 +569,7 @@ export function CheckInDetailPanel({
               </div>
             )}
             {guest.preferredLanguage && (
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2">
                 <Icon path={mdiWeb} size={0.65} color={colors.colorBlack4} />
                 <span className="text-[12px]" style={{ color: colors.colorBlack2 }}>
                   {guest.preferredLanguage}
@@ -527,19 +578,11 @@ export function CheckInDetailPanel({
             )}
           </div>
 
-          {/* Staff assignment */}
-          <div className="mb-6">
-            <button
-              type="button"
-              className="text-[12px] font-medium cursor-pointer hover:underline"
-              style={{ color: colors.colorBlueDark1 }}
-            >
-              Assign Staff or Department
-            </button>
-          </div>
+          {/* Divider */}
+          <div className="h-px w-full" style={{ backgroundColor: colors.colorBlack6 }} />
 
-          {/* Notes */}
-          <div>
+          {/* Notes — production: ReservationGuestNotes */}
+          <div className="flex-1 overflow-y-hidden">
             <div className="flex items-center justify-between mb-2">
               <h4
                 className="text-[13px] font-semibold"
