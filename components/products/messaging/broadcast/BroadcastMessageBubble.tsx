@@ -3,13 +3,91 @@
  *
  * Displays a broadcast message in the thread.
  * Right-aligned with antenna icon, sender name, and recipient count.
+ * Shows filter annotation when message was sent with filters.
  */
 
-import React from 'react';
-import { BroadcastMessage } from '@/lib/products/messaging/broadcast-types';
+'use client';
+
+import React, { useState } from 'react';
+import { BroadcastMessage, BroadcastMessageFilterSnapshot, LoyaltyTier } from '@/lib/products/messaging/broadcast-types';
 import { format } from 'date-fns';
 import Icon from '@mdi/react';
-import { mdiVideoInputAntenna, mdiAccountMultipleOutline } from '@mdi/js';
+import { mdiVideoInputAntenna, mdiAccountMultipleOutline, mdiFilterOutline } from '@mdi/js';
+import { CanaryModal } from '@canary-ui/components';
+
+const LOYALTY_LABELS: Record<LoyaltyTier, string> = {
+  'non-member': 'Non-member',
+  'club-member': 'Club Member',
+  'silver-elite': 'Silver Elite',
+  'gold-elite': 'Gold Elite',
+  'platinum-elite': 'Platinum Elite',
+  'diamond-elite': 'Diamond Elite',
+};
+
+function FiltersAppliedModal({
+  snapshot,
+  isOpen,
+  onClose,
+}: {
+  snapshot: BroadcastMessageFilterSnapshot;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const rows: { label: string; value: string }[] = [];
+
+  if (snapshot.criteria.loyaltyTiers.length > 0) {
+    rows.push({
+      label: 'Loyalty status',
+      value: snapshot.criteria.loyaltyTiers.map(t => LOYALTY_LABELS[t]).join(', '),
+    });
+  }
+  if (snapshot.criteria.rateCodes.length > 0) {
+    rows.push({ label: 'Rate Code', value: snapshot.criteria.rateCodes.join(', ') });
+  }
+  if (snapshot.criteria.groupCodes.length > 0) {
+    rows.push({ label: 'Group Code', value: snapshot.criteria.groupCodes.join(', ') });
+  }
+  if (snapshot.criteria.roomNumbers.length > 0) {
+    rows.push({ label: 'Room Number', value: snapshot.criteria.roomNumbers.join(', ') });
+  }
+
+  return (
+    <CanaryModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        snapshot.type === 'saved' && snapshot.savedFilterName
+          ? `Filters applied — ${snapshot.savedFilterName}`
+          : 'Filters applied'
+      }
+      size="small"
+    >
+      <div className="-my-4 py-6 -mx-6 px-6">
+      <div className="border border-[#e5e5e5] rounded-[8px] overflow-hidden">
+        {rows.map((row, i) => (
+          <div
+            key={i}
+            className={`bg-white px-6 py-3${i < rows.length - 1 ? ' border-b border-[#e5e5e5]' : ''}`}
+          >
+            <p
+              className="font-['Roboto',sans-serif] text-[14px] font-medium leading-[22px]"
+              style={{ color: '#000000' }}
+            >
+              {row.label}
+            </p>
+            <p
+              className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
+              style={{ color: '#666666' }}
+            >
+              {row.value}
+            </p>
+          </div>
+        ))}
+      </div>
+      </div>
+    </CanaryModal>
+  );
+}
 
 interface BroadcastMessageBubbleProps {
   message: BroadcastMessage;
@@ -17,6 +95,13 @@ interface BroadcastMessageBubbleProps {
 
 export function BroadcastMessageBubble({ message }: BroadcastMessageBubbleProps) {
   const formattedTime = format(message.sentAt, 'h:mm a').toUpperCase();
+  const [showFilterModal, setShowFilterModal] = useState(false);
+
+  const filterLabel = message.filterSnapshot
+    ? message.filterSnapshot.type === 'saved' && message.filterSnapshot.savedFilterName
+      ? message.filterSnapshot.savedFilterName.toUpperCase()
+      : `${message.filterSnapshot.attributeCount} FILTER${message.filterSnapshot.attributeCount !== 1 ? 'S' : ''} APPLIED`
+    : null;
 
   return (
     <div className="flex gap-2 items-start mb-4">
@@ -53,21 +138,33 @@ export function BroadcastMessageBubble({ message }: BroadcastMessageBubbleProps)
             {message.content}
           </p>
 
-          {/* Recipient count */}
-          <div className="flex items-center justify-end gap-1 mt-1">
-            <Icon path={mdiAccountMultipleOutline} size={0.5} color="#666666" />
-            <span
-              className="font-['Roboto',sans-serif] text-[11px] leading-[16px]"
-              style={{ color: '#666666' }}
-            >
-              {message.recipientCount}
-            </span>
-            <span
-              className="font-['Roboto',sans-serif] text-[11px] leading-[16px] ml-0.5"
-              style={{ color: '#999999' }}
-            >
-              &middot;
-            </span>
+          {/* Filter annotation + Recipient count */}
+          <div className="flex items-center justify-end gap-2 mt-1">
+            {/* Filter link */}
+            {message.filterSnapshot && (
+              <div className="flex items-center gap-1">
+                <Icon path={mdiFilterOutline} size={0.5} color="#2858c4" />
+                <button
+                  type="button"
+                  className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase underline cursor-pointer"
+                  style={{ color: '#2858c4', background: 'none', border: 'none', padding: 0 }}
+                  onClick={() => setShowFilterModal(true)}
+                >
+                  {filterLabel}
+                </button>
+              </div>
+            )}
+
+            {/* Recipient count */}
+            <div className="flex items-center gap-1">
+              <Icon path={mdiAccountMultipleOutline} size={0.5} color="#666666" />
+              <span
+                className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase"
+                style={{ color: '#666666' }}
+              >
+                {message.recipientCount}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -79,6 +176,15 @@ export function BroadcastMessageBubble({ message }: BroadcastMessageBubbleProps)
       >
         <Icon path={mdiVideoInputAntenna} size={0.67} color="#2858c4" />
       </div>
+
+      {/* Filters applied modal */}
+      {message.filterSnapshot && (
+        <FiltersAppliedModal
+          snapshot={message.filterSnapshot}
+          isOpen={showFilterModal}
+          onClose={() => setShowFilterModal(false)}
+        />
+      )}
     </div>
   );
 }

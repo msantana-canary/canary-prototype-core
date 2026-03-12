@@ -9,6 +9,7 @@ import {
   BroadcastGroup,
   BroadcastGuestEntry,
   BroadcastMessage,
+  SavedFilter,
 } from './broadcast-types';
 
 // ===== Built-in Groups =====
@@ -91,27 +92,27 @@ export const customGroups: BroadcastGroup[] = [
 
 export const builtInGroupGuests: Record<string, BroadcastGuestEntry[]> = {
   'group-arrivals': [
-    { guestId: 'guest-gel', reservationId: 'res-gel-mar', segment: 'expecting' },
-    { guestId: 'guest-jack', reservationId: 'res-jack-mar', segment: 'expecting' },
-    { guestId: 'guest-angela', reservationId: 'res-angela-mar', segment: 'expecting' },
-    { guestId: 'guest-nook', reservationId: 'res-nook-mar', segment: 'checked-in' },
-    { guestId: 'guest-sofia', reservationId: 'res-sofia-mar', segment: 'expecting' },
+    { guestId: 'guest-gel', reservationId: 'res-gel-mar', segment: 'expecting', loyaltyTier: 'non-member', rateCode: 'BAR', room: '401' },
+    { guestId: 'guest-jack', reservationId: 'res-jack-mar', segment: 'expecting', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'GROUP2026', room: '402' },
+    { guestId: 'guest-angela', reservationId: 'res-angela-mar', segment: 'expecting', loyaltyTier: 'non-member', rateCode: 'AAA', room: '215' },
+    { guestId: 'guest-nook', reservationId: 'res-nook-mar', segment: 'checked-in', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'GROUP2026', room: '318' },
+    { guestId: 'guest-sofia', reservationId: 'res-sofia-mar', segment: 'expecting', loyaltyTier: 'gold-elite', rateCode: 'RACK', room: '502' },
   ],
   'group-in-house': [
-    { guestId: 'guest-emily', reservationId: 'res-emily-mar' },
-    { guestId: 'guest-brooklyn', reservationId: 'res-brooklyn-mar' },
-    { guestId: 'guest-kristin', reservationId: 'res-kristin-mar' },
-    { guestId: 'guest-olivia', reservationId: 'res-olivia-mar' },
-    { guestId: 'guest-liam', reservationId: 'res-liam-mar' },
-    { guestId: 'guest-raj', reservationId: 'res-raj-mar' },
-    { guestId: 'guest-noah', reservationId: 'res-noah-mar' },
-    { guestId: 'guest-emma', reservationId: 'res-emma-mar' },
-    { guestId: 'guest-nook', reservationId: 'res-nook-mar' },
+    { guestId: 'guest-emily', reservationId: 'res-emily-mar', loyaltyTier: 'diamond-elite', rateCode: 'CORP', groupCode: 'CONF2026', room: '153' },
+    { guestId: 'guest-brooklyn', reservationId: 'res-brooklyn-mar', loyaltyTier: 'gold-elite', rateCode: 'BAR', room: '130' },
+    { guestId: 'guest-kristin', reservationId: 'res-kristin-mar', loyaltyTier: 'non-member', rateCode: 'GOV', groupCode: 'GRP1027', room: '130' },
+    { guestId: 'guest-olivia', reservationId: 'res-olivia-mar', loyaltyTier: 'platinum-elite', rateCode: 'CORP', groupCode: 'CONF2026', room: '204' },
+    { guestId: 'guest-liam', reservationId: 'res-liam-mar', loyaltyTier: 'silver-elite', rateCode: 'BAR', room: '312' },
+    { guestId: 'guest-raj', reservationId: 'res-raj-mar', loyaltyTier: 'non-member', rateCode: 'RACK', groupCode: 'GROUP2026', room: '415' },
+    { guestId: 'guest-noah', reservationId: 'res-noah-mar', loyaltyTier: 'non-member', rateCode: 'AAA', room: '415' },
+    { guestId: 'guest-emma', reservationId: 'res-emma-mar', loyaltyTier: 'non-member', rateCode: 'GOV', groupCode: 'GRP1027', room: '228' },
+    { guestId: 'guest-nook', reservationId: 'res-nook-mar', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'GROUP2026', room: '318' },
   ],
   'group-departures': [
-    { guestId: 'guest-diana', reservationId: 'res-diana-mar', segment: 'departing' },
-    { guestId: 'guest-chen', reservationId: 'res-chen-mar', segment: 'checked-out' },
-    { guestId: 'guest-marco', reservationId: 'res-marco-mar', segment: 'departing' },
+    { guestId: 'guest-diana', reservationId: 'res-diana-mar', segment: 'departing', loyaltyTier: 'non-member', rateCode: 'BAR', room: '109' },
+    { guestId: 'guest-chen', reservationId: 'res-chen-mar', segment: 'checked-out', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'CONF2026', room: '502' },
+    { guestId: 'guest-marco', reservationId: 'res-marco-mar', segment: 'departing', loyaltyTier: 'club-member', rateCode: 'RACK', room: '330' },
   ],
 };
 
@@ -139,6 +140,51 @@ export const customGroupGuests: Record<string, BroadcastGuestEntry[]> = {
     { guestId: 'guest-sofia', reservationId: 'res-sofia-mar' },
   ],
 };
+
+// ===== Saved Filters =====
+
+export const mockSavedFilters: SavedFilter[] = [
+  {
+    id: 'sf-corporate',
+    name: 'Corporate Guests',
+    criteria: {
+      loyaltyTiers: [],
+      rateCodes: ['CORP'],
+      groupCodes: [],
+      roomNumbers: [],
+    },
+  },
+  {
+    id: 'sf-group-travelers',
+    name: 'Group Travelers',
+    criteria: {
+      loyaltyTiers: [],
+      rateCodes: [],
+      groupCodes: ['GROUP2026'],
+      roomNumbers: [],
+    },
+  },
+  {
+    id: 'sf-non-members',
+    name: 'Non-Members',
+    criteria: {
+      loyaltyTiers: ['non-member'],
+      rateCodes: [],
+      groupCodes: [],
+      roomNumbers: [],
+    },
+  },
+  {
+    id: 'sf-corp-group',
+    name: 'Corporate Group Travelers',
+    criteria: {
+      loyaltyTiers: [],
+      rateCodes: ['CORP'],
+      groupCodes: ['GROUP2026'],
+      roomNumbers: [],
+    },
+  },
+];
 
 // ===== Mock Broadcast Messages =====
 
@@ -176,7 +222,18 @@ export const mockBroadcastMessages: Record<string, BroadcastMessage[]> = {
       content: 'Please note that the pool area will be closed for cleaning between 2:00 PM and 4:00 PM today.',
       senderName: 'SARAH SIM',
       sentAt: new Date('2026-03-10T12:30:00'),
-      recipientCount: 8,
+      recipientCount: 3,
+      filterSnapshot: {
+        type: 'saved',
+        savedFilterName: 'Corporate Guests',
+        criteria: {
+          loyaltyTiers: [],
+          rateCodes: ['CORP'],
+          groupCodes: [],
+          roomNumbers: [],
+        },
+        attributeCount: 1,
+      },
     },
   ],
   'group-departures': [

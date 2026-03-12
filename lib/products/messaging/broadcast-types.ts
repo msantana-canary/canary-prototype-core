@@ -9,6 +9,28 @@ export type BuiltInGroupType = 'arrivals' | 'in-house' | 'departures';
 
 export type GuestSegment = 'expecting' | 'checked-in' | 'checked-out' | 'departing';
 
+export type LoyaltyTier = 'non-member' | 'club-member' | 'silver-elite' | 'gold-elite' | 'platinum-elite' | 'diamond-elite';
+
+export interface BroadcastFilterCriteria {
+  loyaltyTiers: LoyaltyTier[];
+  rateCodes: string[];
+  groupCodes: string[];
+  roomNumbers: string[];
+}
+
+export interface SavedFilter {
+  id: string;
+  name: string;
+  criteria: BroadcastFilterCriteria;
+}
+
+export interface BroadcastMessageFilterSnapshot {
+  type: 'ad-hoc' | 'saved';
+  savedFilterName?: string;
+  criteria: BroadcastFilterCriteria;
+  attributeCount: number;
+}
+
 export interface BroadcastGroup {
   id: string;
   name: string;
@@ -24,6 +46,11 @@ export interface BroadcastGuestEntry {
   guestId: string;
   reservationId: string;
   segment?: GuestSegment;
+  // Filterable attributes (denormalized for prototype)
+  loyaltyTier?: LoyaltyTier;
+  rateCode?: string;
+  groupCode?: string;
+  room?: string;
 }
 
 export interface BroadcastMessage {
@@ -33,6 +60,7 @@ export interface BroadcastMessage {
   senderName: string;
   sentAt: Date;
   recipientCount: number;
+  filterSnapshot?: BroadcastMessageFilterSnapshot;
 }
 
 export type MainNavTab = 'conversations' | 'broadcast' | 'ai-answers';

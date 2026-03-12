@@ -11,7 +11,7 @@
 
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { CanaryCheckbox, CanaryInputDate } from '@canary-ui/components';
+import { CanaryCheckbox, CanaryInputDate, CanaryListItem } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import {
   mdiAccountOutline,
@@ -24,8 +24,16 @@ import {
   mdiLogoutVariant,
   mdiOpenInNew,
   mdiDotsHorizontal,
+  mdiFilterOutline,
+  mdiClose,
 } from '@mdi/js';
-import { useBroadcastStore, getGuestEntriesForGroup } from '@/lib/products/messaging/broadcast-store';
+import {
+  useBroadcastStore,
+  getGuestEntriesForGroup,
+  getFilteredGuestEntries,
+  isFilterEmpty,
+  getActiveFilterCount,
+} from '@/lib/products/messaging/broadcast-store';
 import { guests } from '@/lib/core/data/guests';
 import { reservations } from '@/lib/core/data/reservations';
 import { BroadcastGuestEntry, GuestSegment } from '@/lib/products/messaging/broadcast-types';
@@ -218,16 +226,26 @@ export function BroadcastGuestList() {
     selectedGroupId,
     selectedDate,
     selectedGuestIds,
+    activeFilters,
     setSelectedDate,
     toggleGuestSelection,
     selectAllGuests,
     deselectAllGuests,
+    openFilterModal,
+    clearAllFilters,
   } = useBroadcastStore();
 
   const currentGroup = allGroups.find(g => g.id === selectedGroupId);
+  const isBuiltIn = currentGroup?.type === 'built-in';
+  const hasActiveFilters = isBuiltIn && !isFilterEmpty(activeFilters);
+  const filterCount = getActiveFilterCount(activeFilters);
+
   const guestEntries = useMemo(
-    () => getGuestEntriesForGroup(selectedGroupId, allGroups),
-    [selectedGroupId, allGroups]
+    () =>
+      hasActiveFilters
+        ? getFilteredGuestEntries(selectedGroupId, allGroups, activeFilters)
+        : getGuestEntriesForGroup(selectedGroupId, allGroups),
+    [selectedGroupId, allGroups, activeFilters, hasActiveFilters]
   );
 
   // Whether this group shows a date picker
@@ -267,6 +285,39 @@ export function BroadcastGuestList() {
 
   return (
     <div className="h-full flex flex-col border-r border-gray-200 broadcast-guest-list" style={{ backgroundColor: '#f0f0f0' }}>
+      {/* Filter Row (top of column, only for built-in groups) */}
+      {isBuiltIn && (
+        <CanaryListItem
+          icon={<Icon path={mdiFilterOutline} size={1} color="#2858c4" />}
+          title={
+            <span
+              className="font-['Roboto',sans-serif] text-[14px] font-medium"
+              style={{ color: '#2858c4' }}
+            >
+              {hasActiveFilters ? `${filterCount} Filter${filterCount !== 1 ? 's' : ''}` : 'Filters'}
+            </span>
+          }
+          backgroundColor="#eaeef9"
+          hoverColor="#dde4f5"
+          isClickable
+          onClick={openFilterModal}
+          rightContent={
+            hasActiveFilters ? (
+              <button
+                type="button"
+                className="flex items-center justify-center w-[24px] h-[24px] rounded cursor-pointer hover:bg-[#cdd5eb] transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clearAllFilters();
+                }}
+              >
+                <Icon path={mdiClose} size={0.75} color="#2858c4" />
+              </button>
+            ) : undefined
+          }
+        />
+      )}
+
       {/* Date Picker (for arrivals/departures) */}
       {showDatePicker && (
         <div className="px-4 pt-4 pb-2">
@@ -288,7 +339,7 @@ export function BroadcastGuestList() {
             />
           </div>
           <span
-            className="font-['Roboto',sans-serif] text-[14px] leading-[20px] font-medium"
+            className="font-['Roboto',sans-serif] text-[14px] leading-[20px] font-medium flex-1"
             style={{ color: '#333333' }}
           >
             Select all
@@ -305,9 +356,9 @@ export function BroadcastGuestList() {
             .map(seg => (
               <div key={seg}>
                 {/* Segment Header */}
-                <div className="px-4 pt-4 pb-1">
+                <div className="px-4 pt-4">
                   <span
-                    className="font-['Roboto',sans-serif] text-[12px] leading-[16px] uppercase font-medium"
+                    className="font-['Roboto',sans-serif] text-[10px] leading-[14px] uppercase font-medium"
                     style={{ color: '#999999' }}
                   >
                     {segmentLabels[seg]}
