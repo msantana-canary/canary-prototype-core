@@ -12,9 +12,14 @@ import React, { useState } from 'react';
 import Icon from '@mdi/react';
 import { mdiMessageProcessing, mdiVideoInputAntenna, mdiLayersOutline } from '@mdi/js';
 import { CanarySelect, InputSize } from '@canary-ui/components';
+import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
 
-export function MainNav() {
-  const [activeTab, setActiveTab] = useState<'conversations' | 'broadcast' | 'ai-answers'>('conversations');
+interface MainNavProps {
+  activeTab: MainNavTab;
+  onTabChange: (tab: MainNavTab) => void;
+}
+
+export function MainNav({ activeTab, onTabChange }: MainNavProps) {
   const [onlineStatus, setOnlineStatus] = useState('online');
 
   const segments = [
@@ -44,7 +49,7 @@ export function MainNav() {
           return (
             <button
               key={segment.id}
-              onClick={() => setActiveTab(segment.id)}
+              onClick={() => onTabChange(segment.id)}
               className="flex flex-col items-start overflow-clip relative shrink-0 focus:outline-none transition-all duration-200"
             >
               <div className="flex gap-2 items-center justify-center px-4 py-2 cursor-pointer transition-colors duration-200 hover:bg-black/5 focus-within:bg-black/5">
