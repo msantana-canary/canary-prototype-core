@@ -5,18 +5,23 @@
  *
  * Main entry point for the Messaging product.
  * Uses the canonical data layer and messaging-specific components.
+ * Supports tab switching between Conversations, Broadcast, and AI Answers.
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AppLayout } from '@/components/products/messaging/AppLayout';
 import { ThreadList } from '@/components/products/messaging/ThreadList';
 import { ThreadView } from '@/components/products/messaging/ThreadView';
+import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { guests } from '@/lib/core/data/guests';
 import { reservations } from '@/lib/core/data/reservations';
 import { generateGuestResponse, generateStaffResponse } from '@/lib/products/messaging/services/claude-api';
+import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
 
 export default function MessagesPage() {
+  const [activeTab, setActiveTab] = useState<MainNavTab>('conversations');
+
   const {
     threads,
     messages,
@@ -128,15 +133,17 @@ export default function MessagesPage() {
     }
   };
 
-  // Auto-select first thread on mount
+  // Auto-select first thread on mount (conversations only)
   useEffect(() => {
-    if (!selectedThreadId && filteredThreads.length > 0) {
+    if (activeTab === 'conversations' && !selectedThreadId && filteredThreads.length > 0) {
       selectThread(filteredThreads[0].id);
     }
-  }, [selectedThreadId, filteredThreads, selectThread]);
+  }, [activeTab, selectedThreadId, filteredThreads, selectThread]);
 
   return (
     <AppLayout
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
       currentView={currentView}
       onViewChange={setCurrentView}
       searchQuery={searchQuery}
@@ -144,49 +151,61 @@ export default function MessagesPage() {
       onNewMessage={startNewConversation}
       threads={threads}
     >
-      <div className="flex h-full">
-        {/* Thread List */}
-        <div className="w-[320px] border-r border-gray-200">
-          <ThreadList
-            threads={filteredThreads}
-            selectedThreadId={selectedThreadId}
-            onSelectThread={selectThread}
-            isComposingNew={isComposingNew}
-            composingPhoneNumber={composingPhoneNumber}
-            onComposingPhoneChange={updateComposingPhone}
-            onCreateThread={createThreadFromPhone}
-            onCancelComposing={cancelComposing}
-            typingThreadId={typingThreadId}
-          />
-        </div>
-
-        {/* Thread View */}
-        <div className="flex-1">
-          {selectedThread && selectedGuest ? (
-            <ThreadView
-              thread={selectedThread}
-              guest={selectedGuest}
-              reservation={selectedReservation}
-              messages={selectedMessages}
-              onSendMessage={handleSendMessage}
-              aiEnabled={aiEnabled}
-              onAiToggle={() => setAiEnabled(!aiEnabled)}
-              isGuestInfoOpen={isGuestInfoOpen}
-              onToggleGuestInfo={toggleGuestInfo}
-              onCloseGuestInfo={closeGuestInfo}
-              onArchive={() => archiveThread(selectedThread.id)}
-              onBlock={() => blockThread(selectedThread.id)}
-              onUnblock={() => unblockThread(selectedThread.id)}
-              onMarkUnread={() => markThreadAsUnread(selectedThread.id)}
+      {activeTab === 'conversations' && (
+        <div className="flex h-full">
+          {/* Thread List */}
+          <div className="w-[320px] border-r border-gray-200">
+            <ThreadList
+              threads={filteredThreads}
+              selectedThreadId={selectedThreadId}
+              onSelectThread={selectThread}
+              isComposingNew={isComposingNew}
+              composingPhoneNumber={composingPhoneNumber}
+              onComposingPhoneChange={updateComposingPhone}
+              onCreateThread={createThreadFromPhone}
+              onCancelComposing={cancelComposing}
               typingThreadId={typingThreadId}
             />
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              Select a conversation to start messaging
-            </div>
-          )}
+          </div>
+
+          {/* Thread View */}
+          <div className="flex-1">
+            {selectedThread && selectedGuest ? (
+              <ThreadView
+                thread={selectedThread}
+                guest={selectedGuest}
+                reservation={selectedReservation}
+                messages={selectedMessages}
+                onSendMessage={handleSendMessage}
+                aiEnabled={aiEnabled}
+                onAiToggle={() => setAiEnabled(!aiEnabled)}
+                isGuestInfoOpen={isGuestInfoOpen}
+                onToggleGuestInfo={toggleGuestInfo}
+                onCloseGuestInfo={closeGuestInfo}
+                onArchive={() => archiveThread(selectedThread.id)}
+                onBlock={() => blockThread(selectedThread.id)}
+                onUnblock={() => unblockThread(selectedThread.id)}
+                onMarkUnread={() => markThreadAsUnread(selectedThread.id)}
+                typingThreadId={typingThreadId}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                Select a conversation to start messaging
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === 'broadcast' && (
+        <BroadcastView />
+      )}
+
+      {activeTab === 'ai-answers' && (
+        <div className="flex items-center justify-center h-full text-gray-400">
+          AI Answers coming soon
+        </div>
+      )}
     </AppLayout>
   );
 }

@@ -147,6 +147,76 @@ export const guests: Record<string, Guest> = {
       textColor: 'white',
     },
   },
+  // Broadcast-era guests
+  'guest-gel': {
+    id: 'guest-gel',
+    name: 'Gel Asuncion',
+    initials: 'GA',
+    phone: '+15005550030',
+    email: 'gel.asuncion@example.com',
+    preferredLanguage: 'English',
+  },
+  'guest-jack': {
+    id: 'guest-jack',
+    name: 'Jack Elks',
+    initials: 'JE',
+    phone: '+15005550031',
+    email: 'jack.elks@example.com',
+    preferredLanguage: 'English',
+  },
+  'guest-angela': {
+    id: 'guest-angela',
+    name: 'Angela Wu',
+    initials: 'AW',
+    email: 'angela.wu@example.com',
+    preferredLanguage: 'English',
+    // No phone — will appear grayed out in broadcast
+  },
+  'guest-nook': {
+    id: 'guest-nook',
+    name: 'Nook Patel',
+    initials: 'NP',
+    phone: '+15005550032',
+    email: 'nook.patel@example.com',
+    preferredLanguage: 'English',
+  },
+  'guest-diana': {
+    id: 'guest-diana',
+    name: 'Diana Reyes',
+    initials: 'DR',
+    phone: '+15005550033',
+    email: 'diana.reyes@example.com',
+    preferredLanguage: 'Spanish',
+  },
+  'guest-chen': {
+    id: 'guest-chen',
+    name: 'Wei Chen',
+    initials: 'WC',
+    email: 'wei.chen@example.com',
+    preferredLanguage: 'Mandarin',
+    // No phone — will appear grayed out in broadcast
+  },
+  'guest-sofia': {
+    id: 'guest-sofia',
+    name: 'Sofia Andersson',
+    initials: 'SA',
+    phone: '+15005550034',
+    email: 'sofia.andersson@example.com',
+    preferredLanguage: 'English',
+    statusTag: {
+      label: 'GOLD ELITE',
+      color: '#C8B263',
+      textColor: 'white',
+    },
+  },
+  'guest-raj': {
+    id: 'guest-raj',
+    name: 'Raj Kapoor',
+    initials: 'RK',
+    phone: '+15005550035',
+    email: 'raj.kapoor@example.com',
+    preferredLanguage: 'English',
+  },
 };
 
 /**
