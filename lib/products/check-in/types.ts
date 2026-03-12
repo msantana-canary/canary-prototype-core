@@ -44,6 +44,14 @@ export interface UpsellItem {
   status: 'pending' | 'approved' | 'denied';
 }
 
+export interface GuestNote {
+  id: string;
+  text: string;
+  type: 'staff' | 'guest_request';
+  author: string;              // Staff name or guest name
+  createdAt: Date;
+}
+
 /**
  * Loyalty tier colors
  */

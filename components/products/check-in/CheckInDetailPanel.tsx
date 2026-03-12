@@ -15,6 +15,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { mockThreads } from '@/lib/products/messaging/mock-data';
@@ -24,6 +25,7 @@ import {
   CanaryCard,
   CanaryModal,
   CanaryInput,
+  CanaryTextArea,
   ButtonSize,
   ButtonType,
   ButtonColor,
@@ -60,10 +62,23 @@ import { IDVerificationSection } from './IDVerificationSection';
 import { PaymentCardSection } from './PaymentCardSection';
 import { UpsellsSection } from './UpsellsSection';
 import { RegistrationCardSection } from './RegistrationCardSection';
-import { CheckInSubmission, loyaltyColors, UpsellItem } from '@/lib/products/check-in/types';
-import { submissionUpsells } from '@/lib/products/check-in/mock-data';
+import { CheckInSubmission, loyaltyColors, UpsellItem, GuestNote } from '@/lib/products/check-in/types';
+import { submissionUpsells, submissionNotes } from '@/lib/products/check-in/mock-data';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
+
+function formatRelativeTime(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return 'a few seconds ago';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} minute${diffMin !== 1 ? 's' : ''} ago`;
+  const diffHrs = Math.floor(diffMin / 60);
+  if (diffHrs < 24) return `${diffHrs} hour${diffHrs !== 1 ? 's' : ''} ago`;
+  const diffDays = Math.floor(diffHrs / 24);
+  return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+}
 
 interface CheckInDetailPanelProps {
   submission: CheckInSubmission | null;
@@ -91,6 +106,8 @@ export function CheckInDetailPanel({
 
   // Local upsells state for approve/deny
   const [localUpsells, setLocalUpsells] = useState<UpsellItem[]>([]);
+  // Local notes state
+  const [localNotes, setLocalNotes] = useState<GuestNote[]>([]);
   // Mobile keys — array of keys, each with own status
   interface MobileKey {
     name: string;
@@ -115,6 +132,17 @@ export function CheckInDetailPanel({
   const [keyPhone, setKeyPhone] = useState('');
   const [keyEmail, setKeyEmail] = useState('');
 
+  // Notes
+  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editNoteText, setEditNoteText] = useState('');
+  const [openNoteMenuId, setOpenNoteMenuId] = useState<string | null>(null);
+  const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null);
+  const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null);
+  const [showCopyToast, setShowCopyToast] = useState(false);
+  const noteMenuRef = useRef<HTMLDivElement>(null);
+
   // Scroll refs for verification bar click-to-scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -135,13 +163,37 @@ export function CheckInDetailPanel({
   useEffect(() => {
     if (submission && guest) {
       setLocalUpsells(submissionUpsells[submission.id] || []);
+      setLocalNotes(submissionNotes[submission.id] || []);
       setMobileKeys(submission.hasMobileKey
         ? [{ name: `${guest.name} #1`, status: 'activated', phone: guest.phone || '', email: guest.email || '' }]
         : []
       );
       setOpenKeyMenuIdx(null);
+      setShowNoteInput(false);
+      setEditingNoteId(null);
+      setOpenNoteMenuId(null);
     }
   }, [submission, guest]);
+
+  // Auto-dismiss copy toast
+  useEffect(() => {
+    if (!showCopyToast) return;
+    const timer = setTimeout(() => setShowCopyToast(false), 3000);
+    return () => clearTimeout(timer);
+  }, [showCopyToast]);
+
+  // Close note menu on click outside
+  useEffect(() => {
+    if (openNoteMenuId === null) return;
+    const handleClick = (e: MouseEvent) => {
+      if (noteMenuRef.current && !noteMenuRef.current.contains(e.target as Node)) {
+        setOpenNoteMenuId(null);
+        setHoveredNoteId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [openNoteMenuId]);
 
   // Close key menu on click outside
   useEffect(() => {
@@ -167,18 +219,19 @@ export function CheckInDetailPanel({
     const regCardDone = status === 'submitted' || status === 'verified' || status === 'checked_in';
     const idDone = isVerified;
     const ccDone = isVerified;
-    const upsellsDone = upsellCount === 0 && localUpsells.length > 0;
+    const hasSubmitted = status === 'submitted' || status === 'verified' || status === 'checked_in';
+    const upsellsDone = hasSubmitted && (localUpsells.length === 0 || upsellCount === 0);
 
     return [
-      { key: 'regcard', label: 'Reg card signed', done: regCardDone },
-      { key: 'id', label: 'Confirm ID', done: idDone },
-      { key: 'cc', label: 'Confirm CC', done: ccDone },
+      { key: 'regcard', label: isPending ? 'Reg card pending' : 'Reg card signed', done: regCardDone },
+      { key: 'id', label: isPending ? 'Request ID on arrival' : 'Confirm ID', done: idDone },
+      { key: 'cc', label: isPending ? 'Request CC on arrival' : 'Confirm CC', done: ccDone },
       {
         key: 'upsells',
         label: localUpsells.length > 0
           ? `Approve ${upsellCount} upsell${upsellCount !== 1 ? 's' : ''}`
           : 'No upsell requests',
-        done: upsellsDone || localUpsells.length === 0,
+        done: upsellsDone,
       },
     ];
   }, [status, isVerified, localUpsells]);
@@ -407,7 +460,7 @@ export function CheckInDetailPanel({
 
           {/* Row 2, Col 2: Action button */}
           <div className="h-[40px] [&>button]:w-full [&>button]:h-full">
-            {status === 'submitted' && (
+            {(status === 'submitted' || status === 'pending' || status === 'partially_submitted') && (
               <CanaryButton
                 type={ButtonType.PRIMARY}
                 size={ButtonSize.NORMAL}
@@ -443,22 +496,106 @@ export function CheckInDetailPanel({
         {/* Production: .checkInDetailsBody { flex: 2 } */}
         <div ref={scrollContainerRef} className="flex flex-col gap-2" style={{ flex: 2, margin: '24px 8px 24px 24px', minWidth: 600 }}>
           {isPending ? (
-            /* Pending empty state */
-            <CanaryCard hasBorder>
-              <h3
-                className="text-[15px] font-semibold mb-6"
-                style={{ color: colors.colorBlack1 }}
-              >
-                Payment &amp; ID Verification
-              </h3>
-              <div
-                className="flex items-center justify-center h-[250px] rounded-lg bg-gray-50"
-              >
-                <span className="text-[13px]" style={{ color: colors.colorBlack4 }}>
-                  Waiting for guest to submit check-in form
-                </span>
-              </div>
-            </CanaryCard>
+            <>
+              {/* ── Confirm ID and payment — pending empty state ── */}
+              <div ref={(el) => { sectionRefs.current['id'] = el; sectionRefs.current['cc'] = el; }} />
+              <CanaryCard hasBorder>
+                <div className="flex items-center gap-2 mb-4">
+                  <h3
+                    className="text-[15px] font-semibold"
+                    style={{ color: colors.colorBlack1 }}
+                  >
+                    Confirm ID and payment
+                  </h3>
+                  <CanaryTag
+                    label="PENDING"
+                    color={TagColor.DEFAULT}
+                    size={TagSize.COMPACT}
+                  />
+                </div>
+
+                <style>{`
+                  .id-payment-grid-pending {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                  }
+                  .id-section-border-pending {
+                    border: 1px solid ${colors.colorBlack6};
+                    border-radius: 8px 0 0 8px;
+                  }
+                  .payment-section-border-pending {
+                    border: 1px solid ${colors.colorBlack6};
+                    border-radius: 0 8px 8px 0;
+                  }
+                  @media (max-width: 1680px) {
+                    .id-payment-grid-pending {
+                      grid-template-columns: 1fr;
+                    }
+                    .id-section-border-pending {
+                      border-radius: 8px 8px 0 0;
+                      border-bottom: none;
+                    }
+                    .payment-section-border-pending {
+                      border-radius: 0 0 8px 8px;
+                    }
+                  }
+                `}</style>
+                <div className="id-payment-grid-pending">
+                  <div className="id-section-border-pending">
+                    <div style={{ padding: 16 }}>
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="text-[14px] font-medium" style={{ color: colors.colorBlack1 }}>
+                          Primary Guest
+                        </span>
+                        <CanaryTag label="PENDING" color={TagColor.DEFAULT} size={TagSize.COMPACT} />
+                      </div>
+                      <div className="h-[250px] flex items-center justify-center">
+                        <span className="text-[13px]" style={{ color: colors.colorBlack4 }}>
+                          Guest ID was not submitted.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="payment-section-border-pending">
+                    <div style={{ padding: 16 }}>
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="text-[14px] font-medium" style={{ color: colors.colorBlack1 }}>
+                          Payment card
+                        </span>
+                        <CanaryTag label="PENDING" color={TagColor.DEFAULT} size={TagSize.COMPACT} />
+                      </div>
+                      <div className="h-[250px] flex items-center justify-center">
+                        <span className="text-[13px]" style={{ color: colors.colorBlack4 }}>
+                          Guest payment info is not submitted.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CanaryCard>
+
+              {/* ── Upsells ── */}
+              <div ref={(el) => { sectionRefs.current['upsells'] = el; }} />
+              <CanaryCard hasBorder>
+                <UpsellsSection
+                  upsells={localUpsells}
+                  onApprove={handleApproveUpsell}
+                  onDeny={handleDenyUpsell}
+                  isReadOnly={false}
+                />
+              </CanaryCard>
+
+              {/* ── Registration Card — not signed ── */}
+              <div ref={(el) => { sectionRefs.current['regcard'] = el; }} />
+              <CanaryCard hasBorder>
+                <RegistrationCardSection
+                  guest={guest}
+                  reservation={reservation}
+                  isSubmitted={false}
+                  isPending={true}
+                />
+              </CanaryCard>
+            </>
           ) : (
             <>
               {/* ── Payment & ID Verification ── */}
@@ -698,7 +835,7 @@ export function CheckInDetailPanel({
                   height: 64,
                 }}
               >
-                <span className="text-[13px]" style={{ color: colors.colorBlack4 }}>
+                <span className="text-[14px]" style={{ color: colors.colorBlack4 }}>
                   {status === 'pending' ? 'Guest not checked in yet' : 'No keys created'}
                 </span>
               </div>
@@ -713,9 +850,18 @@ export function CheckInDetailPanel({
             {/* Phone */}
             <div className="flex items-center gap-4 min-h-[32px]">
               <Icon path={mdiPhoneOutline} size={0.83} color={colors.colorBlack1} />
-              <span className="text-[14px] flex-1" style={{ color: colors.colorBlack1 }}>
-                {guest.phone || 'No number assigned'}
-              </span>
+              {guest.phone ? (
+                <span className="text-[14px] flex-1" style={{ color: colors.colorBlack1 }}>
+                  {guest.phone}
+                </span>
+              ) : (
+                <button
+                  className="text-[14px] flex-1 text-left hover:underline"
+                  style={{ color: colors.colorBlueDark1 }}
+                >
+                  Add phone number
+                </button>
+              )}
               {guest.phone && (
                 <div className="flex items-center gap-1">
                   <CanaryButton
@@ -741,9 +887,18 @@ export function CheckInDetailPanel({
             {/* Email */}
             <div className="flex items-center gap-4 min-h-[32px]">
               <Icon path={mdiEmailOutline} size={0.83} color={colors.colorBlack1} />
-              <span className="text-[14px] flex-1 truncate" style={{ color: colors.colorBlack1 }}>
-                {guest.email || 'No email assigned'}
-              </span>
+              {guest.email ? (
+                <span className="text-[14px] flex-1 truncate" style={{ color: colors.colorBlack1 }}>
+                  {guest.email}
+                </span>
+              ) : (
+                <button
+                  className="text-[14px] flex-1 text-left hover:underline"
+                  style={{ color: colors.colorBlueDark1 }}
+                >
+                  Add email address
+                </button>
+              )}
               {guest.email && (
                 <CanaryButton
                   type={ButtonType.ICON_SECONDARY}
@@ -789,27 +944,172 @@ export function CheckInDetailPanel({
                 type={ButtonType.ICON_SECONDARY}
                 size={ButtonSize.COMPACT}
                 icon={<Icon path={mdiPlus} size={0.7} color={colors.colorBlueDark1} />}
+                onClick={() => { setShowNoteInput(true); setNoteText(''); }}
               />
             </div>
-            {reservation?.notes ? (
-              <CanaryCard hasBorder padding="small">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <Icon path={mdiNoteTextOutline} size={0.5} color={colors.colorBlack4} />
-                  <span
-                    className="text-[11px] font-medium"
-                    style={{ color: colors.colorBlack4 }}
+
+            {showNoteInput && (
+              <div className="flex flex-col gap-2 mb-3">
+                <CanaryTextArea
+                  placeholder="Leave a note..."
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  rows={3}
+                  style={{ backgroundColor: 'white' }}
+                />
+                <div className="flex items-center justify-end gap-2">
+                  <CanaryButton
+                    type={ButtonType.TEXT}
+                    size={ButtonSize.COMPACT}
+                    onClick={() => setShowNoteInput(false)}
                   >
-                    Staff note
-                  </span>
+                    Cancel
+                  </CanaryButton>
+                  <CanaryButton
+                    type={ButtonType.SHADED}
+                    size={ButtonSize.COMPACT}
+                    isDisabled={!noteText.trim()}
+                    onClick={() => {
+                      setLocalNotes(prev => [{
+                        id: `note-new-${Date.now()}`,
+                        text: noteText.trim(),
+                        type: 'staff',
+                        author: 'Theresa Webb',
+                        createdAt: new Date(),
+                      }, ...prev]);
+                      setShowNoteInput(false);
+                    }}
+                  >
+                    Save
+                  </CanaryButton>
                 </div>
-                <p className="text-[12px]" style={{ color: colors.colorBlack2 }}>
-                  {reservation.notes}
-                </p>
-              </CanaryCard>
+              </div>
+            )}
+
+            {localNotes.length > 0 ? (
+              <div className="flex flex-col">
+                {localNotes.map((note) => (
+                  editingNoteId === note.id ? (
+                    /* Edit mode — inline textarea */
+                    <div key={note.id} className="flex flex-col gap-2 py-3">
+                      <CanaryTextArea
+                        value={editNoteText}
+                        onChange={(e) => setEditNoteText(e.target.value)}
+                        rows={3}
+                        style={{ backgroundColor: 'white' }}
+                      />
+                      <div className="flex items-center justify-end gap-2">
+                        <CanaryButton
+                          type={ButtonType.TEXT}
+                          size={ButtonSize.COMPACT}
+                          onClick={() => setEditingNoteId(null)}
+                        >
+                          Cancel
+                        </CanaryButton>
+                        <CanaryButton
+                          type={ButtonType.SHADED}
+                          size={ButtonSize.COMPACT}
+                          isDisabled={!editNoteText.trim()}
+                          onClick={() => {
+                            setLocalNotes(prev => prev.map(n =>
+                              n.id === note.id ? { ...n, text: editNoteText.trim() } : n
+                            ));
+                            setEditingNoteId(null);
+                          }}
+                        >
+                          Save
+                        </CanaryButton>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Display mode — hover container with 3-dot menu */
+                    <div
+                      key={note.id}
+                      className="relative rounded-lg transition-all duration-200 ease-in-out"
+                      style={{
+                        padding: hoveredNoteId === note.id || openNoteMenuId === note.id ? '12px 16px' : '12px 0',
+                        backgroundColor: hoveredNoteId === note.id || openNoteMenuId === note.id ? '#f5f5f5' : 'transparent',
+                      }}
+                      onMouseEnter={() => setHoveredNoteId(note.id)}
+                      onMouseLeave={() => { if (openNoteMenuId !== note.id) setHoveredNoteId(null); }}
+                    >
+                      <div className="flex items-center">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[14px] mb-1" style={{ color: colors.colorBlack1 }}>
+                            {note.text}
+                          </p>
+                          <p className="text-[13px]" style={{ color: colors.colorBlack4 }}>
+                            {note.type === 'guest_request' ? `Special request from ${note.author}` : note.author}
+                            {' \u00B7 '}
+                            {formatRelativeTime(note.createdAt)}
+                          </p>
+                        </div>
+                        <div
+                          className="relative shrink-0"
+                          ref={openNoteMenuId === note.id ? noteMenuRef : undefined}
+                        >
+                          <div
+                            className="transition-opacity duration-200"
+                            style={{ opacity: hoveredNoteId === note.id || openNoteMenuId === note.id ? 1 : 0 }}
+                          >
+                            <CanaryButton
+                              type={ButtonType.ICON_SECONDARY}
+                              size={ButtonSize.COMPACT}
+                              icon={<Icon path={mdiDotsHorizontal} size={0.67} color={colors.colorBlack3} />}
+                              onClick={() => setOpenNoteMenuId(openNoteMenuId === note.id ? null : note.id)}
+                            />
+                          </div>
+                          {openNoteMenuId === note.id && (
+                            <div
+                              className="absolute right-0 top-full mt-1 py-2 bg-white rounded-lg shadow-lg z-10"
+                              style={{ minWidth: 140, border: `1px solid ${colors.colorBlack6}` }}
+                            >
+                              <button
+                                className="w-full text-left px-4 py-2 text-[14px] hover:bg-gray-50 transition-colors"
+                                style={{ color: colors.colorBlueDark1 }}
+                                onClick={() => {
+                                  navigator.clipboard.writeText(note.text);
+                                  setOpenNoteMenuId(null);
+                                  setShowCopyToast(true);
+                                }}
+                              >
+                                Copy
+                              </button>
+                              <button
+                                className="w-full text-left px-4 py-2 text-[14px] hover:bg-gray-50 transition-colors"
+                                style={{ color: colors.colorBlueDark1 }}
+                                onClick={() => {
+                                  setOpenNoteMenuId(null);
+                                  setEditNoteText(note.text);
+                                  setEditingNoteId(note.id);
+                                }}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="w-full text-left px-4 py-2 text-[14px] hover:bg-gray-50 transition-colors"
+                                style={{ color: colors.danger }}
+                                onClick={() => {
+                                  setOpenNoteMenuId(null);
+                                  setDeleteNoteId(note.id);
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                ))}
+              </div>
             ) : (
-              <span className="text-[12px]" style={{ color: colors.colorBlack4 }}>
-                No notes yet
-              </span>
+              <div className="flex items-center justify-center h-16">
+                <span className="text-[14px]" style={{ color: colors.colorBlack4 }}>
+                  No notes yet.
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -1032,6 +1332,53 @@ export function CheckInDetailPanel({
           );
         })()}
       </CanaryModal>
+
+      {/* Delete Note Modal */}
+      <CanaryModal
+        isOpen={!!deleteNoteId}
+        onClose={() => setDeleteNoteId(null)}
+        title="Delete note"
+        size="small"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-[14px]" style={{ color: colors.colorBlack3 }}>
+            Are you sure you want to delete this note?
+          </p>
+          <div className="flex items-center justify-end gap-2">
+            <CanaryButton
+              type={ButtonType.OUTLINED}
+              onClick={() => setDeleteNoteId(null)}
+            >
+              Cancel
+            </CanaryButton>
+            <CanaryButton
+              type={ButtonType.PRIMARY}
+              color={ButtonColor.DANGER}
+              onClick={() => {
+                setLocalNotes(prev => prev.filter(n => n.id !== deleteNoteId));
+                setDeleteNoteId(null);
+              }}
+            >
+              Delete
+            </CanaryButton>
+          </div>
+        </div>
+      </CanaryModal>
+
+      {/* Copy Toast — portal to body to escape transform context */}
+      {typeof document !== 'undefined' && showCopyToast && createPortal(
+        <div
+          className="fixed bottom-4 left-1/2 px-6 py-3 rounded-lg shadow-lg text-[14px] font-medium text-white z-[9999]"
+          style={{
+            backgroundColor: colors.colorBlueDark1,
+            transform: 'translateX(-50%)',
+            animation: 'toast-in 300ms ease-out',
+          }}
+        >
+          Note copied to clipboard.
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

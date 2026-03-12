@@ -71,6 +71,9 @@ export default function DashboardLayout({
   const handleSidebarItemClick = (itemId: string) => {
     const route = itemRouteMap[itemId];
     if (route) {
+      if (route === pathname) {
+        window.dispatchEvent(new CustomEvent('sidebar-nav-reset'));
+      }
       router.push(route);
     }
   };
@@ -84,8 +87,9 @@ export default function DashboardLayout({
       // Header config
       propertyName="The Grand Hotel"
       userProfile={{
-        name: 'Maria Garcia',
-        role: 'Front Desk Manager',
+        name: 'Theresa Webb',
+        role: 'Front desk',
+        avatarUrl: 'https://i.pravatar.cc/150?img=5',
       }}
       reservationStatus={{
         label: 'Reservations',

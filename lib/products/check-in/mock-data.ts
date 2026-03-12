@@ -8,7 +8,7 @@
  * Right pane: verified, checked_in
  */
 
-import { CheckInSubmission, UpsellItem, DEMO_TODAY } from './types';
+import { CheckInSubmission, UpsellItem, GuestNote, DEMO_TODAY } from './types';
 
 /**
  * All check-in submissions — single source of truth for both panes.
@@ -237,5 +237,36 @@ export const submissionUpsells: Record<string, UpsellItem[]> = {
   'sub-james': [
     { id: 'up-6', name: 'Airport shuttle', quantity: 1, unitPrice: 45, status: 'pending' },
     { id: 'up-8', name: 'Early check-in (1PM)', quantity: 1, unitPrice: 30, status: 'pending' },
+  ],
+  'sub-robert': [
+    { id: 'up-9', name: 'Late checkout (2PM)', quantity: 1, unitPrice: 50, status: 'pending' },
+  ],
+  'sub-kristin': [
+    { id: 'up-10', name: 'Champagne & Strawberries', quantity: 1, unitPrice: 65, status: 'pending' },
+    { id: 'up-11', name: 'Early check-in (1PM)', quantity: 1, unitPrice: 30, status: 'pending' },
+  ],
+};
+
+/**
+ * Notes per submission.
+ * Mix of staff notes and guest special requests.
+ */
+export const submissionNotes: Record<string, GuestNote[]> = {
+  'sub-emily': [
+    { id: 'note-1', text: 'Guest is celebrating anniversary, comp champagne if available', type: 'staff', author: 'Theresa Webb', createdAt: new Date('2024-11-18T09:15:00') },
+    { id: 'note-2', text: 'I\'d like a slice of pie hot and ready upon my arrival', type: 'guest_request', author: 'Emily Smith', createdAt: new Date('2024-11-17T14:30:00') },
+  ],
+  'sub-brooklyn': [
+    { id: 'note-3', text: 'Returning guest — prefers high floor, noted in profile', type: 'staff', author: 'Theresa Webb', createdAt: new Date('2024-11-18T08:00:00') },
+  ],
+  'sub-olivia': [
+    { id: 'note-4', text: 'Would love extra pillows and a quiet room away from the elevator please', type: 'guest_request', author: 'Olivia Brown-Henderson', createdAt: new Date('2024-11-17T11:00:00') },
+    { id: 'note-5', text: 'Assigned room 412 per request — corner suite, away from elevator', type: 'staff', author: 'Theresa Webb', createdAt: new Date('2024-11-18T10:30:00') },
+  ],
+  'sub-noah': [
+    { id: 'note-6', text: 'Guest has mobility concerns, ground floor preferred', type: 'staff', author: 'James Rodriguez', createdAt: new Date('2024-11-17T16:00:00') },
+  ],
+  'sub-sarah': [
+    { id: 'note-7', text: 'Can we have a late checkout on Sunday? Our flight is at 8pm', type: 'guest_request', author: 'Sarah Martinez', createdAt: new Date('2024-11-17T15:00:00') },
   ],
 };

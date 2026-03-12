@@ -8,7 +8,7 @@
  * All data derives from a single checkInSubmissions array.
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { parseISO, format } from 'date-fns';
 import { SubNav } from '@/components/products/check-in/SubNav';
 import { DateSelector } from '@/components/products/check-in/DateSelector';
@@ -53,6 +53,13 @@ export default function CheckInPage() {
   const [newEndDate, setNewEndDate] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
+
+  // Close detail panel when sidebar nav clicks back to check-in
+  useEffect(() => {
+    const handleReset = () => setSelectedSubmissionId(null);
+    window.addEventListener('sidebar-nav-reset', handleReset);
+    return () => window.removeEventListener('sidebar-nav-reset', handleReset);
+  }, []);
 
   const selectedSubmission = useMemo(
     () => selectedSubmissionId ? submissions.find(s => s.id === selectedSubmissionId) ?? null : null,

@@ -51,13 +51,14 @@ export function UpsellsSection({
         >
           Manage upsells
         </span>
-        {upsells.length > 0 && pendingCount > 0 ? (
+        {upsells.length > 0 && pendingCount > 0 && (
           <CanaryTag
             label={`${pendingCount} PENDING`}
             color={TagColor.DEFAULT}
             size={TagSize.COMPACT}
           />
-        ) : (
+        )}
+        {upsells.length > 0 && pendingCount === 0 && (
           <CanaryTag
             label="REVIEWED"
             color={TagColor.SUCCESS}

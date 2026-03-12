@@ -30,12 +30,14 @@ interface RegistrationCardSectionProps {
   guest: Guest;
   reservation?: Reservation;
   isSubmitted: boolean;
+  isPending?: boolean;
 }
 
 export function RegistrationCardSection({
   guest,
   reservation,
   isSubmitted,
+  isPending = false,
 }: RegistrationCardSectionProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -69,6 +71,15 @@ export function RegistrationCardSection({
             Print
           </CanaryButton>
         )}
+        {!isSubmitted && isPending && (
+          <CanaryButton
+            type={ButtonType.SHADED}
+            size={ButtonSize.COMPACT}
+            className="ml-auto"
+          >
+            Send to Tablet
+          </CanaryButton>
+        )}
       </div>
 
       {/* Content */}
@@ -77,7 +88,9 @@ export function RegistrationCardSection({
           className="flex items-center justify-center"
           style={{ height: 80, color: colors.colorBlack4 }}
         >
-          <span className="text-[13px]">Not signed yet</span>
+          <span className="text-[13px]">
+            {isPending ? 'Registration card has not been submitted yet.' : 'Not signed yet'}
+          </span>
         </div>
       ) : (
         /* Simulated registration card on gray background */
