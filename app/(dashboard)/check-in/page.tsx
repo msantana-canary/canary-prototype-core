@@ -18,15 +18,41 @@ import { CollapsibleSection } from '@/components/products/check-in/CollapsibleSe
 import { CheckInDetailPanel } from '@/components/products/check-in/CheckInDetailPanel';
 import { checkInSubmissions as initialSubmissions } from '@/lib/products/check-in/mock-data';
 import { CheckInSubmission, DEMO_TODAY } from '@/lib/products/check-in/types';
-import { guests } from '@/lib/core/data/guests';
-import { reservations } from '@/lib/core/data/reservations';
-import { colors } from '@canary-ui/components';
+import { guests as canonicalGuests } from '@/lib/core/data/guests';
+import { reservations as canonicalReservations } from '@/lib/core/data/reservations';
+import { Guest } from '@/lib/core/types/guest';
+import { Reservation } from '@/lib/core/types/reservation';
+import {
+  CanaryModal,
+  CanaryInput,
+  CanaryInputDateRange,
+  CanaryButton,
+  ButtonType,
+  InputSize,
+  colors,
+} from '@canary-ui/components';
 
 export default function CheckInPage() {
   const [submissions, setSubmissions] = useState<CheckInSubmission[]>(initialSubmissions);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(parseISO(DEMO_TODAY));
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
+
+  // Runtime-created guests and reservations (extends canonical data)
+  const [runtimeGuests, setRuntimeGuests] = useState<Record<string, Guest>>({});
+  const [runtimeReservations, setRuntimeReservations] = useState<Record<string, Reservation>>({});
+  const guests = useMemo(() => ({ ...canonicalGuests, ...runtimeGuests }), [runtimeGuests]);
+  const reservations = useMemo(() => ({ ...canonicalReservations, ...runtimeReservations }), [runtimeReservations]);
+
+  // New check-in modal state
+  const [showNewCheckIn, setShowNewCheckIn] = useState(false);
+  const [newConfirmation, setNewConfirmation] = useState('');
+  const [newFirstName, setNewFirstName] = useState('');
+  const [newLastName, setNewLastName] = useState('');
+  const [newStartDate, setNewStartDate] = useState('');
+  const [newEndDate, setNewEndDate] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
 
   const selectedSubmission = useMemo(
     () => selectedSubmissionId ? submissions.find(s => s.id === selectedSubmissionId) ?? null : null,
@@ -90,6 +116,60 @@ export default function CheckInPage() {
     ));
   }, []);
 
+  const handleCreateCheckIn = useCallback(() => {
+    const ts = Date.now();
+    const guestId = `guest-new-${ts}`;
+    const resId = `res-new-${ts}`;
+    const subId = `sub-new-${ts}`;
+    const fullName = `${newFirstName} ${newLastName}`.trim();
+    const initials = `${newFirstName.charAt(0)}${newLastName.charAt(0)}`.toUpperCase();
+
+    const newGuest: Guest = {
+      id: guestId,
+      name: fullName || 'New Guest',
+      initials: initials || 'NG',
+      phone: newPhone || undefined,
+      email: newEmail || undefined,
+      preferredLanguage: 'English',
+    };
+
+    const newRes: Reservation = {
+      id: resId,
+      guestId,
+      confirmationCode: newConfirmation || `NEW${ts.toString().slice(-6)}`,
+      checkInDate: newStartDate || format(new Date(), 'MMM. dd, yyyy'),
+      checkOutDate: newEndDate || '',
+      status: 'upcoming',
+      checkInStatus: 'Not Started',
+      checkOutStatus: 'Not Started',
+    };
+
+    const newSub: CheckInSubmission = {
+      id: subId,
+      reservationId: resId,
+      guestId,
+      status: 'pending',
+      arrivalDate: DEMO_TODAY,
+    };
+
+    setRuntimeGuests(prev => ({ ...prev, [guestId]: newGuest }));
+    setRuntimeReservations(prev => ({ ...prev, [resId]: newRes }));
+    setSubmissions(prev => [...prev, newSub]);
+
+    // Reset form and close modal
+    setShowNewCheckIn(false);
+    setNewConfirmation('');
+    setNewFirstName('');
+    setNewLastName('');
+    setNewStartDate('');
+    setNewEndDate('');
+    setNewEmail('');
+    setNewPhone('');
+
+    // Auto-open detail panel
+    setSelectedSubmissionId(subId);
+  }, [newFirstName, newLastName, newConfirmation, newStartDate, newEndDate, newEmail, newPhone]);
+
   const hasLeftContent = submitted.length > 0 || partial.length > 0 || pending.length > 0;
 
   return (
@@ -99,7 +179,7 @@ export default function CheckInPage() {
         onSearchChange={setSearchQuery}
         onInsightsClick={() => console.log('Insights clicked')}
         onExportClick={() => console.log('Export clicked')}
-        onNewCheckIn={() => console.log('New check-in clicked')}
+        onNewCheckIn={() => setShowNewCheckIn(true)}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -326,6 +406,84 @@ export default function CheckInPage() {
         onClose={() => setSelectedSubmissionId(null)}
         onCheckIn={handleCheckIn}
       />
+
+      {/* New Check-in Modal */}
+      <CanaryModal
+        isOpen={showNewCheckIn}
+        onClose={() => setShowNewCheckIn(false)}
+        title="Create new check-in"
+      >
+        <div className="flex flex-col gap-4">
+          <CanaryInput
+            label="Confirmation Number"
+            placeholder="Confirmation Number"
+            value={newConfirmation}
+            onChange={(e) => setNewConfirmation(e.target.value)}
+            size={InputSize.NORMAL}
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <CanaryInput
+              label="First name"
+              placeholder="First name"
+              value={newFirstName}
+              onChange={(e) => setNewFirstName(e.target.value)}
+              size={InputSize.NORMAL}
+            />
+            <CanaryInput
+              label="Last name"
+              placeholder="Last name"
+              value={newLastName}
+              onChange={(e) => setNewLastName(e.target.value)}
+              size={InputSize.NORMAL}
+            />
+          </div>
+
+          <CanaryInputDateRange
+            label="Arrival and departure"
+            startDate={newStartDate}
+            endDate={newEndDate}
+            onChange={(start, end) => { setNewStartDate(start); setNewEndDate(end); }}
+            size={InputSize.NORMAL}
+          />
+
+          <p className="text-[13px]" style={{ color: colors.colorBlack3 }}>
+            Enter a phone number or email to send guest a check-in link via SMS or email.
+          </p>
+
+          <div className="grid grid-cols-2 gap-4">
+            <CanaryInput
+              label="Email"
+              placeholder="Email (optional)"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              size={InputSize.NORMAL}
+            />
+            <CanaryInput
+              label="Mobile phone"
+              placeholder="Mobile phone (optional)"
+              value={newPhone}
+              onChange={(e) => setNewPhone(e.target.value)}
+              size={InputSize.NORMAL}
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2">
+            <CanaryButton
+              type={ButtonType.OUTLINED}
+              onClick={() => setShowNewCheckIn(false)}
+            >
+              Cancel
+            </CanaryButton>
+            <CanaryButton
+              type={ButtonType.PRIMARY}
+              onClick={handleCreateCheckIn}
+            >
+              Create
+            </CanaryButton>
+          </div>
+        </div>
+      </CanaryModal>
     </div>
   );
 }

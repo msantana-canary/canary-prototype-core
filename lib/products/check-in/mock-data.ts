@@ -203,7 +203,7 @@ export const checkInSubmissions: CheckInSubmission[] = [
     arrivalTime: '1:30 PM',
     arrivalDate: DEMO_TODAY,
     checkInTime: '1:15 PM',
-    hasMobileKey: true,
+    hasMobileKey: false,
   },
   {
     id: 'sub-william',

@@ -112,14 +112,14 @@ export function ArrivalCard({
             </div>
           )}
 
-          {/* Flag — sits inline after room (or after time if no room) */}
+          {/* TODO: re-enable flags when flag workflow is built
           {submission.isFlagged && (
             <Icon
               path={mdiFlag}
               size={0.6}
               color={colors.error}
             />
-          )}
+          )} */}
         </div>
       </div>
 

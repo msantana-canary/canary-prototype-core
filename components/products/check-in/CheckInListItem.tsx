@@ -112,13 +112,14 @@ export function CheckInListItem({
                 >
                   {reservation.room}
                 </span>
+                {/* TODO: re-enable flags when flag workflow is built
                 {submission.isFlagged && (
                   <Icon
                     path={mdiFlag}
                     size={0.55}
                     color={colors.error}
                   />
-                )}
+                )} */}
               </div>
             )}
           </div>

@@ -15,6 +15,9 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useMessagingStore } from '@/lib/products/messaging/store';
+import { mockThreads } from '@/lib/products/messaging/mock-data';
 import {
   CanaryButton,
   CanaryTag,
@@ -79,6 +82,10 @@ export function CheckInDetailPanel({
   onClose,
   onCheckIn,
 }: CheckInDetailPanelProps) {
+  const router = useRouter();
+  const selectThread = useMessagingStore((s) => s.selectThread);
+  const closeGuestInfo = useMessagingStore((s) => s.closeGuestInfo);
+
   const [shouldRender, setShouldRender] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
 
@@ -352,7 +359,7 @@ export function CheckInDetailPanel({
           </div>
 
           {/* Row 1, Col 2: Action progress bar */}
-          <div className="relative h-[3px]" style={{ backgroundColor: '#EAEAEA' }} />
+          <div className="relative h-[3px]" style={{ backgroundColor: isVerified ? '#008040' : '#EAEAEA' }} />
 
           {/* Row 2, Col 1: Segmented step buttons */}
           <div className="flex items-stretch border rounded overflow-clip h-[40px]" style={{ borderColor: '#E5E5E5' }}>
@@ -410,13 +417,12 @@ export function CheckInDetailPanel({
               </CanaryButton>
             )}
             {status === 'verified' && (
-              <CanaryButton
-                type={ButtonType.PRIMARY}
-                size={ButtonSize.NORMAL}
-                onClick={() => submission && onCheckIn?.(submission.id)}
-              >
-                Check in guest
-              </CanaryButton>
+              <div className="flex items-center justify-center gap-1 h-full">
+                <Icon path={mdiCheck} size={1} color={colors.success} />
+                <span className="text-[14px] font-medium" style={{ color: colors.colorBlack2 }}>
+                  Ready for Check-in
+                </span>
+              </div>
             )}
             {status === 'checked_in' && (
               <div className="flex items-center justify-center gap-1 h-full">
@@ -705,7 +711,7 @@ export function CheckInDetailPanel({
           {/* Contact info — production: ReservationContactDetails */}
           <div className="flex flex-col gap-3">
             {/* Phone */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 min-h-[32px]">
               <Icon path={mdiPhoneOutline} size={0.83} color={colors.colorBlack1} />
               <span className="text-[14px] flex-1" style={{ color: colors.colorBlack1 }}>
                 {guest.phone || 'No number assigned'}
@@ -716,6 +722,12 @@ export function CheckInDetailPanel({
                     type={ButtonType.ICON_SECONDARY}
                     size={ButtonSize.COMPACT}
                     icon={<Icon path={mdiMessageTextOutline} size={0.67} color={colors.colorBlack3} />}
+                    onClick={() => {
+                      const thread = mockThreads.find((t) => t.guestId === guest.id);
+                      if (thread) selectThread(thread.id);
+                      closeGuestInfo();
+                      router.push('/messages');
+                    }}
                   />
                   <CanaryButton
                     type={ButtonType.ICON_SECONDARY}
@@ -727,7 +739,7 @@ export function CheckInDetailPanel({
             </div>
 
             {/* Email */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 min-h-[32px]">
               <Icon path={mdiEmailOutline} size={0.83} color={colors.colorBlack1} />
               <span className="text-[14px] flex-1 truncate" style={{ color: colors.colorBlack1 }}>
                 {guest.email || 'No email assigned'}
@@ -742,7 +754,7 @@ export function CheckInDetailPanel({
             </div>
 
             {/* Language */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 min-h-[32px]">
               <Icon path={mdiWeb} size={0.83} color={colors.colorBlack1} />
               <span className="text-[14px]" style={{ color: colors.colorBlack1 }}>
                 {guest.preferredLanguage || 'Unknown'}
@@ -750,7 +762,7 @@ export function CheckInDetailPanel({
             </div>
 
             {/* Assign staff */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 min-h-[32px]">
               <Icon path={mdiAccountMultipleOutline} size={0.83} color={colors.colorBlack1} />
               <button
                 className="text-[14px] hover:underline"
