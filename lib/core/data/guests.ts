@@ -70,6 +70,11 @@ export const guests: Record<string, Guest> = {
     phone: '+15005550017',
     email: 'liam.johnson@example.com',
     preferredLanguage: 'English',
+    statusTag: {
+      label: 'SILVER ELITE',
+      color: '#A8A8A8',
+      textColor: 'white',
+    },
   },
   'guest-olivia': {
     id: 'guest-olivia',

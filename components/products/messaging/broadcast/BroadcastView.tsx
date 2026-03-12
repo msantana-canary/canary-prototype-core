@@ -7,19 +7,40 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BroadcastGroupList } from './BroadcastGroupList';
 import { BroadcastGuestList } from './BroadcastGuestList';
 import { BroadcastThread } from './BroadcastThread';
 import { CreateGroupModal } from './CreateGroupModal';
+import { FilterGuestsModal } from './FilterGuestsModal';
+import { ManageFiltersModal } from './ManageFiltersModal';
 import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
+import { Toast } from '@/components/core/Toast';
 
 export function BroadcastView() {
   const {
     isCreateGroupModalOpen,
     closeCreateGroupModal,
     createGroup,
+    isFilterModalOpen,
+    closeFilterModal,
+    isManageFiltersModalOpen,
+    closeManageFiltersModal,
   } = useBroadcastStore();
+
+  // Toast for filter saved
+  const [showSaveToast, setShowSaveToast] = React.useState(false);
+  const savedFiltersCount = useBroadcastStore(s => s.savedFilters.length);
+  const prevCountRef = React.useRef(savedFiltersCount);
+
+  useEffect(() => {
+    if (savedFiltersCount > prevCountRef.current) {
+      setShowSaveToast(true);
+      const timer = setTimeout(() => setShowSaveToast(false), 3000);
+      return () => clearTimeout(timer);
+    }
+    prevCountRef.current = savedFiltersCount;
+  }, [savedFiltersCount]);
 
   return (
     <>
@@ -46,6 +67,21 @@ export function BroadcastView() {
         onClose={closeCreateGroupModal}
         onCreate={createGroup}
       />
+
+      {/* Filter Guests Modal */}
+      <FilterGuestsModal
+        isOpen={isFilterModalOpen}
+        onClose={closeFilterModal}
+      />
+
+      {/* Manage Saved Filters Modal */}
+      <ManageFiltersModal
+        isOpen={isManageFiltersModalOpen}
+        onClose={closeManageFiltersModal}
+      />
+
+      {/* Toast: Filter saved */}
+      <Toast message="Filter successfully saved" isOpen={showSaveToast} variant="success" />
     </>
   );
 }

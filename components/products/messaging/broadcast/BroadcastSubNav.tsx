@@ -8,11 +8,11 @@
 'use client';
 
 import React from 'react';
-import { CanaryTabs } from '@canary-ui/components';
+import { CanaryTabs, CanaryButton, ButtonType } from '@canary-ui/components';
 import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
 
 export function BroadcastSubNav() {
-  const { activeGroupTab, setActiveGroupTab } = useBroadcastStore();
+  const { activeGroupTab, setActiveGroupTab, savedFilters, openManageFiltersModal } = useBroadcastStore();
 
   const tabs = [
     {
@@ -37,6 +37,13 @@ export function BroadcastSubNav() {
         onChange={(tabId) => setActiveGroupTab(tabId as 'active' | 'archived')}
         className="mb-0"
       />
+
+      {/* Manage filters */}
+      {savedFilters.length > 0 && (
+        <CanaryButton type={ButtonType.TEXT} onClick={openManageFiltersModal}>
+          Manage filters
+        </CanaryButton>
+      )}
     </div>
   );
 }

@@ -6,15 +6,73 @@
  */
 
 import { create } from 'zustand';
-import { BroadcastGroup, BroadcastMessage, BroadcastGuestEntry } from './broadcast-types';
+import {
+  BroadcastGroup,
+  BroadcastMessage,
+  BroadcastGuestEntry,
+  BroadcastFilterCriteria,
+  SavedFilter,
+} from './broadcast-types';
 import {
   builtInGroups,
   customGroups,
   builtInGroupGuests,
   customGroupGuests,
   mockBroadcastMessages,
+  mockSavedFilters,
 } from './broadcast-mock-data';
 import { guests } from '@/lib/core/data/guests';
+
+export const emptyFilterCriteria: BroadcastFilterCriteria = {
+  loyaltyTiers: [],
+  rateCodes: [],
+  groupCodes: [],
+  roomNumbers: [],
+};
+
+export function isFilterEmpty(filters: BroadcastFilterCriteria): boolean {
+  return (
+    filters.loyaltyTiers.length === 0 &&
+    filters.rateCodes.length === 0 &&
+    filters.groupCodes.length === 0 &&
+    filters.roomNumbers.length === 0
+  );
+}
+
+export function getActiveFilterCount(filters: BroadcastFilterCriteria): number {
+  let count = 0;
+  if (filters.loyaltyTiers.length > 0) count++;
+  if (filters.rateCodes.length > 0) count++;
+  if (filters.groupCodes.length > 0) count++;
+  if (filters.roomNumbers.length > 0) count++;
+  return count;
+}
+
+/** Filter guest entries by criteria (AND across attributes, OR within) */
+export function getFilteredGuestEntries(
+  groupId: string,
+  allGroups: BroadcastGroup[],
+  filters: BroadcastFilterCriteria
+): BroadcastGuestEntry[] {
+  const entries = getGuestEntriesForGroup(groupId, allGroups);
+  if (isFilterEmpty(filters)) return entries;
+
+  return entries.filter(entry => {
+    if (filters.loyaltyTiers.length > 0) {
+      if (!entry.loyaltyTier || !filters.loyaltyTiers.includes(entry.loyaltyTier)) return false;
+    }
+    if (filters.rateCodes.length > 0) {
+      if (!entry.rateCode || !filters.rateCodes.includes(entry.rateCode)) return false;
+    }
+    if (filters.groupCodes.length > 0) {
+      if (!entry.groupCode || !filters.groupCodes.includes(entry.groupCode)) return false;
+    }
+    if (filters.roomNumbers.length > 0) {
+      if (!entry.room || !filters.roomNumbers.includes(entry.room)) return false;
+    }
+    return true;
+  });
+}
 
 interface BroadcastState {
   // Groups
@@ -34,6 +92,15 @@ interface BroadcastState {
   // Create group modal
   isCreateGroupModalOpen: boolean;
 
+  // Filters
+  activeFilters: BroadcastFilterCriteria;
+  isFilterModalOpen: boolean;
+  savedFilters: SavedFilter[];
+  loadedSavedFilterId: string | null;
+
+  // Manage filters modal
+  isManageFiltersModalOpen: boolean;
+
   // Actions
   selectGroup: (groupId: string) => void;
   setActiveGroupTab: (tab: 'active' | 'archived') => void;
@@ -45,6 +112,17 @@ interface BroadcastState {
   openCreateGroupModal: () => void;
   closeCreateGroupModal: () => void;
   createGroup: (name: string) => void;
+
+  // Filter actions
+  openFilterModal: () => void;
+  closeFilterModal: () => void;
+  applyFilters: (criteria: BroadcastFilterCriteria, savedFilterId?: string) => void;
+  clearAllFilters: () => void;
+  saveFilter: (name: string, criteria: BroadcastFilterCriteria) => void;
+  updateFilter: (id: string, name: string, criteria: BroadcastFilterCriteria) => void;
+  deleteFilter: (id: string) => void;
+  openManageFiltersModal: () => void;
+  closeManageFiltersModal: () => void;
 }
 
 /** Get guest entries for a given group */
@@ -89,12 +167,21 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   messages: { ...mockBroadcastMessages },
   isCreateGroupModalOpen: false,
 
-  // Select a group — auto-selects all messageable guests
+  // Filter state
+  activeFilters: { ...emptyFilterCriteria },
+  isFilterModalOpen: false,
+  savedFilters: [...mockSavedFilters],
+  loadedSavedFilterId: null,
+  isManageFiltersModalOpen: false,
+
+  // Select a group — auto-selects all messageable guests, clears filters
   selectGroup: (groupId: string) => {
     const selectableIds = getSelectableGuestIds(groupId, get().allGroups);
     set({
       selectedGroupId: groupId,
       selectedGuestIds: selectableIds,
+      activeFilters: { ...emptyFilterCriteria },
+      loadedSavedFilterId: null,
     });
   },
 
@@ -118,7 +205,13 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   },
 
   selectAllGuests: () => {
-    const selectableIds = getSelectableGuestIds(get().selectedGroupId, get().allGroups);
+    const { selectedGroupId, allGroups, activeFilters } = get();
+    const entries = isFilterEmpty(activeFilters)
+      ? getGuestEntriesForGroup(selectedGroupId, allGroups)
+      : getFilteredGuestEntries(selectedGroupId, allGroups, activeFilters);
+    const selectableIds = entries
+      .filter(entry => guests[entry.guestId]?.phone)
+      .map(entry => entry.guestId);
     set({ selectedGuestIds: selectableIds });
   },
 
@@ -127,7 +220,7 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   },
 
   sendBroadcast: (content: string) => {
-    const { selectedGroupId, selectedGuestIds } = get();
+    const { selectedGroupId, selectedGuestIds, activeFilters, loadedSavedFilterId, savedFilters } = get();
     if (!content.trim() || selectedGuestIds.length === 0) return;
 
     const newMessage: BroadcastMessage = {
@@ -138,6 +231,19 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
       sentAt: new Date(),
       recipientCount: selectedGuestIds.length,
     };
+
+    // Attach filter snapshot if filters are active
+    if (!isFilterEmpty(activeFilters)) {
+      const savedFilter = loadedSavedFilterId
+        ? savedFilters.find(f => f.id === loadedSavedFilterId)
+        : null;
+      newMessage.filterSnapshot = {
+        type: savedFilter ? 'saved' : 'ad-hoc',
+        savedFilterName: savedFilter?.name,
+        criteria: { ...activeFilters },
+        attributeCount: getActiveFilterCount(activeFilters),
+      };
+    }
 
     set(state => ({
       messages: {
@@ -174,5 +280,74 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
       allGroups: [...state.allGroups, newGroup],
       isCreateGroupModalOpen: false,
     }));
+  },
+
+  // Filter actions
+  openFilterModal: () => {
+    set({ isFilterModalOpen: true });
+  },
+
+  closeFilterModal: () => {
+    set({ isFilterModalOpen: false });
+  },
+
+  applyFilters: (criteria: BroadcastFilterCriteria, savedFilterId?: string) => {
+    const { selectedGroupId, allGroups } = get();
+    // Auto-select all matching guests that have a phone
+    const filtered = getFilteredGuestEntries(selectedGroupId, allGroups, criteria);
+    const selectableIds = filtered
+      .filter(entry => guests[entry.guestId]?.phone)
+      .map(entry => entry.guestId);
+
+    set({
+      activeFilters: { ...criteria },
+      loadedSavedFilterId: savedFilterId || null,
+      selectedGuestIds: selectableIds,
+      isFilterModalOpen: false,
+    });
+  },
+
+  clearAllFilters: () => {
+    const { selectedGroupId, allGroups } = get();
+    const selectableIds = getSelectableGuestIds(selectedGroupId, allGroups);
+    set({
+      activeFilters: { ...emptyFilterCriteria },
+      loadedSavedFilterId: null,
+      selectedGuestIds: selectableIds,
+    });
+  },
+
+  saveFilter: (name: string, criteria: BroadcastFilterCriteria) => {
+    const newFilter: SavedFilter = {
+      id: `sf-${Date.now()}`,
+      name: name.trim(),
+      criteria: { ...criteria },
+    };
+    set(state => ({
+      savedFilters: [...state.savedFilters, newFilter],
+    }));
+  },
+
+  updateFilter: (id: string, name: string, criteria: BroadcastFilterCriteria) => {
+    set(state => ({
+      savedFilters: state.savedFilters.map(f =>
+        f.id === id ? { ...f, name: name.trim(), criteria: { ...criteria } } : f
+      ),
+    }));
+  },
+
+  deleteFilter: (id: string) => {
+    set(state => ({
+      savedFilters: state.savedFilters.filter(f => f.id !== id),
+      loadedSavedFilterId: state.loadedSavedFilterId === id ? null : state.loadedSavedFilterId,
+    }));
+  },
+
+  openManageFiltersModal: () => {
+    set({ isManageFiltersModalOpen: true });
+  },
+
+  closeManageFiltersModal: () => {
+    set({ isManageFiltersModalOpen: false });
   },
 }));
