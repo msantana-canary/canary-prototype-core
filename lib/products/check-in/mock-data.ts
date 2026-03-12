@@ -1,8 +1,11 @@
 /**
  * Check-In Mock Data
  *
- * ~18 submissions across 5 statuses, unified data model.
- * Right pane derives from verified/checked_in submissions.
+ * ~20 submissions across 5 statuses, unified data model.
+ * Each guest appears exactly ONCE — no duplicates across statuses.
+ *
+ * Left pane: pending, partially_submitted, submitted
+ * Right pane: verified, checked_in
  */
 
 import { CheckInSubmission, UpsellItem, DEMO_TODAY } from './types';
@@ -14,7 +17,7 @@ import { CheckInSubmission, UpsellItem, DEMO_TODAY } from './types';
  *   submitted (4)           → Left pane: "Completed submissions"
  *   partially_submitted (1) → Left pane: "Partial submissions"
  *   pending (6)             → Left pane: "Pending"
- *   verified (4)            → Right pane: "Expected today" (3) + "Future" (1)
+ *   verified (5)            → Right pane: "Expected today" (4) + "Future" (1)
  *   checked_in (4)          → Right pane: "Checked-in today"
  */
 export const checkInSubmissions: CheckInSubmission[] = [
@@ -58,7 +61,7 @@ export const checkInSubmissions: CheckInSubmission[] = [
     arrivalTime: '1:30 PM',
     arrivalDate: DEMO_TODAY,
     submittedAt: new Date('2024-11-17T16:45:00'),
-    hasMobileKey: true,
+    hasMobileKey: false,
   },
 
   // ── Partially submitted ────────────────────────────────────────────
@@ -73,7 +76,7 @@ export const checkInSubmissions: CheckInSubmission[] = [
     hasMobileKey: false,
   },
 
-  // ── Pending (form not yet started) ─────────────────────────────────
+  // ── Pending (form not yet started — no avatars, no IDs) ────────────
   {
     id: 'sub-marco',
     reservationId: 'res-marco-nov',
@@ -103,14 +106,14 @@ export const checkInSubmissions: CheckInSubmission[] = [
     arrivalDate: '2024-11-19',
   },
   {
-    id: 'sub-robert-pending',
+    id: 'sub-robert',
     reservationId: 'res-robert-checkin',
     guestId: 'guest-robert',
     status: 'pending',
     arrivalDate: DEMO_TODAY,
   },
   {
-    id: 'sub-emma-pending',
+    id: 'sub-emma',
     reservationId: 'res-emma-nov',
     guestId: 'guest-emma',
     status: 'pending',
@@ -119,7 +122,7 @@ export const checkInSubmissions: CheckInSubmission[] = [
 
   // ── Verified (right pane — expected today / future) ────────────────
   {
-    id: 'sub-olivia-verified',
+    id: 'sub-olivia',
     reservationId: 'res-olivia-nov',
     guestId: 'guest-olivia',
     status: 'verified',
@@ -129,7 +132,7 @@ export const checkInSubmissions: CheckInSubmission[] = [
     hasMobileKey: true,
   },
   {
-    id: 'sub-noah-verified',
+    id: 'sub-noah',
     reservationId: 'res-noah-nov',
     guestId: 'guest-noah',
     status: 'verified',
@@ -140,9 +143,9 @@ export const checkInSubmissions: CheckInSubmission[] = [
     isFlagged: true,
   },
   {
-    id: 'sub-liam-verified',
-    reservationId: 'res-liam-nov',
-    guestId: 'guest-liam',
+    id: 'sub-sophia',
+    reservationId: 'res-sophia-nov',
+    guestId: 'guest-sophia',
     status: 'verified',
     arrivalTime: '6:00 PM',
     arrivalDate: DEMO_TODAY,
@@ -150,9 +153,9 @@ export const checkInSubmissions: CheckInSubmission[] = [
     hasMobileKey: false,
   },
   {
-    id: 'sub-emma-verified',
-    reservationId: 'res-emma-nov',
-    guestId: 'guest-emma',
+    id: 'sub-daniel',
+    reservationId: 'res-daniel-nov',
+    guestId: 'guest-daniel',
     status: 'verified',
     arrivalTime: '11:00 AM',
     arrivalDate: DEMO_TODAY,
@@ -161,19 +164,9 @@ export const checkInSubmissions: CheckInSubmission[] = [
     isFlagged: true,
   },
   {
-    id: 'sub-robert-verified',
-    reservationId: 'res-robert-checkin',
-    guestId: 'guest-robert',
-    status: 'verified',
-    arrivalTime: '5:00 PM',
-    arrivalDate: DEMO_TODAY,
-    submittedAt: new Date('2024-11-17T08:00:00'),
-    hasMobileKey: false,
-  },
-  {
-    id: 'sub-maria-future',
-    reservationId: 'res-maria-checkin',
-    guestId: 'guest-maria',
+    id: 'sub-isabella',
+    reservationId: 'res-isabella-nov',
+    guestId: 'guest-isabella',
     status: 'verified',
     arrivalTime: '2:00 PM',
     arrivalDate: '2024-11-19',
@@ -183,9 +176,9 @@ export const checkInSubmissions: CheckInSubmission[] = [
 
   // ── Checked in ─────────────────────────────────────────────────────
   {
-    id: 'sub-emily-checkedin',
-    reservationId: 'res-emily-jul',
-    guestId: 'guest-emily',
+    id: 'sub-hannah',
+    reservationId: 'res-hannah-nov',
+    guestId: 'guest-hannah',
     status: 'checked_in',
     arrivalTime: '3:00 PM',
     arrivalDate: DEMO_TODAY,
@@ -193,9 +186,9 @@ export const checkInSubmissions: CheckInSubmission[] = [
     hasMobileKey: true,
   },
   {
-    id: 'sub-brooklyn-checkedin',
-    reservationId: 'res-brooklyn-nov',
-    guestId: 'guest-brooklyn',
+    id: 'sub-tyler',
+    reservationId: 'res-tyler-nov',
+    guestId: 'guest-tyler',
     status: 'checked_in',
     arrivalTime: '2:00 PM',
     arrivalDate: DEMO_TODAY,
@@ -203,9 +196,9 @@ export const checkInSubmissions: CheckInSubmission[] = [
     hasMobileKey: true,
   },
   {
-    id: 'sub-james-checkedin',
-    reservationId: 'res-james-checkin',
-    guestId: 'guest-james',
+    id: 'sub-aisha',
+    reservationId: 'res-aisha-nov',
+    guestId: 'guest-aisha',
     status: 'checked_in',
     arrivalTime: '1:30 PM',
     arrivalDate: DEMO_TODAY,
@@ -213,9 +206,9 @@ export const checkInSubmissions: CheckInSubmission[] = [
     hasMobileKey: true,
   },
   {
-    id: 'sub-kristin-checkedin',
-    reservationId: 'res-kristin-nov',
-    guestId: 'guest-kristin',
+    id: 'sub-william',
+    reservationId: 'res-william-nov',
+    guestId: 'guest-william',
     status: 'checked_in',
     arrivalTime: '2:30 PM',
     arrivalDate: DEMO_TODAY,
@@ -237,7 +230,7 @@ export const submissionUpsells: Record<string, UpsellItem[]> = {
     { id: 'up-3', name: 'Late checkout (2PM)', quantity: 1, unitPrice: 50, status: 'pending' },
     { id: 'up-4', name: 'Champagne & Strawberries', quantity: 1, unitPrice: 65, status: 'pending' },
   ],
-  'sub-olivia-verified': [
+  'sub-olivia': [
     { id: 'up-5', name: 'Late checkout (2PM)', quantity: 1, unitPrice: 50, status: 'approved' },
     { id: 'up-7', name: 'Champagne & Strawberries', quantity: 1, unitPrice: 65, status: 'approved' },
   ],

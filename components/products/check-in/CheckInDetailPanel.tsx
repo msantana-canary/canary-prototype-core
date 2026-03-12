@@ -19,10 +19,13 @@ import {
   CanaryButton,
   CanaryTag,
   CanaryCard,
+  CanaryModal,
+  CanaryInput,
   ButtonSize,
   ButtonType,
   ButtonColor,
   IconPosition,
+  InputSize,
   TagColor,
   TagSize,
   TagVariant,
@@ -40,9 +43,14 @@ import {
   mdiEmailOutline,
   mdiWeb,
   mdiKeyOutline,
-  mdiPlusCircleOutline,
+  mdiPlus,
   mdiNoteTextOutline,
   mdiCheck,
+  mdiMessageTextOutline,
+  mdiAccountMultipleOutline,
+  mdiPound,
+  mdiSend,
+  mdiCellphone,
 } from '@mdi/js';
 import { Avatar } from '../messaging/Avatar';
 import { IDVerificationSection } from './IDVerificationSection';
@@ -76,6 +84,29 @@ export function CheckInDetailPanel({
 
   // Local upsells state for approve/deny
   const [localUpsells, setLocalUpsells] = useState<UpsellItem[]>([]);
+  // Mobile keys — array of keys, each with own status
+  interface MobileKey {
+    name: string;
+    status: 'not_provisioned' | 'activated' | 'deactivated';
+    phone: string;
+    email: string;
+  }
+  const [mobileKeys, setMobileKeys] = useState<MobileKey[]>([]);
+  const [openKeyMenuIdx, setOpenKeyMenuIdx] = useState<number | null>(null);
+  const [activeKeyIdx, setActiveKeyIdx] = useState<number | null>(null);
+  const keyMenuRef = useRef<HTMLDivElement>(null);
+
+  // Modal visibility
+  const [showMobileKeyModal, setShowMobileKeyModal] = useState(false);
+  const [mobileKeyResendMode, setMobileKeyResendMode] = useState(false);
+  const [showActivateKeyModal, setShowActivateKeyModal] = useState(false);
+  const [showDeactivateKeyModal, setShowDeactivateKeyModal] = useState(false);
+  const [showKeyDetailsModal, setShowKeyDetailsModal] = useState(false);
+
+  // Mobile key modal form state
+  const [keyName, setKeyName] = useState('');
+  const [keyPhone, setKeyPhone] = useState('');
+  const [keyEmail, setKeyEmail] = useState('');
 
   // Scroll refs for verification bar click-to-scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -93,12 +124,29 @@ export function CheckInDetailPanel({
     }
   }, [isOpen, shouldRender]);
 
-  // Reset upsells when submission changes
+  // Reset local state when submission changes
   useEffect(() => {
-    if (submission) {
+    if (submission && guest) {
       setLocalUpsells(submissionUpsells[submission.id] || []);
+      setMobileKeys(submission.hasMobileKey
+        ? [{ name: `${guest.name} #1`, status: 'activated', phone: guest.phone || '', email: guest.email || '' }]
+        : []
+      );
+      setOpenKeyMenuIdx(null);
     }
-  }, [submission]);
+  }, [submission, guest]);
+
+  // Close key menu on click outside
+  useEffect(() => {
+    if (openKeyMenuIdx === null) return;
+    const handleClick = (e: MouseEvent) => {
+      if (keyMenuRef.current && !keyMenuRef.current.contains(e.target as Node)) {
+        setOpenKeyMenuIdx(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [openKeyMenuIdx]);
 
   const status = submission?.status;
   const isVerified = status === 'verified' || status === 'checked_in';
@@ -522,32 +570,132 @@ export function CheckInDetailPanel({
           className="flex flex-col gap-4 shrink-0"
           style={{ flex: 1, minWidth: 332, maxWidth: 600, padding: '24px 24px 24px 16px' }}
         >
-          {/* Room key */}
+          {/* Room key(s) */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4
                 className="text-[18px] font-medium"
                 style={{ color: colors.colorBlack1 }}
               >
-                Room key
+                {mobileKeys.length > 1 ? 'Room keys' : 'Room key'}
               </h4>
               <CanaryButton
                 type={ButtonType.ICON_SECONDARY}
                 size={ButtonSize.COMPACT}
-                icon={<Icon path={mdiPlusCircleOutline} size={0.7} color={colors.colorBlueDark1} />}
+                icon={<Icon path={mdiPlus} size={0.7} color={colors.colorBlueDark1} />}
+                onClick={() => {
+                  setKeyName(`${guest.name} #${mobileKeys.length + 1}`);
+                  setKeyPhone(guest.phone || '');
+                  setKeyEmail(guest.email || '');
+                  setMobileKeyResendMode(false);
+                  setActiveKeyIdx(null);
+                  setShowMobileKeyModal(true);
+                }}
               />
             </div>
-            {submission?.hasMobileKey ? (
-              <div className="flex items-center gap-2">
-                <Icon path={mdiKeyOutline} size={0.65} color={colors.colorBlueDark1} />
-                <span className="text-[12px]" style={{ color: colors.colorBlack2 }}>
-                  Mobile key active
-                </span>
+            {mobileKeys.length > 0 ? (
+              <div className="flex flex-col gap-3">
+                {mobileKeys.map((key, idx) => {
+                  const menuItems = key.status === 'deactivated'
+                    ? [
+                        { label: 'View Details', danger: false, action: () => { setOpenKeyMenuIdx(null); setActiveKeyIdx(idx); setShowKeyDetailsModal(true); } },
+                      ]
+                    : key.status === 'activated'
+                    ? [
+                        { label: 'View Details', danger: false, action: () => { setOpenKeyMenuIdx(null); setActiveKeyIdx(idx); setShowKeyDetailsModal(true); } },
+                        { label: 'Re-send Link', danger: false, action: () => {
+                          setOpenKeyMenuIdx(null);
+                          setActiveKeyIdx(idx);
+                          setKeyName(key.name);
+                          setKeyPhone(key.phone);
+                          setKeyEmail(key.email);
+                          setMobileKeyResendMode(true);
+                          setShowMobileKeyModal(true);
+                        } },
+                        { label: 'Deactivate key', danger: true, action: () => { setOpenKeyMenuIdx(null); setActiveKeyIdx(idx); setShowDeactivateKeyModal(true); } },
+                      ]
+                    : [
+                        { label: 'Activate key', danger: false, action: () => { setOpenKeyMenuIdx(null); setActiveKeyIdx(idx); setShowActivateKeyModal(true); } },
+                        { label: 'View Details', danger: false, action: () => { setOpenKeyMenuIdx(null); setActiveKeyIdx(idx); setShowKeyDetailsModal(true); } },
+                        { label: 'Re-send Link', danger: false, action: () => {
+                          setOpenKeyMenuIdx(null);
+                          setActiveKeyIdx(idx);
+                          setKeyName(key.name);
+                          setKeyPhone(key.phone);
+                          setKeyEmail(key.email);
+                          setMobileKeyResendMode(true);
+                          setShowMobileKeyModal(true);
+                        } },
+                        { label: 'Deactivate key', danger: true, action: () => { setOpenKeyMenuIdx(null); setActiveKeyIdx(idx); setShowDeactivateKeyModal(true); } },
+                      ];
+
+                  return (
+                    <div key={idx}>
+                      <div className="flex items-center">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[14px]" style={{ color: colors.colorBlack1 }}>
+                              {key.name}
+                            </span>
+                            <CanaryTag
+                              label={key.status === 'activated' ? 'ACTIVATED' : key.status === 'deactivated' ? 'DEACTIVATED' : 'NOT PROVISIONED'}
+                              size={TagSize.COMPACT}
+                              variant={TagVariant.OUTLINE}
+                              color={key.status === 'activated' ? TagColor.SUCCESS : key.status === 'deactivated' ? TagColor.ERROR : TagColor.DEFAULT}
+                            />
+                          </div>
+                          {reservation?.room && (
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <Icon path={mdiBedOutline} size={0.6} color={colors.colorBlack4} />
+                              <span className="text-[13px]" style={{ color: colors.colorBlack3 }}>
+                                {reservation.room}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="relative" ref={openKeyMenuIdx === idx ? keyMenuRef : undefined}>
+                          <CanaryButton
+                            type={ButtonType.ICON_SECONDARY}
+                            size={ButtonSize.COMPACT}
+                            icon={<Icon path={mdiDotsHorizontal} size={0.67} color={colors.colorBlack3} />}
+                            onClick={() => setOpenKeyMenuIdx(openKeyMenuIdx === idx ? null : idx)}
+                          />
+                          {openKeyMenuIdx === idx && (
+                            <div
+                              className="absolute right-0 top-full mt-1 py-2 bg-white rounded-lg shadow-lg z-10"
+                              style={{ minWidth: 180, border: `1px solid ${colors.colorBlack6}` }}
+                            >
+                              {menuItems.map((item) => (
+                                <button
+                                  key={item.label}
+                                  className="w-full text-left px-4 py-2 text-[14px] hover:bg-gray-50 transition-colors"
+                                  style={{ color: item.danger ? colors.danger : colors.colorBlack1 }}
+                                  onClick={item.action}
+                                >
+                                  {item.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
-              <span className="text-[12px]" style={{ color: colors.colorBlack4 }}>
-                No keys created
-              </span>
+              <div
+                className="flex items-center justify-center"
+                style={{
+                  backgroundColor: colors.colorBlack7,
+                  borderRadius: 8,
+                  height: 64,
+                }}
+              >
+                <span className="text-[13px]" style={{ color: colors.colorBlack4 }}>
+                  {status === 'pending' ? 'Guest not checked in yet' : 'No keys created'}
+                </span>
+              </div>
             )}
           </div>
 
@@ -555,31 +703,62 @@ export function CheckInDetailPanel({
           <div className="h-px w-full" style={{ backgroundColor: colors.colorBlack6 }} />
 
           {/* Contact info — production: ReservationContactDetails */}
-          <div>
-            {guest.phone && (
-              <div className="flex items-center gap-2 mb-2">
-                <Icon path={mdiPhoneOutline} size={0.65} color={colors.colorBlack4} />
-                <span className="text-[12px]" style={{ color: colors.colorBlack2 }}>
-                  {guest.phone}
-                </span>
-              </div>
-            )}
-            {guest.email && (
-              <div className="flex items-center gap-2 mb-2">
-                <Icon path={mdiEmailOutline} size={0.65} color={colors.colorBlack4} />
-                <span className="text-[12px] truncate" style={{ color: colors.colorBlack2 }}>
-                  {guest.email}
-                </span>
-              </div>
-            )}
-            {guest.preferredLanguage && (
-              <div className="flex items-center gap-2">
-                <Icon path={mdiWeb} size={0.65} color={colors.colorBlack4} />
-                <span className="text-[12px]" style={{ color: colors.colorBlack2 }}>
-                  {guest.preferredLanguage}
-                </span>
-              </div>
-            )}
+          <div className="flex flex-col gap-3">
+            {/* Phone */}
+            <div className="flex items-center gap-4">
+              <Icon path={mdiPhoneOutline} size={0.83} color={colors.colorBlack1} />
+              <span className="text-[14px] flex-1" style={{ color: colors.colorBlack1 }}>
+                {guest.phone || 'No number assigned'}
+              </span>
+              {guest.phone && (
+                <div className="flex items-center gap-1">
+                  <CanaryButton
+                    type={ButtonType.ICON_SECONDARY}
+                    size={ButtonSize.COMPACT}
+                    icon={<Icon path={mdiMessageTextOutline} size={0.67} color={colors.colorBlack3} />}
+                  />
+                  <CanaryButton
+                    type={ButtonType.ICON_SECONDARY}
+                    size={ButtonSize.COMPACT}
+                    icon={<Icon path={mdiDotsHorizontal} size={0.67} color={colors.colorBlack3} />}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Email */}
+            <div className="flex items-center gap-4">
+              <Icon path={mdiEmailOutline} size={0.83} color={colors.colorBlack1} />
+              <span className="text-[14px] flex-1 truncate" style={{ color: colors.colorBlack1 }}>
+                {guest.email || 'No email assigned'}
+              </span>
+              {guest.email && (
+                <CanaryButton
+                  type={ButtonType.ICON_SECONDARY}
+                  size={ButtonSize.COMPACT}
+                  icon={<Icon path={mdiDotsHorizontal} size={0.67} color={colors.colorBlack3} />}
+                />
+              )}
+            </div>
+
+            {/* Language */}
+            <div className="flex items-center gap-4">
+              <Icon path={mdiWeb} size={0.83} color={colors.colorBlack1} />
+              <span className="text-[14px]" style={{ color: colors.colorBlack1 }}>
+                {guest.preferredLanguage || 'Unknown'}
+              </span>
+            </div>
+
+            {/* Assign staff */}
+            <div className="flex items-center gap-4">
+              <Icon path={mdiAccountMultipleOutline} size={0.83} color={colors.colorBlack1} />
+              <button
+                className="text-[14px] hover:underline"
+                style={{ color: colors.colorBlueDark1 }}
+              >
+                Assign Staff or Department
+              </button>
+            </div>
           </div>
 
           {/* Divider */}
@@ -597,7 +776,7 @@ export function CheckInDetailPanel({
               <CanaryButton
                 type={ButtonType.ICON_SECONDARY}
                 size={ButtonSize.COMPACT}
-                icon={<Icon path={mdiPlusCircleOutline} size={0.7} color={colors.colorBlueDark1} />}
+                icon={<Icon path={mdiPlus} size={0.7} color={colors.colorBlueDark1} />}
               />
             </div>
             {reservation?.notes ? (
@@ -623,7 +802,224 @@ export function CheckInDetailPanel({
           </div>
         </div>
       </div>
+
+      {/* Send Mobile Key Modal */}
+      <CanaryModal
+        isOpen={showMobileKeyModal}
+        onClose={() => setShowMobileKeyModal(false)}
+        title={mobileKeyResendMode ? 'Re-send mobile key to guest' : 'Send mobile key to guest'}
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-[14px]" style={{ color: colors.colorBlack3 }}>
+            This will send a link to guest so that they can add their mobile key to their wallet.
+          </p>
+
+          <div
+            className="flex flex-col gap-4"
+            style={{
+              border: `1px solid ${colors.colorBlack6}`,
+              borderRadius: 8,
+              padding: 16,
+            }}
+          >
+            <span className="text-[13px]" style={{ color: colors.colorBlack3 }}>
+              Send link to
+            </span>
+
+            <CanaryInput
+              label="Key Name"
+              value={keyName}
+              onChange={(e) => setKeyName(e.target.value)}
+              size={InputSize.NORMAL}
+              isReadonly={mobileKeyResendMode}
+            />
+            <CanaryInput
+              label="Phone"
+              value={keyPhone}
+              onChange={(e) => setKeyPhone(e.target.value)}
+              size={InputSize.NORMAL}
+              isReadonly={mobileKeyResendMode}
+            />
+            <CanaryInput
+              label="Email"
+              value={keyEmail}
+              onChange={(e) => setKeyEmail(e.target.value)}
+              size={InputSize.NORMAL}
+              isReadonly={mobileKeyResendMode}
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2">
+            <CanaryButton
+              type={ButtonType.OUTLINED}
+              onClick={() => setShowMobileKeyModal(false)}
+            >
+              Cancel
+            </CanaryButton>
+            <CanaryButton
+              type={ButtonType.PRIMARY}
+              onClick={() => {
+                if (activeKeyIdx === null) {
+                  // Adding a new key
+                  setMobileKeys((prev) => [{ name: keyName, status: 'not_provisioned', phone: keyPhone, email: keyEmail }, ...prev]);
+                }
+                setShowMobileKeyModal(false);
+              }}
+            >
+              {mobileKeyResendMode ? 'Re-send Link' : 'Send Link'}
+            </CanaryButton>
+          </div>
+        </div>
+      </CanaryModal>
+
+      {/* Activate Key Modal */}
+      <CanaryModal
+        isOpen={showActivateKeyModal}
+        onClose={() => setShowActivateKeyModal(false)}
+        title="Activate Vostio key"
+        size="small"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-[14px]" style={{ color: colors.colorBlack1 }}>
+            Are you sure you want to activate Vostio key for guest? This will also mark the reservation as checked-in and guest can use it to unlock their room.
+          </p>
+
+          <div className="flex items-center justify-end gap-2">
+            <CanaryButton
+              type={ButtonType.OUTLINED}
+              onClick={() => setShowActivateKeyModal(false)}
+            >
+              Cancel
+            </CanaryButton>
+            <CanaryButton
+              type={ButtonType.PRIMARY}
+              onClick={() => {
+                if (activeKeyIdx !== null) {
+                  setMobileKeys((prev) => prev.map((k, i) => i === activeKeyIdx ? { ...k, status: 'activated' } : k));
+                }
+                setShowActivateKeyModal(false);
+              }}
+            >
+              Activate
+            </CanaryButton>
+          </div>
+        </div>
+      </CanaryModal>
+
+      {/* Deactivate Key Modal */}
+      <CanaryModal
+        isOpen={showDeactivateKeyModal}
+        onClose={() => setShowDeactivateKeyModal(false)}
+        title="Deactivate Vostio key"
+        size="small"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-[14px]" style={{ color: colors.colorBlack1 }}>
+            Are you sure you want to deactivate Vostio key for guest? The guest will no longer be able to use their mobile key to unlock their room.
+          </p>
+
+          <div className="flex items-center justify-end gap-2">
+            <CanaryButton
+              type={ButtonType.OUTLINED}
+              onClick={() => setShowDeactivateKeyModal(false)}
+            >
+              Cancel
+            </CanaryButton>
+            <CanaryButton
+              type={ButtonType.PRIMARY}
+              color={ButtonColor.DANGER}
+              onClick={() => {
+                if (activeKeyIdx !== null) {
+                  setMobileKeys((prev) => prev.map((k, i) => i === activeKeyIdx ? { ...k, status: 'deactivated' } : k));
+                }
+                setShowDeactivateKeyModal(false);
+              }}
+            >
+              Deactivate
+            </CanaryButton>
+          </div>
+        </div>
+      </CanaryModal>
+
+      {/* Mobile Key Details Modal */}
+      <CanaryModal
+        isOpen={showKeyDetailsModal}
+        onClose={() => setShowKeyDetailsModal(false)}
+        title="Mobile Key Details"
+      >
+        {(() => {
+          const activeKey = activeKeyIdx !== null ? mobileKeys[activeKeyIdx] : null;
+          const ks = activeKey?.status || 'not_provisioned';
+          return (
+            <div className="flex flex-col gap-4">
+              <div
+                className="flex flex-col gap-4"
+                style={{
+                  border: `1px solid ${colors.colorBlack6}`,
+                  borderRadius: 8,
+                  padding: 16,
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[14px] font-medium" style={{ color: colors.colorBlack1 }}>
+                    Mobile Key
+                  </span>
+                  <CanaryTag
+                    label={ks === 'activated' ? 'ACTIVATED' : ks === 'deactivated' ? 'DEACTIVATED' : 'NOT PROVISIONED'}
+                    size={TagSize.COMPACT}
+                    variant={TagVariant.OUTLINE}
+                    color={ks === 'activated' ? TagColor.SUCCESS : ks === 'deactivated' ? TagColor.ERROR : TagColor.DEFAULT}
+                  />
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Icon path={mdiPound} size={0.75} color={colors.colorBlack4} />
+                  <span className="text-[14px]" style={{ color: colors.colorBlack2 }}>
+                    Key credential: {ks === 'deactivated' ? 'd1da09c3-ab1a-4b8a-8507-5dc5667bf9a5' : '86fbb279-09ce-4acb-9c49-bf066ffad6ce'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Icon path={mdiClockOutline} size={0.75} color={colors.colorBlack4} />
+                  <span className="text-[14px]" style={{ color: colors.colorBlack2 }}>
+                    {ks === 'deactivated' ? 'Mobile key deactivated a few seconds ago' : 'Mobile key activated a minute ago'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Icon path={mdiBedOutline} size={0.75} color={colors.colorBlack4} />
+                  <span className="text-[14px]" style={{ color: colors.colorBlack2 }}>
+                    Room {reservation?.room || '—'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Icon path={mdiSend} size={0.75} color={colors.colorBlack4} />
+                  <span className="text-[14px]" style={{ color: colors.colorBlack2 }}>
+                    {activeKey?.email || '—'},{activeKey?.phone || '—'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Icon path={mdiCellphone} size={0.75} color={colors.colorBlack4} />
+                  <span className="text-[14px]" style={{ color: colors.colorBlack2 }}>
+                    {ks === 'deactivated' ? 'Removed from wallet' : 'Added to wallet'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end">
+                <CanaryButton
+                  type={ButtonType.PRIMARY}
+                  onClick={() => setShowKeyDetailsModal(false)}
+                >
+                  Close
+                </CanaryButton>
+              </div>
+            </div>
+          );
+        })()}
+      </CanaryModal>
     </div>
   );
 }
-
