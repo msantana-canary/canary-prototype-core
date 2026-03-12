@@ -138,14 +138,13 @@ export function IDVerificationSection({
         @media (min-width: 1681px) {
           .id-section {
             grid-template-areas:
-              "header"
-              "tabs"
-              "image"
-              "checks";
-            grid-template-columns: 1fr;
-            grid-template-rows: auto auto auto auto;
+              "header tabs"
+              "image image"
+              "checks checks";
+            grid-template-columns: 1fr auto;
+            grid-template-rows: auto auto auto;
           }
-          .id-section-tabs { justify-self: start; }
+          .id-section-tabs { justify-self: end; }
         }
       `}</style>
 

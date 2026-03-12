@@ -42,11 +42,13 @@ import {
   mdiKeyOutline,
   mdiPlusCircleOutline,
   mdiNoteTextOutline,
+  mdiCheck,
 } from '@mdi/js';
 import { Avatar } from '../messaging/Avatar';
 import { IDVerificationSection } from './IDVerificationSection';
 import { PaymentCardSection } from './PaymentCardSection';
 import { UpsellsSection } from './UpsellsSection';
+import { RegistrationCardSection } from './RegistrationCardSection';
 import { CheckInSubmission, loyaltyColors, UpsellItem } from '@/lib/products/check-in/types';
 import { submissionUpsells } from '@/lib/products/check-in/mock-data';
 import { Guest } from '@/lib/core/types/guest';
@@ -369,11 +371,12 @@ export function CheckInDetailPanel({
               </CanaryButton>
             )}
             {status === 'checked_in' && (
-              <CanaryTag
-                label="CHECKED IN"
-                color={TagColor.SUCCESS}
-                size={TagSize.COMPACT}
-              />
+              <div className="flex items-center justify-center gap-1 h-full">
+                <Icon path={mdiCheck} size={1} color={colors.success} />
+                <span className="text-[14px] font-medium" style={{ color: colors.colorBlack2 }}>
+                  Check-in Completed
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -504,6 +507,7 @@ export function CheckInDetailPanel({
                 <CanaryCard hasBorder>
                   <RegistrationCardSection
                     guest={guest}
+                    reservation={reservation}
                     isSubmitted={status === 'submitted' || isVerified}
                   />
                 </CanaryCard>
@@ -522,8 +526,8 @@ export function CheckInDetailPanel({
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4
-                className="text-[13px] font-semibold"
-                style={{ color: colors.colorBlack2 }}
+                className="text-[18px] font-medium"
+                style={{ color: colors.colorBlack1 }}
               >
                 Room key
               </h4>
@@ -585,8 +589,8 @@ export function CheckInDetailPanel({
           <div className="flex-1 overflow-y-hidden">
             <div className="flex items-center justify-between mb-2">
               <h4
-                className="text-[13px] font-semibold"
-                style={{ color: colors.colorBlack2 }}
+                className="text-[18px] font-medium"
+                style={{ color: colors.colorBlack1 }}
               >
                 Notes
               </h4>
@@ -623,85 +627,3 @@ export function CheckInDetailPanel({
   );
 }
 
-/* ── Registration Card sub-section (inline) ─────────────────────── */
-
-function RegistrationCardSection({
-  guest,
-  isSubmitted,
-}: {
-  guest: Guest;
-  isSubmitted: boolean;
-}) {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <div>
-      <div className="flex items-center gap-3 mb-3">
-        <h3
-          className="text-[15px] font-semibold"
-          style={{ color: colors.colorBlack1 }}
-        >
-          Registration card
-        </h3>
-        {isSubmitted ? (
-          <CanaryTag
-            label="SIGNED"
-            color={TagColor.SUCCESS}
-            size={TagSize.COMPACT}
-          />
-        ) : (
-          <CanaryTag
-            label="NOT SIGNED"
-            color={TagColor.DEFAULT}
-            size={TagSize.COMPACT}
-          />
-        )}
-        <CanaryButton
-          type={ButtonType.OUTLINED}
-          size={ButtonSize.COMPACT}
-        >
-          Print
-        </CanaryButton>
-        <CanaryButton
-          type={ButtonType.TEXT}
-          size={ButtonSize.COMPACT}
-          onClick={() => setExpanded(!expanded)}
-          className="ml-auto"
-        >
-          {expanded ? 'Hide details' : 'Show details'}
-        </CanaryButton>
-      </div>
-
-      {expanded && (
-        <CanaryCard hasBorder padding="medium">
-          <div className="grid grid-cols-2 gap-3 text-[12px]">
-            <div>
-              <span style={{ color: colors.colorBlack4 }}>Name</span>
-              <p className="font-medium" style={{ color: colors.colorBlack1 }}>
-                {guest.name}
-              </p>
-            </div>
-            <div>
-              <span style={{ color: colors.colorBlack4 }}>Email</span>
-              <p className="font-medium" style={{ color: colors.colorBlack1 }}>
-                {guest.email || '—'}
-              </p>
-            </div>
-            <div>
-              <span style={{ color: colors.colorBlack4 }}>Phone</span>
-              <p className="font-medium" style={{ color: colors.colorBlack1 }}>
-                {guest.phone || '—'}
-              </p>
-            </div>
-            <div>
-              <span style={{ color: colors.colorBlack4 }}>Language</span>
-              <p className="font-medium" style={{ color: colors.colorBlack1 }}>
-                {guest.preferredLanguage || '—'}
-              </p>
-            </div>
-          </div>
-        </CanaryCard>
-      )}
-    </div>
-  );
-}
