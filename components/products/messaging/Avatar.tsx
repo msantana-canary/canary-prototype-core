@@ -15,7 +15,7 @@ interface AvatarProps {
   /** Fallback initials (e.g., "ES" for Emily Smith). If empty, shows icon instead */
   initials: string;
   /** Size variant */
-  size?: 'small' | 'medium';
+  size?: 'small' | 'medium' | 'large';
   /** Optional CSS classes */
   className?: string;
 }
@@ -24,6 +24,7 @@ export function Avatar({ src, initials, size = 'medium', className = '' }: Avata
   const sizeClasses = {
     small: 'w-8 h-8 text-xs',
     medium: 'w-10 h-10 text-sm',
+    large: 'w-14 h-14 text-base',
   };
 
   if (src) {
