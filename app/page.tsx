@@ -7,8 +7,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to messages by default for now
-    router.push('/messages');
+    router.push('/check-in');
   }, [router]);
 
   return (

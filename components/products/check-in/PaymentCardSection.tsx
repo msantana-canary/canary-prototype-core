@@ -156,7 +156,7 @@ export function PaymentCardSection({
 
             {/* Manual check — production: CanaryCheckbox (editable) */}
             <CanaryCheckbox
-              label="Verify name matches ID"
+              label="Verify ID and Credit Card name match"
               checked={nameConfirmed}
               onChange={() => !isReadOnly && setNameConfirmed(!nameConfirmed)}
               isDisabled={isReadOnly}

@@ -14,11 +14,11 @@ import { CheckInSubmission, UpsellItem, GuestNote, DEMO_TODAY } from './types';
  * All check-in submissions — single source of truth for both panes.
  *
  * Status distribution:
- *   submitted (4)           → Left pane: "Completed submissions"
- *   partially_submitted (1) → Left pane: "Partial submissions"
- *   pending (6)             → Left pane: "Pending"
- *   verified (5)            → Right pane: "Expected today" (4) + "Future" (1)
- *   checked_in (4)          → Right pane: "Checked-in today"
+ *   submitted (7)           → Left pane: "Completed submissions"
+ *   partially_submitted (3) → Left pane: "Partial submissions"
+ *   pending (9)             → Left pane: "Pending"
+ *   verified (7)            → Right pane: "Expected today" (6) + "Future" (1)
+ *   checked_in (7)          → Right pane: "Checked-in today"
  */
 export const checkInSubmissions: CheckInSubmission[] = [
   // ── Submitted (completed form, awaiting verification) ──────────────
@@ -64,6 +64,38 @@ export const checkInSubmissions: CheckInSubmission[] = [
     hasMobileKey: false,
   },
 
+  {
+    id: 'sub-carlos',
+    reservationId: 'res-carlos-nov',
+    guestId: 'guest-carlos',
+    status: 'submitted',
+    arrivalTime: '2:30 PM',
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T11:00:00'),
+    hasMobileKey: true,
+  },
+  {
+    id: 'sub-nina',
+    reservationId: 'res-nina-nov',
+    guestId: 'guest-nina',
+    status: 'submitted',
+    arrivalTime: '5:00 PM',
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T13:30:00'),
+    hasMobileKey: false,
+  },
+  {
+    id: 'sub-chloe',
+    reservationId: 'res-chloe-nov',
+    guestId: 'guest-chloe',
+    status: 'submitted',
+    arrivalTime: '11:00 AM',
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T08:45:00'),
+    hasMobileKey: true,
+    isFlagged: true,
+  },
+
   // ── Partially submitted ────────────────────────────────────────────
   {
     id: 'sub-miguel',
@@ -74,6 +106,26 @@ export const checkInSubmissions: CheckInSubmission[] = [
     arrivalDate: DEMO_TODAY,
     submittedAt: new Date('2024-11-17T12:00:00'),
     hasMobileKey: false,
+  },
+  {
+    id: 'sub-mei',
+    reservationId: 'res-mei-nov',
+    guestId: 'guest-mei',
+    status: 'partially_submitted',
+    arrivalTime: '4:00 PM',
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T14:15:00'),
+    hasMobileKey: false,
+  },
+  {
+    id: 'sub-rachel',
+    reservationId: 'res-rachel-nov',
+    guestId: 'guest-rachel',
+    status: 'partially_submitted',
+    arrivalTime: '1:00 PM',
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T10:00:00'),
+    hasMobileKey: true,
   },
 
   // ── Pending (form not yet started — no avatars, no IDs) ────────────
@@ -118,6 +170,27 @@ export const checkInSubmissions: CheckInSubmission[] = [
     guestId: 'guest-emma',
     status: 'pending',
     arrivalDate: '2024-11-19',
+  },
+  {
+    id: 'sub-omar',
+    reservationId: 'res-omar-nov',
+    guestId: 'guest-omar',
+    status: 'pending',
+    arrivalDate: '2024-11-19',
+  },
+  {
+    id: 'sub-thomas-k',
+    reservationId: 'res-thomas-k-nov',
+    guestId: 'guest-thomas-k',
+    status: 'pending',
+    arrivalDate: '2024-11-19',
+  },
+  {
+    id: 'sub-fatima',
+    reservationId: 'res-fatima-nov',
+    guestId: 'guest-fatima',
+    status: 'pending',
+    arrivalDate: DEMO_TODAY,
   },
 
   // ── Verified (right pane — expected today / future) ────────────────
@@ -173,6 +246,27 @@ export const checkInSubmissions: CheckInSubmission[] = [
     submittedAt: new Date('2024-11-17T10:00:00'),
     hasMobileKey: false,
   },
+  {
+    id: 'sub-zara',
+    reservationId: 'res-zara-nov',
+    guestId: 'guest-zara',
+    status: 'verified',
+    arrivalTime: '3:30 PM',
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T11:30:00'),
+    hasMobileKey: true,
+  },
+  {
+    id: 'sub-amara',
+    reservationId: 'res-amara-nov',
+    guestId: 'guest-amara',
+    status: 'verified',
+    arrivalTime: '5:30 PM',
+    arrivalDate: DEMO_TODAY,
+    submittedAt: new Date('2024-11-17T13:00:00'),
+    hasMobileKey: false,
+    isFlagged: true,
+  },
 
   // ── Checked in ─────────────────────────────────────────────────────
   {
@@ -215,6 +309,36 @@ export const checkInSubmissions: CheckInSubmission[] = [
     checkInTime: '2:20 PM',
     hasMobileKey: false,
   },
+  {
+    id: 'sub-priya',
+    reservationId: 'res-priya-nov',
+    guestId: 'guest-priya',
+    status: 'checked_in',
+    arrivalTime: '12:00 PM',
+    arrivalDate: DEMO_TODAY,
+    checkInTime: '11:50 AM',
+    hasMobileKey: true,
+  },
+  {
+    id: 'sub-yuki',
+    reservationId: 'res-yuki-nov',
+    guestId: 'guest-yuki',
+    status: 'checked_in',
+    arrivalTime: '1:00 PM',
+    arrivalDate: DEMO_TODAY,
+    checkInTime: '12:55 PM',
+    hasMobileKey: false,
+  },
+  {
+    id: 'sub-victor',
+    reservationId: 'res-victor-nov',
+    guestId: 'guest-victor',
+    status: 'checked_in',
+    arrivalTime: '3:00 PM',
+    arrivalDate: DEMO_TODAY,
+    checkInTime: '2:50 PM',
+    hasMobileKey: true,
+  },
 ];
 
 /**
@@ -245,6 +369,16 @@ export const submissionUpsells: Record<string, UpsellItem[]> = {
     { id: 'up-10', name: 'Champagne & Strawberries', quantity: 1, unitPrice: 65, status: 'pending' },
     { id: 'up-11', name: 'Early check-in (1PM)', quantity: 1, unitPrice: 30, status: 'pending' },
   ],
+  'sub-carlos': [
+    { id: 'up-12', name: 'Airport shuttle', quantity: 2, unitPrice: 45, status: 'pending' },
+  ],
+  'sub-zara': [
+    { id: 'up-13', name: 'Late checkout (2PM)', quantity: 1, unitPrice: 50, status: 'approved' },
+    { id: 'up-14', name: 'Spa access', quantity: 2, unitPrice: 75, status: 'pending' },
+  ],
+  'sub-nina': [
+    { id: 'up-15', name: 'Early check-in (1PM)', quantity: 1, unitPrice: 30, status: 'pending' },
+  ],
 };
 
 /**
@@ -268,5 +402,15 @@ export const submissionNotes: Record<string, GuestNote[]> = {
   ],
   'sub-sarah': [
     { id: 'note-7', text: 'Can we have a late checkout on Sunday? Our flight is at 8pm', type: 'guest_request', author: 'Sarah Martinez', createdAt: new Date('2024-11-17T15:00:00') },
+  ],
+  'sub-carlos': [
+    { id: 'note-8', text: 'Traveling with two children, connecting rooms if possible', type: 'guest_request', author: 'Carlos Rivera', createdAt: new Date('2024-11-17T11:30:00') },
+  ],
+  'sub-zara': [
+    { id: 'note-9', text: 'VIP guest — CEO of partner company, ensure premium experience', type: 'staff', author: 'James Rodriguez', createdAt: new Date('2024-11-18T07:45:00') },
+    { id: 'note-10', text: 'Would appreciate fresh flowers in the room', type: 'guest_request', author: 'Zara Khan', createdAt: new Date('2024-11-17T12:00:00') },
+  ],
+  'sub-amara': [
+    { id: 'note-11', text: 'Guest mentioned dietary restrictions — gluten-free options needed for breakfast', type: 'staff', author: 'Theresa Webb', createdAt: new Date('2024-11-18T09:00:00') },
   ],
 };
