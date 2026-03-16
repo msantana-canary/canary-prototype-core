@@ -78,7 +78,7 @@ export function BroadcastGroupList() {
   return (
     <div className="h-full flex flex-col border-r border-gray-200 overflow-y-auto broadcast-group-list" style={{ backgroundColor: '#fafafa' }}>
       {/* Built-in Groups */}
-      <CanaryList>
+      <CanaryList className="list-none">
         {builtInGroupsList.map(group => {
           const isSelected = selectedGroupId === group.id;
           return (
@@ -123,7 +123,7 @@ export function BroadcastGroupList() {
       </div>
 
       {/* Custom Groups List */}
-      <CanaryList>
+      <CanaryList className="list-none">
         {activeCustomGroups.map(group => {
           const isSelected = selectedGroupId === group.id;
           return (

@@ -18,10 +18,14 @@ interface BroadcastMessageFeedProps {
 }
 
 export function BroadcastMessageFeed({ messages }: BroadcastMessageFeedProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Scroll within the feed container only — not ancestor scroll contexts
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   if (messages.length === 0) {
@@ -36,7 +40,7 @@ export function BroadcastMessageFeed({ messages }: BroadcastMessageFeedProps) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div ref={containerRef} className="flex-1 overflow-y-auto p-6">
       {messages.map((message, index) => {
         const showDateSeparator =
           index === 0 ||

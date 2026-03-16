@@ -44,19 +44,19 @@ export function BroadcastView() {
 
   return (
     <>
-      <div className="flex h-full">
+      <div className="flex h-full overflow-hidden">
         {/* Left: Group List */}
-        <div className="w-[240px] shrink-0">
+        <div className="w-[240px] shrink-0 overflow-hidden">
           <BroadcastGroupList />
         </div>
 
         {/* Middle: Guest List */}
-        <div className="w-[260px] shrink-0">
+        <div className="w-[260px] shrink-0 overflow-hidden">
           <BroadcastGuestList />
         </div>
 
         {/* Right: Thread */}
-        <div className="flex-1">
+        <div className="flex-1 overflow-hidden">
           <BroadcastThread />
         </div>
       </div>
