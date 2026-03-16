@@ -64,7 +64,7 @@ export default function DashboardLayout({
 
   // Determine selected item from pathname
   const selectedItemId = useMemo(() => {
-    return routeItemMap[pathname] || 'messages';
+    return routeItemMap[pathname] || 'check-in';
   }, [pathname]);
 
   // Handle sidebar navigation

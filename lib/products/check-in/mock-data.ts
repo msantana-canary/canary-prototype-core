@@ -24,7 +24,7 @@ export const checkInSubmissions: CheckInSubmission[] = [
   // ── Submitted (completed form, awaiting verification) ──────────────
   {
     id: 'sub-emily',
-    reservationId: 'res-emily-jul',
+    reservationId: 'res-emily-nov',
     guestId: 'guest-emily',
     status: 'submitted',
     arrivalTime: '3:00 PM',

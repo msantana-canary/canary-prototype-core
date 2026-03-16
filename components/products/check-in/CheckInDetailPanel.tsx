@@ -578,6 +578,7 @@ export function CheckInDetailPanel({
               <div ref={(el) => { sectionRefs.current['upsells'] = el; }} />
               <CanaryCard hasBorder>
                 <UpsellsSection
+                  key={`ups-sub-${submission?.id}`}
                   upsells={localUpsells}
                   onApprove={handleApproveUpsell}
                   onDeny={handleDenyUpsell}
@@ -666,6 +667,7 @@ export function CheckInDetailPanel({
                 <div className="id-payment-grid">
                   <div className="id-section-border">
                     <IDVerificationSection
+                      key={`id-${submission?.id}`}
                       guest={guest}
                       isVerified={isVerified}
                       isReadOnly={isReadOnly}
@@ -673,6 +675,7 @@ export function CheckInDetailPanel({
                   </div>
                   <div className="payment-section-border">
                     <PaymentCardSection
+                      key={`pay-${submission?.id}`}
                       reservation={reservation}
                       isVerified={isVerified}
                       isReadOnly={isReadOnly}
@@ -685,6 +688,7 @@ export function CheckInDetailPanel({
               <div ref={(el) => { sectionRefs.current['upsells'] = el; }} />
               <CanaryCard hasBorder>
                 <UpsellsSection
+                  key={`ups-ver-${submission?.id}`}
                   upsells={localUpsells}
                   onApprove={handleApproveUpsell}
                   onDeny={handleDenyUpsell}
@@ -805,7 +809,7 @@ export function CheckInDetailPanel({
                           />
                           {openKeyMenuIdx === idx && (
                             <div
-                              className="absolute right-0 top-full mt-1 py-2 bg-white rounded-lg shadow-lg z-10"
+                              className="absolute right-0 bottom-full mb-1 py-2 bg-white rounded-lg shadow-lg z-10"
                               style={{ minWidth: 180, border: `1px solid ${colors.colorBlack6}` }}
                             >
                               {menuItems.map((item) => (
@@ -1061,7 +1065,7 @@ export function CheckInDetailPanel({
                           </div>
                           {openNoteMenuId === note.id && (
                             <div
-                              className="absolute right-0 top-full mt-1 py-2 bg-white rounded-lg shadow-lg z-10"
+                              className="absolute right-0 bottom-full mb-1 py-2 bg-white rounded-lg shadow-lg z-10"
                               style={{ minWidth: 140, border: `1px solid ${colors.colorBlack6}` }}
                             >
                               <button
