@@ -141,6 +141,15 @@ export const builtInGroupGuests: Record<string, BroadcastGuestEntry[]> = {
     { guestId: 'guest-rafael', reservationId: 'res-rafael-mar', segment: 'checked-out', loyaltyTier: 'non-member', rateCode: 'BAR', room: '412' },
     { guestId: 'guest-javier', reservationId: 'res-javier-mar', segment: 'departing', loyaltyTier: 'non-member', rateCode: 'AAA', room: '316' },
     { guestId: 'guest-kenji', reservationId: 'res-kenji-mar', segment: 'checked-out', loyaltyTier: 'non-member', rateCode: 'RACK', room: '408' },
+    { guestId: 'guest-raj', reservationId: 'res-raj-mar', segment: 'departing', loyaltyTier: 'non-member', rateCode: 'RACK', groupCode: 'GROUP2026', room: '507' },
+    { guestId: 'guest-nook', reservationId: 'res-nook-mar', segment: 'departing', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'GROUP2026', room: '208' },
+    { guestId: 'guest-anya', reservationId: 'res-anya-mar', segment: 'departing', loyaltyTier: 'silver-elite', rateCode: 'BAR', groupCode: 'GRP1027', room: '217' },
+    { guestId: 'guest-sophie-t', reservationId: 'res-sophie-t-mar', segment: 'departing', loyaltyTier: 'non-member', rateCode: 'RACK', room: '115' },
+    { guestId: 'guest-ines', reservationId: 'res-ines-mar', segment: 'departing', loyaltyTier: 'silver-elite', rateCode: 'AAA', room: '309' },
+    { guestId: 'guest-leila', reservationId: 'res-leila-mar', segment: 'departing', loyaltyTier: 'gold-elite', rateCode: 'CORP', room: '411' },
+    { guestId: 'guest-lucas', reservationId: 'res-lucas-mar', segment: 'departing', loyaltyTier: 'non-member', rateCode: 'BAR', room: '118' },
+    { guestId: 'guest-kofi', reservationId: 'res-kofi-mar', segment: 'departing', loyaltyTier: 'non-member', rateCode: 'AAA', room: '116' },
+    { guestId: 'guest-dmitri', reservationId: 'res-dmitri-mar', segment: 'departing', loyaltyTier: 'non-member', rateCode: 'GOV', room: '222' },
   ],
 };
 
@@ -271,7 +280,7 @@ export const mockBroadcastMessages: Record<string, BroadcastMessage[]> = {
       content: 'We hope you enjoyed your stay! Please remember to check out by 11:00 AM. If you need a late checkout, please contact the front desk.',
       senderName: 'THERESA WEBB',
       sentAt: new Date('2026-03-11T07:30:00'),
-      recipientCount: 3,
+      recipientCount: 12,
     },
   ],
   'group-corporate': [

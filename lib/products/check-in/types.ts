@@ -34,7 +34,7 @@ export interface CheckInSubmission {
  * Demo date constant — all date comparisons use this
  * so the prototype looks correct regardless of when it runs.
  */
-export const DEMO_TODAY = '2024-11-18';
+export const DEMO_TODAY = '2026-03-16';
 
 export interface UpsellItem {
   id: string;

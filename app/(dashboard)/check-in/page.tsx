@@ -8,7 +8,8 @@
  * All data derives from a single checkInSubmissions array.
  */
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { parseISO, format } from 'date-fns';
 import { SubNav } from '@/components/products/check-in/SubNav';
 import { DateSelector } from '@/components/products/check-in/DateSelector';
@@ -33,10 +34,28 @@ import {
 } from '@canary-ui/components';
 
 export default function CheckInPage() {
+  return (
+    <Suspense>
+      <CheckInPageContent />
+    </Suspense>
+  );
+}
+
+function CheckInPageContent() {
+  const searchParams = useSearchParams();
   const [submissions, setSubmissions] = useState<CheckInSubmission[]>(initialSubmissions);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(parseISO(DEMO_TODAY));
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
+
+  // Auto-open detail panel if ?guest=guest-id is in URL
+  useEffect(() => {
+    const guestId = searchParams.get('guest');
+    if (guestId) {
+      const sub = initialSubmissions.find(s => s.guestId === guestId);
+      if (sub) setSelectedSubmissionId(sub.id);
+    }
+  }, [searchParams]);
 
   // Runtime-created guests and reservations (extends canonical data)
   const [runtimeGuests, setRuntimeGuests] = useState<Record<string, Guest>>({});
