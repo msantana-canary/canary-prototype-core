@@ -20,7 +20,7 @@ import {
   colors,
 } from '@canary-ui/components';
 import Icon from '@mdi/react';
-import { mdiBedOutline, mdiStar, mdiStarOutline, mdiCheckCircleOutline, mdiCommentTextOutline } from '@mdi/js';
+import { mdiBedOutline, mdiStar, mdiStarOutline, mdiDrawPen, mdiTextBoxEditOutline } from '@mdi/js';
 import { Avatar } from '../messaging/Avatar';
 import { CheckOutSubmission, loyaltyColors } from '@/lib/products/checkout/types';
 import { Guest } from '@/lib/core/types/guest';
@@ -125,9 +125,9 @@ export function CheckOutListItem({
             {isProcessed && submission.folioStatus === 'signed_on_tablet' && (
               <div className="flex items-center gap-1">
                 <Icon
-                  path={mdiCheckCircleOutline}
+                  path={mdiDrawPen}
                   size={0.55}
-                  color={colors.success}
+                  color={colors.colorBlack1}
                 />
                 <span
                   className="text-[12px]"
@@ -166,12 +166,12 @@ export function CheckOutListItem({
           {/* Review indicators + Star rating for processed items */}
           {isProcessed && (
             <div className="flex items-center gap-2">
-              {/* Internal review indicator */}
-              {submission.hasInternalReview && (
+              {/* Internal review indicator — only show if no external review */}
+              {submission.hasInternalReview && !submission.tripadvisorClicked && !submission.googleReviewClicked && (
                 <Icon
-                  path={mdiCommentTextOutline}
+                  path={mdiTextBoxEditOutline}
                   size={0.7}
-                  color={colors.colorBlack4}
+                  color={colors.colorBlack1}
                 />
               )}
 
@@ -179,28 +179,15 @@ export function CheckOutListItem({
               {submission.tripadvisorClicked && (
                 <div
                   className="flex items-center justify-center rounded-full shrink-0"
-                  style={{
-                    width: 20,
-                    height: 20,
-                    backgroundColor: '#34E0A1',
-                  }}
+                  style={{ width: 20, height: 20, backgroundColor: '#34E0A1' }}
                 >
-                  <span className="text-white text-[11px] font-bold leading-none">T</span>
+                  <img src="/icons/tripadvisor.svg" alt="TripAdvisor" style={{ width: 14, height: 14 }} />
                 </div>
               )}
 
               {/* Google review indicator */}
               {submission.googleReviewClicked && (
-                <div
-                  className="flex items-center justify-center rounded-full shrink-0"
-                  style={{
-                    width: 20,
-                    height: 20,
-                    backgroundColor: '#4285F4',
-                  }}
-                >
-                  <span className="text-white text-[11px] font-bold leading-none">G</span>
-                </div>
+                <img src="/icons/google-reviews.svg" alt="Google Reviews" className="shrink-0" style={{ width: 20, height: 20 }} />
               )}
 
               {/* Star rating */}

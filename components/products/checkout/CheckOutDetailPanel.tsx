@@ -544,13 +544,9 @@ export function CheckOutDetailPanel({
                       <div className="flex items-center gap-2 mb-2">
                         <div
                           className="flex items-center justify-center rounded-full shrink-0"
-                          style={{
-                            width: 20,
-                            height: 20,
-                            backgroundColor: '#34E0A1',
-                          }}
+                          style={{ width: 24, height: 24, backgroundColor: '#34E0A1' }}
                         >
-                          <span className="text-white text-[11px] font-bold leading-none">T</span>
+                          <img src="/icons/tripadvisor.svg" alt="TripAdvisor" style={{ width: 16, height: 16 }} />
                         </div>
                         <span className="text-[14px]" style={{ color: colors.colorBlack3 }}>
                           {guest?.name} visited the Tripadvisor review website from Canary checkout.
@@ -560,16 +556,7 @@ export function CheckOutDetailPanel({
 
                     {submission.googleReviewClicked && (
                       <div className="flex items-center gap-2">
-                        <div
-                          className="flex items-center justify-center rounded-full shrink-0"
-                          style={{
-                            width: 20,
-                            height: 20,
-                            backgroundColor: '#4285F4',
-                          }}
-                        >
-                          <span className="text-white text-[11px] font-bold leading-none">G</span>
-                        </div>
+                        <img src="/icons/google-reviews.svg" alt="Google Reviews" className="shrink-0" style={{ width: 24, height: 24 }} />
                         <span className="text-[14px]" style={{ color: colors.colorBlack3 }}>
                           {guest?.name} visited the Google review website from Canary checkout.
                         </span>
