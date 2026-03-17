@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Icon from '@mdi/react';
-import { mdiChevronDown, mdiChevronRight } from '@mdi/js';
+import { mdiChevronDown, mdiChevronUp } from '@mdi/js';
 import { colors } from '@canary-ui/components';
 
 interface CollapsibleSectionProps {
@@ -27,17 +27,17 @@ export function CollapsibleSection({
         onClick={() => setCollapsed(!collapsed)}
         className="flex items-center gap-1 mb-2 cursor-pointer"
       >
-        <Icon
-          path={collapsed ? mdiChevronRight : mdiChevronDown}
-          size={0.7}
-          color={colors.colorBlack3}
-        />
         <span
           className="text-[13px] font-medium"
           style={{ color: colors.colorBlack3 }}
         >
           {title} ({count})
         </span>
+        <Icon
+          path={collapsed ? mdiChevronDown : mdiChevronUp}
+          size={0.7}
+          color={colors.colorBlack3}
+        />
       </button>
       {!collapsed && children}
     </div>

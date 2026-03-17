@@ -46,7 +46,7 @@ export function UpsellsSection({
       {/* Header */}
       <div className="flex items-center gap-4">
         <span
-          className="text-[18px] font-medium"
+          className="text-[15px] font-semibold"
           style={{ color: colors.colorBlack1 }}
         >
           Manage upsells
