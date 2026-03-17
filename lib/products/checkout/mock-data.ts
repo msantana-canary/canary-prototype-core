@@ -12,7 +12,7 @@
  *   archived (2)   → Old checkouts, no longer active
  */
 
-import { CheckOutSubmission, FolioLineItem, DEMO_TODAY, CHECKOUT_TIME } from './types';
+import { CheckOutSubmission, FolioLineItem, ActivityLogEntry, DEMO_TODAY, CHECKOUT_TIME } from './types';
 import { UpsellItem } from '../check-in/types';
 import { GuestNote } from '../check-in/types';
 
@@ -31,6 +31,10 @@ export const checkOutSubmissions: CheckOutSubmission[] = [
     departureTime: CHECKOUT_TIME,
     folioStatus: 'pending',
     efolioAccepted: false,
+    lateCheckoutRequested: true,
+    lateCheckoutTime: '2 PM',
+    lateCheckoutPrice: 50,
+    lateCheckoutApproved: null,
   },
   {
     id: 'co-nook',
@@ -83,6 +87,10 @@ export const checkOutSubmissions: CheckOutSubmission[] = [
     folioStatus: 'signed_on_tablet',
     folioSignedAt: new Date('2026-03-16T09:15:00'),
     efolioAccepted: false,
+    lateCheckoutRequested: true,
+    lateCheckoutTime: '3 PM',
+    lateCheckoutPrice: 75,
+    lateCheckoutApproved: null,
   },
   {
     id: 'co-lucas',
@@ -135,6 +143,7 @@ export const checkOutSubmissions: CheckOutSubmission[] = [
     autoCheckoutStatus: 'completed',
     submittedAt: new Date('2026-03-16T08:30:00'),
     processedAt: new Date('2026-03-16T08:50:00'),
+    hasInternalReview: true,
   },
   {
     id: 'co-chen',
@@ -165,6 +174,8 @@ export const checkOutSubmissions: CheckOutSubmission[] = [
     autoCheckoutStatus: 'completed',
     submittedAt: new Date('2026-03-16T09:45:00'),
     processedAt: new Date('2026-03-16T10:05:00'),
+    hasInternalReview: true,
+    tripadvisorClicked: true,
   },
   {
     id: 'co-javier',
@@ -195,6 +206,8 @@ export const checkOutSubmissions: CheckOutSubmission[] = [
     autoCheckoutStatus: 'completed',
     submittedAt: new Date('2026-03-16T10:40:00'),
     processedAt: new Date('2026-03-16T11:00:00'),
+    hasInternalReview: true,
+    googleReviewClicked: true,
   },
 
   // ── Archived (2) ───────────────────────────────────────────────────────────
@@ -361,6 +374,210 @@ export const checkoutNotes: Record<string, GuestNote[]> = {
       type: 'staff',
       author: 'Valet',
       createdAt: new Date('2026-03-16T09:50:00'),
+    },
+  ],
+};
+
+// ===== Upsell Requests per Checkout =====
+
+// ─── Activity Logs ────────────────────────────────────────────────────────────
+// Reverse-chronological event history per checkout submission.
+// Confirmation codes match canonical reservations.
+
+export const checkoutActivityLogs: Record<string, ActivityLogEntry[]> = {
+
+  // Raj Kapoor — res-raj-mar (RK2E7WXYZ)
+  'co-raj': [
+    {
+      id: 'al-rj-1',
+      description: 'Raj Kapoor requested a late checkout until 2 PM.',
+      timestamp: new Date('2026-03-16T09:45:00'),
+    },
+    {
+      id: 'al-rj-2',
+      description: 'Raj Kapoor viewed the checkout.',
+      timestamp: new Date('2026-03-16T09:30:00'),
+    },
+    {
+      id: 'al-rj-3',
+      description: 'Raj Kapoor viewed the reservation Raj Kapoor (RK2E7WXYZ) coming from unknown source.',
+      timestamp: new Date('2026-03-16T09:28:00'),
+    },
+    {
+      id: 'al-rj-4',
+      description: 'Theresa Webb emailed the checkout link to Raj Kapoor.',
+      timestamp: new Date('2026-03-16T08:00:00'),
+    },
+    {
+      id: 'al-rj-5',
+      description: 'Canary created the checkout.',
+      timestamp: new Date('2026-03-15T22:00:00'),
+    },
+  ],
+
+  // Leila Khoury — res-leila-mar (LM8F7WXYZ)
+  'co-leila': [
+    {
+      id: 'al-le-1',
+      description: 'Leila Khoury requested a late checkout until 3 PM.',
+      timestamp: new Date('2026-03-16T10:02:00'),
+    },
+    {
+      id: 'al-le-2',
+      description: 'Leila Khoury signed the eFolio for Leila Khoury (LM8F7WXYZ).',
+      timestamp: new Date('2026-03-16T09:15:00'),
+    },
+    {
+      id: 'al-le-3',
+      description: 'Leila Khoury viewed the checkout.',
+      timestamp: new Date('2026-03-16T09:10:00'),
+    },
+    {
+      id: 'al-le-4',
+      description: 'Leila Khoury viewed the reservation Leila Khoury (LM8F7WXYZ) coming from unknown source.',
+      timestamp: new Date('2026-03-16T09:08:00'),
+    },
+    {
+      id: 'al-le-5',
+      description: 'Theresa Webb emailed the checkout link to Leila Khoury.',
+      timestamp: new Date('2026-03-16T07:45:00'),
+    },
+    {
+      id: 'al-le-6',
+      description: 'Canary created the checkout.',
+      timestamp: new Date('2026-03-15T22:00:00'),
+    },
+  ],
+
+  // Diana Reyes — res-diana-mar (DR6F4KLMNO)
+  'co-diana': [
+    {
+      id: 'al-di-1',
+      description: 'Sarah Chen moved the checkout to processed.',
+      timestamp: new Date('2026-03-16T08:50:00'),
+    },
+    {
+      id: 'al-di-2',
+      description: 'Diana Reyes submitted a review.',
+      timestamp: new Date('2026-03-16T08:45:00'),
+    },
+    {
+      id: 'al-di-3',
+      description: 'Diana Reyes submitted the checkout.',
+      timestamp: new Date('2026-03-16T08:30:00'),
+    },
+    {
+      id: 'al-di-4',
+      description: 'Diana Reyes signed the eFolio for Diana Reyes (DR6F4KLMNO).',
+      timestamp: new Date('2026-03-16T08:40:00'),
+    },
+    {
+      id: 'al-di-5',
+      description: 'Diana Reyes viewed the checkout.',
+      timestamp: new Date('2026-03-16T08:20:00'),
+    },
+    {
+      id: 'al-di-6',
+      description: 'Diana Reyes viewed the reservation Diana Reyes (DR6F4KLMNO) coming from unknown source.',
+      timestamp: new Date('2026-03-16T08:18:00'),
+    },
+    {
+      id: 'al-di-7',
+      description: 'Sarah Chen emailed the checkout link to Diana Reyes.',
+      timestamp: new Date('2026-03-16T07:30:00'),
+    },
+    {
+      id: 'al-di-8',
+      description: 'Canary created the checkout.',
+      timestamp: new Date('2026-03-15T22:00:00'),
+    },
+  ],
+
+  // Rafael Costa — res-rafael-mar (RM5J4MNPQR)
+  'co-rafael': [
+    {
+      id: 'al-ra-1',
+      description: 'Michael Torres moved the checkout to processed.',
+      timestamp: new Date('2026-03-16T10:05:00'),
+    },
+    {
+      id: 'al-ra-2',
+      description: 'Rafael Costa submitted a review.',
+      timestamp: new Date('2026-03-16T09:58:00'),
+    },
+    {
+      id: 'al-ra-3',
+      description: 'Rafael Costa submitted the checkout.',
+      timestamp: new Date('2026-03-16T09:45:00'),
+    },
+    {
+      id: 'al-ra-4',
+      description: 'Rafael Costa signed the eFolio for Rafael Costa (RM5J4MNPQR).',
+      timestamp: new Date('2026-03-16T09:55:00'),
+    },
+    {
+      id: 'al-ra-5',
+      description: 'Rafael Costa viewed the checkout.',
+      timestamp: new Date('2026-03-16T09:40:00'),
+    },
+    {
+      id: 'al-ra-6',
+      description: 'Rafael Costa viewed the reservation Rafael Costa (RM5J4MNPQR) coming from unknown source.',
+      timestamp: new Date('2026-03-16T09:38:00'),
+    },
+    {
+      id: 'al-ra-7',
+      description: 'Michael Torres emailed the checkout link to Rafael Costa.',
+      timestamp: new Date('2026-03-16T08:30:00'),
+    },
+    {
+      id: 'al-ra-8',
+      description: 'Canary created the checkout.',
+      timestamp: new Date('2026-03-15T22:00:00'),
+    },
+  ],
+
+  // Kenji Watanabe — res-kenji-mar (KT8I6STUV)
+  'co-kenji': [
+    {
+      id: 'al-kj-1',
+      description: 'Sarah Chen moved the checkout to processed.',
+      timestamp: new Date('2026-03-16T11:00:00'),
+    },
+    {
+      id: 'al-kj-2',
+      description: 'Kenji Watanabe submitted a review.',
+      timestamp: new Date('2026-03-16T10:52:00'),
+    },
+    {
+      id: 'al-kj-3',
+      description: 'Kenji Watanabe submitted the checkout.',
+      timestamp: new Date('2026-03-16T10:40:00'),
+    },
+    {
+      id: 'al-kj-4',
+      description: 'Kenji Watanabe signed the eFolio for Kenji Watanabe (KT8I6STUV).',
+      timestamp: new Date('2026-03-16T10:50:00'),
+    },
+    {
+      id: 'al-kj-5',
+      description: 'Kenji Watanabe viewed the checkout.',
+      timestamp: new Date('2026-03-16T10:35:00'),
+    },
+    {
+      id: 'al-kj-6',
+      description: 'Kenji Watanabe viewed the reservation Kenji Watanabe (KT8I6STUV) coming from unknown source.',
+      timestamp: new Date('2026-03-16T10:33:00'),
+    },
+    {
+      id: 'al-kj-7',
+      description: 'Sarah Chen emailed the checkout link to Kenji Watanabe.',
+      timestamp: new Date('2026-03-16T09:00:00'),
+    },
+    {
+      id: 'al-kj-8',
+      description: 'Canary created the checkout.',
+      timestamp: new Date('2026-03-15T22:00:00'),
     },
   ],
 };

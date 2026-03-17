@@ -20,7 +20,7 @@ import {
   colors,
 } from '@canary-ui/components';
 import Icon from '@mdi/react';
-import { mdiBedOutline, mdiStar, mdiStarOutline, mdiCheckCircleOutline } from '@mdi/js';
+import { mdiBedOutline, mdiStar, mdiStarOutline, mdiCheckCircleOutline, mdiCommentTextOutline } from '@mdi/js';
 import { Avatar } from '../messaging/Avatar';
 import { CheckOutSubmission, loyaltyColors } from '@/lib/products/checkout/types';
 import { Guest } from '@/lib/core/types/guest';
@@ -163,16 +163,59 @@ export function CheckOutListItem({
               Message
             </CanaryButton>
           )}
-          {isProcessed && submission.guestRating != null && submission.guestRating > 0 && (
-            <div className="flex items-center gap-0.5">
-              {[1, 2, 3, 4, 5].map((star) => (
+          {/* Review indicators + Star rating for processed items */}
+          {isProcessed && (
+            <div className="flex items-center gap-2">
+              {/* Internal review indicator */}
+              {submission.hasInternalReview && (
                 <Icon
-                  key={star}
-                  path={star <= submission.guestRating! ? mdiStar : mdiStarOutline}
+                  path={mdiCommentTextOutline}
                   size={0.7}
-                  color={star <= submission.guestRating! ? '#FAB541' : colors.colorBlack5}
+                  color={colors.colorBlack4}
                 />
-              ))}
+              )}
+
+              {/* Tripadvisor indicator */}
+              {submission.tripadvisorClicked && (
+                <div
+                  className="flex items-center justify-center rounded-full shrink-0"
+                  style={{
+                    width: 20,
+                    height: 20,
+                    backgroundColor: '#34E0A1',
+                  }}
+                >
+                  <span className="text-white text-[11px] font-bold leading-none">T</span>
+                </div>
+              )}
+
+              {/* Google review indicator */}
+              {submission.googleReviewClicked && (
+                <div
+                  className="flex items-center justify-center rounded-full shrink-0"
+                  style={{
+                    width: 20,
+                    height: 20,
+                    backgroundColor: '#4285F4',
+                  }}
+                >
+                  <span className="text-white text-[11px] font-bold leading-none">G</span>
+                </div>
+              )}
+
+              {/* Star rating */}
+              {submission.guestRating != null && submission.guestRating > 0 && (
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Icon
+                      key={star}
+                      path={star <= submission.guestRating! ? mdiStar : mdiStarOutline}
+                      size={0.7}
+                      color={star <= submission.guestRating! ? '#FAB541' : colors.colorBlack5}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

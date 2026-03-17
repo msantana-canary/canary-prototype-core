@@ -10,6 +10,12 @@ export type { GuestNote } from '../check-in/types';
 
 export type CheckOutFolder = 'pending' | 'submitted' | 'processed' | 'archived';
 
+export interface ActivityLogEntry {
+  id: string;
+  description: string;
+  timestamp: Date;
+}
+
 export type FolioStatus = 'pending' | 'signed_on_tablet' | 'emailed';
 
 export interface FolioLineItem {
@@ -36,6 +42,15 @@ export interface CheckOutSubmission {
   autoCheckoutStatus?: AutoCheckoutStatus;
   submittedAt?: Date;
   processedAt?: Date;
+  // Review indicator flags
+  tripadvisorClicked?: boolean;
+  googleReviewClicked?: boolean;
+  hasInternalReview?: boolean;
+  // Late checkout request
+  lateCheckoutRequested?: boolean;
+  lateCheckoutTime?: string;         // e.g. "2 PM"
+  lateCheckoutPrice?: number;        // e.g. 0 or 50
+  lateCheckoutApproved?: boolean | null;  // null = pending, true = approved, false = denied
 }
 
 /**

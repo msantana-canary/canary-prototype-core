@@ -51,7 +51,8 @@ import { Avatar } from '../messaging/Avatar';
 import { ActionMenu } from '../../core/ActionMenu';
 import { CheckOutSubmission, loyaltyColors, FolioLineItem, DEMO_TODAY } from '@/lib/products/checkout/types';
 import { GuestNote } from '@/lib/products/check-in/types';
-import { checkoutFolioItems, checkoutNotes, checkoutUpsells } from '@/lib/products/checkout/mock-data';
+import { checkoutFolioItems, checkoutNotes, checkoutUpsells, checkoutActivityLogs } from '@/lib/products/checkout/mock-data';
+import { ActivityLogModal } from './ActivityLogModal';
 import { UpsellsSection } from '../check-in/UpsellsSection';
 import { UpsellItem } from '@/lib/products/check-in/types';
 import { Guest } from '@/lib/core/types/guest';
@@ -120,6 +121,9 @@ export function CheckOutDetailPanel({
 
   // Folio collapsed state
   const [folioExpanded, setFolioExpanded] = useState(false);
+
+  // Activity log modal
+  const [showActivityLog, setShowActivityLog] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -294,6 +298,7 @@ export function CheckOutDetailPanel({
               type={ButtonType.ICON_SECONDARY}
               size={ButtonSize.COMPACT}
               icon={<Icon path={mdiHistory} size={0.8} color={colors.colorBlack2} />}
+              onClick={() => setShowActivityLog(true)}
             />
             <ActionMenu
               minWidth={250}
@@ -528,6 +533,49 @@ export function CheckOutDetailPanel({
                   <p className="text-[14px]" style={{ color: colors.colorBlack1 }}>
                     &ldquo;{submission.guestReview}&rdquo;
                   </p>
+                )}
+
+                {/* External review indicators */}
+                {(submission.tripadvisorClicked || submission.googleReviewClicked) && (
+                  <div className="mt-3">
+                    <hr className="mb-3" style={{ borderColor: colors.colorBlack6 }} />
+
+                    {submission.tripadvisorClicked && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <div
+                          className="flex items-center justify-center rounded-full shrink-0"
+                          style={{
+                            width: 20,
+                            height: 20,
+                            backgroundColor: '#34E0A1',
+                          }}
+                        >
+                          <span className="text-white text-[11px] font-bold leading-none">T</span>
+                        </div>
+                        <span className="text-[14px]" style={{ color: colors.colorBlack3 }}>
+                          {guest?.name} visited the Tripadvisor review website from Canary checkout.
+                        </span>
+                      </div>
+                    )}
+
+                    {submission.googleReviewClicked && (
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="flex items-center justify-center rounded-full shrink-0"
+                          style={{
+                            width: 20,
+                            height: 20,
+                            backgroundColor: '#4285F4',
+                          }}
+                        >
+                          <span className="text-white text-[11px] font-bold leading-none">G</span>
+                        </div>
+                        <span className="text-[14px]" style={{ color: colors.colorBlack3 }}>
+                          {guest?.name} visited the Google review website from Canary checkout.
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             ) : (
@@ -859,6 +907,13 @@ export function CheckOutDetailPanel({
           <span className="text-[14px]">Copied to clipboard</span>
         </div>
       )}
+
+      {/* Activity Log Modal */}
+      <ActivityLogModal
+        isOpen={showActivityLog}
+        onClose={() => setShowActivityLog(false)}
+        logs={submission ? (checkoutActivityLogs[submission.id] || []) : []}
+      />
     </div>
   );
 }

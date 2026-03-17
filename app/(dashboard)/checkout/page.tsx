@@ -13,8 +13,10 @@ import { parseISO } from 'date-fns';
 import { SubNav } from '@/components/products/checkout/SubNav';
 import { DateSelector } from '@/components/products/check-in/DateSelector';
 import { CheckOutListItem } from '@/components/products/checkout/CheckOutListItem';
+import { LateCheckoutRequestItem } from '@/components/products/checkout/LateCheckoutRequestItem';
 import { CollapsibleSection } from '@/components/products/check-in/CollapsibleSection';
 import { CheckOutDetailPanel } from '@/components/products/checkout/CheckOutDetailPanel';
+import { NewCheckoutModal } from '@/components/products/checkout/NewCheckoutModal';
 import { checkOutSubmissions as initialSubmissions } from '@/lib/products/checkout/mock-data';
 import { CheckOutSubmission, DEMO_TODAY } from '@/lib/products/checkout/types';
 import { guests as canonicalGuests } from '@/lib/core/data/guests';
@@ -26,6 +28,7 @@ export default function CheckoutPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(parseISO(DEMO_TODAY));
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
+  const [showNewCheckout, setShowNewCheckout] = useState(false);
 
   const guests = canonicalGuests;
   const reservations = canonicalReservations;
@@ -71,8 +74,28 @@ export default function CheckoutPage() {
     [filtered]
   );
 
+  // Pending late checkout requests: lateCheckoutRequested && lateCheckoutApproved === null
+  const lateCheckoutRequests = useMemo(
+    () => filtered.filter(s =>
+      s.lateCheckoutRequested === true && s.lateCheckoutApproved === null
+    ),
+    [filtered]
+  );
+
   // ── Handlers ─────────────────────────────────────────────────────
   const handleMessage = (id: string) => console.log('Message:', id);
+
+  const handleApproveLateCheckout = useCallback((id: string) => {
+    setSubmissions(prev => prev.map(s =>
+      s.id === id ? { ...s, lateCheckoutApproved: true } : s
+    ));
+  }, []);
+
+  const handleDenyLateCheckout = useCallback((id: string) => {
+    setSubmissions(prev => prev.map(s =>
+      s.id === id ? { ...s, lateCheckoutApproved: false } : s
+    ));
+  }, []);
 
   const handleMarkProcessed = useCallback((id: string) => {
     setSubmissions(prev => prev.map(s =>
@@ -90,7 +113,7 @@ export default function CheckoutPage() {
         onSearchChange={setSearchQuery}
         onInsightsClick={() => console.log('Insights clicked')}
         onExportClick={() => console.log('Export clicked')}
-        onNewCheckout={() => console.log('New checkout clicked')}
+        onNewCheckout={() => setShowNewCheckout(true)}
       />
 
       {/* Single scrollable list */}
@@ -99,6 +122,35 @@ export default function CheckoutPage() {
           selectedDate={selectedDate}
           onDateChange={setSelectedDate}
         />
+
+        {/* Pending late checkout requests section */}
+        {lateCheckoutRequests.length > 0 && (
+          <div className="px-6 pb-4">
+            <CollapsibleSection
+              title="Pending late checkouts requests"
+              count={lateCheckoutRequests.length}
+              defaultCollapsed={false}
+            >
+              <ul className="border border-gray-200 rounded-lg divide-y divide-gray-200 overflow-hidden">
+                {lateCheckoutRequests.map((submission) => {
+                  const guest = guests[submission.guestId];
+                  const reservation = reservations[submission.reservationId];
+                  if (!guest) return null;
+                  return (
+                    <LateCheckoutRequestItem
+                      key={submission.id}
+                      submission={submission}
+                      guest={guest}
+                      reservation={reservation}
+                      onApprove={handleApproveLateCheckout}
+                      onDeny={handleDenyLateCheckout}
+                    />
+                  );
+                })}
+              </ul>
+            </CollapsibleSection>
+          </div>
+        )}
 
         {/* Submitted section */}
         <div className="px-6 pb-4">
@@ -212,6 +264,12 @@ export default function CheckoutPage() {
         isOpen={!!selectedSubmission}
         onClose={() => setSelectedSubmissionId(null)}
         onMarkProcessed={handleMarkProcessed}
+      />
+
+      {/* New Checkout Modal */}
+      <NewCheckoutModal
+        isOpen={showNewCheckout}
+        onClose={() => setShowNewCheckout(false)}
       />
     </div>
   );
