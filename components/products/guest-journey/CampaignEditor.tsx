@@ -148,7 +148,10 @@ export function CampaignEditor({ isOpen }: CampaignEditorProps) {
           )}
           <CanaryButton
             type={ButtonType.PRIMARY}
-            onClick={closeCampaignEditor}
+            onClick={() => {
+              useGuestJourneyStore.getState().showToast('Campaign saved');
+              closeCampaignEditor();
+            }}
           >
             Save
           </CanaryButton>
@@ -225,6 +228,7 @@ export function CampaignEditor({ isOpen }: CampaignEditorProps) {
             color={ButtonColor.DANGER}
             onClick={() => {
               deleteCampaign(campaign.id);
+              useGuestJourneyStore.getState().showToast('Campaign deleted');
               setShowDeleteConfirm(false);
               closeCampaignEditor();
             }}

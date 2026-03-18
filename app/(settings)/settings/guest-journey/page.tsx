@@ -14,6 +14,7 @@ import { Timeline } from '@/components/products/guest-journey/Timeline';
 import { CampaignList } from '@/components/products/guest-journey/CampaignList';
 import { MessageEditor } from '@/components/products/guest-journey/MessageEditor';
 import { CampaignEditor } from '@/components/products/guest-journey/CampaignEditor';
+import { GuestJourneyToast } from '@/components/products/guest-journey/GuestJourneyToast';
 import { useGuestJourneyStore } from '@/lib/products/guest-journey/store';
 
 export default function GuestJourneyPage() {
@@ -64,6 +65,7 @@ export default function GuestJourneyPage() {
       {/* Full-page editor overlays — always rendered for slide animation */}
       <MessageEditor isOpen={isEditorOpen} />
       <CampaignEditor isOpen={isCampaignEditorOpen} />
+      <GuestJourneyToast />
     </div>
   );
 }

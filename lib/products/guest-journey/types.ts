@@ -179,21 +179,28 @@ export const WHATSAPP_STATUS_CONFIG: Record<WhatsAppProviderStatus, {
 
 // ── Guest Journey Message ───────────────────────────────────────────────
 
+export interface MessageSegmentVariant {
+  segmentId: string;
+  isEnabled: boolean;
+  channels: ChannelContent[];
+}
+
 export interface GuestJourneyMessage {
   id: string;
   title: string;
   type: MessageType;
   stage: JourneyStage;
   timing: MessageTiming;
-  channels: ChannelContent[];
+  channels: ChannelContent[]; // "All Guests" default content
   isEnabled: boolean;
   supportedLanguages: string[];
   segmentTarget: SegmentTargetType;
-  segmentId?: string; // If targeting specific segment
+  segmentId?: string;
+  segmentVariants?: MessageSegmentVariant[]; // Per-segment content overrides
   reminderCount?: number;
-  parentId?: string; // For reminder sub-messages
-  parentType?: MessageType | null; // Copies parent's type for tag display
-  whatsappStatus?: WhatsAppProviderStatus; // Meta template approval status
+  parentId?: string;
+  parentType?: MessageType | null;
+  whatsappStatus?: WhatsAppProviderStatus;
 }
 
 // ── Scheduled Campaigns ─────────────────────────────────────────────────

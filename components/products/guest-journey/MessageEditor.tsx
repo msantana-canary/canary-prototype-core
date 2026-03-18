@@ -211,7 +211,10 @@ export function MessageEditor({ isOpen }: MessageEditorProps) {
           )}
           <CanaryButton
             type={ButtonType.PRIMARY}
-            onClick={isReminder ? navigateToParent : closeEditor}
+            onClick={() => {
+              useGuestJourneyStore.getState().showToast(isReminder ? 'Reminder saved' : 'Message saved');
+              if (isReminder) navigateToParent(); else closeEditor();
+            }}
           >
             Save
           </CanaryButton>
@@ -255,6 +258,9 @@ export function MessageEditor({ isOpen }: MessageEditorProps) {
                   }
                   onChannelToggle={(channel, enabled) =>
                     handleChannelToggle(activeMessage, channel, enabled, updateMessage)
+                  }
+                  onSegmentVariantsChange={(variants) =>
+                    updateMessage(activeMessage.id, { segmentVariants: variants })
                   }
                 />
 
@@ -345,6 +351,7 @@ export function MessageEditor({ isOpen }: MessageEditorProps) {
             onClick={() => {
               if (activeMessage) {
                 useGuestJourneyStore.getState().deleteMessage(activeMessage.id);
+                useGuestJourneyStore.getState().showToast(isReminder ? 'Reminder deleted' : 'Message deleted');
               }
               setShowDeleteConfirm(false);
               if (isReminder) {

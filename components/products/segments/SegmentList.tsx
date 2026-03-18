@@ -7,13 +7,14 @@
  * uppercase 10px headers, overflow menu per row.
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Icon from '@mdi/react';
 import { mdiDotsHorizontal } from '@mdi/js';
 import {
   CanaryButton,
   CanaryModal,
   ButtonType,
+  ButtonSize,
   ButtonColor,
 } from '@canary-ui/components';
 import { Segment } from '@/lib/products/guest-journey/types';
@@ -44,6 +45,19 @@ const WHERE_USED: Record<string, string> = {
 export function SegmentList({ segments, onEdit, onDelete, onCreate }: SegmentListProps) {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu on click outside
+  useEffect(() => {
+    if (!menuOpenId) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpenId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [menuOpenId]);
 
   const lastIdx = segments.length - 1;
 
@@ -112,7 +126,7 @@ export function SegmentList({ segments, onEdit, onDelete, onCreate }: SegmentLis
                     key={segment.id}
                     className="cursor-pointer transition-colors hover:bg-gray-50"
                     style={{ height: 52, backgroundColor: '#FFF' }}
-                    onClick={() => onEdit(segment.id)}
+                    onClick={() => { setMenuOpenId(null); onEdit(segment.id); }}
                   >
                     {/* Name */}
                     <td
@@ -186,15 +200,15 @@ export function SegmentList({ segments, onEdit, onDelete, onCreate }: SegmentLis
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <button
-                        className="p-1 rounded hover:bg-gray-100 transition-colors"
-                        style={{ border: 'none', background: 'none', cursor: 'pointer' }}
+                      <CanaryButton
+                        type={ButtonType.ICON_SECONDARY}
+                        size={ButtonSize.COMPACT}
+                        icon={<Icon path={mdiDotsHorizontal} size={0.75} />}
                         onClick={() => setMenuOpenId(menuOpenId === segment.id ? null : segment.id)}
-                      >
-                        <Icon path={mdiDotsHorizontal} size={0.85} color="#666" />
-                      </button>
+                      />
                       {menuOpenId === segment.id && (
                         <div
+                          ref={menuRef}
                           style={{
                             position: 'absolute',
                             top: 36,

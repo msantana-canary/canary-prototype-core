@@ -32,6 +32,11 @@ interface GuestJourneyState {
   isCreatingNew: boolean;
   creatingInStage: JourneyStage | null;
 
+  // Toast
+  toastMessage: string | null;
+  showToast: (message: string) => void;
+  clearToast: () => void;
+
   // Tab Actions
   setActiveTab: (tab: GuestJourneyTab) => void;
 
@@ -68,6 +73,14 @@ export const useGuestJourneyStore = create<GuestJourneyState>((set) => ({
   messages: mockMessages,
   campaigns: mockCampaigns,
   segments: mockSegments,
+
+  // Toast
+  toastMessage: null,
+  showToast: (message) => {
+    set({ toastMessage: message });
+    setTimeout(() => set({ toastMessage: null }), 3000);
+  },
+  clearToast: () => set({ toastMessage: null }),
 
   // Initial UI state
   activeTab: 'reservation-messages',

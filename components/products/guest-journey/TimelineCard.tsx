@@ -92,8 +92,9 @@ export function TimelineCard({
   const isReminder = !!message.parentId;
 
   const sendTimeLabel = message.timing.sendTime || '';
-  const segmentLabel = message.segmentTarget === 'ALL_GUESTS' ? 'All Guests' : 'Multiple segment criteria';
-  const segmentIcon = message.segmentTarget === 'ALL_GUESTS' ? mdiAccountGroupOutline : mdiAccountOutline;
+  const hasSegmentVariants = message.segmentVariants && message.segmentVariants.length > 0;
+  const segmentLabel = hasSegmentVariants ? 'Multiple segment criteria' : 'All Guests';
+  const segmentIcon = hasSegmentVariants ? mdiAccountOutline : mdiAccountGroupOutline;
   const langLabel = LANG_MAP[selectedLang] || selectedLang;
 
   // Tag logic: uses parentType for reminders, null = no tag shown
