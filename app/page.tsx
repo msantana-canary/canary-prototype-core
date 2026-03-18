@@ -7,7 +7,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push('/check-in');
+    router.push('/messages');
   }, [router]);
 
   return (

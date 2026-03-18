@@ -54,12 +54,18 @@ export default function DashboardLayout({
     return threads.filter(thread => thread.isUnread && thread.status === 'inbox').length;
   }, [threads]);
 
-  // Add badge to messages item in sidebar
+  // Filter sidebar to only show Messages, then add badge
   const sectionsWithBadge = useMemo(() => {
+    const messagingOnly = standardMainSidebarSections
+      .map(section => ({
+        ...section,
+        items: section.items.filter((item: { id: string }) => item.id === 'messages'),
+      }))
+      .filter(section => section.items.length > 0);
     if (unreadCount > 0) {
-      return addBadge(standardMainSidebarSections, 'messages', unreadCount);
+      return addBadge(messagingOnly, 'messages', unreadCount);
     }
-    return standardMainSidebarSections;
+    return messagingOnly;
   }, [unreadCount]);
 
   // Determine selected item from pathname
@@ -67,8 +73,9 @@ export default function DashboardLayout({
     return routeItemMap[pathname] || 'check-in';
   }, [pathname]);
 
-  // Handle sidebar navigation
+  // Handle sidebar navigation — only allow Messages in demo mode
   const handleSidebarItemClick = (itemId: string) => {
+    if (itemId !== 'messages') return;
     const route = itemRouteMap[itemId];
     if (route) {
       if (route === pathname) {
