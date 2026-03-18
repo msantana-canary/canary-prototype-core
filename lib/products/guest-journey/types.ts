@@ -228,33 +228,45 @@ export interface ScheduledCampaign {
 
 export type SegmentTargetType = 'ALL_GUESTS' | 'SPECIFIC_SEGMENT';
 
-export type SegmentPropertyType =
-  | 'loyalty'
-  | 'rate_code'
-  | 'length_of_stay'
-  | 'guest_recurrence'
-  | 'room_number';
+// ── Segments (Rule-based, adapted from Segment Creator) ─────────────
 
-export type SegmentOperator =
-  | 'equals'
-  | 'not_equals'
-  | 'contains'
-  | 'greater_than'
-  | 'less_than'
-  | 'in';
+export const SEGMENT_PROPERTIES = [
+  'Rate Code',
+  'Loyalty Status',
+  'Room Type',
+  'Room Number',
+  'Number of Nights Staying',
+  'Guest Recurrence',
+] as const;
 
-export interface SegmentCondition {
+export type SegmentProperty = typeof SEGMENT_PROPERTIES[number];
+
+// Properties that use includes/excludes with multi-value input
+export const MULTI_VALUE_PROPERTIES: SegmentProperty[] = ['Rate Code', 'Loyalty Status', 'Room Type', 'Room Number'];
+// Properties that use is equal to/is not equal to with dropdown
+export const DROPDOWN_PROPERTIES: SegmentProperty[] = ['Number of Nights Staying', 'Guest Recurrence'];
+
+export const DROPDOWN_VALUE_OPTIONS: Record<string, string[]> = {
+  'Number of Nights Staying': ['One night', 'Multiple Nights'],
+  'Guest Recurrence': ['First stay', 'Return Guest'],
+};
+
+export interface SegmentRule {
   id: string;
-  property: SegmentPropertyType;
-  operator: SegmentOperator;
-  value: string | number | string[];
+  guestProperty: SegmentProperty | '';
+  condition: string; // "includes" | "excludes" | "is equal to" | "is not equal to"
+  values: string[];
+  dropdownValue: string;
+  operator?: 'And' | 'Or';
 }
 
 export interface Segment {
   id: string;
   name: string;
-  conditions: SegmentCondition[];
-  conditionLogic: 'AND' | 'OR';
+  rules: SegmentRule[];
+  description?: string;
+  estimatedGuests?: number;
+  createdAt: number;
 }
 
 // ── Tab State ───────────────────────────────────────────────────────────

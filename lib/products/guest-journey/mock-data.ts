@@ -547,41 +547,90 @@ export const mockCampaigns: ScheduledCampaign[] = [
 export const mockSegments: Segment[] = [
   {
     id: 'seg-vip',
-    name: 'VIP Guests',
-    conditions: [
+    name: 'High-level Loyalty',
+    rules: [
       {
-        id: 'cond-1',
-        property: 'loyalty',
-        operator: 'equals',
-        value: 'Diamond',
+        id: 'rule-1',
+        guestProperty: 'Loyalty Status',
+        condition: 'includes',
+        values: ['Diamond', 'Platinum'],
+        dropdownValue: '',
       },
     ],
-    conditionLogic: 'AND',
+    description: 'Targets Diamond and Platinum loyalty members for premium experiences.',
+    estimatedGuests: 142,
+    createdAt: Date.now() - 86400000 * 30,
   },
   {
     id: 'seg-long-stay',
-    name: 'Long-stay Guests',
-    conditions: [
+    name: 'Multi-night stays',
+    rules: [
       {
-        id: 'cond-2',
-        property: 'length_of_stay',
-        operator: 'greater_than',
-        value: 3,
+        id: 'rule-2',
+        guestProperty: 'Number of Nights Staying',
+        condition: 'is equal to',
+        values: [],
+        dropdownValue: 'Multiple Nights',
       },
     ],
-    conditionLogic: 'AND',
+    description: 'Targets guests staying more than one night.',
+    estimatedGuests: 287,
+    createdAt: Date.now() - 86400000 * 20,
   },
   {
-    id: 'seg-returning',
-    name: 'Returning Guests',
-    conditions: [
+    id: 'seg-weekend',
+    name: 'Weekend Leisure',
+    rules: [
       {
-        id: 'cond-3',
-        property: 'guest_recurrence',
-        operator: 'equals',
-        value: 'returning',
+        id: 'rule-3',
+        guestProperty: 'Rate Code',
+        condition: 'includes',
+        values: ['LEISURE', 'WEEKEND', 'PKG'],
+        dropdownValue: '',
+      },
+      {
+        id: 'rule-4',
+        guestProperty: 'Number of Nights Staying',
+        condition: 'is equal to',
+        values: [],
+        dropdownValue: 'Multiple Nights',
+        operator: 'And',
       },
     ],
-    conditionLogic: 'AND',
+    description: 'Targets leisure and weekend rate guests staying multiple nights.',
+    estimatedGuests: 98,
+    createdAt: Date.now() - 86400000 * 10,
+  },
+  {
+    id: 'seg-corporate',
+    name: 'Corporate Travellers',
+    rules: [
+      {
+        id: 'rule-5',
+        guestProperty: 'Rate Code',
+        condition: 'includes',
+        values: ['CORP', 'GOV', 'BIZ'],
+        dropdownValue: '',
+      },
+    ],
+    description: 'Targets guests on corporate, government, and business rate codes.',
+    estimatedGuests: 203,
+    createdAt: Date.now() - 86400000 * 5,
+  },
+  {
+    id: 'seg-nonmembers',
+    name: 'Non-members',
+    rules: [
+      {
+        id: 'rule-6',
+        guestProperty: 'Loyalty Status',
+        condition: 'excludes',
+        values: ['Diamond', 'Platinum', 'Gold', 'Silver'],
+        dropdownValue: '',
+      },
+    ],
+    description: 'Targets guests who are not part of any loyalty program.',
+    estimatedGuests: 412,
+    createdAt: Date.now() - 86400000 * 2,
   },
 ];

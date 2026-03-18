@@ -5,13 +5,13 @@
  *
  * Shared layout for all settings pages using CanaryAppShell
  * with SidebarVariant.SETTINGS and standardSettingsSidebarSections.
- * "Guest Journey" is already included in the standard settings sidebar.
+ * Adds "Segments" under General Settings via addProduct.
  */
 
 import { useRouter, usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import Icon from '@mdi/react';
-import { mdiArrowLeft } from '@mdi/js';
+import { mdiArrowLeft, mdiAccountMultipleOutline } from '@mdi/js';
 import {
   CanaryAppShell,
   CanaryButton,
@@ -20,11 +20,21 @@ import {
   IconPosition,
   SidebarVariant,
   standardSettingsSidebarSections,
+  addProduct,
+  createSidebarTab,
 } from '@canary-ui/components';
+
+// Add "Segments" to General Settings section
+const settingsSections = addProduct(
+  standardSettingsSidebarSections,
+  createSidebarTab('segments', 'Segments', <Icon path={mdiAccountMultipleOutline} size={1} />),
+  { sectionId: 'general-settings-section' }
+);
 
 // Map settings sidebar item IDs to routes
 const settingsRouteMap: Record<string, string> = {
   'guest-journey': '/settings/guest-journey',
+  'segments': '/settings/segments',
 };
 
 // Map routes back to sidebar item IDs
@@ -41,7 +51,7 @@ export default function SettingsLayout({
   const pathname = usePathname();
 
   const selectedItemId = useMemo(() => {
-    return routeItemMap[pathname] || 'guest-journey';
+    return routeItemMap[pathname] || '';
   }, [pathname]);
 
   const handleSidebarItemClick = (itemId: string) => {
@@ -54,7 +64,7 @@ export default function SettingsLayout({
   return (
     <CanaryAppShell
       sidebarVariant={SidebarVariant.SETTINGS}
-      sidebarSections={standardSettingsSidebarSections}
+      sidebarSections={settingsSections}
       sidebarTitle="Settings"
       sidebarBackButton={
         <CanaryButton
