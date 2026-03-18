@@ -139,7 +139,8 @@ export const useGuestJourneyStore = create<GuestJourneyState>((set) => ({
       isEditorOpen: false,
       isCreatingNew: false,
       creatingInStage: null,
-      selectedMessageId: null,
+      // Don't clear selectedMessageId here — keep it alive for the slide-out animation.
+      // It gets cleared when the editor unmounts via shouldRender going false.
     }),
 
   // ── Campaign Actions ────────────────────────────────────────────────

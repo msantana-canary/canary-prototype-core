@@ -24,6 +24,7 @@ import {
   ButtonType,
 } from '@canary-ui/components';
 import { GuestJourneyMessage } from '@/lib/products/guest-journey/types';
+import { useGuestJourneyStore } from '@/lib/products/guest-journey/store';
 import { timingToLabel } from '@/lib/products/guest-journey/utils';
 
 interface EditorRemindersCardProps {
@@ -37,6 +38,41 @@ export function EditorRemindersCard({
   reminders,
   onEditReminder,
 }: EditorRemindersCardProps) {
+  const { createMessage } = useGuestJourneyStore();
+
+  const handleAddReminder = () => {
+    const newId = `reminder-${Date.now()}`;
+    const isUpsell = parentMessage.type === 'UPSELL';
+
+    const newReminder: GuestJourneyMessage = {
+      id: newId,
+      title: parentMessage.title,
+      type: parentMessage.type,
+      stage: parentMessage.stage,
+      timing: {
+        delta: isUpsell ? '2_DAYS' : 'SAME_DAY',
+        direction: 'BEFORE',
+        anchor: 'ARRIVAL',
+        sendTime: isUpsell ? '10:00 AM' : '9:00 AM',
+      },
+      channels: [
+        {
+          channel: 'sms',
+          isEnabled: true,
+          body: '',
+          language: 'en',
+        },
+      ],
+      isEnabled: false,
+      supportedLanguages: ['en'],
+      segmentTarget: 'ALL_GUESTS',
+      parentId: parentMessage.id,
+      parentType: parentMessage.type,
+    };
+
+    createMessage(newReminder);
+    onEditReminder(newId);
+  };
   return (
     <div
       style={{
@@ -54,7 +90,7 @@ export function EditorRemindersCard({
         <CanaryButton
           type={ButtonType.ICON_SECONDARY}
           icon={<Icon path={mdiPlus} size={0.85} />}
-          onClick={() => {}}
+          onClick={handleAddReminder}
         />
       </div>
 
@@ -141,17 +177,12 @@ export function EditorRemindersCard({
                     )}
                   </div>
 
-                  {/* Edit + more actions */}
-                  <div className="flex items-start shrink-0" style={{ gap: 0, marginLeft: 16 }}>
+                  {/* Edit action */}
+                  <div className="flex items-start shrink-0" style={{ marginLeft: 16 }}>
                     <CanaryButton
                       type={ButtonType.ICON_SECONDARY}
                       icon={<Icon path={mdiPencil} size={0.75} />}
                       onClick={() => onEditReminder(reminder.id)}
-                    />
-                    <CanaryButton
-                      type={ButtonType.ICON_SECONDARY}
-                      icon={<Icon path={mdiDotsHorizontal} size={0.75} />}
-                      onClick={() => {}}
                     />
                   </div>
                 </div>

@@ -4,11 +4,11 @@
  * EditorTitleCard
  *
  * Title input card in the message editor.
- * System messages: read-only. Custom messages: editable.
+ * All messages have editable titles (including system messages in production).
  */
 
 import { CanaryInput, InputSize } from '@canary-ui/components';
-import { GuestJourneyMessage, isSystemMessage } from '@/lib/products/guest-journey/types';
+import { GuestJourneyMessage } from '@/lib/products/guest-journey/types';
 
 interface EditorTitleCardProps {
   message: GuestJourneyMessage;
@@ -16,8 +16,6 @@ interface EditorTitleCardProps {
 }
 
 export function EditorTitleCard({ message, onChange }: EditorTitleCardProps) {
-  const isSystem = isSystemMessage(message.type) && !message.parentId;
-
   return (
     <div
       style={{
@@ -32,7 +30,6 @@ export function EditorTitleCard({ message, onChange }: EditorTitleCardProps) {
         size={InputSize.NORMAL}
         value={message.title}
         onChange={(e) => onChange(e.target.value)}
-        isReadonly={isSystem}
       />
     </div>
   );

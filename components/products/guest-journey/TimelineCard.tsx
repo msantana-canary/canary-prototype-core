@@ -196,7 +196,7 @@ export function TimelineCard({
               defaultTab={activeChannel}
               onChange={(tabId) => setActiveChannel(tabId as Channel)}
             />
-            <div style={{ width: 150, flexShrink: 0 }}>
+            <div style={{ width: 120, flexShrink: 0 }}>
               <CanarySelect
                 value={selectedLang}
                 size={InputSize.COMPACT}

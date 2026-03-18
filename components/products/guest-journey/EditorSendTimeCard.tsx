@@ -18,24 +18,25 @@ import {
 
 interface EditorSendTimeCardProps {
   message: GuestJourneyMessage;
+  isReminder?: boolean;
   onTimingChange: (updates: Partial<GuestJourneyMessage['timing']>) => void;
 }
 
 const DELTA_OPTIONS: { value: TimingDelta; label: string }[] = [
   { value: 'ASAP', label: 'ASAP' },
-  { value: 'SAME_DAY', label: 'Same day' },
-  { value: '1_DAY', label: '1 day' },
-  { value: '2_DAYS', label: '2 days' },
-  { value: '3_DAYS', label: '3 days' },
-  { value: '4_DAYS', label: '4 days' },
-  { value: '5_DAYS', label: '5 days' },
-  { value: '6_DAYS', label: '6 days' },
-  { value: '1_WEEK', label: '1 week' },
-  { value: '2_WEEKS', label: '2 weeks' },
-  { value: '3_WEEKS', label: '3 weeks' },
-  { value: '4_WEEKS', label: '4 weeks' },
-  { value: '2_MONTHS', label: '2 months' },
-  { value: '3_MONTHS', label: '3 months' },
+  { value: 'SAME_DAY', label: '0 Days' },
+  { value: '1_DAY', label: '1 Day' },
+  { value: '2_DAYS', label: '2 Days' },
+  { value: '3_DAYS', label: '3 Days' },
+  { value: '4_DAYS', label: '4 Days' },
+  { value: '5_DAYS', label: '5 Days' },
+  { value: '6_DAYS', label: '6 Days' },
+  { value: '1_WEEK', label: '1 Week' },
+  { value: '2_WEEKS', label: '2 Weeks' },
+  { value: '3_WEEKS', label: '3 Weeks' },
+  { value: '4_WEEKS', label: '4 Weeks' },
+  { value: '2_MONTHS', label: '2 Months' },
+  { value: '3_MONTHS', label: '3 Months' },
 ];
 
 const DIRECTION_ANCHOR_OPTIONS: { value: string; label: string }[] = [
@@ -65,7 +66,7 @@ function parseDirectionAnchor(value: string): { direction: TimingDirection; anch
   return { direction, anchor };
 }
 
-export function EditorSendTimeCard({ message, onTimingChange }: EditorSendTimeCardProps) {
+export function EditorSendTimeCard({ message, isReminder, onTimingChange }: EditorSendTimeCardProps) {
   const dirAnchorValue = getDirectionAnchorValue(message.timing.direction, message.timing.anchor);
 
   return (
@@ -87,7 +88,6 @@ export function EditorSendTimeCard({ message, onTimingChange }: EditorSendTimeCa
         {/* Delta */}
         <div style={{ width: 97, flexShrink: 0 }}>
           <CanarySelect
-            label="When"
             size={InputSize.NORMAL}
             value={message.timing.delta}
             options={DELTA_OPTIONS}
@@ -95,12 +95,12 @@ export function EditorSendTimeCard({ message, onTimingChange }: EditorSendTimeCa
           />
         </div>
 
-        {/* Direction + Anchor */}
+        {/* Direction + Anchor — disabled for reminders (locked to parent's anchor) */}
         <div style={{ flex: 1 }}>
           <CanarySelect
-            label="Relative to"
             size={InputSize.NORMAL}
             value={dirAnchorValue}
+            isDisabled={!!isReminder}
             options={DIRECTION_ANCHOR_OPTIONS}
             onChange={(e) => {
               const { direction, anchor } = parseDirectionAnchor(e.target.value);
@@ -112,7 +112,6 @@ export function EditorSendTimeCard({ message, onTimingChange }: EditorSendTimeCa
         {/* Send time */}
         <div style={{ width: 106, flexShrink: 0 }}>
           <CanarySelect
-            label="At"
             size={InputSize.NORMAL}
             value={message.timing.sendTime || '9:00 AM'}
             options={TIME_OPTIONS}
