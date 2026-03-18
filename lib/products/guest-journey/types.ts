@@ -200,20 +200,28 @@ export interface GuestJourneyMessage {
 
 export type CampaignCadence = 'weekly' | 'monthly';
 
+export type WeekDay = 'Sunday' | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
+
 export interface ScheduledCampaign {
   id: string;
   title: string;
   sendTime: string; // "10:00 AM"
   repeatEvery: number; // e.g., 1 = every week/month
   cadence: CampaignCadence;
-  weeklyDays?: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
-  monthlyDay?: number; // 1-31
+  weeklyDay?: WeekDay; // Single day for weekly
+  monthlyDay?: number; // 1-31 for monthly by-date
+  monthlyWeekday?: WeekDay; // For monthly by-weekday
+  monthlyWeekdayOccurrence?: number; // 1-5 (1st, 2nd, 3rd, etc.)
   endCondition: 'never' | 'after_count' | 'on_date';
   endAfterCount?: number;
   endOnDate?: string;
   channels: ChannelContent[];
   isEnabled: boolean;
   supportedLanguages: string[];
+  segmentTarget: SegmentTargetType;
+  segmentId?: string;
+  nextSendDate?: string; // e.g., "01/14/2025"
+  lastRunAt?: string; // e.g., "01/07/2025"
 }
 
 // ── Segments ────────────────────────────────────────────────────────────

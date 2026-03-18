@@ -20,7 +20,7 @@
   "packageManager": "pnpm@10.14.0",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
-    "@canary-ui/components": "github:msantana-canary/canary-prototype-foundation",
+    "@canary-ui/components": "github:msantana-canary/canary-prototype-foundation#v0.5.1",
     "@mdi/js": "^7.4.47",
     "@mdi/react": "^1.6.1",
     "date-fns": "^4.1.0",
