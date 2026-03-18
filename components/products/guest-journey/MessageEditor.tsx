@@ -5,17 +5,16 @@
  *
  * Full-page overlay editor for Guest Journey messages.
  * Two-panel layout: left = editor content, right = channel-aware preview.
- * Slides in over the timeline content (like check-in detail panel).
+ * Slides in/out like the check-in detail panel (two-state: shouldRender + animateIn).
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '@mdi/react';
 import { mdiArrowLeft } from '@mdi/js';
 import {
   CanaryButton,
   ButtonType,
   ButtonColor,
-  IconPosition,
 } from '@canary-ui/components';
 import { useGuestJourneyStore } from '@/lib/products/guest-journey/store';
 import { isSystemMessage, Channel } from '@/lib/products/guest-journey/types';
@@ -26,24 +25,42 @@ import { EditorTranslationsCard } from './EditorTranslationsCard';
 import { EditorMessageCard } from './EditorMessageCard';
 import { EditorRemindersCard } from './EditorRemindersCard';
 
-export function MessageEditor() {
+interface MessageEditorProps {
+  isOpen: boolean;
+}
+
+export function MessageEditor({ isOpen }: MessageEditorProps) {
   const {
     messages,
     selectedMessageId,
     isCreatingNew,
-    creatingInStage,
     closeEditor,
     openEditor,
     updateMessage,
   } = useGuestJourneyStore();
 
   const [activePreviewChannel, setActivePreviewChannel] = useState<Channel>('email');
+  const [shouldRender, setShouldRender] = useState(false);
+  const [animateIn, setAnimateIn] = useState(false);
+
+  // Two-state animation: mount first, then animate in
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      const timer = setTimeout(() => setAnimateIn(true), 10);
+      return () => clearTimeout(timer);
+    } else if (shouldRender) {
+      setAnimateIn(false);
+      const timer = setTimeout(() => setShouldRender(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, shouldRender]);
 
   const message = selectedMessageId
     ? messages.find((m) => m.id === selectedMessageId)
     : null;
 
-  // For new messages, we'd create a blank template — for now just show the selected message
+  if (!shouldRender) return null;
   if (!message && !isCreatingNew) return null;
 
   const isSystem = message ? isSystemMessage(message.type) : false;
@@ -51,7 +68,9 @@ export function MessageEditor() {
 
   return (
     <div
-      className="absolute inset-0 flex flex-col bg-white"
+      className={`absolute inset-0 flex flex-col bg-white shadow-2xl
+        transition-transform duration-500 ease-out
+        ${animateIn ? 'translate-x-0' : 'translate-x-full'}`}
       style={{ zIndex: 20 }}
     >
       {/* Header — back arrow + title + Save button */}
@@ -138,7 +157,6 @@ export function MessageEditor() {
                         c.channel === channel ? { ...c, ...updates } : c
                       );
                     } else {
-                      // Create the channel entry on first edit
                       updatedChannels = [
                         ...message.channels,
                         { channel, isEnabled: false, body: '', language: 'en', ...updates },

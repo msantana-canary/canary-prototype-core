@@ -3,9 +3,9 @@
 /**
  * EditorMessageCard
  *
- * Uses CanaryTabs (text variant) for channel tabs with checkbox icons.
+ * Uses CanaryTabs text-checkbox variant for channel tabs.
+ * Uses CanaryChip for merge tag insertion chips.
  * Uses CanaryCheckbox for "Customize HTML".
- * Merge tag chips are hand-rolled (no CanaryChip in library) with hover states.
  */
 
 import { useState, useCallback } from 'react';
@@ -14,8 +14,6 @@ import {
   mdiChevronUp,
   mdiChevronDown,
   mdiPlus,
-  mdiCheckboxMarkedOutline,
-  mdiCheckboxBlankOutline,
   mdiHelpCircleOutline,
   mdiOpenInNew,
 } from '@mdi/js';
@@ -25,6 +23,7 @@ import {
   CanaryTextArea,
   CanaryTabs,
   CanaryTag,
+  CanaryChip,
   CanaryCheckbox,
   ButtonType,
   ButtonSize,
@@ -147,30 +146,13 @@ export function EditorMessageCard({
     }
   }, [activeField, activeChannel, message.channels, onChannelContentChange]);
 
-  // Build CanaryTabs with checkbox icons per channel
-  const channelTabs = ALL_CHANNELS.map((ch) => {
-    const enabled = isChannelEnabled(ch);
-    return {
-      id: ch,
-      label: CHANNEL_LABELS[ch],
-      content: <></>,
-      icon: (
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-            onChannelToggle(ch, !enabled);
-          }}
-          style={{ display: 'inline-flex', cursor: 'pointer' }}
-        >
-          <Icon
-            path={enabled ? mdiCheckboxMarkedOutline : mdiCheckboxBlankOutline}
-            size={0.9}
-            color={enabled ? '#2858C4' : '#999'}
-          />
-        </div>
-      ),
-    };
-  });
+  // Build CanaryTabs with text-checkbox variant
+  const channelTabs = ALL_CHANNELS.map((ch) => ({
+    id: ch,
+    label: CHANNEL_LABELS[ch],
+    content: <></>,
+    checked: isChannelEnabled(ch),
+  }));
 
   return (
     <div
@@ -230,15 +212,18 @@ export function EditorMessageCard({
         {/* Expanded content */}
         {isExpanded && (
           <div style={{ padding: '0 16px 16px 16px' }}>
-            {/* Channel tabs — CanaryTabs text variant with checkbox icons */}
+            {/* Channel tabs — CanaryTabs text-checkbox variant */}
             <CanaryTabs
               tabs={channelTabs}
-              variant="text"
+              variant="text-checkbox"
               size="compact"
               defaultTab={activeChannel}
               onChange={(tabId) => {
                 setActiveChannel(tabId as Channel);
                 onActiveChannelChange?.(tabId as Channel);
+              }}
+              onCheckboxChange={(tabId, checked) => {
+                onChannelToggle(tabId as Channel, checked);
               }}
             />
 
@@ -330,56 +315,29 @@ export function EditorMessageCard({
                   )}
                 </div>
 
-                {/* Merge tags */}
+                {/* Merge tags — using CanaryChip */}
                 <div>
                   <p style={{ fontSize: 14, color: '#000', margin: '0 0 8px 0' }}>Insert:</p>
                   <div className="flex flex-wrap" style={{ gap: 8 }}>
                     {mergeTags.map((tag) => (
-                      <button
+                      <CanaryChip
                         key={tag.value}
+                        label={tag.label}
+                        size="compact"
+                        isRounded
                         onClick={() => insertMergeTag(tag.value)}
-                        className="merge-tag-chip"
-                        style={{
-                          height: 32,
-                          padding: '0 16px',
-                          border: '1px solid #2858C4',
-                          borderRadius: 120,
-                          background: 'none',
-                          color: '#2858C4',
-                          fontSize: 12,
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap',
-                          transition: 'background-color 0.15s, color 0.15s',
-                        }}
-                      >
-                        {tag.label}
-                      </button>
+                      />
                     ))}
 
                     {/* URL tag with dropdown */}
                     <div className="relative">
-                      <button
+                      <CanaryChip
+                        label={urlTag.label}
+                        size="compact"
+                        isRounded
+                        trailingIcon={<Icon path={mdiChevronDown} size={0.65} />}
                         onClick={() => setUrlDropdownOpen(!urlDropdownOpen)}
-                        className="flex items-center merge-tag-chip"
-                        style={{
-                          height: 32,
-                          padding: '0 12px 0 16px',
-                          border: '1px solid #2858C4',
-                          borderRadius: 120,
-                          background: 'none',
-                          color: '#2858C4',
-                          fontSize: 12,
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          gap: 4,
-                          whiteSpace: 'nowrap',
-                          transition: 'background-color 0.15s, color 0.15s',
-                        }}
-                      >
-                        {urlTag.label}
-                        <Icon path={mdiChevronDown} size={0.65} color="#2858C4" />
-                      </button>
+                      />
                       {urlDropdownOpen && (
                         <div
                           style={{
@@ -398,54 +356,28 @@ export function EditorMessageCard({
                           }}
                         >
                           {urlTag.variants.map((v) => (
-                            <button
+                            <CanaryChip
                               key={v.value}
+                              label={v.label}
+                              size="normal"
+                              isRounded
                               onClick={() => {
                                 insertMergeTag(v.value);
                                 setUrlDropdownOpen(false);
                               }}
-                              className="merge-tag-chip"
-                              style={{
-                                height: 32,
-                                padding: '0 16px',
-                                border: '1px solid #2858C4',
-                                borderRadius: 120,
-                                background: 'none',
-                                color: '#2858C4',
-                                fontSize: 12,
-                                fontWeight: 500,
-                                cursor: 'pointer',
-                                whiteSpace: 'nowrap',
-                                transition: 'background-color 0.15s, color 0.15s',
-                              }}
-                            >
-                              {v.label}
-                            </button>
+                            />
                           ))}
                         </div>
                       )}
                     </div>
 
                     {/* QR Code Image */}
-                    <button
+                    <CanaryChip
+                      label={QR_CODE_TAG.label}
+                      size="normal"
+                      isRounded
                       onClick={() => insertMergeTag(QR_CODE_TAG.value)}
-                      className="merge-tag-chip"
-                      style={{
-                        height: 32,
-                        padding: '0 16px',
-                        border: '1px solid #2858C4',
-                        borderRadius: 120,
-                        background: 'none',
-                        color: '#2858C4',
-                        fontSize: 12,
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        transition: 'background-color 0.15s, color 0.15s',
-                      }}
-                    >
-                      {QR_CODE_TAG.label}
-                    </button>
+                    />
                   </div>
                 </div>
 
@@ -467,13 +399,6 @@ export function EditorMessageCard({
         )}
       </div>
 
-      {/* Chip hover styles */}
-      <style>{`
-        .merge-tag-chip:hover {
-          background-color: #2858C4 !important;
-          color: #FFF !important;
-        }
-      `}</style>
     </div>
   );
 }

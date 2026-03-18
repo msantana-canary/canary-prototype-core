@@ -139,6 +139,7 @@ export const useGuestJourneyStore = create<GuestJourneyState>((set) => ({
       isEditorOpen: false,
       isCreatingNew: false,
       creatingInStage: null,
+      selectedMessageId: null,
     }),
 
   // ── Campaign Actions ────────────────────────────────────────────────

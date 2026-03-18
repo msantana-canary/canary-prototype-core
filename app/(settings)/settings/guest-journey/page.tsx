@@ -49,8 +49,8 @@ export default function GuestJourneyPage() {
         </div>
       )}
 
-      {/* Full-page editor overlay */}
-      {isEditorOpen && <MessageEditor />}
+      {/* Full-page editor overlay — always rendered for slide animation */}
+      <MessageEditor isOpen={isEditorOpen} />
     </div>
   );
 }
