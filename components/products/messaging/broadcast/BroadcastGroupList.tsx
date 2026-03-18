@@ -93,7 +93,7 @@ export function BroadcastGroupList() {
                 />
               }
               isSelected={isSelected}
-              backgroundColor={isSelected ? '#2858c4' : undefined}
+              backgroundColor={isSelected ? '#2858c4' : '#fafafa'}
               hoverColor="#f2f2f2"
               onClick={() => selectGroup(group.id)}
               alignment="center"
@@ -103,7 +103,7 @@ export function BroadcastGroupList() {
       </CanaryList>
 
       {/* Divider */}
-      <div className="mx-4 border-t border-gray-200" />
+      <div className="border-t border-gray-200" />
 
       {/* Custom Groups Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
@@ -134,7 +134,7 @@ export function BroadcastGroupList() {
               description={group.lastBroadcastPreview}
               leftContent={<CustomGroupIcon isSelected={isSelected} />}
               isSelected={isSelected}
-              backgroundColor={isSelected ? '#2858c4' : undefined}
+              backgroundColor={isSelected ? '#2858c4' : '#fafafa'}
               hoverColor="#f2f2f2"
               onClick={() => selectGroup(group.id)}
               alignment="center"
