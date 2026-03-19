@@ -11,7 +11,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiAccountMultipleOutline } from '@mdi/js';
+import { mdiArrowLeft, mdiAccountMultipleOutline, mdiMapMarker } from '@mdi/js';
 import {
   CanaryAppShell,
   CanaryButton,
@@ -21,14 +21,20 @@ import {
   SidebarVariant,
   standardSettingsSidebarSections,
   addProduct,
+  updateProduct,
   createSidebarTab,
 } from '@canary-ui/components';
 
-// Add "Segments" to General Settings section
-const settingsSections = addProduct(
+// Add "Segments" to General Settings + update Guest Journey icon
+const withSegments = addProduct(
   standardSettingsSidebarSections,
   createSidebarTab('segments', 'Segments', <Icon path={mdiAccountMultipleOutline} size={1} />),
   { sectionId: 'general-settings-section' }
+);
+const settingsSections = updateProduct(
+  withSegments,
+  'guest-journey',
+  { icon: <Icon path={mdiMapMarker} size={1} /> }
 );
 
 // Map settings sidebar item IDs to routes
