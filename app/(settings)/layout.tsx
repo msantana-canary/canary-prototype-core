@@ -11,7 +11,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiAccountMultipleOutline, mdiMapMarker } from '@mdi/js';
+import { mdiArrowLeft, mdiAccountMultipleOutline, mdiMapMarker, mdiCreation } from '@mdi/js';
 import {
   CanaryAppShell,
   CanaryButton,
@@ -25,14 +25,20 @@ import {
   createSidebarTab,
 } from '@canary-ui/components';
 
-// Add "Segments" to General Settings + update Guest Journey icon
+// Add "Guest Segments" to General Settings
 const withSegments = addProduct(
   standardSettingsSidebarSections,
-  createSidebarTab('segments', 'Segments', <Icon path={mdiAccountMultipleOutline} size={1} />),
+  createSidebarTab('segments', 'Guest Segments', <Icon path={mdiAccountMultipleOutline} size={1} />),
   { sectionId: 'general-settings-section' }
 );
-const settingsSections = updateProduct(
+// Add "Knowledge Base" to Product Settings + update Guest Journey icon
+const withKB = addProduct(
   withSegments,
+  createSidebarTab('knowledge-base', 'Knowledge Base', <Icon path={mdiCreation} size={1} />),
+  { sectionId: 'product-settings-section', insertAfter: 'checkout' }
+);
+const settingsSections = updateProduct(
+  withKB,
   'guest-journey',
   { icon: <Icon path={mdiMapMarker} size={1} /> }
 );
@@ -41,6 +47,7 @@ const settingsSections = updateProduct(
 const settingsRouteMap: Record<string, string> = {
   'guest-journey': '/settings/guest-journey',
   'segments': '/settings/segments',
+  'knowledge-base': '/settings/knowledge-base',
 };
 
 // Map routes back to sidebar item IDs
@@ -85,7 +92,7 @@ export default function SettingsLayout({
       }
       selectedSidebarItemId={selectedItemId}
       onSidebarItemClick={handleSidebarItemClick}
-      propertyName="The Grand Hotel"
+      propertyName="Statler New York"
       userProfile={{
         name: 'Theresa Webb',
         role: 'Front desk',

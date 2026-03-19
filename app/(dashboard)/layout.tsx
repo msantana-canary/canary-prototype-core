@@ -85,7 +85,7 @@ export default function DashboardLayout({
       onSidebarItemClick={handleSidebarItemClick}
       sidebarSections={sectionsWithBadge}
       // Header config
-      propertyName="The Grand Hotel"
+      propertyName="Statler New York"
       userProfile={{
         name: 'Theresa Webb',
         role: 'Front desk',
