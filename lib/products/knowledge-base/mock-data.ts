@@ -1,5 +1,6 @@
 /**
  * Knowledge Base Mock Data — Statler New York
+ * Question text matches production exactly.
  */
 
 import { KBCategory, CustomContextEntry } from './types';
@@ -21,15 +22,15 @@ export const mockCategories: KBCategory[] = [
       },
       {
         id: 'ad-shuttle',
-        question: 'Airport Shuttle',
+        question: 'Is there an airport shuttle to the hotel?',
         value: 'no' as const,
         subQuestions: [
-          { id: 'ad-shuttle-how', question: 'How do I get to the hotel from the airport?', answer: 'The Statler is a 30-minute taxi ride from JFK and a 20-minute ride from LaGuardia. We recommend using a rideshare service or our preferred car service — please contact the front desk for arrangements.' },
+          { id: 'ad-shuttle-how', question: 'How do I use the airport shuttle?', answer: 'The Statler is a 30-minute taxi ride from JFK and a 20-minute ride from LaGuardia. We recommend using a rideshare service or our preferred car service — please contact the front desk for arrangements.' },
         ],
       },
       {
         id: 'ad-parking',
-        question: 'Parking',
+        question: 'Is there parking available?',
         value: 'yes' as const,
         subQuestions: [
           { id: 'ad-parking-desc', question: 'What kind of parking is available?', answer: 'Valet parking is available at our Commerce Street entrance for $65 plus tax per day (includes in-and-out privileges). Self-parking is available at the nearby SP+ garage on Jackson Street for $45/day.' },
@@ -53,7 +54,7 @@ export const mockCategories: KBCategory[] = [
       },
       {
         id: 'hf-pool',
-        question: 'Pool',
+        question: 'Is there a pool?',
         value: 'yes' as const,
         subQuestions: [
           { id: 'hf-pool-loc', question: 'Where is the pool located?', answer: 'The rooftop pool is located on the 19th floor with panoramic views of downtown Dallas.' },
@@ -63,7 +64,7 @@ export const mockCategories: KBCategory[] = [
       },
       {
         id: 'hf-hottub',
-        question: 'Hot Tub',
+        question: 'Is there a hot tub?',
         value: 'yes' as const,
         subQuestions: [
           { id: 'hf-hottub-loc', question: 'Where is the hot tub located?', answer: 'The hot tub is adjacent to the rooftop pool on the 19th floor.' },
@@ -73,16 +74,17 @@ export const mockCategories: KBCategory[] = [
       },
       {
         id: 'hf-gym',
-        question: 'Gym/Fitness Studio',
+        question: 'Is there a gym or fitness studio at the hotel?',
         value: 'yes' as const,
         subQuestions: [
-          { id: 'hf-gym-desc', question: 'Can you describe the gym?', answer: 'Our 24-hour fitness center features Peloton bikes, treadmills, ellipticals, free weights, and a stretching area. Located on the 3rd floor.' },
-          { id: 'hf-gym-open', question: 'What time does the gym open?', answer: 'Open 24 hours.' },
+          { id: 'hf-gym-desc', question: 'Can you describe the gym or fitness studio?', answer: 'Our 24-hour fitness center features Peloton bikes, treadmills, ellipticals, free weights, and a stretching area. Located on the 3rd floor.' },
+          { id: 'hf-gym-open', question: 'What time does the gym or fitness studio open?', answer: 'Open 24 hours.' },
+          { id: 'hf-gym-close', question: 'What time does the gym or fitness studio close?', answer: 'Open 24 hours.' },
         ],
       },
       {
         id: 'hf-spa',
-        question: 'Spa',
+        question: 'Does the hotel have a spa?',
         value: 'yes' as const,
         subQuestions: [
           { id: 'hf-spa-desc', question: 'Can you describe the spa?', answer: 'The Statler Spa offers a full menu of treatments including massages, facials, body wraps, and nail services. Book in advance as appointments fill quickly.' },
@@ -92,7 +94,7 @@ export const mockCategories: KBCategory[] = [
       },
       {
         id: 'hf-restaurant',
-        question: 'Restaurant',
+        question: 'Does the hotel have a restaurant?',
         value: 'yes' as const,
         subQuestions: [
           { id: 'hf-rest-desc', question: 'Can you describe the hotel restaurant?', answer: 'Elm & Good is our signature restaurant offering modern Texas cuisine with locally sourced ingredients. We also have Waterproof, our rooftop bar and lounge.' },
@@ -102,10 +104,10 @@ export const mockCategories: KBCategory[] = [
       },
       {
         id: 'hf-business',
-        question: 'Business Center',
+        question: 'Does the hotel have business facilities such as a business center?',
         value: 'yes' as const,
         subQuestions: [
-          { id: 'hf-biz-desc', question: 'Can you describe the business facilities?', answer: 'Our business center on the 2nd floor includes complimentary printing, scanning, and high-speed internet. Private meeting rooms are available for reservation.' },
+          { id: 'hf-biz-desc', question: 'Can you describe the business facilities or business center?', answer: 'Our business center on the 2nd floor includes complimentary printing, scanning, and high-speed internet. Private meeting rooms are available for reservation.' },
           { id: 'hf-biz-open', question: 'What time does the business center open?', answer: '6:00 AM' },
           { id: 'hf-biz-close', question: 'What time does the business center close?', answer: '11:00 PM' },
         ],

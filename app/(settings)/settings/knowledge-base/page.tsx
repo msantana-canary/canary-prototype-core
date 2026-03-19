@@ -51,6 +51,8 @@ export default function KnowledgeBasePage() {
 
   const [showNewContextModal, setShowNewContextModal] = useState(false);
   const [newContextText, setNewContextText] = useState('');
+  const [deleteContextId, setDeleteContextId] = useState<string | null>(null);
+  const deleteContextEntry = deleteContextId ? customContext.find((c) => c.id === deleteContextId) : null;
 
   const handleAddContext = () => {
     if (!newContextText.trim()) return;
@@ -90,10 +92,10 @@ export default function KnowledgeBasePage() {
       <div className="flex-1 overflow-auto" style={{ backgroundColor: '#FAFAFA', padding: 24 }}>
         <div className="flex flex-col" style={{ gap: 16 }}>
           {/* Managed Context */}
-          <KBSection title="Managed Context">
-            <p style={{ fontSize: 14, color: '#333', margin: '0 0 16px 0', lineHeight: '1.5' }}>
-              This information is managed by your corporate/management companies. If you have any questions, please reach out to them for more information or corrections.
-            </p>
+          <KBSection
+            title="Managed Context"
+            description="This information is managed by your corporate/management companies. If you have any questions, please reach out to them for more information or corrections."
+          >
             <p style={{ fontSize: 14, color: '#999', textAlign: 'center', padding: '16px 0' }}>
               No managed answers available yet
             </p>
@@ -126,7 +128,7 @@ export default function KnowledgeBasePage() {
 
           {/* Custom Context */}
           <KBSection title="Custom Context" count={customContext.length}>
-            <div className="flex flex-col" style={{ gap: 8 }}>
+            <div className="flex flex-col" style={{ gap: 16 }}>
               {customContext.map((entry) => (
                 <div key={entry.id} className="flex items-start" style={{ gap: 8 }}>
                   <div style={{ flex: 1 }}>
@@ -139,10 +141,7 @@ export default function KnowledgeBasePage() {
                   <CanaryButton
                     type={ButtonType.ICON_SECONDARY}
                     icon={<Icon path={mdiDeleteOutline} size={0.85} />}
-                    onClick={() => {
-                      deleteCustomContext(entry.id);
-                      showToast('Custom context removed');
-                    }}
+                    onClick={() => setDeleteContextId(entry.id)}
                   />
                 </div>
               ))}
@@ -185,6 +184,41 @@ export default function KnowledgeBasePage() {
             onClick={handleAddContext}
           >
             Add
+          </CanaryButton>
+        </div>
+      </CanaryModal>
+
+      {/* Delete Custom Context Confirmation */}
+      <CanaryModal
+        isOpen={!!deleteContextId}
+        onClose={() => setDeleteContextId(null)}
+        title="Delete Custom Context?"
+        size="small"
+      >
+        <p style={{ fontSize: 14, color: '#333', margin: '0 0 16px 0', lineHeight: '1.5' }}>
+          Are you sure you want to delete this custom context?
+        </p>
+        {deleteContextEntry && (
+          <p style={{ fontSize: 14, color: '#333', margin: '0 0 24px 0', lineHeight: '1.5' }}>
+            <strong>Statement:</strong> {deleteContextEntry.text}
+          </p>
+        )}
+        <div className="flex justify-end" style={{ gap: 8 }}>
+          <CanaryButton type={ButtonType.OUTLINED} onClick={() => setDeleteContextId(null)}>
+            Cancel
+          </CanaryButton>
+          <CanaryButton
+            type={ButtonType.PRIMARY}
+            color={ButtonColor.DANGER}
+            onClick={() => {
+              if (deleteContextId) {
+                deleteCustomContext(deleteContextId);
+                showToast('Custom context removed');
+              }
+              setDeleteContextId(null);
+            }}
+          >
+            Delete
           </CanaryButton>
         </div>
       </CanaryModal>
