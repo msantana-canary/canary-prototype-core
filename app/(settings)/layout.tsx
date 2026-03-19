@@ -48,6 +48,7 @@ const settingsRouteMap: Record<string, string> = {
   'guest-journey': '/settings/guest-journey',
   'segments': '/settings/segments',
   'knowledge-base': '/settings/knowledge-base',
+  'calls': '/settings/calls',
 };
 
 // Map routes back to sidebar item IDs

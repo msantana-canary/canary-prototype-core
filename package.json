@@ -21,6 +21,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
     "@canary-ui/components": "github:msantana-canary/canary-prototype-foundation#v0.5.1",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@mdi/js": "^7.4.47",
     "@mdi/react": "^1.6.1",
     "date-fns": "^4.1.0",
