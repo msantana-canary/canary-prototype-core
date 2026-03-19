@@ -12,6 +12,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AppLayout } from '@/components/products/messaging/AppLayout';
 import { ThreadList } from '@/components/products/messaging/ThreadList';
 import { ThreadView } from '@/components/products/messaging/ThreadView';
+import { GuestInfoSidebar } from '@/components/products/messaging/GuestInfoSidebar';
 import { UnlinkReservationModal } from '@/components/products/messaging/UnlinkReservationModal';
 import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
 import { useMessagingStore } from '@/lib/products/messaging/store';
@@ -197,8 +198,8 @@ export default function MessagesPage() {
     >
       {activeTab === 'conversations' && (
         <div className="flex h-full">
-          {/* Thread List */}
-          <div className="w-[320px] border-r border-gray-200">
+          {/* Panel 1: Thread List */}
+          <div className="w-[320px] border-r border-gray-200 h-full">
             <ThreadList
               threads={filteredThreads}
               selectedThreadId={selectedThreadId}
@@ -212,8 +213,8 @@ export default function MessagesPage() {
             />
           </div>
 
-          {/* Thread View */}
-          <div className="flex-1">
+          {/* Panel 2: Message Feed */}
+          <div className="flex-1 h-full">
             {selectedThread ? (
               <ThreadView
                 thread={selectedThread}
@@ -234,10 +235,30 @@ export default function MessagesPage() {
                 onOpenLinkModal={openLinkReservationModal}
                 onUnlinkReservation={handleRequestUnlink}
                 typingThreadId={typingThreadId}
+                hideGuestInfoSidebar
               />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500">
                 Select a conversation to start messaging
+              </div>
+            )}
+          </div>
+
+          {/* Panel 3: Guest Info Sidebar (always visible) */}
+          <div className="w-[340px] border-l border-gray-200 h-full overflow-hidden">
+            {selectedThread ? (
+              <GuestInfoSidebar
+                contactNumber={selectedThread.contactNumber}
+                linkedReservations={linkedReservations}
+                isOpen={true}
+                onClose={() => {}}
+                onOpenLinkModal={openLinkReservationModal}
+                onUnlinkReservation={handleRequestUnlink}
+                inline
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                Select a conversation to view details
               </div>
             )}
           </div>

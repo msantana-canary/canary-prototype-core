@@ -43,15 +43,163 @@ interface GuestInfoSidebarProps {
   onClose: () => void;
   onOpenLinkModal?: () => void;
   onUnlinkReservation?: (reservationId: string) => void;
+  /** When true, renders as an inline panel instead of a fixed overlay */
+  inline?: boolean;
 }
 
-export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, onClose, onOpenLinkModal, onUnlinkReservation }: GuestInfoSidebarProps) {
+export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, onClose, onOpenLinkModal, onUnlinkReservation, inline = false }: GuestInfoSidebarProps) {
   const [expandedResId, setExpandedResId] = useState<string | null>(null);
 
   const toggleExpand = (resId: string) => {
     setExpandedResId((prev) => (prev === resId ? null : resId));
   };
 
+  // Inline mode: renders as a normal flow element (for 3-panel layout)
+  if (inline) {
+    return (
+      <div
+        className="h-full overflow-y-auto"
+        style={{ backgroundColor: colors.colorBlack8 }}
+      >
+        <div className="p-6">
+          {/* Header — no close button in inline mode */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-['Roboto',sans-serif] font-medium text-[18px] leading-[27px]" style={{ color: colors.colorBlack1 }}>
+              Conversation Details
+            </h2>
+          </div>
+
+          {/* Contact Number Card */}
+          <div
+            className="rounded-lg p-4 mb-6"
+            style={{ backgroundColor: colors.colorBlueDark5 }}
+          >
+            <p className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[21px]" style={{ color: colors.colorBlack1 }}>
+              Contact Number
+            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <Icon path={mdiPhoneOutline} size={0.67} color={colors.colorBlack1} />
+              <span className="font-['Roboto',sans-serif] text-[14px] leading-[21px]" style={{ color: colors.colorBlack1 }}>
+                {contactNumber}
+              </span>
+            </div>
+          </div>
+
+          {/* Assignment Card */}
+          <div
+            className="rounded-lg p-4 mb-6"
+            style={{ backgroundColor: colors.colorBlueDark5 }}
+          >
+            <p className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[21px]" style={{ color: colors.colorBlack1 }}>
+              Assignment
+            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <Icon path={mdiAccountMultipleOutline} size={0.67} color={colors.colorBlack1} />
+              <span
+                className="font-['Roboto',sans-serif] text-[14px] leading-[21px] cursor-pointer"
+                style={{ color: colors.colorBlueDark1 }}
+              >
+                Assign Staff or Department
+              </span>
+            </div>
+          </div>
+
+          {/* Linked Reservations Section */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px]" style={{ color: colors.colorBlack1 }}>
+                Linked Reservations
+              </h3>
+              <div className="flex gap-1">
+                <button className="w-[30px] h-[30px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors">
+                  <Icon path={mdiRefresh} size={0.67} color={colors.colorBlack1} />
+                </button>
+                <button
+                  className="w-[30px] h-[30px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors"
+                  onClick={onOpenLinkModal}
+                >
+                  <Icon path={mdiPlus} size={0.67} color={colors.colorBlack1} />
+                </button>
+              </div>
+            </div>
+
+            {linkedReservations.length === 0 ? (
+              <p className="font-['Roboto',sans-serif] text-[14px] leading-[21px] text-center py-2" style={{ color: colors.colorBlack3 }}>
+                No linked reservations
+              </p>
+            ) : (
+              <>
+                <div
+                  className="rounded-lg border divide-y divide-[#E5E5E5]"
+                  style={{
+                    backgroundColor: colors.colorWhite,
+                    borderColor: colors.colorBlack6,
+                  }}
+                >
+                  {linkedReservations.map((lr) => (
+                    <ReservationRow
+                      key={lr.reservation.id}
+                      linkedReservation={lr}
+                      isExpanded={expandedResId === lr.reservation.id}
+                      onToggle={() => toggleExpand(lr.reservation.id)}
+                      onUnlink={onUnlinkReservation}
+                    />
+                  ))}
+                </div>
+
+                {linkedReservations.length > 4 && (
+                  <button
+                    className="font-['Roboto',sans-serif] text-[14px] leading-[21px] mt-3 hover:underline"
+                    style={{ color: colors.colorBlueDark1 }}
+                  >
+                    View more reservations
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Service Tasks Section */}
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px]" style={{ color: colors.colorBlack1 }}>
+                Service Tasks
+              </h3>
+              <div className="flex gap-1">
+                <button className="w-[30px] h-[30px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors">
+                  <Icon path={mdiRefresh} size={0.67} color={colors.colorBlack1} />
+                </button>
+                <button className="w-[30px] h-[30px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors">
+                  <Icon path={mdiClose} size={0.67} color={colors.colorBlack1} />
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center justify-center py-4">
+              <span className="font-['Roboto',sans-serif] text-[14px] leading-[21px]" style={{ color: colors.colorBlack3 }}>
+                No service tickets
+              </span>
+            </div>
+          </div>
+
+          {/* Call History Section */}
+          <div className="mt-8">
+            <div className="mb-4">
+              <h3 className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px]" style={{ color: colors.colorBlack1 }}>
+                Call History
+              </h3>
+            </div>
+            <div className="flex items-center justify-center py-4">
+              <span className="font-['Roboto',sans-serif] text-[14px] leading-[21px]" style={{ color: colors.colorBlack3 }}>
+                No call history
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Fixed overlay mode (original behavior)
   return (
     <div
       className={`fixed right-0 top-[56px] overflow-y-auto transition-transform duration-300 ease-in-out shadow-lg ${

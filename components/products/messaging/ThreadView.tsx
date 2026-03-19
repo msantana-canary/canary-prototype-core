@@ -38,6 +38,8 @@ interface ThreadViewProps {
   onOpenLinkModal: () => void;
   onUnlinkReservation: (reservationId: string) => void;
   typingThreadId: string | null;
+  /** When true, GuestInfoSidebar is rendered externally (3-panel layout) */
+  hideGuestInfoSidebar?: boolean;
 }
 
 export function ThreadView({
@@ -59,6 +61,7 @@ export function ThreadView({
   onOpenLinkModal,
   onUnlinkReservation,
   typingThreadId,
+  hideGuestInfoSidebar = false,
 }: ThreadViewProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -303,15 +306,17 @@ export function ThreadView({
         />
       </div>
 
-      {/* Guest Info Sidebar */}
-      <GuestInfoSidebar
-        contactNumber={thread.contactNumber}
-        linkedReservations={linkedReservations}
-        isOpen={isGuestInfoOpen}
-        onClose={onCloseGuestInfo}
-        onOpenLinkModal={onOpenLinkModal}
-        onUnlinkReservation={onUnlinkReservation}
-      />
+      {/* Guest Info Sidebar (slide-over mode, hidden when rendered externally) */}
+      {!hideGuestInfoSidebar && (
+        <GuestInfoSidebar
+          contactNumber={thread.contactNumber}
+          linkedReservations={linkedReservations}
+          isOpen={isGuestInfoOpen}
+          onClose={onCloseGuestInfo}
+          onOpenLinkModal={onOpenLinkModal}
+          onUnlinkReservation={onUnlinkReservation}
+        />
+      )}
     </div>
   );
 }
