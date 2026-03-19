@@ -373,13 +373,18 @@ export function MessageEditor({ isOpen }: MessageEditorProps) {
             color={ButtonColor.DANGER}
             onClick={() => {
               if (activeMessage) {
-                useGuestJourneyStore.getState().deleteMessage(activeMessage.id);
                 useGuestJourneyStore.getState().showToast(isReminder ? 'Reminder deleted' : 'Message deleted');
               }
               setShowDeleteConfirm(false);
               if (isReminder) {
+                // Navigate back first, then delete after transition settles
+                const idToDelete = activeMessage!.id;
                 navigateToParent();
+                setTimeout(() => {
+                  useGuestJourneyStore.getState().deleteMessage(idToDelete);
+                }, 600);
               } else {
+                useGuestJourneyStore.getState().deleteMessage(activeMessage!.id);
                 closeEditor();
               }
             }}
