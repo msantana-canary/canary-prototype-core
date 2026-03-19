@@ -174,17 +174,46 @@ export const mockCategories: KBCategory[] = [
 export const mockCustomContext: CustomContextEntry[] = [
   { id: 'cc-1', text: 'The Statler was originally built in 1956 and underwent a $460 million restoration completed in 2017.' },
   { id: 'cc-2', text: 'Elm & Good restaurant serves breakfast from 7 AM, lunch from 11:30 AM, and dinner from 5:30 PM daily.' },
-  { id: 'cc-3', text: 'The rooftop pool and bar, Waterproof, is open seasonally from April through October.' },
+  {
+    id: 'cc-3',
+    text: 'Late checkout is guaranteed until 4 PM for qualifying loyalty members. Standard late checkout is subject to availability and a $50 fee.',
+    segmentTags: [
+      { type: 'loyalty', value: 'platinum-elite', label: 'Platinum Elite' },
+      { type: 'loyalty', value: 'diamond-elite', label: 'Diamond Elite' },
+    ],
+  },
   { id: 'cc-4', text: 'The hotel is a 5-minute walk from the Dallas Arts District and 10 minutes from Dealey Plaza.' },
-  { id: 'cc-5', text: 'Complimentary coffee is available in the lobby from 6:00 AM to 10:00 AM daily.' },
-  { id: 'cc-6', text: 'The nearest DART light rail station is Akard Station, a 3-minute walk from the hotel.' },
-  { id: 'cc-7', text: 'Room upgrades are subject to availability and can be requested at check-in or via the Canary app.' },
+  {
+    id: 'cc-5',
+    text: 'Complimentary breakfast at the executive lounge (19th floor) is available daily from 6:30 AM to 10:00 AM for qualifying loyalty members.',
+    segmentTags: [
+      { type: 'loyalty', value: 'platinum-elite', label: 'Platinum Elite' },
+      { type: 'loyalty', value: 'diamond-elite', label: 'Diamond Elite' },
+    ],
+  },
+  {
+    id: 'cc-6',
+    text: 'Corporate rate includes complimentary valet parking (normally $65/night) and premium WiFi at no additional charge.',
+    segmentTags: [
+      { type: 'rate_code', value: 'CORP', label: 'Rate Code: CORP' },
+    ],
+  },
+  {
+    id: 'cc-7',
+    text: 'Government rate guests receive a 15% discount at Elm & Good restaurant upon presenting their room key.',
+    segmentTags: [
+      { type: 'rate_code', value: 'GOV', label: 'Rate Code: GOV' },
+    ],
+  },
   { id: 'cc-8', text: 'The hotel has 20 floors and 159 guest rooms, including 6 suites.' },
-  { id: 'cc-9', text: 'The Statler ballroom can accommodate up to 300 guests for events and weddings.' },
+  {
+    id: 'cc-9',
+    text: 'Gold Elite members enjoy complimentary room upgrade when available at check-in and welcome amenity of bottled water and snack pack.',
+    segmentTags: [
+      { type: 'loyalty', value: 'gold-elite', label: 'Gold Elite' },
+    ],
+  },
   { id: 'cc-10', text: 'Guests can request a rollaway bed for $25/night, subject to availability.' },
   { id: 'cc-11', text: 'The concierge desk is staffed from 7:00 AM to 10:00 PM for restaurant reservations, tours, and local recommendations.' },
   { id: 'cc-12', text: 'DFW Airport is approximately 25 minutes away by car. Love Field is 15 minutes away.' },
-  { id: 'cc-13', text: 'The hotel offers complimentary bicycle rentals for exploring downtown Dallas.' },
-  { id: 'cc-14', text: 'High-speed WiFi is complimentary for all guests. Premium bandwidth is available for $9.95/day.' },
-  { id: 'cc-15', text: 'The Statler partners with local gallery Deep Ellum Art Co. for rotating lobby art installations.' },
 ];

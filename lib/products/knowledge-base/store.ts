@@ -3,7 +3,7 @@
  */
 
 import { create } from 'zustand';
-import { KBCategory, KBEntry, isYesNoEntry, CustomContextEntry } from './types';
+import { KBCategory, KBEntry, isYesNoEntry, CustomContextEntry, SegmentTag } from './types';
 import { mockCategories, mockCustomContext } from './mock-data';
 
 interface KBState {
@@ -18,6 +18,7 @@ interface KBState {
   addCustomContext: (text: string) => void;
   updateCustomContext: (id: string, text: string) => void;
   deleteCustomContext: (id: string) => void;
+  updateCustomContextSegments: (id: string, tags: SegmentTag[]) => void;
 
   showToast: (message: string) => void;
   clearToast: () => void;
@@ -94,6 +95,13 @@ export const useKBStore = create<KBState>((set) => ({
   deleteCustomContext: (id) =>
     set((state) => ({
       customContext: state.customContext.filter((c) => c.id !== id),
+    })),
+
+  updateCustomContextSegments: (id, tags) =>
+    set((state) => ({
+      customContext: state.customContext.map((c) =>
+        c.id === id ? { ...c, segmentTags: tags.length > 0 ? tags : undefined } : c
+      ),
     })),
 
   showToast: (message) => {
