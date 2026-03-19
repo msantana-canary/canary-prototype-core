@@ -11,6 +11,7 @@ import React, { useState } from 'react';
 import {
   CanaryButton,
   CanaryInput,
+  CanaryInputMultiple,
   CanaryTextArea,
   CanarySelect,
   CanarySwitch,
@@ -53,20 +54,6 @@ export function TransferRulesSettings() {
     setForwardWithoutSummary,
   } = useCallsSettingsStore();
 
-  // Handle bypass numbers (multi-input simulation)
-  const [bypassInput, setBypassInput] = useState('');
-
-  const handleBypassKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && bypassInput.trim()) {
-      e.preventDefault();
-      setBypassNumbers([...bypassNumbers, bypassInput.trim()]);
-      setBypassInput('');
-    }
-  };
-
-  const removeBypassNumber = (index: number) => {
-    setBypassNumbers(bypassNumbers.filter((_, i) => i !== index));
-  };
 
   // Overlay handlers
   const handleAddNew = () => {
@@ -128,54 +115,13 @@ export function TransferRulesSettings() {
               </div>
 
               {/* Bypass Numbers */}
-              <div>
-                <label
-                  className="font-['Roboto',sans-serif] block mb-1"
-                  style={{
-                    fontSize: '12px',
-                    lineHeight: '18px',
-                    color: colors.colorBlack1,
-                  }}
-                >
-                  Bypass numbers
-                </label>
-                <div
-                  className="flex flex-wrap gap-2 p-2 rounded min-h-[44px]"
-                  style={{
-                    border: `1px solid ${colors.colorBlack3}`,
-                    backgroundColor: colors.colorWhite,
-                  }}
-                >
-                  {bypassNumbers.map((number, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded text-sm"
-                      style={{
-                        backgroundColor: colors.colorBlack7,
-                        color: colors.colorBlack1,
-                      }}
-                    >
-                      {number}
-                      <button
-                        onClick={() => removeBypassNumber(index)}
-                        className="ml-1 hover:opacity-70"
-                        style={{ color: colors.colorBlack3 }}
-                      >
-                        &times;
-                      </button>
-                    </span>
-                  ))}
-                  <input
-                    type="text"
-                    value={bypassInput}
-                    onChange={(e) => setBypassInput(e.target.value)}
-                    onKeyDown={handleBypassKeyDown}
-                    placeholder="Add phone number..."
-                    className="flex-1 min-w-[150px] border-none outline-none bg-transparent font-['Roboto',sans-serif] text-sm"
-                    style={{ color: colors.colorBlack1 }}
-                  />
-                </div>
-              </div>
+              <CanaryInputMultiple
+                label="Bypass numbers"
+                values={bypassNumbers}
+                onChange={(values) => setBypassNumbers(values)}
+                placeholder="Add phone number and press Enter"
+                size={InputSize.NORMAL}
+              />
             </div>
           </div>
 

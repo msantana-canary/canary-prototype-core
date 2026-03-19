@@ -29,6 +29,10 @@ export const departmentOptions: DepartmentOption[] = [
   { label: 'Operations', value: 'operations' },
   { label: 'Human Resources', value: 'human-resources' },
   { label: 'Maintenance', value: 'maintenance' },
+  { label: 'Catering & Events', value: 'catering-events' },
+  { label: 'Spa', value: 'spa' },
+  { label: 'Housekeeping', value: 'housekeeping' },
+  { label: 'Valet', value: 'valet' },
 ];
 
 export const departmentDescriptions: Record<string, string> = {
@@ -57,6 +61,14 @@ export const departmentDescriptions: Record<string, string> = {
     'Calls will route to this department when caller inquires about employment opportunities, job applications, staff verification, or HR-related matters (not for guest services)',
   maintenance:
     'Calls will route to this department when guest reports room maintenance issues, broken appliances, plumbing problems, heating/cooling issues, electrical problems, or any technical repairs needed in guest rooms or facilities',
+  'catering-events':
+    'Calls will route to this department when guest inquires about event bookings, corporate retreats, weddings, group functions, banquet arrangements, or special event planning',
+  spa:
+    'Calls will route to this department when guest wants to book spa treatments, inquire about spa services, check availability for massages, facials, or wellness packages',
+  housekeeping:
+    'Calls will route to this department when guest needs extra towels, pillows, room cleaning, turndown service, or housekeeping-related requests',
+  valet:
+    'Calls will route to this department when guest needs vehicle pickup, parking assistance, or valet-related services',
 };
 
 // Helper to get department label from value

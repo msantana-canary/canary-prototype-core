@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CanaryTag, TagSize, TagVariant, colors } from '@canary-ui/components';
+import { CanaryButton, CanaryModal, CanaryTag, ButtonType, ButtonSize, ButtonColor, TagSize, TagVariant, colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiDotsHorizontal } from '@mdi/js';
 import { useCallsSettingsStore } from '@/lib/products/calls/store';
@@ -21,6 +21,7 @@ interface ForwardNumbersTableProps {
 export function ForwardNumbersTable({ onEdit }: ForwardNumbersTableProps) {
   const { forwardNumberRules, removeForwardNumberRule } = useCallsSettingsStore();
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -78,7 +79,7 @@ export function ForwardNumbersTable({ onEdit }: ForwardNumbersTableProps) {
 
   const handleDelete = (ruleId: string) => {
     setOpenDropdownId(null);
-    removeForwardNumberRule(ruleId);
+    setDeleteConfirmId(ruleId);
   };
 
   if (forwardNumberRules.length === 0) {
@@ -216,17 +217,12 @@ export function ForwardNumbersTable({ onEdit }: ForwardNumbersTableProps) {
 
               {/* Actions */}
               <div className="relative" style={{ width: '32px' }} data-dropdown>
-                <button
+                <CanaryButton
+                  type={ButtonType.ICON_SECONDARY}
+                  size={ButtonSize.COMPACT}
+                  icon={<Icon path={mdiDotsHorizontal} size={0.75} />}
                   onClick={() => handleDropdownToggle(rule.id)}
-                  className="flex items-center justify-center p-1 rounded hover:bg-gray-100 transition-colors"
-                  style={{
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Icon path={mdiDotsHorizontal} size={0.85} color={colors.colorBlack2} />
-                </button>
+                />
 
                 {/* Dropdown Menu */}
                 {openDropdownId === rule.id && (
@@ -271,6 +267,33 @@ export function ForwardNumbersTable({ onEdit }: ForwardNumbersTableProps) {
           );
         })}
       </div>
+
+      {/* Delete confirmation */}
+      <CanaryModal
+        isOpen={!!deleteConfirmId}
+        onClose={() => setDeleteConfirmId(null)}
+        title="Delete forward number"
+        size="small"
+      >
+        <p style={{ fontSize: 14, color: '#333', margin: '0 0 24px', lineHeight: '1.5' }}>
+          Are you sure you want to delete this forward number? Calls will no longer be routed to this destination.
+        </p>
+        <div className="flex justify-end" style={{ gap: 8 }}>
+          <CanaryButton type={ButtonType.OUTLINED} onClick={() => setDeleteConfirmId(null)}>
+            Cancel
+          </CanaryButton>
+          <CanaryButton
+            type={ButtonType.PRIMARY}
+            color={ButtonColor.DANGER}
+            onClick={() => {
+              if (deleteConfirmId) removeForwardNumberRule(deleteConfirmId);
+              setDeleteConfirmId(null);
+            }}
+          >
+            Delete
+          </CanaryButton>
+        </div>
+      </CanaryModal>
     </div>
   );
 }

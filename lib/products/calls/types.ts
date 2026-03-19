@@ -24,6 +24,10 @@ export interface ForwardNumberRule {
   fallbackType: 'route' | 'message';
   fallbackDepartment?: string;
   fallbackMessage?: string;
+  summaryEmails?: string[];
+  afterHoursEnabled?: boolean;
+  afterHoursFrom?: string;
+  afterHoursTo?: string;
 }
 
 export interface VoiceOption {

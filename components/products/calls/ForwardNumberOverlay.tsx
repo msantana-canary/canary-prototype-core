@@ -12,6 +12,7 @@ import {
   CanaryButton,
   CanaryInput,
   CanaryInputPhone,
+  CanaryInputMultiple,
   CanaryTextArea,
   CanarySelect,
   CanaryRadio,
@@ -252,7 +253,7 @@ export function ForwardNumberOverlay({
   const [fallbackDepartment, setFallbackDepartment] = useState('front-desk');
   const [fallbackMessage, setFallbackMessage] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [summaryEmail, setSummaryEmail] = useState('');
+  const [summaryEmails, setSummaryEmails] = useState<string[]>([]);
 
   // After-hours handling state
   const [afterHoursEnabled, setAfterHoursEnabled] = useState(false);
@@ -328,6 +329,10 @@ export function ForwardNumberOverlay({
 
         // Set additionalQuestions
         setAdditionalQuestions(existingRule.additionalQuestions || []);
+        setSummaryEmails(existingRule.summaryEmails || []);
+        setAfterHoursEnabled(existingRule.afterHoursEnabled || false);
+        setFromTime(existingRule.afterHoursFrom || '21:00');
+        setToTime(existingRule.afterHoursTo || '09:00');
       } else {
         // New mode - reset form
         setTransferDestination('default');
@@ -341,7 +346,7 @@ export function ForwardNumberOverlay({
         setFallbackDepartment('front-desk');
         setFallbackMessage('');
         setPhoneNumber('');
-        setSummaryEmail('');
+        setSummaryEmails([]);
       }
 
       setErrors({
@@ -350,7 +355,7 @@ export function ForwardNumberOverlay({
         fallbackMessage: false,
       });
     }
-  }, [isOpen, existingRule]);
+  }, [isOpen, editingRuleId, existingRule]);
 
   // Handle open/close animation
   useEffect(() => {
@@ -429,6 +434,10 @@ export function ForwardNumberOverlay({
         fallbackBehavior === 'route' ? fallbackDepartment : undefined,
       fallbackMessage:
         fallbackBehavior === 'message' ? fallbackMessage : undefined,
+      summaryEmails: summaryEmails.length > 0 ? summaryEmails : undefined,
+      afterHoursEnabled: afterHoursEnabled || undefined,
+      afterHoursFrom: afterHoursEnabled ? fromTime : undefined,
+      afterHoursTo: afterHoursEnabled ? toTime : undefined,
     };
 
     if (isEditMode && editingRuleId) {
@@ -461,21 +470,11 @@ export function ForwardNumberOverlay({
         }}
       >
         <div className="flex items-center" style={{ gap: '16px' }}>
-          <button
+          <CanaryButton
+            type={ButtonType.ICON_SECONDARY}
+            icon={<Icon path={mdiArrowLeft} size={0.85} />}
             onClick={handleClose}
-            className="flex items-center justify-center"
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '20px',
-              backgroundColor: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-            }}
-          >
-            <Icon path={mdiArrowLeft} size={1} color={colors.colorBlack1} />
-          </button>
+          />
           <h1
             className="font-['Roboto',sans-serif] font-medium"
             style={{
@@ -591,6 +590,7 @@ export function ForwardNumberOverlay({
               {/* Phone Number */}
               <CanaryInputPhone
                 label="Destination number"
+                size={InputSize.NORMAL}
                 value={phoneNumber}
                 onChange={(value) => setPhoneNumber(value)}
                 placeholder="+1 201-555-0123"
@@ -599,11 +599,11 @@ export function ForwardNumberOverlay({
                 }
               />
 
-              <CanaryInput
+              <CanaryInputMultiple
                 label="Email for call summaries"
-                value={summaryEmail}
-                onChange={(e) => setSummaryEmail(e.target.value)}
-                placeholder="frontdesk@hotel.com"
+                values={summaryEmails}
+                onChange={(values) => setSummaryEmails(values)}
+                placeholder="Type email and press Enter"
                 size={InputSize.NORMAL}
               />
 
