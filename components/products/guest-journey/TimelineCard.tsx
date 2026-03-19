@@ -46,6 +46,7 @@ import {
   isCustomMessageType,
   WHATSAPP_STATUS_CONFIG,
 } from '@/lib/products/guest-journey/types';
+import { useGuestJourneyStore } from '@/lib/products/guest-journey/store';
 
 interface TimelineCardProps {
   message: GuestJourneyMessage;
@@ -81,6 +82,8 @@ export function TimelineCard({
   onToggleEnabled,
 }: TimelineCardProps) {
   const [showWaTooltip, setShowWaTooltip] = useState(false);
+  const [showSegmentTooltip, setShowSegmentTooltip] = useState(false);
+  const allSegments = useGuestJourneyStore((s) => s.segments);
   const [activeChannel, setActiveChannel] = useState<Channel>(
     message.channels.find((c) => c.isEnabled)?.channel || 'email'
   );
@@ -164,9 +167,39 @@ export function TimelineCard({
             <span>{message.timing.delta === 'ASAP' && !sendTimeLabel ? 'ASAP' : `send at ${sendTimeLabel}`}</span>
           </div>
         )}
-        <div className="flex items-center" style={{ gap: 4 }}>
+        <div
+          className="flex items-center relative"
+          style={{ gap: 4 }}
+          onMouseEnter={() => hasSegmentVariants && setShowSegmentTooltip(true)}
+          onMouseLeave={() => setShowSegmentTooltip(false)}
+        >
           <Icon path={segmentIcon} size={0.85} color="#666" style={{ width: 20, height: 20 }} />
           <span>{segmentLabel}</span>
+          {hasSegmentVariants && showSegmentTooltip && (
+            <div
+              style={{
+                position: 'absolute',
+                left: 0,
+                bottom: 28,
+                backgroundColor: '#FFF',
+                border: '1px solid #E5E5E5',
+                borderRadius: 4,
+                padding: '8px 12px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                zIndex: 50,
+                pointerEvents: 'none',
+                whiteSpace: 'nowrap',
+                fontSize: 13,
+                lineHeight: '22px',
+                color: '#333',
+              }}
+            >
+              {message.segmentVariants!.map((v) => {
+                const seg = allSegments.find((s) => s.id === v.segmentId);
+                return <div key={v.segmentId}>{seg?.name || 'Unknown segment'}</div>;
+              })}
+            </div>
+          )}
         </div>
       </div>
 

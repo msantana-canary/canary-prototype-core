@@ -60,6 +60,16 @@ export const mockMessages: GuestJourneyMessage[] = [
     segmentTarget: 'ALL_GUESTS',
     reminderCount: 2,
     whatsappStatus: 'approved' as const,
+    segmentVariants: [
+      {
+        segmentId: 'seg-vip',
+        isEnabled: true,
+        channels: [
+          { channel: 'email', isEnabled: true, subject: 'VIP Pre-Arrival Check-in — {{hotel_name}}', body: 'Dear {{guest_formal_name}},\n\nAs a valued Diamond Elite member, we\'ve prepared a personalized check-in experience for your upcoming stay at {{hotel_name}}.\n\nComplete your VIP pre-arrival check-in to unlock:\n- Priority room selection\n- Complimentary suite upgrade (subject to availability)\n- Express check-in at our VIP desk\n\n{{guest_url_button}}\n\nWe look forward to welcoming you.\n{{hotel_name}} Concierge Team', language: 'en' },
+          { channel: 'sms', isEnabled: true, body: '{{guest_formal_name}}, as a Diamond Elite member at {{hotel_name}}, complete your VIP check-in for priority room selection and express arrival: {{guest_url}}', language: 'en' },
+        ],
+      },
+    ],
   },
   // Check-in Invitation reminders
   {
@@ -236,6 +246,16 @@ export const mockMessages: GuestJourneyMessage[] = [
     supportedLanguages: ['en', 'es', 'fr'],
     segmentTarget: 'ALL_GUESTS',
     whatsappStatus: 'approved_marketing',
+    segmentVariants: [
+      {
+        segmentId: 'seg-nonmembers',
+        isEnabled: true,
+        channels: [
+          { channel: 'email', isEnabled: true, subject: 'Welcome to {{hotel_name}} — Join Our Loyalty Program!', body: 'Hi {{guest_first_name}},\n\nWelcome to {{hotel_name}}! We hope you\'re settling in nicely.\n\nDid you know? By joining our loyalty program, you can earn points on every stay and unlock exclusive benefits like:\n- Room upgrades\n- Late checkout\n- Complimentary breakfast\n- Member-only rates\n\nSign up today — it\'s free and takes less than a minute.\n\nEnjoy your stay!\n{{hotel_name}} Team', language: 'en' },
+          { channel: 'sms', isEnabled: true, body: 'Welcome to {{hotel_name}}, {{guest_first_name}}! Join our free loyalty program to earn points and unlock upgrades on future stays. Ask the front desk for details!', language: 'en' },
+        ],
+      },
+    ],
   },
   {
     id: 'msg-upsell-amenities',
@@ -260,6 +280,22 @@ export const mockMessages: GuestJourneyMessage[] = [
     isEnabled: true,
     supportedLanguages: ['en'],
     segmentTarget: 'ALL_GUESTS',
+    segmentVariants: [
+      {
+        segmentId: 'seg-corporate',
+        isEnabled: true,
+        channels: [
+          { channel: 'email', isEnabled: true, subject: 'Business Amenities at {{hotel_name}}', body: 'Dear {{guest_first_name}},\n\nWe hope your business trip is going well. As a corporate guest, you have access to our exclusive business amenities:\n\n- Business Center: 24/7 access with printing and scanning\n- Meeting Rooms: Complimentary 2-hour booking\n- Express Laundry: Same-day turnaround\n- Airport Transfer: Pre-book your departure\n\nBrowse and book:\n{{guest_url_button}}\n\n{{hotel_name}} Team', language: 'en' },
+        ],
+      },
+      {
+        segmentId: 'seg-weekend',
+        isEnabled: false,
+        channels: [
+          { channel: 'email', isEnabled: true, subject: 'Weekend Experiences at {{hotel_name}}', body: 'Hi {{guest_first_name}},\n\nMake your weekend unforgettable! Here are some special weekend-only offerings:\n\n- Saturday Brunch: Chef\'s special tasting menu\n- Pool & Cabana: Reserve your spot\n- Couples Spa Package: 20% off this weekend\n- Late Checkout: Enjoy until 2 PM for just $30\n\n{{guest_url_button}}\n\n{{hotel_name}} Team', language: 'en' },
+        ],
+      },
+    ],
   },
   {
     id: 'msg-midstay',
@@ -334,6 +370,16 @@ export const mockMessages: GuestJourneyMessage[] = [
     supportedLanguages: ['en', 'es'],
     segmentTarget: 'ALL_GUESTS',
     whatsappStatus: 'approved',
+    segmentVariants: [
+      {
+        segmentId: 'seg-long-stay',
+        isEnabled: true,
+        channels: [
+          { channel: 'email', isEnabled: true, subject: 'Thank You for Your Extended Stay — {{hotel_name}}', body: 'Dear {{guest_first_name}},\n\nThank you for choosing to spend multiple nights with us at {{hotel_name}}. We hope every day of your stay was memorable.\n\nAs a multi-night guest, we\'d love to offer you a special rate on your next visit. Check out our loyalty offers:\n{{guest_url_button}}\n\nSafe travels!\n{{hotel_name}} Team', language: 'en' },
+          { channel: 'sms', isEnabled: true, body: 'Thank you for your extended stay at {{hotel_name}}, {{guest_first_name}}! We have a special return rate waiting for you. Check out on your phone: {{guest_url}}', language: 'en' },
+        ],
+      },
+    ],
   },
 
   // ── POST_DEPARTURE ──────────────────────────────────────────────────

@@ -22,7 +22,7 @@ import {
   ButtonColor,
 } from '@canary-ui/components';
 import { useGuestJourneyStore } from '@/lib/products/guest-journey/store';
-import { isSystemMessage, isDeletable, Channel, GuestJourneyMessage } from '@/lib/products/guest-journey/types';
+import { isSystemMessage, isDeletable, Channel, ChannelContent, GuestJourneyMessage } from '@/lib/products/guest-journey/types';
 import { PhonePreview } from './PhonePreview';
 import { EditorTitleCard } from './EditorTitleCard';
 import { EditorSendTimeCard } from './EditorSendTimeCard';
@@ -72,6 +72,7 @@ export function MessageEditor({ isOpen }: MessageEditorProps) {
 
   const leftPanelRef = useRef<HTMLDivElement>(null);
   const [activePreviewChannel, setActivePreviewChannel] = useState<Channel>('email');
+  const [activeSegmentSection, setActiveSegmentSection] = useState<string>('all-guests');
   const [shouldRender, setShouldRender] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
 
@@ -96,8 +97,15 @@ export function MessageEditor({ isOpen }: MessageEditorProps) {
       const timer = setTimeout(() => {
         setShouldRender(false);
         setEditingReminderId(null);
-        // Clear selectedMessageId after slide-out animation completes
-        useGuestJourneyStore.getState().clearSelection();
+        // Clean up empty messages (created but never filled in)
+        const store = useGuestJourneyStore.getState();
+        if (store.selectedMessageId) {
+          const msg = store.messages.find((m) => m.id === store.selectedMessageId);
+          if (msg && !msg.title.trim() && msg.type === 'CUSTOM') {
+            store.deleteMessage(msg.id);
+          }
+        }
+        store.clearSelection();
       }, 500);
       return () => clearTimeout(timer);
     }
@@ -128,6 +136,8 @@ export function MessageEditor({ isOpen }: MessageEditorProps) {
     setInnerTransition('exit');
     setTimeout(() => {
       setEditingReminderId(null);
+      setActivePreviewChannel('email');
+      setActiveSegmentSection('all-guests');
       setInnerTransition('enter');
       leftPanelRef.current?.scrollTo({ top: 0 });
       setTimeout(() => {
@@ -157,7 +167,8 @@ export function MessageEditor({ isOpen }: MessageEditorProps) {
     ? `Reminder ${reminderIndex}`
     : activeMessage?.title || 'New Message';
 
-  const canDelete = activeMessage ? isDeletable(activeMessage) : false;
+  const isNewMessage = activeMessage ? !activeMessage.title.trim() : false;
+  const canDelete = activeMessage && !isNewMessage ? isDeletable(activeMessage) : false;
 
   // Inner transition CSS classes — direction-aware
   const exitTranslate = navDirection === 'forward' ? '-translate-x-8' : 'translate-x-8';
@@ -252,6 +263,8 @@ export function MessageEditor({ isOpen }: MessageEditorProps) {
                 <EditorTranslationsCard message={activeMessage} />
                 <EditorMessageCard
                   message={activeMessage}
+                  isReminder={isReminder}
+                  parentMessage={parentMessage}
                   onActiveChannelChange={setActivePreviewChannel}
                   onChannelContentChange={(channel, updates) =>
                     handleChannelContentChange(activeMessage, channel, updates, updateMessage)
@@ -259,6 +272,7 @@ export function MessageEditor({ isOpen }: MessageEditorProps) {
                   onChannelToggle={(channel, enabled) =>
                     handleChannelToggle(activeMessage, channel, enabled, updateMessage)
                   }
+                  onExpandedSectionChange={setActiveSegmentSection}
                   onSegmentVariantsChange={(variants) =>
                     updateMessage(activeMessage.id, { segmentVariants: variants })
                   }
@@ -298,7 +312,16 @@ export function MessageEditor({ isOpen }: MessageEditorProps) {
               <Icon path={mdiLoading} size={1.5} color="#999" spin />
             </div>
           ) : (
-            <PhonePreview message={activeMessage} activeChannel={activePreviewChannel} />
+            <PhonePreview
+              message={activeMessage ? (() => {
+                if (activeSegmentSection === 'all-guests' || activeSegmentSection === '') {
+                  return activeMessage;
+                }
+                const variant = activeMessage.segmentVariants?.find(v => v.segmentId === activeSegmentSection);
+                return variant ? { ...activeMessage, channels: variant.channels } : activeMessage;
+              })() : activeMessage}
+              activeChannel={activePreviewChannel}
+            />
           )}
         </div>
       </div>

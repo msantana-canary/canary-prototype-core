@@ -10,7 +10,7 @@
  * - Only one section open at a time (accordion)
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Icon from '@mdi/react';
 import {
   mdiChevronUp,
@@ -52,7 +52,10 @@ import { useGuestJourneyStore } from '@/lib/products/guest-journey/store';
 
 interface EditorMessageCardProps {
   message: GuestJourneyMessage;
+  isReminder?: boolean;
+  parentMessage?: GuestJourneyMessage | null;
   onActiveChannelChange?: (channel: Channel) => void;
+  onExpandedSectionChange?: (sectionId: string) => void;
   onChannelContentChange: (channel: Channel, updates: Partial<ChannelContent>) => void;
   onChannelToggle: (channel: Channel, enabled: boolean) => void;
   onSegmentVariantsChange?: (variants: MessageSegmentVariant[]) => void;
@@ -207,7 +210,7 @@ function ChannelContentSection({
             </div>
           </div>
 
-          <CanaryCheckbox label="Customize HTML" size="normal" onChange={() => {}} />
+          <CanaryCheckbox label="Customize HTML" size="normal" isDisabled onChange={() => {}} />
         </div>
       )}
 
@@ -223,18 +226,40 @@ function ChannelContentSection({
 export function EditorMessageCard({
   message,
   onActiveChannelChange,
+  isReminder,
+  parentMessage,
+  onExpandedSectionChange,
   onChannelContentChange,
   onChannelToggle,
   onSegmentVariantsChange,
 }: EditorMessageCardProps) {
   const segments = useGuestJourneyStore((s) => s.segments);
-  const [expandedSection, setExpandedSection] = useState<string>('all-guests');
+  const [expandedSection, setExpandedSectionRaw] = useState<string>('all-guests');
+  const setExpandedSection = (id: string) => {
+    setExpandedSectionRaw(id);
+    onExpandedSectionChange?.(id);
+  };
   const [activeChannel, setActiveChannel] = useState<Channel>(
     message.channels.find((c) => c.isEnabled)?.channel || 'email'
   );
-  const [showSegmentPicker, setShowSegmentPicker] = useState(false);
 
-  const variants = message.segmentVariants || [];
+  // Reset active channel when message changes
+  useEffect(() => {
+    const firstEnabled = message.channels.find((c) => c.isEnabled)?.channel || 'email';
+    setActiveChannel(firstEnabled);
+  }, [message.id]);
+  const [showSegmentPicker, setShowSegmentPicker] = useState(false);
+  const [menuOpenSegmentId, setMenuOpenSegmentId] = useState<string | null>(null);
+
+  // For reminders: inherit parent's segments (content independently editable, but can't add/remove)
+  const parentVariants = parentMessage?.segmentVariants || [];
+  const variants = isReminder
+    ? (message.segmentVariants?.length ? message.segmentVariants : parentVariants.map(v => ({
+        segmentId: v.segmentId,
+        isEnabled: v.isEnabled,
+        channels: [{ channel: 'email' as Channel, isEnabled: true, subject: '', body: '', language: 'en' }],
+      })))
+    : (message.segmentVariants || []);
   const assignedSegmentIds = variants.map((v) => v.segmentId);
   const availableSegments = segments.filter((s) => !assignedSegmentIds.includes(s.id));
 
@@ -244,7 +269,7 @@ export function EditorMessageCard({
       isEnabled: false,
       channels: [{ channel: 'email', isEnabled: true, subject: '', body: '', language: 'en' }],
     };
-    const updated = [...variants, newVariant];
+    const updated = [newVariant, ...variants];
     onSegmentVariantsChange?.(updated);
     setShowSegmentPicker(false);
     setExpandedSection(segmentId);
@@ -294,21 +319,23 @@ export function EditorMessageCard({
       {/* Header */}
       <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
         <h3 style={{ fontSize: 18, fontWeight: 500, color: '#000', margin: 0 }}>Message</h3>
-        <CanaryButton
-          type={ButtonType.SHADED}
-          size={ButtonSize.COMPACT}
-          icon={<Icon path={mdiPlus} size={0.75} />}
-          iconPosition={IconPosition.RIGHT}
-          onClick={() => setShowSegmentPicker(!showSegmentPicker)}
-        >
-          Add Segment
-        </CanaryButton>
+        {!isReminder && (
+          <CanaryButton
+            type={ButtonType.SHADED}
+            size={ButtonSize.COMPACT}
+            icon={<Icon path={mdiPlus} size={0.75} />}
+            iconPosition={IconPosition.RIGHT}
+            onClick={() => setShowSegmentPicker(!showSegmentPicker)}
+          >
+            Add Segment
+          </CanaryButton>
+        )}
       </div>
 
       {/* Segment container */}
       <div style={{ border: '1px solid #E5E5E5', borderRadius: 8 }}>
-        {/* Segment picker dropdown */}
-        {showSegmentPicker && (
+        {/* Segment picker dropdown — not available for reminders */}
+        {showSegmentPicker && !isReminder && (
           <div style={{ padding: 16, borderBottom: '1px solid #E5E5E5' }}>
             <CanarySelect
               size={InputSize.NORMAL}
@@ -336,13 +363,48 @@ export function EditorMessageCard({
                       Send Test
                     </CanaryButton>
                   )}
-                  <CanarySwitch checked={variant.isEnabled} onChange={() => toggleSegmentVariant(variant.segmentId)} />
-                  <CanaryButton
-                    type={ButtonType.ICON_SECONDARY}
-                    size={ButtonSize.COMPACT}
-                    icon={<Icon path={mdiDotsHorizontal} size={0.75} />}
-                    onClick={() => removeSegmentVariant(variant.segmentId)}
-                  />
+                  {!isReminder && (
+                    <CanarySwitch checked={variant.isEnabled} onChange={() => toggleSegmentVariant(variant.segmentId)} />
+                  )}
+                  {!isReminder && (
+                  <div className="relative">
+                    <CanaryButton
+                      type={ButtonType.ICON_SECONDARY}
+                      size={ButtonSize.COMPACT}
+                      icon={<Icon path={mdiDotsHorizontal} size={0.75} />}
+                      onClick={() => setMenuOpenSegmentId(menuOpenSegmentId === variant.segmentId ? null : variant.segmentId)}
+                    />
+                    {menuOpenSegmentId === variant.segmentId && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: 32,
+                          right: 0,
+                          backgroundColor: '#FFF',
+                          border: '1px solid #E5E5E5',
+                          borderRadius: 4,
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                          zIndex: 50,
+                          overflow: 'hidden',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <button
+                          className="text-left px-4 py-2 text-[14px] transition-colors"
+                          style={{ color: '#E40046', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', display: 'block', width: '100%' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F5F5F5'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                          onClick={() => {
+                            setMenuOpenSegmentId(null);
+                            removeSegmentVariant(variant.segmentId);
+                          }}
+                        >
+                          Remove segment
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  )}
                   <CanaryButton
                     type={ButtonType.ICON_SECONDARY}
                     size={ButtonSize.COMPACT}

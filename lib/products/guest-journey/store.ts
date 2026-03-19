@@ -131,13 +131,34 @@ export const useGuestJourneyStore = create<GuestJourneyState>((set) => ({
       creatingInStage: null,
     })),
 
-  startCreatingMessage: (stage) =>
-    set({
+  startCreatingMessage: (stage) => {
+    const newId = `msg-${Date.now()}`;
+    set((state) => ({
+      messages: [...state.messages, {
+        id: newId,
+        title: '',
+        type: 'CUSTOM' as const,
+        stage,
+        timing: {
+          delta: '1_DAY' as const,
+          direction: 'BEFORE' as const,
+          anchor: stage === 'DEPARTURE' || stage === 'POST_DEPARTURE' ? 'DEPARTURE' as const : 'ARRIVAL' as const,
+          sendTime: '9:00 AM',
+        },
+        channels: [
+          { channel: 'email' as const, isEnabled: true, subject: '', body: '', language: 'en' },
+          { channel: 'sms' as const, isEnabled: false, body: '', language: 'en' },
+        ],
+        isEnabled: true,
+        supportedLanguages: ['en'],
+        segmentTarget: 'ALL_GUESTS' as const,
+      }],
       isCreatingNew: true,
       creatingInStage: stage,
       isEditorOpen: true,
-      selectedMessageId: null,
-    }),
+      selectedMessageId: newId,
+    }));
+  },
 
   openEditor: (messageId) =>
     set({
