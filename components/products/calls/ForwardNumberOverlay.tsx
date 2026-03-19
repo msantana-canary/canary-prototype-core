@@ -48,6 +48,10 @@ import {
 } from '@/lib/products/calls/mock-data';
 import type { ForwardNumberRule, AdditionalQuestion } from '@/lib/products/calls/types';
 
+// Toggle to reveal future-state features (not yet in production)
+// Set to true when these features ship: scheduled redirect, summary emails, keywords, when-to-transfer
+const SHOW_FUTURE_FEATURES = false;
+
 interface ForwardNumberOverlayProps {
   isOpen: boolean;
   editingRuleId: string | null;
@@ -599,6 +603,7 @@ export function ForwardNumberOverlay({
                 }
               />
 
+              {SHOW_FUTURE_FEATURES && (
               <CanaryInputMultiple
                 label="Email for call summaries"
                 values={summaryEmails}
@@ -606,9 +611,10 @@ export function ForwardNumberOverlay({
                 placeholder="Type email and press Enter"
                 size={InputSize.NORMAL}
               />
+              )}
 
-              {/* When to Transfer - only for custom */}
-              {transferDestination === 'custom' && (
+              {/* When to Transfer - future state, only for custom */}
+              {SHOW_FUTURE_FEATURES && transferDestination === 'custom' && (
                 <CanaryTextArea
                   label="When to Transfer"
                   value={whenToTransfer}
@@ -697,8 +703,8 @@ export function ForwardNumberOverlay({
             )}
           </div>
 
-          {/* Scheduled Redirect */}
-          <div className="rounded-lg bg-white p-6">
+          {/* Scheduled Redirect — future state */}
+          {SHOW_FUTURE_FEATURES && <div className="rounded-lg bg-white p-6">
             {/* Header with toggle */}
             <div className="flex justify-between gap-4 mb-4">
               <div className="flex-1">
@@ -807,7 +813,7 @@ export function ForwardNumberOverlay({
                 )}
               </>
             )}
-          </div>
+          </div>}
         </div>
       </div>
     </div>
