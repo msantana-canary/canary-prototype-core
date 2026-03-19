@@ -193,7 +193,7 @@ export default function KnowledgeBasePage() {
         isOpen={!!deleteContextId}
         onClose={() => setDeleteContextId(null)}
         title="Delete Custom Context?"
-        size="small"
+        size="medium"
       >
         <p style={{ fontSize: 14, color: '#333', margin: '0 0 16px 0', lineHeight: '1.5' }}>
           Are you sure you want to delete this custom context?
