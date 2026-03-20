@@ -592,6 +592,38 @@ export const mockCampaigns: ScheduledCampaign[] = [
 
 export const mockSegments: Segment[] = [
   {
+    id: 'seg-diamond',
+    name: 'Diamond Elite',
+    rules: [{ id: 'rule-d1', guestProperty: 'Loyalty Status', condition: 'includes', values: ['Diamond'], dropdownValue: '' }],
+    description: 'Diamond Elite loyalty members — highest tier benefits.',
+    estimatedGuests: 45,
+    createdAt: Date.now() - 86400000 * 60,
+  },
+  {
+    id: 'seg-platinum',
+    name: 'Platinum Elite',
+    rules: [{ id: 'rule-p1', guestProperty: 'Loyalty Status', condition: 'includes', values: ['Platinum'], dropdownValue: '' }],
+    description: 'Platinum Elite loyalty members.',
+    estimatedGuests: 87,
+    createdAt: Date.now() - 86400000 * 55,
+  },
+  {
+    id: 'seg-gold',
+    name: 'Gold Elite',
+    rules: [{ id: 'rule-g1', guestProperty: 'Loyalty Status', condition: 'includes', values: ['Gold'], dropdownValue: '' }],
+    description: 'Gold Elite loyalty members.',
+    estimatedGuests: 156,
+    createdAt: Date.now() - 86400000 * 50,
+  },
+  {
+    id: 'seg-silver',
+    name: 'Silver Elite',
+    rules: [{ id: 'rule-s1', guestProperty: 'Loyalty Status', condition: 'includes', values: ['Silver'], dropdownValue: '' }],
+    description: 'Silver Elite loyalty members.',
+    estimatedGuests: 234,
+    createdAt: Date.now() - 86400000 * 45,
+  },
+  {
     id: 'seg-vip',
     name: 'High-level Loyalty',
     rules: [

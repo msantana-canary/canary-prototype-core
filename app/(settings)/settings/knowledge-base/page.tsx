@@ -6,161 +6,72 @@
  * AI context management — hotels populate information that powers
  * Canary's AI chat and voice products.
  *
- * Includes segment tagging for custom context entries — tag statements
- * with loyalty tier, rate code, room type, or hotel to scope AI context
- * to specific guest segments.
+ * Segment tagging for custom context entries — users apply pre-built
+ * segments from Settings > Segments to scope AI context to specific
+ * guest groups.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Icon from '@mdi/react';
-import { mdiDeleteOutline, mdiTagOutline, mdiTag, mdiCloseCircle } from '@mdi/js';
+import {
+  mdiDeleteOutline,
+  mdiTagOutline,
+  mdiCloseCircle,
+  mdiOpenInNew,
+} from '@mdi/js';
 import {
   CanaryButton,
   CanaryModal,
   CanaryInput,
-  CanaryTag,
   CanaryCheckbox,
   ButtonType,
   ButtonSize,
   ButtonColor,
   InputSize,
-  TagSize,
   colors,
 } from '@canary-ui/components';
 import { useKBStore } from '@/lib/products/knowledge-base/store';
-import { isYesNoEntry, SegmentTag } from '@/lib/products/knowledge-base/types';
+import { isYesNoEntry } from '@/lib/products/knowledge-base/types';
+import { useGuestJourneyStore } from '@/lib/products/guest-journey/store';
 import { KBSection } from '@/components/products/knowledge-base/KBSection';
 import { KBEntryRenderer } from '@/components/products/knowledge-base/KBEntryRenderer';
 
-// ── Segment tag option definitions ──────────────────────────────────────
+// ── Apply Segments Modal ─────────────────────────────────────────────────
 
-type TagType = SegmentTag['type'];
-
-interface TagOption {
-  value: string;
-  label: string;
-}
-
-const TAG_TYPE_LABELS: Record<TagType, string> = {
-  loyalty: 'Loyalty Tier',
-  rate_code: 'Rate Code',
-  room_type: 'Room Type',
-  hotel: 'Hotel',
-};
-
-const TAG_TYPE_OPTIONS: Record<TagType, TagOption[]> = {
-  loyalty: [
-    { value: 'diamond-elite', label: 'Diamond Elite' },
-    { value: 'platinum-elite', label: 'Platinum Elite' },
-    { value: 'gold-elite', label: 'Gold Elite' },
-    { value: 'silver-elite', label: 'Silver Elite' },
-    { value: 'club-member', label: 'Club Member' },
-  ],
-  rate_code: [
-    { value: 'CORP', label: 'CORP' },
-    { value: 'BAR', label: 'BAR' },
-    { value: 'GOV', label: 'GOV' },
-    { value: 'AAA', label: 'AAA' },
-    { value: 'RACK', label: 'RACK' },
-  ],
-  room_type: [
-    { value: 'king-suite', label: 'King Suite' },
-    { value: 'king', label: 'King' },
-    { value: 'double-queen', label: 'Double Queen' },
-    { value: 'standard', label: 'Standard' },
-  ],
-  hotel: [
-    { value: 'the-grand-hotel', label: 'The Grand Hotel' },
-    { value: 'ic-berlin', label: 'IC Berlin' },
-    { value: 'statler-new-york', label: 'Statler New York' },
-  ],
-};
-
-// ── Color helpers for segment tag pills ────────────────────────────────
-
-function getSegmentTagCustomColor(tag: SegmentTag): {
-  backgroundColor: string;
-  borderColor: string;
-  fontColor: string;
-} {
-  if (tag.type === 'loyalty') {
-    switch (tag.value) {
-      case 'diamond-elite':
-        return { backgroundColor: '#F0F0F0', borderColor: '#333333', fontColor: '#333333' };
-      case 'platinum-elite':
-        return { backgroundColor: '#F0F0F0', borderColor: '#666666', fontColor: '#666666' };
-      case 'gold-elite':
-        return { backgroundColor: '#FFF8EC', borderColor: '#D4A017', fontColor: '#96720B' };
-      case 'silver-elite':
-        return { backgroundColor: '#F0F0F0', borderColor: '#999999', fontColor: '#666666' };
-      case 'club-member':
-        return { backgroundColor: '#E8F4FF', borderColor: '#1C91FA', fontColor: '#0D6BBF' };
-      default:
-        return { backgroundColor: '#F0F0F0', borderColor: '#999999', fontColor: '#666666' };
-    }
-  }
-  if (tag.type === 'rate_code') {
-    return { backgroundColor: colors.colorBlueDark5, borderColor: colors.colorBlueDark3, fontColor: colors.colorBlueDark1 };
-  }
-  if (tag.type === 'room_type') {
-    return { backgroundColor: '#F0F0F0', borderColor: '#999999', fontColor: '#666666' };
-  }
-  if (tag.type === 'hotel') {
-    return { backgroundColor: colors.colorPurple5, borderColor: colors.colorPurple3, fontColor: colors.colorPurple1 };
-  }
-  return { backgroundColor: '#F0F0F0', borderColor: '#CCCCCC', fontColor: '#666666' };
-}
-
-// ── Tag Segment Modal ──────────────────────────────────────────────────
-
-interface TagSegmentModalProps {
+interface ApplySegmentsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  existingTags: SegmentTag[];
-  onApply: (tags: SegmentTag[]) => void;
+  existingSegmentIds: string[];
+  onApply: (segmentIds: string[]) => void;
 }
 
-function TagSegmentModal({ isOpen, onClose, existingTags, onApply }: TagSegmentModalProps) {
-  const [selectedType, setSelectedType] = useState<TagType>('loyalty');
-  const [pendingTags, setPendingTags] = useState<SegmentTag[]>([]);
+function ApplySegmentsModal({ isOpen, onClose, existingSegmentIds, onApply }: ApplySegmentsModalProps) {
+  const segments = useGuestJourneyStore((s) => s.segments);
+  const [pendingIds, setPendingIds] = useState<string[]>([]);
 
-  // Initialize pending tags when modal opens
+  // Initialize pending IDs when modal opens
   useEffect(() => {
     if (isOpen) {
-      setPendingTags([...existingTags]);
-      setSelectedType('loyalty');
+      setPendingIds([...existingSegmentIds]);
     }
-  }, [isOpen, existingTags]);
+  }, [isOpen, existingSegmentIds]);
 
-  const isTagSelected = useCallback(
-    (type: TagType, value: string) =>
-      pendingTags.some((t) => t.type === type && t.value === value),
-    [pendingTags]
+  const isSelected = useCallback(
+    (segmentId: string) => pendingIds.includes(segmentId),
+    [pendingIds]
   );
 
-  const toggleTag = useCallback((type: TagType, option: TagOption) => {
-    setPendingTags((prev) => {
-      const exists = prev.some((t) => t.type === type && t.value === option.value);
-      if (exists) {
-        return prev.filter((t) => !(t.type === type && t.value === option.value));
-      }
-      const label =
-        type === 'rate_code'
-          ? `Rate Code: ${option.label}`
-          : type === 'room_type'
-            ? option.label
-            : option.label;
-      return [...prev, { type, value: option.value, label }];
-    });
-  }, []);
-
-  const removeTag = useCallback((type: TagType, value: string) => {
-    setPendingTags((prev) => prev.filter((t) => !(t.type === type && t.value === value)));
+  const toggleSegment = useCallback((segmentId: string) => {
+    setPendingIds((prev) =>
+      prev.includes(segmentId)
+        ? prev.filter((id) => id !== segmentId)
+        : [...prev, segmentId]
+    );
   }, []);
 
   const handleApply = () => {
-    onApply(pendingTags);
+    onApply(pendingIds);
     onClose();
   };
 
@@ -168,11 +79,11 @@ function TagSegmentModal({ isOpen, onClose, existingTags, onApply }: TagSegmentM
     <CanaryModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Tag Segment"
+      title="Apply Segments"
       size="medium"
       footer={
         <div className="flex justify-end" style={{ gap: 8 }}>
-          <CanaryButton type={ButtonType.TEXT} onClick={onClose}>
+          <CanaryButton type={ButtonType.OUTLINED} onClick={onClose}>
             Cancel
           </CanaryButton>
           <CanaryButton type={ButtonType.PRIMARY} onClick={handleApply}>
@@ -184,98 +95,214 @@ function TagSegmentModal({ isOpen, onClose, existingTags, onApply }: TagSegmentM
       <div className="flex flex-col" style={{ gap: 20 }}>
         {/* Description */}
         <p style={{ fontSize: 14, color: colors.colorBlack3, margin: 0, lineHeight: '1.5' }}>
-          Tag this context statement with guest segments so the AI only includes it when responding to matching guests.
+          Select which guest segments this context applies to. Only guests matching these segments will receive this information. Manage segments in Settings &gt; Segments.
         </p>
 
-        {/* Currently applied tags */}
-        {pendingTags.length > 0 && (
-          <div className="flex flex-col" style={{ gap: 8 }}>
-            <p style={{ fontSize: 13, fontWeight: 500, color: colors.colorBlack2, margin: 0 }}>
-              Applied tags
+        {/* Segment checkbox list */}
+        {segments.length === 0 ? (
+          <div
+            className="flex items-center justify-center rounded-lg"
+            style={{ backgroundColor: '#F0F0F0', minHeight: 120 }}
+          >
+            <p style={{ fontSize: 14, color: '#999', margin: 0 }}>
+              No segments created yet. Create segments in Settings &gt; Segments.
             </p>
-            <div className="flex flex-wrap" style={{ gap: 6 }}>
-              {pendingTags.map((tag) => {
-                const tagColors = getSegmentTagCustomColor(tag);
-                return (
-                  <span
-                    key={`${tag.type}-${tag.value}`}
-                    className="inline-flex items-center rounded"
-                    style={{
-                      gap: 6,
-                      padding: '2px 8px',
-                      fontSize: 12,
-                      lineHeight: '20px',
-                      fontWeight: 500,
-                      color: tagColors.fontColor,
-                      backgroundColor: tagColors.backgroundColor,
-                      border: `1px solid ${tagColors.borderColor}`,
-                    }}
-                  >
-                    {tag.label}
-                    <button
-                      type="button"
-                      className="shrink-0 cursor-pointer flex items-center justify-center"
-                      style={{ background: 'none', border: 'none', padding: 0 }}
-                      onClick={() => removeTag(tag.type, tag.value)}
-                    >
-                      <Icon path={mdiCloseCircle} size={0.55} color={tagColors.fontColor} />
-                    </button>
-                  </span>
-                );
-              })}
+          </div>
+        ) : (
+          <div>
+            {/* Header — outside the bordered container */}
+            <div style={{ padding: '0 16px 12px' }}>
+              <span
+                className="font-['Roboto',sans-serif]"
+                style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666' }}
+              >
+                Available segments
+              </span>
+            </div>
+
+            {/* Scrollable bordered rows */}
+            <div
+              className="rounded-lg overflow-hidden"
+              style={{ border: '1px solid #E5E5E5', maxHeight: 280, overflowY: 'auto' }}
+            >
+              {segments.map((seg, idx) => (
+                <div
+                  key={seg.id}
+                  className="flex items-start cursor-pointer hover:bg-gray-50 transition-colors bg-white"
+                  style={{
+                    padding: '10px 16px',
+                    borderBottom: idx < segments.length - 1 ? '1px solid #E5E5E5' : 'none',
+                  }}
+                  onClick={() => toggleSegment(seg.id)}
+                >
+                  <div style={{ paddingTop: 1, flexShrink: 0 }}>
+                    <CanaryCheckbox
+                      checked={isSelected(seg.id)}
+                      onChange={() => toggleSegment(seg.id)}
+                      size="normal"
+                    />
+                  </div>
+                  <div className="flex flex-col" style={{ gap: 2, marginLeft: 4, minWidth: 0 }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: colors.colorBlack1 }}>
+                      {seg.name}
+                    </span>
+                    {seg.description && (
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: colors.colorBlack4,
+                          lineHeight: '1.4',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {seg.description}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* Tag type selector */}
-        <div className="flex flex-col" style={{ gap: 8 }}>
-          <p style={{ fontSize: 13, fontWeight: 500, color: colors.colorBlack2, margin: 0 }}>
-            Tag type
-          </p>
-          <div className="flex flex-wrap" style={{ gap: 6 }}>
-            {(Object.keys(TAG_TYPE_LABELS) as TagType[]).map((type) => (
-              <CanaryButton
-                key={type}
-                type={selectedType === type ? ButtonType.PRIMARY : ButtonType.OUTLINED}
-                size={ButtonSize.COMPACT}
-                onClick={() => setSelectedType(type)}
-              >
-                {TAG_TYPE_LABELS[type]}
-              </CanaryButton>
-            ))}
-          </div>
-        </div>
-
-        {/* Value picker — checkboxes */}
-        <div
-          className="border rounded-lg overflow-hidden"
-          style={{ borderColor: colors.colorBlack6 }}
-        >
-          <div
-            className="px-4 py-2"
-            style={{
-              backgroundColor: colors.colorBlack8,
-              borderBottom: `1px solid ${colors.colorBlack6}`,
-            }}
-          >
-            <p style={{ fontSize: 13, fontWeight: 500, color: colors.colorBlack2, margin: 0 }}>
-              {TAG_TYPE_LABELS[selectedType]} values
-            </p>
-          </div>
-          <div className="flex flex-col bg-white" style={{ padding: '8px 16px' }}>
-            {TAG_TYPE_OPTIONS[selectedType].map((option) => (
-              <CanaryCheckbox
-                key={option.value}
-                label={option.label}
-                checked={isTagSelected(selectedType, option.value)}
-                onChange={() => toggleTag(selectedType, option)}
-                size="normal"
-              />
-            ))}
+        {/* Footer: count + manage button */}
+        <div className="flex items-center justify-between" style={{ marginTop: -8 }}>
+          <span style={{ fontSize: 13, color: colors.colorBlack3 }}>
+            {pendingIds.length} segment{pendingIds.length !== 1 ? 's' : ''} selected
+          </span>
+          <div className="flex items-center" style={{ gap: 8 }}>
+            <CanaryButton
+              type={ButtonType.TEXT}
+              size={ButtonSize.COMPACT}
+              onClick={() => setPendingIds([])}
+            >
+              Clear
+            </CanaryButton>
+            <CanaryButton
+              type={ButtonType.SHADED}
+              size={ButtonSize.COMPACT}
+              onClick={() => window.open('/settings/segments', '_blank')}
+            >
+              Manage segments
+            </CanaryButton>
           </div>
         </div>
       </div>
     </CanaryModal>
+  );
+}
+
+// ── Inline Segment Picker (for New Context modal) ────────────────────────
+
+interface InlineSegmentPickerProps {
+  selectedIds: string[];
+  onToggle: (segmentId: string) => void;
+}
+
+function InlineSegmentPicker({ selectedIds, onToggle }: InlineSegmentPickerProps) {
+  const segments = useGuestJourneyStore((s) => s.segments);
+
+  return (
+    <div className="flex flex-col" style={{ gap: 0 }}>
+      {/* Header — outside bordered container */}
+      <div style={{ padding: '0 16px 12px' }}>
+        <span
+          className="font-['Roboto',sans-serif]"
+          style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#666' }}
+        >
+          Available segments
+        </span>
+      </div>
+
+      {/* Scrollable bordered rows */}
+      {segments.length === 0 ? (
+        <div
+          className="flex items-center justify-center rounded-lg"
+          style={{ backgroundColor: '#F0F0F0', minHeight: 80 }}
+        >
+          <p style={{ fontSize: 13, color: '#999', margin: 0 }}>
+            No segments available.{' '}
+            <a
+              href="/settings/segments"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: colors.colorBlueDark1, textDecoration: 'none' }}
+            >
+              Create one
+            </a>
+          </p>
+        </div>
+      ) : (
+        <div
+          className="rounded-lg overflow-hidden"
+          style={{ border: '1px solid #E5E5E5', maxHeight: 200, overflowY: 'auto' }}
+        >
+          {segments.map((seg, idx) => (
+            <div
+              key={seg.id}
+              className="flex items-start cursor-pointer hover:bg-gray-50 transition-colors bg-white"
+                  style={{
+                    padding: '10px 16px',
+                    borderBottom: idx < segments.length - 1 ? '1px solid #E5E5E5' : 'none',
+                  }}
+                  onClick={() => onToggle(seg.id)}
+                >
+                  <div style={{ paddingTop: 1, flexShrink: 0 }}>
+                    <CanaryCheckbox
+                      checked={selectedIds.includes(seg.id)}
+                      onChange={() => onToggle(seg.id)}
+                      size="normal"
+                    />
+                  </div>
+                  <div className="flex flex-col" style={{ gap: 2, marginLeft: 4, minWidth: 0 }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: colors.colorBlack1 }}>
+                      {seg.name}
+                    </span>
+                    {seg.description && (
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: colors.colorBlack4,
+                          lineHeight: '1.4',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {seg.description}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="flex items-center justify-between" style={{ marginTop: 12 }}>
+            <span style={{ fontSize: 13, color: colors.colorBlack3 }}>
+              {selectedIds.length} segment{selectedIds.length !== 1 ? 's' : ''} selected
+            </span>
+            <div className="flex items-center" style={{ gap: 8 }}>
+              <CanaryButton
+                type={ButtonType.TEXT}
+                size={ButtonSize.COMPACT}
+                onClick={() => selectedIds.forEach((id) => onToggle(id))}
+              >
+                Clear
+              </CanaryButton>
+              <CanaryButton
+                type={ButtonType.SHADED}
+                size={ButtonSize.COMPACT}
+                onClick={() => window.open('/settings/segments', '_blank')}
+              >
+                Manage segments
+              </CanaryButton>
+            </div>
+          </div>
+        </div>
   );
 }
 
@@ -308,22 +335,44 @@ export default function KnowledgeBasePage() {
     showToast,
   } = useKBStore();
 
+  const segments = useGuestJourneyStore((s) => s.segments);
+
   const [showNewContextModal, setShowNewContextModal] = useState(false);
   const [newContextText, setNewContextText] = useState('');
+  const [newContextSegmentIds, setNewContextSegmentIds] = useState<string[]>([]);
   const [deleteContextId, setDeleteContextId] = useState<string | null>(null);
   const deleteContextEntry = deleteContextId ? customContext.find((c) => c.id === deleteContextId) : null;
 
-  // Segment tag modal state
-  const [tagModalEntryId, setTagModalEntryId] = useState<string | null>(null);
-  const tagModalEntry = tagModalEntryId ? customContext.find((c) => c.id === tagModalEntryId) : null;
+  // Segment picker modal state
+  const [segmentModalEntryId, setSegmentModalEntryId] = useState<string | null>(null);
+  const segmentModalEntry = segmentModalEntryId ? customContext.find((c) => c.id === segmentModalEntryId) : null;
+
+  // Resolve segment IDs to names (memoized map)
+  const segmentMap = useMemo(() => {
+    const map = new Map<string, string>();
+    segments.forEach((s) => map.set(s.id, s.name));
+    return map;
+  }, [segments]);
 
   const handleAddContext = () => {
     if (!newContextText.trim()) return;
-    addCustomContext(newContextText.trim());
+    addCustomContext(
+      newContextText.trim(),
+      newContextSegmentIds.length > 0 ? newContextSegmentIds : undefined
+    );
     setNewContextText('');
+    setNewContextSegmentIds([]);
     setShowNewContextModal(false);
     showToast('Custom context added');
   };
+
+  const toggleNewContextSegment = useCallback((segmentId: string) => {
+    setNewContextSegmentIds((prev) =>
+      prev.includes(segmentId)
+        ? prev.filter((id) => id !== segmentId)
+        : [...prev, segmentId]
+    );
+  }, []);
 
   return (
     <div className="flex flex-col h-full">
@@ -393,9 +442,9 @@ export default function KnowledgeBasePage() {
           <KBSection title="Custom Context" count={customContext.length}>
             <div className="flex flex-col" style={{ gap: 16 }}>
               {customContext.map((entry) => {
-                const hasTags = entry.segmentTags && entry.segmentTags.length > 0;
+                const hasSegments = entry.segmentIds && entry.segmentIds.length > 0;
                 return (
-                  <div key={entry.id} className="flex flex-col" style={{ gap: 4 }}>
+                  <div key={entry.id}>
                     {/* Row: Input + Tag button + Delete button */}
                     <div className="flex items-start" style={{ gap: 8 }}>
                       <div style={{ flex: 1 }}>
@@ -403,46 +452,31 @@ export default function KnowledgeBasePage() {
                           size={InputSize.NORMAL}
                           value={entry.text}
                           onChange={(e) => updateCustomContext(entry.id, e.target.value)}
+                          helperText={hasSegments
+                            ? `Tagged: ${entry.segmentIds!.map((id) => segmentMap.get(id)).filter(Boolean).join(', ')}`
+                            : undefined
+                          }
                         />
                       </div>
-                      <CanaryButton
-                        type={ButtonType.ICON_SECONDARY}
-                        icon={
-                          <Icon
-                            path={hasTags ? mdiTag : mdiTagOutline}
-                            size={0.85}
-                            color={hasTags ? colors.colorBlueDark1 : undefined}
-                          />
-                        }
-                        onClick={() => setTagModalEntryId(entry.id)}
-                      />
-                      <CanaryButton
-                        type={ButtonType.ICON_SECONDARY}
-                        icon={<Icon path={mdiDeleteOutline} size={0.85} />}
-                        onClick={() => setDeleteContextId(entry.id)}
-                      />
-                    </div>
-
-                    {/* Tag pills below input */}
-                    {hasTags && (
-                      <div className="flex flex-wrap" style={{ gap: 4, paddingLeft: 0 }}>
-                        {entry.segmentTags!.map((tag) => {
-                          const tagColors = getSegmentTagCustomColor(tag);
-                          return (
-                            <CanaryTag
-                              key={`${tag.type}-${tag.value}`}
-                              label={tag.label}
-                              size={TagSize.COMPACT}
-                              customColor={{
-                                backgroundColor: tagColors.backgroundColor,
-                                borderColor: tagColors.borderColor,
-                                fontColor: tagColors.fontColor,
-                              }}
+                      <div className="flex items-center">
+                        <CanaryButton
+                          type={ButtonType.ICON_SECONDARY}
+                          icon={
+                            <Icon
+                              path={mdiTagOutline}
+                              size={0.85}
+                              color={hasSegments ? colors.colorBlueDark1 : undefined}
                             />
-                          );
-                        })}
+                          }
+                          onClick={() => setSegmentModalEntryId(entry.id)}
+                        />
+                        <CanaryButton
+                          type={ButtonType.ICON_SECONDARY}
+                          icon={<Icon path={mdiDeleteOutline} size={0.85} />}
+                          onClick={() => setDeleteContextId(entry.id)}
+                        />
                       </div>
-                    )}
+                    </div>
                   </div>
                 );
               })}
@@ -456,15 +490,15 @@ export default function KnowledgeBasePage() {
         </div>
       </div>
 
-      {/* Tag Segment Modal */}
-      <TagSegmentModal
-        isOpen={!!tagModalEntryId}
-        onClose={() => setTagModalEntryId(null)}
-        existingTags={tagModalEntry?.segmentTags ?? []}
-        onApply={(tags) => {
-          if (tagModalEntryId) {
-            updateCustomContextSegments(tagModalEntryId, tags);
-            showToast(tags.length > 0 ? 'Segment tags updated' : 'Segment tags removed');
+      {/* Apply Segments Modal */}
+      <ApplySegmentsModal
+        isOpen={!!segmentModalEntryId}
+        onClose={() => setSegmentModalEntryId(null)}
+        existingSegmentIds={segmentModalEntry?.segmentIds ?? []}
+        onApply={(segmentIds) => {
+          if (segmentModalEntryId) {
+            updateCustomContextSegments(segmentModalEntryId, segmentIds);
+            showToast(segmentIds.length > 0 ? 'Segments updated' : 'Segments removed');
           }
         }}
       />
@@ -472,24 +506,30 @@ export default function KnowledgeBasePage() {
       {/* New Context Modal */}
       <CanaryModal
         isOpen={showNewContextModal}
-        onClose={() => { setShowNewContextModal(false); setNewContextText(''); }}
+        onClose={() => { setShowNewContextModal(false); setNewContextText(''); setNewContextSegmentIds([]); }}
         title="New Custom Context"
         size="medium"
       >
         <p style={{ fontSize: 14, color: colors.colorBlack2, margin: '0 0 16px 0', lineHeight: '1.5' }}>
-          Add details to the &quot;Custom Context&quot; box to train the AI with extra info — this adds to existing data, not replaces it, for better responses.
+          Add details to the &quot;Custom Context&quot; box to train the AI with extra info — this adds to existing data, not replaces it, for better responses. Optionally, tag it with a guest segment to make this information available only to matching guests.
         </p>
-        <CanaryInput
-          label="Information"
-          size={InputSize.NORMAL}
-          value={newContextText}
-          placeholder="Ex. The pool opens at 10:00am"
-          onChange={(e) => setNewContextText(e.target.value)}
-        />
+        <div className="flex flex-col" style={{ gap: 16 }}>
+          <CanaryInput
+            label="Information"
+            size={InputSize.NORMAL}
+            value={newContextText}
+            placeholder="Ex. The pool opens at 10:00am"
+            onChange={(e) => setNewContextText(e.target.value)}
+          />
+          <InlineSegmentPicker
+            selectedIds={newContextSegmentIds}
+            onToggle={toggleNewContextSegment}
+          />
+        </div>
         <div className="flex justify-end" style={{ gap: 8, marginTop: 24 }}>
           <CanaryButton
             type={ButtonType.OUTLINED}
-            onClick={() => { setShowNewContextModal(false); setNewContextText(''); }}
+            onClick={() => { setShowNewContextModal(false); setNewContextText(''); setNewContextSegmentIds([]); }}
           >
             Cancel
           </CanaryButton>

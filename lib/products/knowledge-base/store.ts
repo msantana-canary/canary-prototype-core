@@ -3,7 +3,7 @@
  */
 
 import { create } from 'zustand';
-import { KBCategory, KBEntry, isYesNoEntry, CustomContextEntry, SegmentTag } from './types';
+import { KBCategory, KBEntry, isYesNoEntry, CustomContextEntry } from './types';
 import { mockCategories, mockCustomContext } from './mock-data';
 
 interface KBState {
@@ -15,10 +15,10 @@ interface KBState {
   updateSubQuestion: (categoryId: string, entryId: string, subId: string, answer: string) => void;
   setYesNo: (categoryId: string, entryId: string, value: 'yes' | 'no') => void;
 
-  addCustomContext: (text: string) => void;
+  addCustomContext: (text: string, segmentIds?: string[]) => void;
   updateCustomContext: (id: string, text: string) => void;
   deleteCustomContext: (id: string) => void;
-  updateCustomContextSegments: (id: string, tags: SegmentTag[]) => void;
+  updateCustomContextSegments: (id: string, segmentIds: string[]) => void;
 
   showToast: (message: string) => void;
   clearToast: () => void;
@@ -77,10 +77,14 @@ export const useKBStore = create<KBState>((set) => ({
       ),
     })),
 
-  addCustomContext: (text) =>
+  addCustomContext: (text, segmentIds) =>
     set((state) => ({
       customContext: [
-        { id: `cc-${Date.now()}`, text },
+        {
+          id: `cc-${Date.now()}`,
+          text,
+          ...(segmentIds && segmentIds.length > 0 ? { segmentIds } : {}),
+        },
         ...state.customContext,
       ],
     })),
@@ -97,10 +101,10 @@ export const useKBStore = create<KBState>((set) => ({
       customContext: state.customContext.filter((c) => c.id !== id),
     })),
 
-  updateCustomContextSegments: (id, tags) =>
+  updateCustomContextSegments: (id, segmentIds) =>
     set((state) => ({
       customContext: state.customContext.map((c) =>
-        c.id === id ? { ...c, segmentTags: tags.length > 0 ? tags : undefined } : c
+        c.id === id ? { ...c, segmentIds: segmentIds.length > 0 ? segmentIds : undefined } : c
       ),
     })),
 

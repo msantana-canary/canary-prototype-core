@@ -177,41 +177,29 @@ export const mockCustomContext: CustomContextEntry[] = [
   {
     id: 'cc-3',
     text: 'Late checkout is guaranteed until 4 PM for qualifying loyalty members. Standard late checkout is subject to availability and a $50 fee.',
-    segmentTags: [
-      { type: 'loyalty', value: 'platinum-elite', label: 'Platinum Elite' },
-      { type: 'loyalty', value: 'diamond-elite', label: 'Diamond Elite' },
-    ],
+    segmentIds: ['seg-platinum', 'seg-diamond'],
   },
   { id: 'cc-4', text: 'The hotel is a 5-minute walk from the Dallas Arts District and 10 minutes from Dealey Plaza.' },
   {
     id: 'cc-5',
     text: 'Complimentary breakfast at the executive lounge (19th floor) is available daily from 6:30 AM to 10:00 AM for qualifying loyalty members.',
-    segmentTags: [
-      { type: 'loyalty', value: 'platinum-elite', label: 'Platinum Elite' },
-      { type: 'loyalty', value: 'diamond-elite', label: 'Diamond Elite' },
-    ],
+    segmentIds: ['seg-platinum', 'seg-diamond'],
   },
   {
     id: 'cc-6',
     text: 'Corporate rate includes complimentary valet parking (normally $65/night) and premium WiFi at no additional charge.',
-    segmentTags: [
-      { type: 'rate_code', value: 'CORP', label: 'Rate Code: CORP' },
-    ],
+    segmentIds: ['seg-corporate'],
   },
   {
     id: 'cc-7',
     text: 'Government rate guests receive a 15% discount at Elm & Good restaurant upon presenting their room key.',
-    segmentTags: [
-      { type: 'rate_code', value: 'GOV', label: 'Rate Code: GOV' },
-    ],
+    segmentIds: ['seg-corporate'],
   },
   { id: 'cc-8', text: 'The hotel has 20 floors and 159 guest rooms, including 6 suites.' },
   {
     id: 'cc-9',
     text: 'Gold Elite members enjoy complimentary room upgrade when available at check-in and welcome amenity of bottled water and snack pack.',
-    segmentTags: [
-      { type: 'loyalty', value: 'gold-elite', label: 'Gold Elite' },
-    ],
+    segmentIds: ['seg-gold'],
   },
   { id: 'cc-10', text: 'Guests can request a rollaway bed for $25/night, subject to availability.' },
   { id: 'cc-11', text: 'The concierge desk is staffed from 7:00 AM to 10:00 PM for restaurant reservations, tours, and local recommendations.' },

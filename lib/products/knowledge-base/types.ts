@@ -27,14 +27,8 @@ export interface KBCategory {
   entries: KBEntry[];
 }
 
-export interface SegmentTag {
-  type: 'loyalty' | 'rate_code' | 'room_type' | 'hotel';
-  value: string;      // e.g. "platinum-elite", "CORP", "King Suite", "IC Berlin"
-  label: string;      // Display label
-}
-
 export interface CustomContextEntry {
   id: string;
   text: string;
-  segmentTags?: SegmentTag[];
+  segmentIds?: string[];  // References segment IDs from guest-journey store
 }
