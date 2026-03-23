@@ -351,6 +351,9 @@ export function ForwardNumberOverlay({
         setFallbackMessage('');
         setPhoneNumber('');
         setSummaryEmails([]);
+        setAfterHoursEnabled(false);
+        setFromTime('21:00');
+        setToTime('09:00');
       }
 
       setErrors({
@@ -416,7 +419,12 @@ export function ForwardNumberOverlay({
 
     if (transferDestination === 'default') {
       deptName = getDepartmentLabel(selectedDepartment);
-      deptDescription = departmentDescriptions[selectedDepartment];
+      // Preserve existing description when editing a default rule whose department hasn't changed
+      if (isEditMode && existingRule && existingRule.type === 'default' && existingRule.departmentName === deptName) {
+        deptDescription = existingRule.description;
+      } else {
+        deptDescription = departmentDescriptions[selectedDepartment];
+      }
     } else {
       deptName = customName;
       // For custom, use whenToTransfer as description
@@ -442,6 +450,7 @@ export function ForwardNumberOverlay({
       afterHoursEnabled: afterHoursEnabled || undefined,
       afterHoursFrom: afterHoursEnabled ? fromTime : undefined,
       afterHoursTo: afterHoursEnabled ? toTime : undefined,
+      matchType: 'smart',
     };
 
     if (isEditMode && editingRuleId) {

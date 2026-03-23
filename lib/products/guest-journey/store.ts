@@ -117,7 +117,7 @@ export const useGuestJourneyStore = create<GuestJourneyState>((set) => ({
 
   deleteMessage: (messageId) =>
     set((state) => ({
-      messages: state.messages.filter((msg) => msg.id !== messageId),
+      messages: state.messages.filter((msg) => msg.id !== messageId && msg.parentId !== messageId),
       selectedMessageId:
         state.selectedMessageId === messageId ? null : state.selectedMessageId,
       isEditorOpen:

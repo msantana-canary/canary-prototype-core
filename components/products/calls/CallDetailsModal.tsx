@@ -52,16 +52,33 @@ function getStatusLabel(state?: CallTerminalState): string {
   return state.toUpperCase();
 }
 
+function parseEntryTimestamp(baseDate: Date, timeStr: string): Date {
+  // Parse timestamp strings like "6:45 PM" or "11:22 AM" into a Date
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!match) return baseDate;
+
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const period = match[3].toUpperCase();
+
+  if (period === 'PM' && hours !== 12) hours += 12;
+  if (period === 'AM' && hours === 12) hours = 0;
+
+  const date = new Date(baseDate);
+  date.setHours(hours, minutes, 0, 0);
+  return date;
+}
+
 function transcriptEntryToMessage(entry: CallTranscriptEntry, index: number, callStartDate: string): Message {
-  // Parse the call start date and use entry timestamp to create a proper Date
   const baseDate = new Date(callStartDate);
+  const entryDate = parseEntryTimestamp(baseDate, entry.timestamp);
 
   return {
     id: `transcript-${index}`,
     threadId: 'call-transcript',
     sender: entry.speaker === 'agent' ? 'ai' : 'guest',
     content: entry.text,
-    timestamp: baseDate,
+    timestamp: entryDate,
   };
 }
 

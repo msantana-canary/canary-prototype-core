@@ -84,6 +84,35 @@ export function MessageEditor({ isOpen }: MessageEditorProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteButtonVisible, setDeleteButtonVisible] = useState(false);
 
+  const parentMessage = selectedMessageId
+    ? messages.find((m) => m.id === selectedMessageId)
+    : null;
+
+  const activeMessage = editingReminderId
+    ? messages.find((m) => m.id === editingReminderId)
+    : parentMessage;
+
+  // Sync preview channel when switching segment accordion sections.
+  // If the new segment doesn't have the current preview channel enabled, reset
+  // to that segment's first enabled channel so the preview never goes blank.
+  useEffect(() => {
+    if (!activeMessage) return;
+    let channels = activeMessage.channels;
+    if (activeSegmentSection && activeSegmentSection !== 'all-guests') {
+      const variant = activeMessage.segmentVariants?.find(
+        (v) => v.segmentId === activeSegmentSection,
+      );
+      if (variant) channels = variant.channels;
+    }
+    const enabledChannels = channels.filter((c) => c.isEnabled);
+    const currentStillValid = enabledChannels.some(
+      (c) => c.channel === activePreviewChannel,
+    );
+    if (!currentStillValid && enabledChannels.length > 0) {
+      setActivePreviewChannel(enabledChannels[0].channel);
+    }
+  }, [activeSegmentSection, activeMessage, activePreviewChannel]);
+
   // Outer slide animation
   useEffect(() => {
     if (isOpen) {
@@ -136,7 +165,10 @@ export function MessageEditor({ isOpen }: MessageEditorProps) {
     setInnerTransition('exit');
     setTimeout(() => {
       setEditingReminderId(null);
-      setActivePreviewChannel('email');
+      // Reset to the first enabled channel of the parent message (not hardcoded 'email')
+      const parent = parentMessage;
+      const firstEnabledChannel = parent?.channels.find((c) => c.isEnabled)?.channel || 'email';
+      setActivePreviewChannel(firstEnabledChannel);
       setActiveSegmentSection('all-guests');
       setInnerTransition('enter');
       leftPanelRef.current?.scrollTo({ top: 0 });
@@ -145,15 +177,7 @@ export function MessageEditor({ isOpen }: MessageEditorProps) {
         setPreviewLoading(false);
       }, 300);
     }, 250);
-  }, []);
-
-  const parentMessage = selectedMessageId
-    ? messages.find((m) => m.id === selectedMessageId)
-    : null;
-
-  const activeMessage = editingReminderId
-    ? messages.find((m) => m.id === editingReminderId)
-    : parentMessage;
+  }, [parentMessage]);
 
   if (!shouldRender) return null;
   if (!activeMessage && !isCreatingNew) return null;

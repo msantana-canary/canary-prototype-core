@@ -33,7 +33,7 @@ export const mockCategories: KBCategory[] = [
         question: 'Is there parking available?',
         value: 'yes' as const,
         subQuestions: [
-          { id: 'ad-parking-desc', question: 'What kind of parking is available?', answer: 'Valet parking is available at our Commerce Street entrance for $65 plus tax per day (includes in-and-out privileges). Self-parking is available at the nearby SP+ garage on Jackson Street for $45/day.' },
+          { id: 'ad-parking-desc', question: 'What kind of parking is available?', answer: 'Valet parking is available at our 54th Street entrance for $85 plus tax per day (includes in-and-out privileges). Self-parking is available at the nearby Icon garage on West 55th Street for $65/day.' },
         ],
       },
       {
@@ -57,7 +57,7 @@ export const mockCategories: KBCategory[] = [
         question: 'Is there a pool?',
         value: 'yes' as const,
         subQuestions: [
-          { id: 'hf-pool-loc', question: 'Where is the pool located?', answer: 'The rooftop pool is located on the 19th floor with panoramic views of downtown Dallas.' },
+          { id: 'hf-pool-loc', question: 'Where is the pool located?', answer: 'The rooftop pool is located on the 19th floor with panoramic views of Midtown Manhattan.' },
           { id: 'hf-pool-open', question: 'What time does the pool open?', answer: '7:00 AM' },
           { id: 'hf-pool-close', question: 'What time does the pool close?', answer: '10:00 PM' },
         ],
@@ -97,7 +97,7 @@ export const mockCategories: KBCategory[] = [
         question: 'Does the hotel have a restaurant?',
         value: 'yes' as const,
         subQuestions: [
-          { id: 'hf-rest-desc', question: 'Can you describe the hotel restaurant?', answer: 'Elm & Good is our signature restaurant offering modern Texas cuisine with locally sourced ingredients. We also have Waterproof, our rooftop bar and lounge.' },
+          { id: 'hf-rest-desc', question: 'Can you describe the hotel restaurant?', answer: 'The Statler Grill is our signature restaurant offering modern American cuisine with locally sourced ingredients. We also have Waterproof, our rooftop bar and lounge.' },
           { id: 'hf-rest-open', question: 'What time does the restaurant open?', answer: 'Breakfast: 7:00 AM. Lunch: 11:30 AM. Dinner: 5:30 PM.' },
           { id: 'hf-rest-close', question: 'What time does the restaurant close?', answer: 'Kitchen closes at 10:00 PM. Bar service until midnight.' },
         ],
@@ -155,7 +155,7 @@ export const mockCategories: KBCategory[] = [
       {
         id: 'rs-packages',
         question: 'Can the hotel receive packages for me?',
-        answer: 'Yes, we accept packages at the front desk. Please use: ATTN: [Your Name], Statler New York, 1914 Commerce St, Dallas, TX 75201.',
+        answer: 'Yes, we accept packages at the front desk. Please use: ATTN: [Your Name], Statler New York, 151 West 54th St, New York, NY 10019.',
       },
       {
         id: 'rs-pets',
@@ -172,19 +172,19 @@ export const mockCategories: KBCategory[] = [
 ];
 
 export const mockCustomContext: CustomContextEntry[] = [
-  { id: 'cc-1', text: 'The Statler was originally built in 1956 and underwent a $460 million restoration completed in 2017.' },
-  { id: 'cc-2', text: 'Elm & Good restaurant serves breakfast from 7 AM, lunch from 11:30 AM, and dinner from 5:30 PM daily.' },
+  { id: 'cc-1', text: 'The Statler was originally built in 1919 and underwent a $380 million restoration completed in 2022.' },
+  { id: 'cc-2', text: 'The Statler Grill restaurant serves breakfast from 7 AM, lunch from 11:30 AM, and dinner from 5:30 PM daily.' },
   { id: 'cc-3', text: 'The rooftop pool and bar, Waterproof, is open seasonally from April through October.' },
-  { id: 'cc-4', text: 'The hotel is a 5-minute walk from the Dallas Arts District and 10 minutes from Dealey Plaza.' },
+  { id: 'cc-4', text: 'The hotel is a 5-minute walk from Carnegie Hall and 10 minutes from Central Park.' },
   { id: 'cc-5', text: 'Complimentary coffee is available in the lobby from 6:00 AM to 10:00 AM daily.' },
-  { id: 'cc-6', text: 'The nearest DART light rail station is Akard Station, a 3-minute walk from the hotel.' },
+  { id: 'cc-6', text: 'The nearest subway station is 7th Avenue (B/D/E lines), a 3-minute walk from the hotel.' },
   { id: 'cc-7', text: 'Room upgrades are subject to availability and can be requested at check-in or via the Canary app.' },
   { id: 'cc-8', text: 'The hotel has 20 floors and 159 guest rooms, including 6 suites.' },
   { id: 'cc-9', text: 'The Statler ballroom can accommodate up to 300 guests for events and weddings.' },
   { id: 'cc-10', text: 'Guests can request a rollaway bed for $25/night, subject to availability.' },
   { id: 'cc-11', text: 'The concierge desk is staffed from 7:00 AM to 10:00 PM for restaurant reservations, tours, and local recommendations.' },
-  { id: 'cc-12', text: 'DFW Airport is approximately 25 minutes away by car. Love Field is 15 minutes away.' },
-  { id: 'cc-13', text: 'The hotel offers complimentary bicycle rentals for exploring downtown Dallas.' },
+  { id: 'cc-12', text: 'JFK Airport is approximately 60 minutes away by car. LaGuardia is 30 minutes away. Newark (EWR) is about 45 minutes.' },
+  { id: 'cc-13', text: 'The hotel offers complimentary bicycle rentals for exploring Midtown Manhattan and Central Park.' },
   { id: 'cc-14', text: 'High-speed WiFi is complimentary for all guests. Premium bandwidth is available for $9.95/day.' },
-  { id: 'cc-15', text: 'The Statler partners with local gallery Deep Ellum Art Co. for rotating lobby art installations.' },
+  { id: 'cc-15', text: 'The Statler partners with local gallery Chelsea Art Group for rotating lobby art installations.' },
 ];

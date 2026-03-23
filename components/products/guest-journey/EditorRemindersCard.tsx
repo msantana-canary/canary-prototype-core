@@ -51,8 +51,8 @@ export function EditorRemindersCard({
       stage: parentMessage.stage,
       timing: {
         delta: isUpsell ? '2_DAYS' : 'SAME_DAY',
-        direction: 'BEFORE',
-        anchor: 'ARRIVAL',
+        direction: parentMessage.timing.direction,
+        anchor: parentMessage.timing.anchor,
         sendTime: isUpsell ? '10:00 AM' : '9:00 AM',
       },
       channels: [

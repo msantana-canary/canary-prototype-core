@@ -8,7 +8,7 @@
  * Right pane: verified, checked_in
  */
 
-import { CheckInSubmission, UpsellItem, GuestNote, DEMO_TODAY } from './types';
+import { CheckInSubmission, UpsellItem, GuestNote, AdditionalGuest, DEMO_TODAY } from './types';
 
 /**
  * All check-in submissions — single source of truth for both panes.
@@ -31,6 +31,9 @@ export const checkInSubmissions: CheckInSubmission[] = [
     arrivalDate: DEMO_TODAY,
     submittedAt: new Date('2026-03-15T10:30:00'),
     hasMobileKey: true,
+    additionalGuests: [
+      { id: 'addl-emily-1', name: 'David Smith', isAdult: true, verificationStatus: 'verified' },
+    ],
   },
   {
     id: 'sub-brooklyn',
@@ -73,6 +76,11 @@ export const checkInSubmissions: CheckInSubmission[] = [
     arrivalDate: DEMO_TODAY,
     submittedAt: new Date('2026-03-15T11:00:00'),
     hasMobileKey: true,
+    additionalGuests: [
+      { id: 'addl-carlos-1', name: 'Maria Rivera', isAdult: true, verificationStatus: 'verified' },
+      { id: 'addl-carlos-2', name: 'Lucas Rivera', isAdult: false, verificationStatus: 'pending' },
+      { id: 'addl-carlos-3', name: 'Sofia Rivera', isAdult: false, verificationStatus: 'pending' },
+    ],
   },
   {
     id: 'sub-nina',
@@ -201,6 +209,10 @@ export const checkInSubmissions: CheckInSubmission[] = [
     status: 'verified',
     arrivalTime: '4:30 PM',
     arrivalDate: DEMO_TODAY,
+    additionalGuests: [
+      { id: 'addl-olivia-1', name: 'Marcus Brown', isAdult: true, verificationStatus: 'verified' },
+      { id: 'addl-olivia-2', name: 'Ava Brown', isAdult: false, verificationStatus: 'verified' },
+    ],
     submittedAt: new Date('2026-03-14T11:00:00'),
     hasMobileKey: true,
   },
@@ -276,6 +288,9 @@ export const checkInSubmissions: CheckInSubmission[] = [
     status: 'checked_in',
     arrivalTime: '3:00 PM',
     arrivalDate: DEMO_TODAY,
+    additionalGuests: [
+      { id: 'addl-hannah-1', name: 'Ethan Park', isAdult: true, verificationStatus: 'verified' },
+    ],
     checkInTime: '2:45 PM',
     hasMobileKey: true,
   },
@@ -555,30 +570,30 @@ export const submissionUpsells: Record<string, UpsellItem[]> = {
  */
 export const submissionNotes: Record<string, GuestNote[]> = {
   'sub-emily': [
-    { id: 'note-1', text: 'Guest is celebrating anniversary, comp champagne if available', type: 'staff', author: 'Theresa Webb', createdAt: new Date('2024-11-18T09:15:00') },
-    { id: 'note-2', text: 'I\'d like a slice of pie hot and ready upon my arrival', type: 'guest_request', author: 'Emily Smith', createdAt: new Date('2024-11-17T14:30:00') },
+    { id: 'note-1', text: 'Guest is celebrating anniversary, comp champagne if available', type: 'staff', author: 'Theresa Webb', createdAt: new Date('2026-03-15T09:15:00') },
+    { id: 'note-2', text: 'I\'d like a slice of pie hot and ready upon my arrival', type: 'guest_request', author: 'Emily Smith', createdAt: new Date('2026-03-14T14:30:00') },
   ],
   'sub-brooklyn': [
-    { id: 'note-3', text: 'Returning guest — prefers high floor, noted in profile', type: 'staff', author: 'Theresa Webb', createdAt: new Date('2024-11-18T08:00:00') },
+    { id: 'note-3', text: 'Returning guest — prefers high floor, noted in profile', type: 'staff', author: 'Theresa Webb', createdAt: new Date('2026-03-15T08:00:00') },
   ],
   'sub-olivia': [
-    { id: 'note-4', text: 'Would love extra pillows and a quiet room away from the elevator please', type: 'guest_request', author: 'Olivia Brown-Henderson', createdAt: new Date('2024-11-17T11:00:00') },
-    { id: 'note-5', text: 'Assigned room 412 per request — corner suite, away from elevator', type: 'staff', author: 'Theresa Webb', createdAt: new Date('2024-11-18T10:30:00') },
+    { id: 'note-4', text: 'Would love extra pillows and a quiet room away from the elevator please', type: 'guest_request', author: 'Olivia Brown-Henderson', createdAt: new Date('2026-03-14T11:00:00') },
+    { id: 'note-5', text: 'Assigned room 412 per request — corner suite, away from elevator', type: 'staff', author: 'Theresa Webb', createdAt: new Date('2026-03-15T10:30:00') },
   ],
   'sub-noah': [
-    { id: 'note-6', text: 'Guest has mobility concerns, ground floor preferred', type: 'staff', author: 'James Rodriguez', createdAt: new Date('2024-11-17T16:00:00') },
+    { id: 'note-6', text: 'Guest has mobility concerns, ground floor preferred', type: 'staff', author: 'James Rodriguez', createdAt: new Date('2026-03-14T16:00:00') },
   ],
   'sub-sarah': [
-    { id: 'note-7', text: 'Can we have a late checkout on Sunday? Our flight is at 8pm', type: 'guest_request', author: 'Sarah Martinez', createdAt: new Date('2024-11-17T15:00:00') },
+    { id: 'note-7', text: 'Can we have a late checkout on Sunday? Our flight is at 8pm', type: 'guest_request', author: 'Sarah Martinez', createdAt: new Date('2026-03-14T15:00:00') },
   ],
   'sub-carlos': [
-    { id: 'note-8', text: 'Traveling with two children, connecting rooms if possible', type: 'guest_request', author: 'Carlos Rivera', createdAt: new Date('2024-11-17T11:30:00') },
+    { id: 'note-8', text: 'Traveling with two children, connecting rooms if possible', type: 'guest_request', author: 'Carlos Rivera', createdAt: new Date('2026-03-14T11:30:00') },
   ],
   'sub-zara': [
-    { id: 'note-9', text: 'VIP guest — CEO of partner company, ensure premium experience', type: 'staff', author: 'James Rodriguez', createdAt: new Date('2024-11-18T07:45:00') },
-    { id: 'note-10', text: 'Would appreciate fresh flowers in the room', type: 'guest_request', author: 'Zara Khan', createdAt: new Date('2024-11-17T12:00:00') },
+    { id: 'note-9', text: 'VIP guest — CEO of partner company, ensure premium experience', type: 'staff', author: 'James Rodriguez', createdAt: new Date('2026-03-15T07:45:00') },
+    { id: 'note-10', text: 'Would appreciate fresh flowers in the room', type: 'guest_request', author: 'Zara Khan', createdAt: new Date('2026-03-14T12:00:00') },
   ],
   'sub-amara': [
-    { id: 'note-11', text: 'Guest mentioned dietary restrictions — gluten-free options needed for breakfast', type: 'staff', author: 'Theresa Webb', createdAt: new Date('2024-11-18T09:00:00') },
+    { id: 'note-11', text: 'Guest mentioned dietary restrictions — gluten-free options needed for breakfast', type: 'staff', author: 'Theresa Webb', createdAt: new Date('2026-03-15T09:00:00') },
   ],
 };
