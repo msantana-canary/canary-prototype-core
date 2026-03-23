@@ -1,7 +1,7 @@
 # CLAUDE.md - Canary Prototype Suite
 
 > **Read this first.** This document contains essential context for working on this project.
-> Last updated: 2025-12-17
+> Last updated: 2026-03-23
 
 ---
 
@@ -11,8 +11,45 @@ The **Canary Prototype Suite** is a library for building realistic product proto
 
 1. **Customer demos** - Polished prototypes that look exactly like the real Canary product
 2. **PM/Designer testing** - Test new features "in-product" instead of guesswork through Figma
+3. **Design exploration** - Prototype new features in a realistic environment before committing to Figma or eng specs
 
 This is **NOT** for production use, actual customer data, or engineering development.
+
+---
+
+## Getting Started (For Contributors)
+
+**New to this repo? Type `/prototype` in Claude Code.** It will guide you through everything.
+
+### Quick Setup
+```bash
+git clone https://github.com/msantana-canary/canary-prototype-core.git
+cd canary-prototype-core
+pnpm install
+pnpm dev
+```
+
+### What's Already Built
+Each product has a detailed inventory doc at `docs/products/[product]/PRODUCT_INVENTORY.md`:
+- **Messaging** — 1:1 conversations, broadcast with groups/filters, AI answers placeholder
+- **Check-in** — Two-pane staff dashboard, detail panel with ID/payment verification, upsells, mobile keys
+- **Checkout** — Single-list dashboard, folio, guest reviews, late checkout, auto-checkout, activity log
+- **Guest Journey** — Timeline, message editor with channel previews, campaigns, segments
+- **Calls** — Call history dashboard, transfer rules settings
+- **Knowledge Base** — Default/custom context management with segment tagging
+
+### Adding a Feature to an Existing Product
+1. **Create a branch** — `git checkout -b feature/your-feature-name`
+2. **Read the product inventory** — `docs/products/[product]/PRODUCT_INVENTORY.md`
+3. **Add components** in `components/products/[product]/`
+4. **Add data/types** in `lib/products/[product]/`
+5. **Use canonical guests** from `lib/core/data/` — don't hardcode guest data
+6. **Follow component library rules** — see Critical Rules below
+7. **Test locally** — `pnpm dev`
+8. **Commit and push** — don't merge to main without review
+
+### Data: 100 Guests Across All Products
+The prototype has 100 canonical guests with diverse loyalty tiers, rate codes, and reservation data. Each product uses a SEPARATE subset of guests to avoid data conflicts. Check `lib/products/[product]/mock-data.ts` to see which guests are in use before adding new ones.
 
 ---
 
