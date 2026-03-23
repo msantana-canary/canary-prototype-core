@@ -22,7 +22,7 @@ import { mdiClose } from '@mdi/js';
 import type { CallSummary, CallTerminalState, CallTranscriptEntry } from '@/lib/products/calls/dashboard-types';
 import type { Message } from '@/lib/products/messaging/types';
 import { formatCallDate } from '@/lib/products/calls/dashboard-mock-data';
-import { MessageBubble } from '@/components/products/messaging/MessageBubble';
+import { CallTranscriptBubble } from './CallTranscriptBubble';
 
 interface CallDetailsModalProps {
   call: CallSummary;
@@ -195,7 +195,7 @@ export function CallDetailsModal({ call, isOpen, onClose }: CallDetailsModalProp
                   </div>
                 ) : (
                   transcript.map((entry, index) => (
-                    <MessageBubble
+                    <CallTranscriptBubble
                       key={index}
                       message={transcriptEntryToMessage(entry, index, call.call_start_date)}
                     />
