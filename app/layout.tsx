@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Roboto, Open_Sans } from 'next/font/google';
 import './globals.css';
+import { ViewSwitcher } from '@/components/core/ViewSwitcher';
 
 const roboto = Roboto({
   variable: '--font-roboto',
@@ -34,6 +35,7 @@ export default function RootLayout({
       </head>
       <body className={`${roboto.variable} ${openSans.variable} font-sans antialiased`}>
         {children}
+        <ViewSwitcher />
       </body>
     </html>
   );

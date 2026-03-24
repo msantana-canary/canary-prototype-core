@@ -25,3 +25,25 @@
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Guest check-in step transitions */
+@keyframes step-slide-left {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes step-slide-right {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-step-forward {
+  animation: step-slide-left 250ms ease-out;
+}
+.animate-step-backward {
+  animation: step-slide-right 250ms ease-out;
+}
+
+/* Guest bottom sheet slide-up */
+@keyframes bottom-sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
