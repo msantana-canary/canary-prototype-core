@@ -73,7 +73,7 @@ export function CheckInFlow() {
       {showHeader && (
         <div
           className="flex-shrink-0 flex flex-col items-start justify-end px-6 pb-6"
-          style={{ backgroundColor: store.theme.primaryColor }}
+          style={{ backgroundColor: store.theme.primaryColor, paddingTop: 60 }}
         >
           {/* Title */}
           <h1 className="text-[24px] font-semibold text-white leading-[36px]">
