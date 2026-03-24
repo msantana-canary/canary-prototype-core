@@ -1,94 +1,126 @@
 'use client';
 
 /**
- * Addons — Upsell cards step
+ * Addons — Upsell cards matching Figma
  *
- * Shows addon items with images, descriptions, prices, and quantity selectors.
+ * Room upgrades and add-ons with hotel images,
+ * prices, and gold "Request" buttons.
+ * "Skip" link at bottom.
  */
 
 import React, { useState } from 'react';
 import { useCheckInConfigStore } from '@/lib/products/guest-preview/check-in-config-store';
-import { DEMO_ADDONS } from '@/lib/products/guest-preview/mock-form-data';
-import { GuestCounter } from '@/components/core/GuestCounter';
 import Image from 'next/image';
+
+interface AddonItem {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  details?: string;
+  isUpgrade?: boolean;
+}
+
+const ROOM_UPGRADES: AddonItem[] = [
+  { id: 'upgrade-city', name: 'Deluxe City-View Room', price: 199, image: '/images/hotel-exterior.jpg', details: '2 · 1 KING, 1 CRIB · 438 SQ FT', isUpgrade: true },
+  { id: 'upgrade-exec', name: 'Executive Suite', price: 399, image: '/images/hotel-exterior.jpg', details: '2 · 1 KING, 1 QUEEN · 640 SQ FT', isUpgrade: true },
+  { id: 'upgrade-pres', name: 'Presidential Suite', price: 599, image: '/images/hotel-exterior.jpg', details: '4 · 1 KING, 1 QUEEN · 1,347 SQ FT', isUpgrade: true },
+];
+
+const ADD_ONS: AddonItem[] = [
+  { id: 'addon-early', name: 'Early Check-in', price: 59, image: '/images/hotel-exterior.jpg' },
+  { id: 'addon-late', name: 'Late Checkout', price: 59, image: '/images/hotel-exterior.jpg' },
+  { id: 'addon-water', name: 'Bottle of water', price: 5, image: '/images/hotel-exterior.jpg' },
+  { id: 'addon-shuttle', name: 'Airport shuttle', price: 99, image: '/images/hotel-exterior.jpg' },
+];
 
 export function Addons() {
   const theme = useCheckInConfigStore((s) => s.theme);
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [activeTab, setActiveTab] = useState<'upgrades' | 'addons'>('upgrades');
+  const [requested, setRequested] = useState<Set<string>>(new Set());
 
-  const totalSelected = Object.values(quantities).reduce((sum, q) => sum + q, 0);
-  const totalPrice = DEMO_ADDONS.reduce(
-    (sum, addon) => sum + addon.price * (quantities[addon.id] || 0),
-    0
-  );
+  const handleRequest = (id: string) => {
+    setRequested((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const items = activeTab === 'upgrades' ? ROOM_UPGRADES : ADD_ONS;
 
   return (
-    <div className="flex flex-col gap-0">
-      <div className="mb-4">
-        <h2 className="text-[18px] font-semibold" style={{ color: theme.fontColor }}>
-          Enhance Your Stay
-        </h2>
-        <p className="text-[13px] text-[#6b7280] mt-1">
-          Add extras to make your visit even more special.
+    <div className="flex flex-col pb-6">
+      {/* Instruction */}
+      <div className="px-6 pt-6 pb-4">
+        <p className="text-[16px] text-[#666] leading-[24px]">
+          Once approved, your room upgrade will be added to your reservation.
         </p>
       </div>
 
-      {/* Addon cards */}
-      <div className="flex flex-col gap-3">
-        {DEMO_ADDONS.map((addon) => {
-          const qty = quantities[addon.id] || 0;
+      {/* Tabs */}
+      <div className="flex gap-6 px-6 mb-4">
+        <button
+          onClick={() => setActiveTab('upgrades')}
+          className="text-[14px] pb-1"
+          style={{
+            fontWeight: activeTab === 'upgrades' ? 500 : 400,
+            color: activeTab === 'upgrades' ? theme.primaryColor : '#666',
+            borderBottom: activeTab === 'upgrades' ? `2px solid ${theme.primaryColor}` : '2px solid transparent',
+          }}
+        >
+          Room upgrades
+        </button>
+        <button
+          onClick={() => setActiveTab('addons')}
+          className="text-[14px] pb-1"
+          style={{
+            fontWeight: activeTab === 'addons' ? 500 : 400,
+            color: activeTab === 'addons' ? theme.primaryColor : '#666',
+            borderBottom: activeTab === 'addons' ? `2px solid ${theme.primaryColor}` : '2px solid transparent',
+          }}
+        >
+          Add-ons
+        </button>
+      </div>
+
+      {/* Items */}
+      <div className="flex flex-col gap-4 px-6">
+        {items.map((item) => {
+          const isRequested = requested.has(item.id);
           return (
-            <div
-              key={addon.id}
-              className="rounded-lg border overflow-hidden transition-colors"
-              style={{
-                borderColor: qty > 0 ? theme.primaryColor : '#e5e7eb',
-                backgroundColor: theme.cardBackgroundColor,
-              }}
-            >
+            <div key={item.id} className="flex flex-col gap-2">
               {/* Image */}
-              <div className="relative w-full h-[120px]">
-                <Image
-                  src={addon.image}
-                  alt={addon.name}
-                  fill
-                  className="object-cover"
-                />
+              <div className="relative w-full h-[160px] rounded-lg overflow-hidden">
+                <Image src={item.image} alt={item.name} fill className="object-cover" />
               </div>
-              {/* Content */}
-              <div className="p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-[14px] font-medium text-[#111827]">{addon.name}</h3>
-                    <p className="text-[12px] text-[#6b7280] mt-0.5 line-clamp-2">{addon.description}</p>
-                  </div>
-                  <span className="text-[16px] font-semibold flex-shrink-0" style={{ color: theme.primaryColor }}>
-                    ${addon.price}
-                  </span>
+              {/* Info row */}
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-[16px] font-medium text-black">{item.name}</h3>
+                  {item.details && (
+                    <p className="text-[12px] text-[#666] mt-0.5">{item.details}</p>
+                  )}
+                  <p className="text-[18px] font-semibold text-black mt-1">
+                    {item.isUpgrade ? `+$${item.price}/night` : `$${item.price}`}
+                  </p>
                 </div>
-                <div className="mt-3 flex items-center justify-end">
-                  <GuestCounter
-                    value={qty}
-                    onChange={(v) => setQuantities((prev) => ({ ...prev, [addon.id]: v }))}
-                    max={5}
-                    primaryColor={theme.primaryColor}
-                  />
-                </div>
+                <button
+                  onClick={() => handleRequest(item.id)}
+                  className="flex-shrink-0 px-4 py-1.5 rounded text-[14px] font-medium ml-3"
+                  style={{
+                    backgroundColor: isRequested ? theme.primaryColor : `${theme.primaryColor}15`,
+                    color: isRequested ? 'white' : theme.primaryColor,
+                    border: `1px solid ${theme.primaryColor}`,
+                  }}
+                >
+                  {isRequested ? 'Requested' : 'Request'}
+                </button>
               </div>
             </div>
           );
         })}
       </div>
-
-      {/* Summary */}
-      {totalSelected > 0 && (
-        <div className="mt-4 p-3 rounded-lg border border-[#e5e7eb]" style={{ backgroundColor: theme.cardBackgroundColor }}>
-          <div className="flex justify-between text-[14px]">
-            <span className="text-[#6b7280]">{totalSelected} add-on{totalSelected > 1 ? 's' : ''} selected</span>
-            <span className="font-semibold" style={{ color: theme.primaryColor }}>+${totalPrice}</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

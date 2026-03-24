@@ -1,37 +1,61 @@
 'use client';
 
 /**
- * CreditCardPhotos — Physical card photo capture step
+ * CreditCardPhotos — Card photo capture matching Figma style
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useCheckInConfigStore } from '@/lib/products/guest-preview/check-in-config-store';
-import { GuestImageUploader } from '@/components/core/GuestImageUploader';
+import Icon from '@mdi/react';
+import { mdiCameraOutline, mdiCheckCircleOutline } from '@mdi/js';
 
 export function CreditCardPhotos() {
   const theme = useCheckInConfigStore((s) => s.theme);
+  const [captured, setCaptured] = useState(false);
 
   return (
-    <div className="flex flex-col gap-0">
-      <div className="mb-4">
-        <h2 className="text-[18px] font-semibold" style={{ color: theme.fontColor }}>
-          Credit Card Photo
-        </h2>
-        <p className="text-[13px] text-[#6b7280] mt-1">
-          Please take a photo of the front of your credit card for verification.
-        </p>
-      </div>
+    <div className="flex flex-col gap-6 px-6 pt-8 pb-6">
+      <p className="text-[18px] text-black leading-[28px]">
+        Please take a photo of the front of your credit card for verification.
+      </p>
 
-      <GuestImageUploader
-        label="Front of Credit Card"
-        description="Ensure the card number and name are clearly visible"
-        aspectRatio="16/10"
-        primaryColor={theme.primaryColor}
-      />
+      {captured ? (
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="w-full rounded-lg flex flex-col items-center justify-center gap-2"
+            style={{ aspectRatio: '16/10', backgroundColor: '#f0fdf4', border: '1px solid #22c55e' }}
+          >
+            <Icon path={mdiCheckCircleOutline} size={1.5} color="#22c55e" />
+            <span className="text-[16px] font-medium text-[#166534]">Photo captured</span>
+          </div>
+          <button
+            onClick={() => setCaptured(false)}
+            className="text-[14px] font-medium"
+            style={{ color: theme.primaryColor }}
+          >
+            Retake
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setCaptured(true)}
+          className="w-full rounded-lg flex flex-col items-center justify-center gap-8 cursor-pointer"
+          style={{
+            aspectRatio: '16/10',
+            backgroundColor: `${theme.primaryColor}1A`,
+            border: `1px solid ${theme.primaryColor}1A`,
+          }}
+        >
+          <Icon path={mdiCameraOutline} size={1.2} color={theme.primaryColor} />
+          <span className="text-[18px] font-medium" style={{ color: theme.primaryColor }}>
+            Take photo of your card
+          </span>
+        </button>
+      )}
 
-      <div className="mt-4 p-3 bg-[#eff6ff] border border-[#dbeafe] rounded text-[12px] text-[#1e40af]">
-        Your card photo is used only for identity verification and is securely encrypted.
-      </div>
+      <p className="text-[14px] text-[#666] leading-[22px]">
+        Your card photo is used only for verification and is securely encrypted.
+      </p>
     </div>
   );
 }

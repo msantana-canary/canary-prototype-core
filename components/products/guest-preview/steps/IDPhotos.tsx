@@ -1,120 +1,143 @@
 'use client';
 
 /**
- * IDPhotos — ID document photo upload step
+ * IDPhotos — ID photo upload step matching Figma
  *
- * ID type selector, front photo, conditional back photo.
- * Adapts to accepted ID types from config.
+ * Instruction text, underline ID type select,
+ * tan capture area with camera icon and gold text.
  */
 
 import React, { useState } from 'react';
 import { useCheckInConfigStore } from '@/lib/products/guest-preview/check-in-config-store';
-import { GuestImageUploader } from '@/components/core/GuestImageUploader';
 import Icon from '@mdi/react';
-import { mdiPassport, mdiCardAccountDetailsOutline, mdiBadgeAccountOutline } from '@mdi/js';
-
-type IdType = 'passport' | 'driversLicense' | 'nationalId';
-
-const ID_TYPE_META: Record<IdType, { label: string; icon: string }> = {
-  passport: { label: 'Passport', icon: mdiPassport },
-  driversLicense: { label: "Driver's License", icon: mdiCardAccountDetailsOutline },
-  nationalId: { label: 'National ID', icon: mdiBadgeAccountOutline },
-};
+import { mdiCameraOutline, mdiCheckCircleOutline } from '@mdi/js';
 
 export function IDPhotos() {
   const theme = useCheckInConfigStore((s) => s.theme);
   const idOptions = useCheckInConfigStore((s) => s.idOptions);
+  const [captured, setCaptured] = useState(false);
+  const [backCaptured, setBackCaptured] = useState(false);
 
-  const acceptedTypes = Object.entries(idOptions.acceptedTypes)
-    .filter(([, accepted]) => accepted)
-    .map(([type]) => type as IdType);
-
-  const [selectedType, setSelectedType] = useState<IdType | null>(
-    acceptedTypes.length === 1 ? acceptedTypes[0] : null
-  );
+  // Build accepted types list for the dropdown
+  const typeOptions = [
+    ...(idOptions.acceptedTypes.driversLicense ? [{ value: 'dl', label: "Driver's License" }] : []),
+    ...(idOptions.acceptedTypes.passport ? [{ value: 'passport', label: 'Passport' }] : []),
+    ...(idOptions.acceptedTypes.nationalId ? [{ value: 'national', label: 'National ID' }] : []),
+  ];
 
   return (
-    <div className="flex flex-col gap-0">
-      <div className="mb-4">
-        <h2 className="text-[18px] font-semibold" style={{ color: theme.fontColor }}>
-          ID Verification
-        </h2>
-        <p className="text-[13px] text-[#6b7280] mt-1">
-          Please provide a photo of your government-issued ID.
-        </p>
+    <div className="flex flex-col gap-6 px-6 pt-8 pb-6">
+      {/* Instruction */}
+      <p className="text-[18px] text-black leading-[28px]">
+        Please take a photo of your driver&apos;s license or government issued ID. Your ID is used to prevent fraud and verify your identity.
+      </p>
+
+      {/* ID type select — underline style */}
+      <div className="flex flex-col gap-1">
+        <label className="text-[14px] text-[#666] leading-[22px]">ID type</label>
+        <div className="relative">
+          <select
+            defaultValue={typeOptions[0]?.value}
+            className="w-full border-b border-[rgba(0,0,0,0.5)] bg-transparent py-3 text-[20px] leading-[30px] text-black outline-none appearance-none pr-8"
+            style={{ fontFamily: 'Roboto, sans-serif' }}
+          >
+            {typeOptions.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+          <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[20px] text-[#666]">⇅</span>
+        </div>
       </div>
 
-      {/* ID type selector */}
-      {acceptedTypes.length > 1 && (
-        <div className="mb-4">
-          <p className="text-[13px] font-medium text-[#374151] mb-2">Select ID type</p>
-          <div className="flex gap-2">
-            {acceptedTypes.map((type) => {
-              const meta = ID_TYPE_META[type];
-              const isSelected = selectedType === type;
-              return (
-                <button
-                  key={type}
-                  onClick={() => setSelectedType(type)}
-                  className="flex-1 flex flex-col items-center gap-2 py-3 px-2 rounded-lg border-2 transition-colors"
-                  style={{
-                    borderColor: isSelected ? theme.primaryColor : '#e5e7eb',
-                    backgroundColor: isSelected ? `${theme.primaryColor}08` : 'transparent',
-                  }}
-                >
-                  <Icon
-                    path={meta.icon}
-                    size={0.9}
-                    color={isSelected ? theme.primaryColor : '#9ca3af'}
-                  />
-                  <span
-                    className="text-[12px] font-medium"
-                    style={{ color: isSelected ? theme.primaryColor : '#6b7280' }}
-                  >
-                    {meta.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      {/* Photo capture area — tan bg matching Figma */}
+      <CaptureBox
+        captured={captured}
+        onCapture={() => setCaptured(true)}
+        onRetake={() => setCaptured(false)}
+        label="Take photo of your ID"
+        primaryColor={theme.primaryColor}
+      />
+
+      {/* Back photo (if required) */}
+      {idOptions.requireBackPhoto && (
+        <CaptureBox
+          captured={backCaptured}
+          onCapture={() => setBackCaptured(true)}
+          onRetake={() => setBackCaptured(false)}
+          label="Take photo of ID back"
+          primaryColor={theme.primaryColor}
+        />
       )}
 
-      {/* Photo upload areas */}
-      {selectedType && (
-        <div className="flex flex-col gap-4">
-          <GuestImageUploader
-            label="Front of ID"
-            description="Ensure all text is clear and readable"
-            aspectRatio="3/2"
-            primaryColor={theme.primaryColor}
-          />
-
-          {idOptions.requireBackPhoto && (
-            <GuestImageUploader
-              label="Back of ID"
-              description="Take a photo of the back side"
-              aspectRatio="3/2"
-              primaryColor={theme.primaryColor}
-            />
-          )}
-
-          {idOptions.requireSelfie && (
-            <GuestImageUploader
-              label="Selfie"
-              description="Take a photo of your face for identity verification"
-              aspectRatio="1/1"
-              primaryColor={theme.primaryColor}
-            />
-          )}
-        </div>
-      )}
-
-      {!selectedType && acceptedTypes.length > 1 && (
-        <div className="text-center text-[13px] text-[#9ca3af] py-8">
-          Please select an ID type above to continue
-        </div>
+      {/* Selfie (if required) */}
+      {idOptions.requireSelfie && (
+        <CaptureBox
+          captured={false}
+          onCapture={() => {}}
+          onRetake={() => {}}
+          label="Take a selfie"
+          primaryColor={theme.primaryColor}
+          aspectRatio="1/1"
+        />
       )}
     </div>
+  );
+}
+
+function CaptureBox({
+  captured,
+  onCapture,
+  onRetake,
+  label,
+  primaryColor,
+  aspectRatio = '382/248',
+}: {
+  captured: boolean;
+  onCapture: () => void;
+  onRetake: () => void;
+  label: string;
+  primaryColor: string;
+  aspectRatio?: string;
+}) {
+  if (captured) {
+    return (
+      <div className="flex flex-col items-center gap-3">
+        <div
+          className="w-full rounded-lg flex flex-col items-center justify-center gap-2"
+          style={{
+            aspectRatio,
+            backgroundColor: '#f0fdf4',
+            border: '1px solid #22c55e',
+          }}
+        >
+          <Icon path={mdiCheckCircleOutline} size={1.5} color="#22c55e" />
+          <span className="text-[16px] font-medium text-[#166534]">Photo captured</span>
+        </div>
+        <button
+          onClick={onRetake}
+          className="text-[14px] font-medium"
+          style={{ color: primaryColor }}
+        >
+          Retake
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={onCapture}
+      className="w-full rounded-lg flex flex-col items-center justify-center gap-8 cursor-pointer"
+      style={{
+        aspectRatio,
+        backgroundColor: `${primaryColor}1A`,
+        border: `1px solid ${primaryColor}1A`,
+      }}
+    >
+      <Icon path={mdiCameraOutline} size={1.2} color={primaryColor} />
+      <span className="text-[18px] font-medium" style={{ color: primaryColor }}>
+        {label}
+      </span>
+    </button>
   );
 }

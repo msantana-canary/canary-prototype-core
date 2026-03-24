@@ -77,12 +77,12 @@ export const DEFAULT_CHECK_IN_CONFIG: CheckInConfigState = {
     estimatedTotal: true,
   },
 
-  // Group 7: Theme (Statler blue)
+  // Group 7: Theme (Statler gold — from Figma)
   theme: {
-    primaryColor: '#4481e6',
-    backgroundColor: '#f9f9f9',
+    primaryColor: '#926e27',
+    backgroundColor: '#fcf9f4',
     cardBackgroundColor: '#ffffff',
-    fontColor: '#1c1c1c',
+    fontColor: '#000000',
     borderRadius: BorderRadius.ROUND,
   },
 };
