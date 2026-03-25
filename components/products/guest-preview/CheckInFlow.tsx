@@ -140,8 +140,13 @@ export function CheckInFlow() {
         </div>
       )}
 
-      {/* ── Scrollable content ── */}
-      <div className="flex-1 overflow-y-auto">
+      {/* ── Scrollable content with iOS slide animation ── */}
+      <div
+        key={store.currentStepIndex}
+        className={`flex-1 overflow-y-auto ${
+          store.flowDirection === 'forward' ? 'animate-step-forward' : 'animate-step-backward'
+        }`}
+      >
         <StepContent step={currentStep?.step} />
 
         {/* Submit button + skip (inside scroll, below content) */}

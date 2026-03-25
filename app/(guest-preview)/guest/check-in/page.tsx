@@ -14,12 +14,13 @@ import { ParameterSidebar } from '@/components/products/guest-preview/ParameterS
 import { useCheckInConfigStore } from '@/lib/products/guest-preview/check-in-config-store';
 import { ViewMode } from '@/lib/products/guest-preview/types';
 import Icon from '@mdi/react';
-import { mdiCellphoneLink, mdiMonitor, mdiArrowLeft } from '@mdi/js';
+import { mdiCellphoneLink, mdiMonitor, mdiArrowLeft, mdiRestart } from '@mdi/js';
 import Link from 'next/link';
 
 function CheckInPageContent() {
   const viewMode = useCheckInConfigStore((s) => s.viewMode);
   const setViewMode = useCheckInConfigStore((s) => s.setViewMode);
+  const resetFlow = useCheckInConfigStore((s) => s.resetFlow);
 
   return (
     <>
@@ -41,7 +42,16 @@ function CheckInPageContent() {
             Guest Check-In Preview
           </div>
 
-          {/* Right: View mode toggle */}
+          {/* Right: Restart + View mode toggle */}
+          <div className="flex items-center gap-3">
+          <button
+            onClick={resetFlow}
+            className="flex items-center gap-1.5 text-[12px] text-[#8b8ba3] hover:text-white transition-colors"
+            title="Restart flow"
+          >
+            <Icon path={mdiRestart} size={0.55} />
+            Restart
+          </button>
           <div className="flex items-center gap-1 bg-[#2d2d44] rounded-lg p-1">
             <button
               onClick={() => setViewMode(ViewMode.PHONE)}
@@ -65,6 +75,7 @@ function CheckInPageContent() {
               <Icon path={mdiMonitor} size={0.55} />
               Desktop
             </button>
+          </div>
           </div>
         </div>
 

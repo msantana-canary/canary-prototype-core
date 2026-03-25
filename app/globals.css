@@ -26,20 +26,20 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Guest check-in step transitions */
-@keyframes step-slide-left {
-  from { opacity: 0; transform: translateX(30px); }
-  to { opacity: 1; transform: translateX(0); }
+/* iOS-style page transitions for guest check-in flow */
+@keyframes ios-slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 }
-@keyframes step-slide-right {
-  from { opacity: 0; transform: translateX(-30px); }
-  to { opacity: 1; transform: translateX(0); }
+@keyframes ios-slide-in-left {
+  from { transform: translateX(-35%); opacity: 0.6; }
+  to { transform: translateX(0); opacity: 1; }
 }
 .animate-step-forward {
-  animation: step-slide-left 250ms ease-out;
+  animation: ios-slide-in-right 350ms cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 .animate-step-backward {
-  animation: step-slide-right 250ms ease-out;
+  animation: ios-slide-in-left 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 /* Guest bottom sheet slide-up */

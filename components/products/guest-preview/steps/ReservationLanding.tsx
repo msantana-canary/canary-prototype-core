@@ -3,14 +3,11 @@
 /**
  * ReservationLanding — First step matching Figma (node 5:1545)
  *
- * Layout:
- * - Full-bleed hotel photo (~65% height) with gradient to gold at bottom
- * - Gold band below
- * - White floating card overlapping both: Statler logo, "Welcome, Emily",
- *   description, "Check in now" button, Privacy Policy link
- *
- * The CTA button and footer are rendered HERE (not by parent CheckInFlow)
- * because the landing has a unique layout.
+ * Layout (Figma):
+ * - Photo: 0 → 638px (with gradient at bottom fading to gold)
+ * - Gold band: 638px → 798px (160px)
+ * - White card: floating centered, bottom edge ~158px from page bottom
+ * - Gold fills everything below the photo
  */
 
 import React from 'react';
@@ -23,9 +20,12 @@ export function ReservationLanding() {
   const goToNextStep = useCheckInConfigStore((s) => s.goToNextStep);
 
   return (
-    <div className="relative flex flex-col" style={{ minHeight: '100%' }}>
-      {/* Hero photo — takes ~65% of viewport */}
-      <div className="relative w-full" style={{ height: '65%', minHeight: 400 }}>
+    <div
+      className="relative flex flex-col"
+      style={{ minHeight: '100%', backgroundColor: theme.primaryColor }}
+    >
+      {/* Hero photo section */}
+      <div className="relative w-full" style={{ height: 500 }}>
         <Image
           src={HOTEL_BRANDING.heroImage}
           alt={HOTEL_BRANDING.name}
@@ -33,25 +33,25 @@ export function ReservationLanding() {
           className="object-cover"
           priority
         />
-        {/* Gradient overlay: transparent → gold at bottom */}
+        {/* Gradient: transparent → gold at bottom of photo */}
         <div
           className="absolute bottom-0 left-0 right-0"
           style={{
             height: 126,
-            background: `linear-gradient(to bottom, rgba(146,110,39,0) 0%, ${theme.primaryColor} 100%)`,
+            background: `linear-gradient(to bottom, transparent 0%, ${theme.primaryColor} 100%)`,
           }}
         />
       </div>
 
-      {/* Gold band */}
-      <div className="w-full" style={{ height: 160, backgroundColor: theme.primaryColor }} />
+      {/* Spacer to push card down — gold bg shows through */}
+      <div className="flex-1" />
 
-      {/* Floating white card — positioned to overlap photo and gold band */}
+      {/* White card */}
       <div
-        className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center rounded-lg"
+        className="mx-6 rounded-lg flex flex-col items-center relative z-10"
         style={{
-          width: 382,
-          bottom: 24,
+          marginTop: -180,
+          marginBottom: 16,
           padding: 24,
           backgroundColor: '#fafafa',
           boxShadow: '0px 12px 32px rgba(0,0,0,0.12)',
@@ -67,7 +67,6 @@ export function ReservationLanding() {
           />
         </div>
 
-        {/* Welcome text */}
         <h1 className="text-[28px] font-medium text-black leading-[42px] mt-6 text-center">
           Welcome, {DEMO_GUEST.firstName}
         </h1>
@@ -76,7 +75,6 @@ export function ReservationLanding() {
           Review your reservation and check-in now. It only takes 3 minutes.
         </p>
 
-        {/* CTA button */}
         <button
           onClick={goToNextStep}
           className="w-full h-[48px] flex items-center justify-center text-[18px] font-medium text-white rounded mt-6"
@@ -85,7 +83,6 @@ export function ReservationLanding() {
           Check in now
         </button>
 
-        {/* Privacy */}
         <span className="text-[12px] font-medium text-[#333] mt-4">
           Privacy Policy • Terms & Conditions
         </span>
