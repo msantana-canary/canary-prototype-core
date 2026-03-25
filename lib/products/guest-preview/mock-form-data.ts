@@ -117,7 +117,7 @@ export const DEMO_ADDONS: AddonItem[] = [
     name: 'Early Check-In (1:00 PM)',
     description: 'Check in 2 hours early and get settled before your day begins.',
     price: 30,
-    image: '/images/hotel-exterior.jpg',
+    image: '/images/hotel-property.png',
     category: 'early-checkin',
   },
   {
@@ -125,7 +125,7 @@ export const DEMO_ADDONS: AddonItem[] = [
     name: 'Late Checkout (2:00 PM)',
     description: 'Enjoy a leisurely departure with an extra 2 hours in your room.',
     price: 50,
-    image: '/images/hotel-exterior.jpg',
+    image: '/images/hotel-property.png',
     category: 'late-checkout',
   },
   {
@@ -133,7 +133,7 @@ export const DEMO_ADDONS: AddonItem[] = [
     name: 'Premium Suite Upgrade',
     description: 'Upgrade to a spacious corner suite with Central Park views.',
     price: 125,
-    image: '/images/hotel-exterior.jpg',
+    image: '/images/hotel-property.png',
     category: 'room-upgrade',
   },
   {
@@ -141,7 +141,7 @@ export const DEMO_ADDONS: AddonItem[] = [
     name: 'Champagne & Strawberries',
     description: 'A bottle of Moët & Chandon with fresh strawberries in your room.',
     price: 65,
-    image: '/images/hotel-exterior.jpg',
+    image: '/images/hotel-property.png',
     category: 'amenity',
   },
 ];
@@ -165,8 +165,8 @@ export const DEMO_ADDITIONAL_GUESTS = [
 
 export const HOTEL_BRANDING = {
   name: 'Statler New York',
-  logo: '/images/statler-logo.png',
-  heroImage: '/images/hotel-exterior.jpg',
+  logo: '/images/hotel-logo.png',
+  heroImage: '/images/hotel-property.png',
   address: '151 West 54th Street, New York, NY 10019',
   phone: '+1 (212) 555-0100',
 };

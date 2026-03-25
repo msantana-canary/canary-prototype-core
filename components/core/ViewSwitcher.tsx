@@ -23,6 +23,9 @@ export function ViewSwitcher() {
   const isGuestView = GUEST_ROUTES.some((r) => pathname.startsWith(r));
   const isHotelView = HOTEL_ROUTES.some((r) => pathname.startsWith(r));
 
+  // Only show in development — never on deployed Vercel site
+  if (process.env.NODE_ENV !== 'development') return null;
+
   // Only show on hotel-facing or guest-facing pages (not on root /)
   if (!isGuestView && !isHotelView) return null;
 

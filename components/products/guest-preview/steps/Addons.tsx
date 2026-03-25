@@ -22,16 +22,16 @@ interface AddonItem {
 }
 
 const ROOM_UPGRADES: AddonItem[] = [
-  { id: 'upgrade-city', name: 'Deluxe City-View Room', price: 199, image: '/images/hotel-exterior.jpg', details: '2 · 1 KING, 1 CRIB · 438 SQ FT', isUpgrade: true },
-  { id: 'upgrade-exec', name: 'Executive Suite', price: 399, image: '/images/hotel-exterior.jpg', details: '2 · 1 KING, 1 QUEEN · 640 SQ FT', isUpgrade: true },
-  { id: 'upgrade-pres', name: 'Presidential Suite', price: 599, image: '/images/hotel-exterior.jpg', details: '4 · 1 KING, 1 QUEEN · 1,347 SQ FT', isUpgrade: true },
+  { id: 'upgrade-city', name: 'Deluxe City-View Room', price: 199, image: '/images/hotel-property.png', details: '2 · 1 KING, 1 CRIB · 438 SQ FT', isUpgrade: true },
+  { id: 'upgrade-exec', name: 'Executive Suite', price: 399, image: '/images/hotel-property.png', details: '2 · 1 KING, 1 QUEEN · 640 SQ FT', isUpgrade: true },
+  { id: 'upgrade-pres', name: 'Presidential Suite', price: 599, image: '/images/hotel-property.png', details: '4 · 1 KING, 1 QUEEN · 1,347 SQ FT', isUpgrade: true },
 ];
 
 const ADD_ONS: AddonItem[] = [
-  { id: 'addon-early', name: 'Early Check-in', price: 59, image: '/images/hotel-exterior.jpg' },
-  { id: 'addon-late', name: 'Late Checkout', price: 59, image: '/images/hotel-exterior.jpg' },
-  { id: 'addon-water', name: 'Bottle of water', price: 5, image: '/images/hotel-exterior.jpg' },
-  { id: 'addon-shuttle', name: 'Airport shuttle', price: 99, image: '/images/hotel-exterior.jpg' },
+  { id: 'addon-early', name: 'Early Check-in', price: 59, image: '/images/hotel-property.png' },
+  { id: 'addon-late', name: 'Late Checkout', price: 59, image: '/images/hotel-property.png' },
+  { id: 'addon-water', name: 'Bottle of water', price: 5, image: '/images/hotel-property.png' },
+  { id: 'addon-shuttle', name: 'Airport shuttle', price: 99, image: '/images/hotel-property.png' },
 ];
 
 export function Addons() {

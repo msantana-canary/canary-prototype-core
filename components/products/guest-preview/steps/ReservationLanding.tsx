@@ -1,25 +1,31 @@
 'use client';
 
 /**
- * ReservationLanding — First step of check-in flow
+ * ReservationLanding — First step matching Figma (node 5:1545)
  *
- * Hotel hero image, Statler logo, welcome message,
- * reservation summary details.
+ * Layout:
+ * - Full-bleed hotel photo (~65% height) with gradient to gold at bottom
+ * - Gold band below
+ * - White floating card overlapping both: Statler logo, "Welcome, Emily",
+ *   description, "Check in now" button, Privacy Policy link
+ *
+ * The CTA button and footer are rendered HERE (not by parent CheckInFlow)
+ * because the landing has a unique layout.
  */
 
 import React from 'react';
 import { useCheckInConfigStore } from '@/lib/products/guest-preview/check-in-config-store';
-import { HOTEL_BRANDING, DEMO_GUEST, DEMO_RESERVATION } from '@/lib/products/guest-preview/mock-form-data';
+import { HOTEL_BRANDING, DEMO_GUEST } from '@/lib/products/guest-preview/mock-form-data';
 import Image from 'next/image';
 
 export function ReservationLanding() {
   const theme = useCheckInConfigStore((s) => s.theme);
-  const reservationHeader = useCheckInConfigStore((s) => s.reservationHeader);
+  const goToNextStep = useCheckInConfigStore((s) => s.goToNextStep);
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Hero image */}
-      <div className="relative w-full" style={{ height: 200 }}>
+    <div className="relative flex flex-col" style={{ minHeight: '100%' }}>
+      {/* Hero photo — takes ~65% of viewport */}
+      <div className="relative w-full" style={{ height: '65%', minHeight: 400 }}>
         <Image
           src={HOTEL_BRANDING.heroImage}
           alt={HOTEL_BRANDING.name}
@@ -27,81 +33,63 @@ export function ReservationLanding() {
           className="object-cover"
           priority
         />
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-        {/* Hotel logo overlay */}
-        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
-          <div>
-            <h1 className="text-white text-[22px] font-bold leading-tight">
-              {HOTEL_BRANDING.name}
-            </h1>
-            <p className="text-white/80 text-[12px] mt-0.5">
-              {HOTEL_BRANDING.address}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Welcome section */}
-      <div className="px-6 pt-5 pb-4">
-        <h2 className="text-[20px] font-semibold" style={{ color: theme.fontColor }}>
-          Welcome, {DEMO_GUEST.firstName}!
-        </h2>
-        <p className="text-[14px] text-[#6b7280] mt-1">
-          Complete your check-in to make your arrival seamless.
-        </p>
-      </div>
-
-      {/* Reservation summary card */}
-      <div className="mx-6 rounded-lg border border-[#e5e7eb] overflow-hidden" style={{ backgroundColor: theme.cardBackgroundColor }}>
+        {/* Gradient overlay: transparent → gold at bottom */}
         <div
-          className="px-4 py-2.5 text-[12px] font-semibold text-white tracking-wide"
+          className="absolute bottom-0 left-0 right-0"
+          style={{
+            height: 126,
+            background: `linear-gradient(to bottom, rgba(146,110,39,0) 0%, ${theme.primaryColor} 100%)`,
+          }}
+        />
+      </div>
+
+      {/* Gold band */}
+      <div className="w-full" style={{ height: 160, backgroundColor: theme.primaryColor }} />
+
+      {/* Floating white card — positioned to overlap photo and gold band */}
+      <div
+        className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center rounded-lg"
+        style={{
+          width: 382,
+          bottom: 24,
+          padding: 24,
+          backgroundColor: '#fafafa',
+          boxShadow: '0px 12px 32px rgba(0,0,0,0.12)',
+        }}
+      >
+        {/* Hotel logo */}
+        <div className="relative" style={{ width: 150, height: 70 }}>
+          <Image
+            src={HOTEL_BRANDING.logo}
+            alt={`${HOTEL_BRANDING.name} logo`}
+            fill
+            className="object-contain"
+          />
+        </div>
+
+        {/* Welcome text */}
+        <h1 className="text-[28px] font-medium text-black leading-[42px] mt-6 text-center">
+          Welcome, {DEMO_GUEST.firstName}
+        </h1>
+
+        <p className="text-[16px] text-black leading-[24px] text-center mt-2">
+          Review your reservation and check-in now. It only takes 3 minutes.
+        </p>
+
+        {/* CTA button */}
+        <button
+          onClick={goToNextStep}
+          className="w-full h-[48px] flex items-center justify-center text-[18px] font-medium text-white rounded mt-6"
           style={{ backgroundColor: theme.primaryColor }}
         >
-          RESERVATION DETAILS
-        </div>
-        <div className="px-4 py-3 space-y-2.5">
-          <ReservationRow label="Confirmation" value={DEMO_RESERVATION.confirmationCode} />
-          <ReservationRow label="Check-in" value={DEMO_RESERVATION.checkInDate} />
-          <ReservationRow label="Check-out" value={DEMO_RESERVATION.checkOutDate} />
-          <ReservationRow label="Duration" value={`${DEMO_RESERVATION.nights} night${DEMO_RESERVATION.nights > 1 ? 's' : ''}`} />
-          {reservationHeader.roomNumber && DEMO_RESERVATION.roomNumber && (
-            <ReservationRow label="Room" value={DEMO_RESERVATION.roomNumber} />
-          )}
-          {reservationHeader.roomType && DEMO_RESERVATION.roomType && (
-            <ReservationRow label="Room Type" value={DEMO_RESERVATION.roomType} />
-          )}
-          {reservationHeader.estimatedTotal && (
-            <ReservationRow
-              label="Estimated Total"
-              value={`$${DEMO_RESERVATION.estimatedTotal.toFixed(2)}`}
-              isBold
-            />
-          )}
-        </div>
+          Check in now
+        </button>
+
+        {/* Privacy */}
+        <span className="text-[12px] font-medium text-[#333] mt-4">
+          Privacy Policy • Terms & Conditions
+        </span>
       </div>
-
-      {/* Spacer to push CTA down */}
-      <div className="flex-1 min-h-4" />
-    </div>
-  );
-}
-
-function ReservationRow({
-  label,
-  value,
-  isBold = false,
-}: {
-  label: string;
-  value: string;
-  isBold?: boolean;
-}) {
-  return (
-    <div className="flex justify-between items-center">
-      <span className="text-[13px] text-[#6b7280]">{label}</span>
-      <span className={`text-[13px] ${isBold ? 'font-semibold' : 'font-medium'} text-[#111827]`}>
-        {value}
-      </span>
     </div>
   );
 }
