@@ -97,7 +97,7 @@ export function SubmittingAnimation() {
                 className="w-6 h-6 flex items-center justify-center transition-all duration-300"
                 style={{ opacity: isChecked ? 1 : 0.3 }}
               >
-                <Icon path={mdiCheck} size={0.85} color={isChecked ? '#926e27' : '#ccc'} />
+                <Icon path={mdiCheck} size={0.85} color={isChecked ? theme.primaryColor : '#ccc'} />
               </div>
               <span className="text-[18px] text-black">{label}</span>
             </div>

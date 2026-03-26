@@ -33,6 +33,13 @@ export function ReservationLanding() {
           className="object-cover"
           priority
         />
+        {/* iOS Status Bar overlaid on hero */}
+        <img
+          src="/images/ios-status-bar.png"
+          alt=""
+          className="absolute top-0 left-0 right-0 z-10 w-full"
+          draggable={false}
+        />
         {/* Gradient: transparent → gold at bottom of photo */}
         <div
           className="absolute bottom-0 left-0 right-0"
@@ -53,7 +60,7 @@ export function ReservationLanding() {
           marginTop: -180,
           marginBottom: 16,
           padding: 24,
-          backgroundColor: '#fafafa',
+          backgroundColor: theme.cardBackgroundColor,
           boxShadow: '0px 12px 32px rgba(0,0,0,0.12)',
         }}
       >
@@ -67,11 +74,11 @@ export function ReservationLanding() {
           />
         </div>
 
-        <h1 className="text-[28px] font-medium text-black leading-[42px] mt-6 text-center">
+        <h1 className="text-[28px] font-medium text-[var(--canaryThemeFontColor,#000)] leading-[42px] mt-6 text-center">
           Welcome, {DEMO_GUEST.firstName}
         </h1>
 
-        <p className="text-[16px] text-black leading-[24px] text-center mt-2">
+        <p className="text-[16px] text-[var(--canaryThemeFontColor,#000)] leading-[24px] text-center mt-2">
           Review your reservation and check-in now. It only takes 3 minutes.
         </p>
 

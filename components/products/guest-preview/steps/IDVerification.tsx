@@ -21,7 +21,7 @@ export function IDVerification() {
   if (state === 'complete') {
     return (
       <div className="flex flex-col items-center justify-center px-6 py-12 gap-4 text-center">
-        <Icon path={mdiCheckCircleOutline} size={2.5} color="#22c55e" />
+        <Icon path={mdiCheckCircleOutline} size={2.5} color={theme.primaryColor} />
         <h2 className="text-[24px] font-medium" style={{ color: theme.primaryColor }}>
           Verification complete
         </h2>

@@ -96,7 +96,7 @@ export function getProgressSegmentCount(config: CheckInConfigState): number {
 
 /**
  * Given a step index in the included list, returns how many
- * counted steps have been completed (for progress bar fill).
+ * progress bar segments should be filled (up to and including current step).
  */
 export function getCompletedSegments(
   config: CheckInConfigState,
@@ -104,7 +104,7 @@ export function getCompletedSegments(
 ): number {
   const included = resolveIncludedSteps(config);
   let completed = 0;
-  for (let i = 0; i < currentStepIndex && i < included.length; i++) {
+  for (let i = 0; i <= currentStepIndex && i < included.length; i++) {
     if (included[i].isCounted) {
       completed++;
     }

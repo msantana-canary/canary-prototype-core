@@ -82,24 +82,37 @@ export function CheckInFlow() {
 
   return (
     <div
-      className="flex flex-col h-full"
+      className="flex flex-col h-full guest-theme"
       style={{
         backgroundColor: isLanding ? 'transparent' : store.theme.backgroundColor,
         color: store.theme.fontColor,
         fontFamily: 'Roboto, sans-serif',
-      }}
+        // CSS custom properties for theming (mirrors production ThemeStore)
+        '--canaryThemeHeaderColor': store.theme.primaryColor,
+        '--canaryThemeButtonColor': store.theme.primaryColor,
+        '--canaryThemeBackgroundColor': store.theme.backgroundColor,
+        '--canaryThemeFontColor': store.theme.fontColor,
+        '--canaryThemeFontColorButton': '#ffffff',
+        '--canaryThemeFontColorHeader': '#ffffff',
+        '--canaryThemeCardBackgroundColor': store.theme.cardBackgroundColor,
+      } as React.CSSProperties}
     >
-      {/* ── Gold header matching Figma 5:2353 ── */}
+      {/* ── Gold header: status bar PNG + title/progress (one unit, same bg) ── */}
       {showHeader && (
         <div
-          className="flex-shrink-0 flex flex-col items-start"
+          className="flex-shrink-0 flex flex-col items-stretch"
           style={{ backgroundColor: store.theme.primaryColor }}
         >
-          {/* Status bar spacer (54px — PhoneFrame overlays its status bar on top of this) */}
-          <div style={{ height: 54 }} />
+          {/* iOS Status Bar — PNG with white icons on transparent bg */}
+          <img
+            src="/images/ios-status-bar.png"
+            alt=""
+            className="w-full"
+            draggable={false}
+          />
 
-          {/* Container: title + progress bar (or back button + title) */}
-          <div className="flex flex-col gap-2 px-6 pb-6">
+          {/* Container: title + progress bar (Figma 5:2366 — p-24 all sides) */}
+          <div className="flex flex-col gap-2 p-6">
             {showBackButton ? (
               /* Back button variant (Figma 71:33547) */
               <div className="flex items-center gap-2">

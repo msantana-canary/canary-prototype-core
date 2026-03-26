@@ -42,6 +42,27 @@
   animation: ios-slide-in-left 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
+/* Guest theme: fix underline input label jank.
+   The React lib conditionally renders the label, causing layout shift.
+   Production Vue uses opacity:0→1. We fix by reserving label height via min-height
+   on every direct child div in the form (each input wrapper). */
+.guest-theme .guest-form > div,
+.guest-theme .guest-form > .w-full {
+  min-height: 69px; /* 21px label + 48px input at LARGE size */
+}
+
+/* Guest theme overrides — make library components use themed colors instead of hardcoded blue */
+.guest-theme input:focus,
+.guest-theme select:focus {
+  border-color: var(--canaryThemeHeaderColor, #926e27) !important;
+}
+/* Override checkbox icon color from blue to theme color */
+.guest-theme svg[style*="color: rgb(40, 88, 196)"],
+.guest-theme svg[style*="color: #2858c4"],
+.guest-theme label svg {
+  color: var(--canaryThemeButtonColor, #926e27) !important;
+}
+
 /* Guest bottom sheet slide-up */
 @keyframes bottom-sheet-up {
   from { transform: translateY(100%); }

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * CreditCardPhotos — Card photo capture matching Figma style
+ * CreditCardPhotos — Card photo capture, fully themed
  */
 
 import React, { useState } from 'react';
@@ -14,8 +14,8 @@ export function CreditCardPhotos() {
   const [captured, setCaptured] = useState(false);
 
   return (
-    <div className="flex flex-col gap-6 px-6 pt-8 pb-6">
-      <p className="text-[18px] text-black leading-[28px]">
+    <div className="flex flex-col" style={{ padding: '32px 24px 24px', gap: 24 }}>
+      <p style={{ fontSize: 18, lineHeight: '28px', color: theme.fontColor }}>
         Please take a photo of the front of your credit card for verification.
       </p>
 
@@ -23,16 +23,12 @@ export function CreditCardPhotos() {
         <div className="flex flex-col items-center gap-3">
           <div
             className="w-full rounded-lg flex flex-col items-center justify-center gap-2"
-            style={{ aspectRatio: '16/10', backgroundColor: '#f0fdf4', border: '1px solid #22c55e' }}
+            style={{ aspectRatio: '16/10', backgroundColor: `${theme.primaryColor}10`, border: `1px solid ${theme.primaryColor}` }}
           >
-            <Icon path={mdiCheckCircleOutline} size={1.5} color="#22c55e" />
-            <span className="text-[16px] font-medium text-[#166534]">Photo captured</span>
+            <Icon path={mdiCheckCircleOutline} size={1.5} color={theme.primaryColor} />
+            <span style={{ fontSize: 16, fontWeight: 500, color: theme.primaryColor }}>Photo captured</span>
           </div>
-          <button
-            onClick={() => setCaptured(false)}
-            className="text-[14px] font-medium"
-            style={{ color: theme.primaryColor }}
-          >
+          <button onClick={() => setCaptured(false)} style={{ fontSize: 14, fontWeight: 500, color: theme.primaryColor }}>
             Retake
           </button>
         </div>
@@ -40,20 +36,16 @@ export function CreditCardPhotos() {
         <button
           onClick={() => setCaptured(true)}
           className="w-full rounded-lg flex flex-col items-center justify-center gap-8 cursor-pointer"
-          style={{
-            aspectRatio: '16/10',
-            backgroundColor: `${theme.primaryColor}1A`,
-            border: `1px solid ${theme.primaryColor}1A`,
-          }}
+          style={{ aspectRatio: '16/10', backgroundColor: `${theme.primaryColor}1A`, border: `1px solid ${theme.primaryColor}1A` }}
         >
           <Icon path={mdiCameraOutline} size={1.2} color={theme.primaryColor} />
-          <span className="text-[18px] font-medium" style={{ color: theme.primaryColor }}>
+          <span style={{ fontSize: 18, fontWeight: 500, color: theme.primaryColor }}>
             Take photo of your card
           </span>
         </button>
       )}
 
-      <p className="text-[14px] text-[#666] leading-[22px]">
+      <p style={{ fontSize: 14, lineHeight: '22px', color: '#666' }}>
         Your card photo is used only for verification and is securely encrypted.
       </p>
     </div>

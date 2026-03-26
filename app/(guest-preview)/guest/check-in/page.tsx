@@ -82,7 +82,7 @@ function CheckInPageContent() {
         {/* Phone frame stage */}
         <div className="flex-1 overflow-hidden p-6">
           {viewMode === ViewMode.PHONE ? (
-            <PhoneFrame statusBarColor="light">
+            <PhoneFrame>
               <CheckInFlow />
             </PhoneFrame>
           ) : (

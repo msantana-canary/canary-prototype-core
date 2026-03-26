@@ -1,13 +1,15 @@
 'use client';
 
 /**
- * CreditCard — Payment step matching Figma
- *
- * Underline inputs, instruction text, PCI compliance note.
- * Button is rendered by parent CheckInFlow.
+ * CreditCard — Payment step using @canary-ui/components underline variants
  */
 
 import React from 'react';
+import {
+  CanaryInputUnderline,
+  CanaryInputCreditCardUnderline,
+  InputSize,
+} from '@canary-ui/components';
 import { useCheckInConfigStore } from '@/lib/products/guest-preview/check-in-config-store';
 
 export function CreditCard() {
@@ -19,48 +21,51 @@ export function CreditCard() {
     : 'We need your credit card to authorize hotel charges and incidentals.';
 
   return (
-    <div className="flex flex-col gap-8 px-6 pt-8 pb-6">
+    <div className="flex flex-col" style={{ padding: '32px 24px 24px', gap: 24 }}>
       {/* Instruction */}
-      <p className="text-[18px] text-black leading-[28px]">
+      <p style={{ fontSize: 18, lineHeight: '28px', color: '#000' }}>
         {depositText}
       </p>
 
-      {/* Card fields — underline style matching Figma */}
-      <div className="flex flex-col gap-4">
-        <input
-          placeholder="Name on card"
-          className="w-full border-b border-[rgba(0,0,0,0.5)] bg-transparent py-3 text-[20px] leading-[30px] text-black placeholder:text-[#666] outline-none"
+      {/* Card fields */}
+      <div className="flex flex-col" style={{ gap: 16 }}>
+        <CanaryInputUnderline
+          label="Name on card"
+          size={InputSize.LARGE}
         />
-        <input
-          placeholder="Credit card number"
-          className="w-full border-b border-[rgba(0,0,0,0.5)] bg-transparent py-3 text-[20px] leading-[30px] text-black placeholder:text-[#666] outline-none"
+        <CanaryInputCreditCardUnderline
+          label="Credit card number"
+          size={InputSize.LARGE}
         />
-        <div className="flex gap-6">
-          <input
-            placeholder="Expiration date"
-            className="flex-1 border-b border-[rgba(0,0,0,0.5)] bg-transparent py-3 text-[20px] leading-[30px] text-black placeholder:text-[#666] outline-none"
-          />
-          <input
-            placeholder="CVV"
-            className="flex-1 border-b border-[rgba(0,0,0,0.5)] bg-transparent py-3 text-[20px] leading-[30px] text-black placeholder:text-[#666] outline-none"
-          />
+        <div className="flex" style={{ gap: 24 }}>
+          <div className="flex-1">
+            <CanaryInputUnderline
+              label="Expiration date"
+              size={InputSize.LARGE}
+            />
+          </div>
+          <div className="flex-1">
+            <CanaryInputUnderline
+              label="CVV"
+              size={InputSize.LARGE}
+            />
+          </div>
         </div>
         {paymentOptions.requirePostalCode && (
-          <input
-            placeholder="Billing postal code"
-            className="w-full border-b border-[rgba(0,0,0,0.5)] bg-transparent py-3 text-[20px] leading-[30px] text-black placeholder:text-[#666] outline-none"
+          <CanaryInputUnderline
+            label="Billing postal code"
+            size={InputSize.LARGE}
           />
         )}
       </div>
 
-      {/* PCI compliance note */}
-      <p className="text-[18px] text-black leading-[28px]">
+      {/* PCI compliance */}
+      <p style={{ fontSize: 18, lineHeight: '28px', color: '#000' }}>
         We are <span className="font-medium underline">PCI-DSS Level-1 compliant</span>. Your information is safe and secure.
       </p>
 
-      {/* Surcharge notice */}
       {paymentOptions.surchargeEnabled && (
-        <p className="text-[14px] text-[#666] leading-[22px]">
+        <p style={{ fontSize: 14, lineHeight: '22px', color: '#666' }}>
           A {paymentOptions.surchargePercent}% surcharge applies to credit card payments.
         </p>
       )}
