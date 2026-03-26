@@ -61,6 +61,7 @@ export function CheckInFlow() {
   const isSecondStep = store.currentStepIndex === 1;
   const isLanding = currentStep?.step === CheckInStep.RESERVATION_LANDING;
   const isSubmitting = currentStep?.step === CheckInStep.SUBMITTING;
+  const isAddons = currentStep?.step === CheckInStep.ADDONS;
   const showHeader = !isLanding && !isSubmitting;
 
   // All main flow steps show progress bar header (back button reserved for sub-pages like room upgrade detail)
@@ -163,8 +164,8 @@ export function CheckInFlow() {
       >
         <StepContent step={currentStep?.step} />
 
-        {/* Submit button + skip (inside scroll, below content) */}
-        {showHeader && (
+        {/* Submit button + skip (inside scroll, below content — not for Addons which has its own footer) */}
+        {showHeader && !isAddons && (
           <div className="px-6 pt-4 pb-2">
             <button
               onClick={store.goToNextStep}
@@ -186,8 +187,8 @@ export function CheckInFlow() {
           </div>
         )}
 
-        {/* Page footer (every step except submitting — landing has its own) */}
-        {showHeader && <PageFooter />}
+        {/* Page footer (not for landing, submitting, or addons which have their own) */}
+        {showHeader && !isAddons && <PageFooter />}
       </div>
     </div>
   );
