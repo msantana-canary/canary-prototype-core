@@ -24,6 +24,7 @@ export interface CheckInSubmission {
   isFlagged?: boolean;         // Red flag icon next to room
   isArchived?: boolean;        // Goes to "Other" section
   checkInTime?: string;        // For checked-in: "4:15 PM"
+  additionalGuests?: AdditionalGuest[];
   // Tabled fields (keep for future):
   isWalkIn?: boolean;
   isTabletRegistration?: boolean;
@@ -42,6 +43,13 @@ export interface UpsellItem {
   quantity: number;
   unitPrice: number;
   status: 'pending' | 'approved' | 'denied';
+}
+
+export interface AdditionalGuest {
+  id: string;
+  name: string;
+  isAdult: boolean;
+  verificationStatus: 'verified' | 'pending';
 }
 
 export interface GuestNote {

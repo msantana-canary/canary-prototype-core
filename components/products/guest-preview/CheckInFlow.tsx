@@ -19,6 +19,7 @@
  */
 
 import React from 'react';
+import { CanarySelectUnderline, InputSize } from '@canary-ui/components';
 import { useCheckInConfigStore } from '@/lib/products/guest-preview/check-in-config-store';
 import {
   resolveIncludedSteps,
@@ -62,8 +63,8 @@ export function CheckInFlow() {
   const isSubmitting = currentStep?.step === CheckInStep.SUBMITTING;
   const showHeader = !isLanding && !isSubmitting;
 
-  // Show back arrow on steps after registration (step index > 1, since 0 = landing, 1 = registration)
-  const showBackButton = showHeader && !isSecondStep;
+  // All main flow steps show progress bar header (back button reserved for sub-pages like room upgrade detail)
+  const showBackButton = false;
 
   const isSkippable = (() => {
     if (!currentStep) return false;
@@ -167,7 +168,7 @@ export function CheckInFlow() {
           <div className="px-6 pt-4 pb-2">
             <button
               onClick={store.goToNextStep}
-              className="w-full h-[48px] flex items-center justify-center text-[18px] font-medium text-white opacity-50"
+              className="w-full h-[48px] flex items-center justify-center text-[18px] font-medium text-white"
               style={{ backgroundColor: store.theme.primaryColor }}
             >
               Submit
@@ -195,27 +196,36 @@ export function CheckInFlow() {
 /**
  * Page footer matching Figma: language selector + privacy + powered by Canary
  */
+const LANGUAGE_OPTIONS = [
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Español' },
+  { value: 'fr', label: 'Français' },
+  { value: 'de', label: 'Deutsch' },
+  { value: 'ja', label: '日本語' },
+  { value: 'zh', label: '中文' },
+  { value: 'pt', label: 'Português' },
+  { value: 'ar', label: 'العربية' },
+];
+
 function PageFooter() {
   return (
     <div className="flex flex-col items-center gap-6 px-4 py-4">
-      {/* Language selector — underline select */}
-      <div className="flex items-center gap-1 border-b border-[#999] pb-1 px-2">
-        <span className="text-[14px] text-black">English</span>
-        <span className="text-[14px] text-[#999] ml-1">⇅</span>
+      {/* Language selector — compact CanarySelectUnderline */}
+      <div style={{ width: 128 }}>
+        <CanarySelectUnderline
+          options={LANGUAGE_OPTIONS}
+          defaultValue="en"
+          size={InputSize.COMPACT}
+        />
       </div>
       {/* Links + Canary branding */}
       <div className="flex flex-col items-center gap-2">
         <span className="text-[12px] font-medium text-[#414141]">
           Privacy Policy • Terms & Conditions
         </span>
-        <div className="flex items-center gap-2">
-          <svg width="22" height="13" viewBox="0 0 22 13" fill="none">
-            <path d="M11 0C6.5 0 2.7 2.7 1 6.5 2.7 10.3 6.5 13 11 13s8.3-2.7 10-6.5C19.3 2.7 15.5 0 11 0zm0 10.8c-2.4 0-4.3-1.9-4.3-4.3S8.6 2.2 11 2.2s4.3 1.9 4.3 4.3-1.9 4.3-4.3 4.3z" fill="#9f9f9f" />
-          </svg>
-          <span className="text-[12px] text-[#9f9f9f]">
-            Powered by Canary Technologies
-          </span>
-        </div>
+        <span className="text-[12px] text-[#9f9f9f]">
+          Powered by Canary Technologies
+        </span>
       </div>
     </div>
   );

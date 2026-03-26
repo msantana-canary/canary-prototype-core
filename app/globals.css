@@ -43,12 +43,23 @@
 }
 
 /* Guest theme: fix underline input label jank.
-   The React lib conditionally renders the label, causing layout shift.
-   Production Vue uses opacity:0→1. We fix by reserving label height via min-height
-   on every direct child div in the form (each input wrapper). */
-.guest-theme .guest-form > div,
-.guest-theme .guest-form > .w-full {
-  min-height: 69px; /* 21px label + 48px input at LARGE size */
+   The React lib conditionally renders the label (adds/removes from DOM),
+   causing layout shift. Production Vue uses opacity:0→1 with label always in DOM.
+   Fix: reserve label space with padding-top on the wrapper, position label absolutely. */
+.guest-theme .w-full:has(> .relative) {
+  padding-top: 25px;
+  position: relative;
+}
+.guest-theme .w-full > label {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Guest theme: transparent input backgrounds (library defaults to white) */
+.guest-theme input,
+.guest-theme select {
+  background-color: transparent !important;
 }
 
 /* Guest theme overrides — make library components use themed colors instead of hardcoded blue */
@@ -61,6 +72,14 @@
 .guest-theme svg[style*="color: #2858c4"],
 .guest-theme label svg {
   color: var(--canaryThemeButtonColor, #926e27) !important;
+}
+/* Override CanaryTabs text variant: active color from blue to theme */
+.guest-theme span[style*="color: rgb(40, 88, 196)"] {
+  color: var(--canaryThemeButtonColor, #926e27) !important;
+}
+/* Tab underline indicator: theme color instead of blue */
+.guest-theme div[style*="background-color: rgb(40, 88, 196)"] {
+  background-color: var(--canaryThemeButtonColor, #926e27) !important;
 }
 
 /* Guest bottom sheet slide-up */

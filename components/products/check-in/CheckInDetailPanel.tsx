@@ -671,6 +671,7 @@ export function CheckInDetailPanel({
                       guest={guest}
                       isVerified={isVerified}
                       isReadOnly={isReadOnly}
+                      additionalGuests={submission?.additionalGuests}
                     />
                   </div>
                   <div className="payment-section-border">
