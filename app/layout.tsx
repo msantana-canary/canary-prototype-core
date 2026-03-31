@@ -35,7 +35,7 @@ export default function RootLayout({
       </head>
       <body className={`${roboto.variable} ${openSans.variable} font-sans antialiased`}>
         {children}
-        <ViewSwitcher />
+        {/* ViewSwitcher hidden for agent builder demo */}
       </body>
     </html>
   );

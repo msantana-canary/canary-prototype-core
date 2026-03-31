@@ -1,0 +1,126 @@
+'use client';
+
+/**
+ * OverviewTab — Performance metrics, activity feed, and hero stat for an active agent.
+ * Replaces the old AgentInAction view. Matches Figma node 101-15204.
+ */
+
+import React from 'react';
+import Icon from '@mdi/react';
+import { mdiTrendingDown } from '@mdi/js';
+import {
+  CanaryCard,
+  CanaryList,
+  CanaryListItem,
+  CanaryTag,
+  TagColor,
+  TagSize,
+  colors,
+} from '@canary-ui/components';
+import { useAgentStore } from '@/lib/products/agents/store';
+import { mockActivityFeed } from '@/lib/products/agents/mock-data';
+import type { ActivityStatus } from '@/lib/products/agents/types';
+import ThreadDetailView from './ThreadDetailView';
+
+function activityStatusTag(status: ActivityStatus) {
+  switch (status) {
+    case 'responded':
+      return <CanaryTag label="Responded" color={TagColor.SUCCESS} size={TagSize.COMPACT} />;
+    case 'meeting-scheduled':
+      return <CanaryTag label="Meeting Scheduled" color={TagColor.INFO} size={TagSize.COMPACT} />;
+    case 'follow-up-sent':
+      return <CanaryTag label="Follow-up Sent" color={TagColor.WARNING} size={TagSize.COMPACT} />;
+    case 'handed-off':
+      return <CanaryTag label="Handed Off" color={TagColor.DEFAULT} size={TagSize.COMPACT} />;
+    case 'processing':
+      return <CanaryTag label="Processing" color={TagColor.DEFAULT} size={TagSize.COMPACT} />;
+  }
+}
+
+interface MetricCardProps {
+  label: string;
+  value: string;
+  subtitle?: string;
+}
+
+function MetricCard({ label, value, subtitle }: MetricCardProps) {
+  return (
+    <CanaryCard>
+      <p style={{ fontSize: 13, color: colors.colorBlack3, margin: '0 0 4px 0' }}>{label}</p>
+      <p style={{ fontSize: 24, fontWeight: 600, color: colors.colorBlack1, margin: '0 0 2px 0' }}>{value}</p>
+      {subtitle && (
+        <p style={{ fontSize: 12, color: colors.colorBlack4, margin: 0 }}>{subtitle}</p>
+      )}
+    </CanaryCard>
+  );
+}
+
+export default function OverviewTab() {
+  const selectedThreadId = useAgentStore((s) => s.selectedThreadId);
+  const setSelectedThread = useAgentStore((s) => s.setSelectedThread);
+
+  // If a thread is selected, show the detail view
+  if (selectedThreadId) {
+    return (
+      <ThreadDetailView
+        inquiryId={selectedThreadId}
+        onBack={() => setSelectedThread(null)}
+      />
+    );
+  }
+
+  return (
+    <div>
+      {/* Section header */}
+      <h2 style={{ fontSize: 18, fontWeight: 500, margin: '0 0 4px 0', color: colors.colorBlack1 }}>
+        Performance/Activity
+      </h2>
+      <p style={{ fontSize: 14, color: colors.colorBlack3, margin: '0 0 20px 0' }}>
+        Here&apos;s how your agent has performed over the last 30 days.
+      </p>
+
+      {/* Hero stat */}
+      <CanaryCard>
+        <p style={{ fontSize: 13, color: colors.colorBlack3, margin: '0 0 4px 0' }}>Avg. Response Time</p>
+        <p style={{ fontSize: 32, fontWeight: 600, color: colors.colorBlack1, margin: '0 0 4px 0' }}>
+          2.1 minutes
+        </p>
+        <p style={{ fontSize: 13, color: colors.colorBlack4, margin: 0 }}>Industry avg: 4.2 hours</p>
+      </CanaryCard>
+
+      <div style={{ height: 16 }} />
+
+      {/* Metric cards row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        <MetricCard label="Inquiries Handled" value="47" subtitle="this month" />
+        <MetricCard label="Meetings Scheduled" value="12" subtitle="this month" />
+        <MetricCard label="Proposals Sent" value="34" subtitle="this month" />
+        <MetricCard
+          label="Handoff Rate"
+          value="8%"
+          subtitle="-2% from last 30 days"
+        />
+      </div>
+
+      <div style={{ height: 24 }} />
+
+      {/* Activity Feed */}
+      <h3 style={{ fontSize: 16, fontWeight: 500, margin: '0 0 12px 0', color: colors.colorBlack1 }}>
+        Activity Feed
+      </h3>
+      <CanaryList hasOuterBorder>
+        {mockActivityFeed.map((item) => (
+          <CanaryListItem
+            key={item.id}
+            title={item.title}
+            subtitle={item.description}
+            isClickable
+            onClick={() => item.inquiryId && setSelectedThread(item.inquiryId)}
+            rightContent={activityStatusTag(item.status)}
+            padding="normal"
+          />
+        ))}
+      </CanaryList>
+    </div>
+  );
+}

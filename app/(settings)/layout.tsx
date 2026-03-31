@@ -11,7 +11,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiAccountMultipleOutline, mdiMapMarker, mdiCreation } from '@mdi/js';
+import { mdiArrowLeft, mdiAccountMultipleOutline, mdiMapMarker, mdiCreation, mdiRobotOutline } from '@mdi/js';
 import {
   CanaryAppShell,
   CanaryButton,
@@ -37,8 +37,14 @@ const withKB = addProduct(
   createSidebarTab('knowledge-base', 'Knowledge Base', <Icon path={mdiCreation} size={1} />),
   { sectionId: 'product-settings-section', insertAfter: 'checkout' }
 );
-const settingsSections = updateProduct(
+// Add "Canary Agents" to Product Settings
+const withAgents = addProduct(
   withKB,
+  createSidebarTab('agents', 'Canary Agents', <Icon path={mdiRobotOutline} size={1} />),
+  { sectionId: 'product-settings-section', insertAfter: 'knowledge-base' }
+);
+const settingsSections = updateProduct(
+  withAgents,
   'guest-journey',
   { icon: <Icon path={mdiMapMarker} size={1} /> }
 );
@@ -48,6 +54,7 @@ const settingsRouteMap: Record<string, string> = {
   'guest-journey': '/settings/guest-journey',
   'segments': '/settings/segments',
   'knowledge-base': '/settings/knowledge-base',
+  'agents': '/settings/agents',
   'calls': '/settings/calls',
 };
 
