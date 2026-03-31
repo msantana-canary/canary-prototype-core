@@ -100,6 +100,9 @@ export interface WizardContext {
   triggers: AgentTrigger[];
   connections: Connection[];
   capabilities: CanaryProduct[];
+  templateName?: string;
+  templateRole?: string;
+  isNewWorkflow?: boolean;
 }
 
 export interface AgentBuilderResponse {
@@ -149,11 +152,53 @@ export async function generateAgentWorkflow(
         .join(', ');
 
       systemPrompt += `\n\nWIZARD CONFIGURATION (user has already selected these in the wizard):
+Template: ${wizardContext.templateName || 'Custom'} (${wizardContext.templateRole || 'Custom role'})
 Triggers: ${triggerList || 'none configured'}
 Connections: ${connList || 'none configured'}
 Capabilities: ${capList || 'none configured'}
 
 Use this context to generate a workflow that aligns with the user's existing configuration. Reference the triggers, connections, and capabilities they've already selected.`;
+
+      // Add template-specific guidance for new workflow creation
+      if (wizardContext.isNewWorkflow) {
+        const templateGuidance: Record<string, string> = {
+          'Sales & Events Agent': `This is a Sales & Events agent. When helping build a new workflow, ask about:
+- What triggers this workflow? (new inquiry, follow-up, contract stage, post-event?)
+- What type of events does this cover? (weddings, corporate, conferences, social?)
+- What's the desired response time?
+- Should this workflow handle any specific conditions? (high-value events, returning clients, specific channels?)
+- What systems need to be checked? (PMS availability, CRM history, calendar?)
+- What's the handoff point to human staff?`,
+          'Front Desk Agent': `This is a Front Desk agent. When helping build a new workflow, ask about:
+- What triggers this workflow? (guest call, walk-in request, service issue?)
+- What types of requests should this handle? (information, room changes, complaints, amenities?)
+- Should it check guest identity or reservation before responding?
+- When should it escalate to a manager vs handle independently?
+- What follow-up actions are needed after resolution?`,
+          'Reservations Agent': `This is a Reservations agent. When helping build a new workflow, ask about:
+- What triggers this workflow? (new booking request, modification, cancellation?)
+- What channels does this cover? (phone, email, OTA, website?)
+- What availability checks are needed? (room type, dates, rate codes?)
+- What confirmation actions are required? (email, SMS, payment capture?)
+- When should it offer alternatives vs decline?`,
+        };
+
+        const guidance = templateGuidance[wizardContext.templateName || ''] || `When helping build a new workflow, start by asking:
+- What should trigger this workflow?
+- What is the expected outcome?
+- What steps should happen in between?
+- Are there any conditions or variations to handle?`;
+
+        systemPrompt += `\n\nNEW WORKFLOW MODE: The user is creating a brand new workflow from scratch. Be GUIDED and CONVERSATIONAL:
+1. Start by asking what this workflow should do and what triggers it
+2. Ask 2-3 focused clarifying questions based on their response (don't ask everything at once)
+3. Once you have enough context, generate the workflow
+4. Keep it focused — 3-6 steps is ideal for a new workflow
+
+${guidance}
+
+Remember: Ask questions BEFORE generating. Don't generate a full workflow from a vague description — gather requirements first.`;
+      }
     }
 
     // Add existing agent context

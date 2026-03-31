@@ -1,8 +1,10 @@
 'use client';
 
 /**
- * DeployModal — Confirmation modal before deploying an agent.
- * Shows a brief animation and confirms the agent will go live.
+ * DeployModal — Two-phase deployment confirmation.
+ *
+ * Phase 1: Standard confirmation modal (title, description, Cancel/Deploy buttons)
+ * Phase 2: Animated deployment state with rocket animation, progress bar, success
  */
 
 import React, { useState, useEffect } from 'react';
@@ -12,7 +14,6 @@ import {
   CanaryButton,
   CanaryModal,
   ButtonType,
-  colors,
 } from '@canary-ui/components';
 import { useAgentStore } from '@/lib/products/agents/store';
 
@@ -22,116 +23,137 @@ export default function DeployModal() {
   const deployAgent = useAgentStore((s) => s.deployAgent);
   const agentName = useAgentStore((s) => s.agentName);
 
-  const [isDeploying, setIsDeploying] = useState(false);
-  const [isDeployed, setIsDeployed] = useState(false);
+  const [phase, setPhase] = useState<'confirm' | 'deploying' | 'deployed'>('confirm');
 
   useEffect(() => {
-    if (!showDeployModal) {
-      setIsDeploying(false);
-      setIsDeployed(false);
-    }
+    if (!showDeployModal) setPhase('confirm');
   }, [showDeployModal]);
 
   const handleDeploy = () => {
-    setIsDeploying(true);
-    // Simulate deployment animation
+    setPhase('deploying');
     setTimeout(() => {
-      setIsDeploying(false);
-      setIsDeployed(true);
+      setPhase('deployed');
       setTimeout(() => {
         deployAgent();
         setShowDeployModal(false);
       }, 1500);
-    }, 2000);
+    }, 2500);
   };
 
-  return (
-    <CanaryModal
-      isOpen={showDeployModal}
-      onClose={() => setShowDeployModal(false)}
-      size="small"
-    >
-      <div style={{ textAlign: 'center', padding: '24px 16px' }}>
-        {/* Icon with animation */}
-        <div
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: '50%',
-            backgroundColor: isDeployed ? '#e8f5e9' : colors.colorBlueDark5,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 20px',
-            transition: 'all 0.5s ease',
-            transform: isDeploying ? 'scale(1.1)' : 'scale(1)',
-          }}
-        >
-          <Icon
-            path={isDeployed ? mdiCheckCircleOutline : mdiRocketLaunchOutline}
-            size={1.5}
-            color={isDeployed ? '#4caf50' : colors.colorBlueDark1}
-            style={{
-              transition: 'all 0.3s ease',
-              animation: isDeploying ? 'deployPulse 0.8s ease-in-out infinite' : 'none',
-            }}
-          />
-        </div>
-
-        <h2 style={{ fontSize: 18, fontWeight: 500, color: colors.colorBlack1, margin: '0 0 8px 0' }}>
-          {isDeployed
-            ? `${agentName || 'Agent'} is live!`
-            : isDeploying
-              ? 'Deploying...'
-              : `Deploy ${agentName || 'Agent'}?`}
-        </h2>
-
-        <p style={{ fontSize: 14, color: colors.colorBlack3, margin: '0 0 24px 0', lineHeight: '20px' }}>
-          {isDeployed
-            ? 'Your agent is now active and ready to handle inquiries.'
-            : isDeploying
-              ? 'Setting up your agent and connecting to your systems...'
-              : 'Your agent will go live and start handling inquiries immediately.'}
-        </p>
-
-        {!isDeploying && !isDeployed && (
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <CanaryButton type={ButtonType.OUTLINED} onClick={() => setShowDeployModal(false)}>
+  // Phase 1: Standard confirmation
+  if (phase === 'confirm') {
+    return (
+      <CanaryModal
+        isOpen={showDeployModal}
+        onClose={() => setShowDeployModal(false)}
+        title={`Deploy ${agentName || 'Agent'}?`}
+        size="small"
+        closeOnOverlayClick
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <CanaryButton type={ButtonType.TEXT} onClick={() => setShowDeployModal(false)}>
               Cancel
             </CanaryButton>
             <CanaryButton type={ButtonType.PRIMARY} onClick={handleDeploy}>
               Deploy Now
             </CanaryButton>
           </div>
-        )}
+        }
+      >
+        <p style={{ fontSize: 14, color: '#666', margin: 0, lineHeight: '22px' }}>
+          Your agent will go live and start handling inquiries immediately.
+        </p>
+      </CanaryModal>
+    );
+  }
 
-        {/* Loading animation */}
-        {isDeploying && (
+  // Phase 2 & 3: Deploying animation / Deployed success
+  return (
+    <CanaryModal
+      isOpen={showDeployModal}
+      onClose={() => {}}
+      size="small"
+      showCloseButton={false}
+    >
+      <div style={{ textAlign: 'center', padding: '40px 16px' }}>
+        {/* Animated rocket / checkmark */}
+        <div
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            backgroundColor: phase === 'deployed' ? '#CCE6D9' : '#EAEEF9',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 24px',
+            transition: 'background-color 0.5s ease',
+          }}
+        >
+          {phase === 'deployed' ? (
+            <Icon
+              path={mdiCheckCircleOutline}
+              size={2}
+              color="#008040"
+              style={{ animation: 'deployCheckIn 0.5s ease-out' }}
+            />
+          ) : (
+            <Icon
+              path={mdiRocketLaunchOutline}
+              size={2}
+              color="#2858C4"
+              style={{ animation: 'deployRocketLaunch 2.5s ease-in-out infinite' }}
+            />
+          )}
+        </div>
+
+        <h2 style={{ fontSize: 18, fontWeight: 500, color: '#000', margin: '0 0 8px 0' }}>
+          {phase === 'deployed'
+            ? `${agentName || 'Agent'} is live!`
+            : `Deploying ${agentName || 'Agent'}...`}
+        </h2>
+
+        <p style={{ fontSize: 14, color: '#666', margin: 0, lineHeight: '22px' }}>
+          {phase === 'deployed'
+            ? 'Your agent is now active and ready to handle inquiries.'
+            : 'Setting up your agent and connecting to your systems...'}
+        </p>
+
+        {/* Progress bar */}
+        {phase === 'deploying' && (
           <div
             style={{
-              width: 120,
+              width: 160,
               height: 4,
-              backgroundColor: colors.colorBlack6,
+              backgroundColor: '#E5E5E5',
               borderRadius: 2,
-              margin: '0 auto',
+              margin: '24px auto 0',
               overflow: 'hidden',
             }}
           >
             <div
               style={{
                 height: '100%',
-                backgroundColor: colors.colorBlueDark1,
+                backgroundColor: '#2858C4',
                 borderRadius: 2,
-                animation: 'deployProgress 2s ease-out forwards',
+                animation: 'deployProgress 2.5s ease-out forwards',
               }}
             />
           </div>
         )}
 
         <style>{`
-          @keyframes deployPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15); }
+          @keyframes deployRocketLaunch {
+            0% { transform: translateY(0) rotate(-5deg); }
+            25% { transform: translateY(-6px) rotate(0deg); }
+            50% { transform: translateY(-2px) rotate(5deg); }
+            75% { transform: translateY(-8px) rotate(0deg); }
+            100% { transform: translateY(0) rotate(-5deg); }
+          }
+          @keyframes deployCheckIn {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
           }
           @keyframes deployProgress {
             from { width: 0%; }

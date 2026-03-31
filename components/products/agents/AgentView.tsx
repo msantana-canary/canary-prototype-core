@@ -4,7 +4,7 @@
  * AgentView — Slide-over detail/edit view for an existing deployed agent.
  *
  * 5 tabs: Overview, Agent Profile, Capabilities, Workflows, Connectors.
- * Right panel: persistent chat for agent interaction.
+ * Right panel: persistent AgentChat for agent interaction.
  * Slides in from right (same pattern as CheckInDetailPanel).
  * Matches Figma node 101-15204.
  */
@@ -16,18 +16,18 @@ import {
   CanaryButton,
   CanaryTabs,
   ButtonType,
-  colors,
 } from '@canary-ui/components';
 import { useAgentStore } from '@/lib/products/agents/store';
 import type { AgentViewTab } from '@/lib/products/agents/types';
 import OverviewTab from './OverviewTab';
+import AgentChat from './AgentChat';
 
 const TABS: { id: AgentViewTab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
-  { id: 'profile', label: 'Agent Type' },
+  { id: 'profile', label: 'Agent Profile' },
   { id: 'capabilities', label: 'Capabilities' },
-  { id: 'workflows', label: 'Workflows' },
   { id: 'connectors', label: 'Connectors' },
+  { id: 'workflows', label: 'Workflows' },
 ];
 
 export default function AgentView() {
@@ -55,7 +55,9 @@ export default function AgentView() {
     setTimeout(() => goBack(), 500);
   };
 
-  const activeTabIdx = TABS.findIndex((t) => t.id === editAgentTab);
+  const handleTabSwitch = (tab: AgentViewTab) => {
+    setEditAgentTab(tab);
+  };
 
   const renderTabContent = () => {
     switch (editAgentTab) {
@@ -81,44 +83,37 @@ export default function AgentView() {
         transform: animateIn ? 'translateX(0)' : 'translateX(100%)',
       }}
     >
-      {/* Header */}
+      {/* Header — matches wizard header pattern */}
       <div
-        className="flex items-center justify-between shrink-0"
-        style={{ padding: '16px 24px', borderBottom: `1px solid ${colors.colorBlack6}` }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 24px',
+          borderBottom: '1px solid #E5E5E5',
+          flexShrink: 0,
+        }}
       >
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleBack}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: colors.colorBlack3,
-              fontSize: 14,
-              padding: '4px 0',
-            }}
-          >
-            <Icon path={mdiArrowLeft} size={0.7} />
-            Back
-          </button>
-          <h1 style={{ fontSize: 18, fontWeight: 500, color: colors.colorBlack1, margin: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <CanaryButton type={ButtonType.TEXT} onClick={handleBack}>
+            <Icon path={mdiArrowLeft} size={0.83} />
+          </CanaryButton>
+          <h1 style={{ fontSize: 18, fontWeight: 500, lineHeight: '28px', color: '#000', margin: 0 }}>
             {agent.name}
           </h1>
         </div>
-        <div className="flex items-center gap-2">
-          <CanaryButton type={ButtonType.OUTLINED}>Save Draft</CanaryButton>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <CanaryButton type={ButtonType.SHADED}>Save Draft</CanaryButton>
           <CanaryButton type={ButtonType.PRIMARY}>Next</CanaryButton>
         </div>
       </div>
 
-      {/* Tabs + Content area */}
+      {/* Tabs + Content + Chat */}
       <div className="flex flex-1 overflow-hidden">
         {/* Main content with tabs */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div style={{ padding: '0 24px', borderBottom: `1px solid ${colors.colorBlack6}` }}>
+          {/* Tab bar */}
+          <div style={{ padding: '0 24px', borderBottom: '1px solid #E5E5E5', backgroundColor: '#fff' }}>
             <CanaryTabs
               variant="text"
               defaultTab={editAgentTab}
@@ -131,94 +126,58 @@ export default function AgentView() {
               }))}
             />
           </div>
-          <div className="flex-1 overflow-y-auto" style={{ padding: '24px 32px' }}>
+          {/* Tab content — #FAFAFA bg */}
+          <div className="flex-1 overflow-y-auto" style={{ padding: 24, background: '#FAFAFA' }}>
             {renderTabContent()}
           </div>
         </div>
 
-        {/* Right chat panel */}
+        {/* Right chat panel — 400px, white bg */}
         <div
           className="shrink-0 flex flex-col overflow-hidden"
           style={{
-            width: 320,
-            borderLeft: `1px solid ${colors.colorBlack6}`,
-            background: '#fafafa',
+            width: 400,
+            borderLeft: '1px solid #E5E5E5',
+            background: '#fff',
           }}
         >
-          {/* Chat header */}
+          {/* Chat header — sticky */}
           <div
             style={{
-              padding: '16px',
-              borderBottom: `1px solid ${colors.colorBlack6}`,
               display: 'flex',
               alignItems: 'center',
               gap: 8,
+              padding: '8px 24px',
+              borderBottom: '1px solid #E5E5E5',
+              flexShrink: 0,
             }}
           >
             <div
               style={{
-                width: 28,
-                height: 28,
+                width: 40,
+                height: 40,
                 borderRadius: '50%',
-                backgroundColor: colors.colorBlack5,
+                backgroundColor: '#E5E5E5',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
-              <Icon path={mdiChatOutline} size={0.6} color={colors.colorBlack2} />
+              <Icon path={mdiChatOutline} size={1} color="#000" />
             </div>
-            <span style={{ fontSize: 14, fontWeight: 500, color: colors.colorBlack1 }}>
+            <span style={{ fontSize: 16, fontWeight: 500, lineHeight: '24px', color: '#000' }}>
               Chat with {agent.name}
             </span>
           </div>
 
-          {/* Chat body placeholder */}
-          <div className="flex-1 overflow-y-auto" style={{ padding: 16 }}>
-            <div
-              style={{
-                padding: '10px 14px',
-                borderRadius: '12px 12px 12px 4px',
-                backgroundColor: colors.colorBlueDark5,
-                fontSize: 13,
-                color: colors.colorBlack1,
-                lineHeight: '18px',
-              }}
-            >
-              Ask me anything about this agent — how it&apos;s performing, what to change, or check on specific inquiries.
-            </div>
-          </div>
-
-          {/* Chat input */}
-          <div style={{ padding: '12px 16px', borderTop: `1px solid ${colors.colorBlack6}` }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                placeholder="Ask about this agent..."
-                style={{
-                  flex: 1,
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  border: `1px solid ${colors.colorBlack6}`,
-                  fontSize: 13,
-                  outline: 'none',
-                  fontFamily: 'var(--font-roboto), sans-serif',
-                }}
-              />
-              <button
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: 8,
-                  backgroundColor: colors.colorBlueDark1,
-                  color: '#fff',
-                  border: 'none',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                }}
-              >
-                Send
-              </button>
-            </div>
+          {/* AgentChat — real, wired to Claude API */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <AgentChat
+              onTabSwitch={handleTabSwitch}
+              existingAgent={agent}
+              sidebar
+            />
           </div>
         </div>
       </div>

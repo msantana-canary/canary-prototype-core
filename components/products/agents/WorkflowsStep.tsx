@@ -65,7 +65,7 @@ export default function WorkflowsStep() {
           <Icon path={mdiArrowLeft} size={0.83} />
         </CanaryButton>
         <span style={{ fontSize: 16, fontWeight: 500, lineHeight: '24px', color: '#000', padding: '4px' }}>
-          {workflowName ? 'Edit Workflow' : 'Create New Workflow'}
+          {currentWorkflow && currentWorkflow.steps.length > 0 ? 'Edit Workflow' : 'Create New Workflow'}
         </span>
       </div>
 

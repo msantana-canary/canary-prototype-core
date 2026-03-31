@@ -20,11 +20,11 @@ import {
   ButtonSize,
 } from '@canary-ui/components';
 import { useAgentStore } from '@/lib/products/agents/store';
-import type { AgentWorkflow } from '@/lib/products/agents/types';
 
 export default function WorkflowOverview() {
   const workflows = useAgentStore((s) => s.wizardWorkflows);
   const selectWorkflow = useAgentStore((s) => s.selectWorkflow);
+  const createNewWorkflow = useAgentStore((s) => s.createNewWorkflow);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -108,6 +108,7 @@ export default function WorkflowOverview() {
         {/* Create new Workflow card */}
         <div
           className="cap-add-card"
+          onClick={createNewWorkflow}
           style={{
             border: '1px dashed #93ABE1',
             borderRadius: 4,

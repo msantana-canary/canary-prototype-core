@@ -90,14 +90,23 @@ export default function AgentChat({ onTabSwitch, existingAgent, sidebar }: Agent
     if (seededWorkflowRef.current === currentWorkflow.id) return;
     seededWorkflowRef.current = currentWorkflow.id;
 
-    const name = currentWorkflow.name || 'this workflow';
+    const name = currentWorkflow.name || '';
     const stepCount = currentWorkflow.steps.length;
+    const isNew = stepCount === 0;
     const hasConditions = currentWorkflow.steps.some((s) => s.conditions && s.conditions.length > 0);
 
-    addBuilderMessage({
-      role: 'assistant',
-      content: `You're viewing **${name}** — a ${stepCount}-step workflow.${hasConditions ? ' It includes conditional logic for handling different scenarios at key steps.' : ''}\n\nIf you'd like to make changes — add a step, modify conditions, or adjust the flow — just describe what you need.`,
-    });
+    if (isNew) {
+      const templateName = wizardTemplate?.name || 'your agent';
+      addBuilderMessage({
+        role: 'assistant',
+        content: `Let's build a new workflow for your **${templateName}**.\n\nTo get started, tell me:\n- What should trigger this workflow?\n- What's the goal or expected outcome?\n- Are there any specific steps or conditions you already have in mind?\n\nDescribe what you need and I'll create the workflow for you.`,
+      });
+    } else {
+      addBuilderMessage({
+        role: 'assistant',
+        content: `You're viewing **${name}** — a ${stepCount}-step workflow.${hasConditions ? ' It includes conditional logic for handling different scenarios at key steps.' : ''}\n\nIf you'd like to make changes — add a step, modify conditions, or adjust the flow — just describe what you need.`,
+      });
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sidebar, currentWorkflow?.id]);
 
@@ -152,11 +161,15 @@ export default function AgentChat({ onTabSwitch, existingAgent, sidebar }: Agent
       try {
         const freshState = useAgentStore.getState();
 
-        // Build wizard context for the API
+        // Build wizard context for the API — includes template info for guided questions
+        const isNewWorkflow = freshState.currentWorkflow === null || freshState.currentWorkflow.steps.length === 0;
         const wizardContext = {
           triggers: freshState.wizardTriggers,
           connections: freshState.wizardConnections,
           capabilities: freshState.wizardCapabilities,
+          templateName: freshState.wizardTemplate?.name,
+          templateRole: freshState.wizardTemplate?.role,
+          isNewWorkflow,
         };
 
         const result = await generateAgentWorkflow(

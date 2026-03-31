@@ -137,6 +137,7 @@ interface AgentStoreState {
   setWizardWorkflows: (workflows: AgentWorkflow[]) => void;
   selectWorkflow: (id: string | null) => void;
   addWorkflow: (workflow: AgentWorkflow) => void;
+  createNewWorkflow: () => void;
 
   // Deploy + reset
   resetBuilder: () => void;
@@ -373,6 +374,22 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
     if (wf) set({ selectedWorkflowId: id, currentWorkflow: wf });
   },
   addWorkflow: (workflow) => set((s) => ({ wizardWorkflows: [...s.wizardWorkflows, workflow] })),
+  createNewWorkflow: () => {
+    const newWf: AgentWorkflow = {
+      id: `wf-${Date.now()}`,
+      name: '',
+      description: '',
+      trigger: '',
+      steps: [],
+      guardrails: [],
+    };
+    set((s) => ({
+      wizardWorkflows: [...s.wizardWorkflows, newWf],
+      selectedWorkflowId: newWf.id,
+      currentWorkflow: newWf,
+      builderMessages: [],
+    }));
+  },
 
   resetBuilder: () => set(initialWizardState),
 
