@@ -238,7 +238,7 @@ const alexWorkflow: AgentWorkflow = {
   ],
   guardrails: [
     'Never provide room numbers or guest names to unverified callers.',
-    'Always offer to transfer to a human agent if the guest requests it.',
+    'Always offer to transfer to a staff member if the guest requests it.',
     'Do not process payments or refunds — transfer to front desk.',
   ],
 };
@@ -325,7 +325,7 @@ const avaWorkflow: AgentWorkflow = {
   guardrails: [
     'Never promise rates that are not available in the booking engine.',
     'Do not collect credit card details in the chat — redirect to the secure booking page.',
-    'Offer to connect with a human agent after 3 unresolved exchanges.',
+    'Offer to connect with a staff member after 3 unresolved exchanges.',
   ],
 };
 
@@ -686,7 +686,7 @@ const templateFrontDesk: AgentTemplate = {
     ],
     guardrails: [
       'Verify caller identity before sharing reservation details.',
-      'Always offer human assistance when unsure.',
+      'Always offer staff assistance when unsure.',
     ],
   },
   defaultTone: 'Natural',
@@ -862,7 +862,7 @@ const templateVoiceAI: AgentTemplate = {
     ],
     guardrails: [
       'Never provide room numbers to unverified callers.',
-      'Always offer to transfer to a human when the guest asks.',
+      'Always offer to transfer to a staff member when the guest asks.',
       'Keep hold time under 30 seconds before offering a callback.',
     ],
   },

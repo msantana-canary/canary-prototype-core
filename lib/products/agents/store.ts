@@ -367,11 +367,11 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
   setWizardWorkflows: (workflows) => set({ wizardWorkflows: workflows }),
   selectWorkflow: (id) => {
     if (id === null) {
-      set({ selectedWorkflowId: null, currentWorkflow: null });
+      set({ selectedWorkflowId: null, currentWorkflow: null, builderMessages: [] });
       return;
     }
     const wf = get().wizardWorkflows.find((w) => w.id === id);
-    if (wf) set({ selectedWorkflowId: id, currentWorkflow: wf });
+    if (wf) set({ selectedWorkflowId: id, currentWorkflow: wf, builderMessages: [] });
   },
   addWorkflow: (workflow) => set((s) => ({ wizardWorkflows: [...s.wizardWorkflows, workflow] })),
   createNewWorkflow: () => {

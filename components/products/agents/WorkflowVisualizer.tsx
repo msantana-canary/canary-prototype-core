@@ -159,13 +159,16 @@ export default function WorkflowVisualizer({ workflow, isAnimating }: WorkflowVi
                 flexDirection: 'column',
                 gap: step.conditions && step.conditions.length > 0 ? 8 : 0,
                 opacity: isAnimating ? 0 : 1,
-                animation: isAnimating
-                  ? 'wfFadeIn 0.4s ease-out forwards'
+                animationName: isAnimating
+                  ? 'wfFadeIn'
                   : isNewStep
-                    ? 'wfFadeIn 0.4s ease-out, wfHighlight 3s ease-out'
+                    ? 'wfFadeIn, wfHighlight'
                     : stepHighlighted
-                      ? 'wfHighlight 3s ease-out'
+                      ? 'wfHighlight'
                       : undefined,
+                animationDuration: isAnimating ? '0.4s' : isNewStep ? '0.4s, 3s' : stepHighlighted ? '3s' : undefined,
+                animationTimingFunction: 'ease-out',
+                animationFillMode: isAnimating ? 'forwards' : undefined,
                 animationDelay: isAnimating ? `${i * 0.12}s` : undefined,
                 transition: 'border-color 0.3s ease',
               }}
@@ -194,7 +197,9 @@ export default function WorkflowVisualizer({ workflow, isAnimating }: WorkflowVi
                     flexDirection: 'column',
                     gap: 4,
                     overflow: 'hidden',
-                    animation: hasChangedConds ? 'wfHighlight 3s ease-out' : undefined,
+                    animationName: hasChangedConds ? 'wfHighlight' : undefined,
+                    animationDuration: hasChangedConds ? '3s' : undefined,
+                    animationTimingFunction: 'ease-out',
                     transition: 'border-color 0.3s ease',
                   }}
                 >

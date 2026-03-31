@@ -25,7 +25,7 @@ AVAILABLE WORKFLOW NODE TYPES:
 - action: An action the agent performs (e.g., "Check event space availability")
 - condition: A decision point (e.g., "Is inquiry urgent?")
 - response: Agent sends a message (e.g., "Send availability response with CTA")
-- handoff: Escalate to human staff (e.g., "Transfer to sales manager")
+- handoff: Escalate to staff (e.g., "Transfer to sales manager")
 
 AVAILABLE CANARY PRODUCTS (capabilities the agent can use):
 - Messages: Guest messaging across SMS, WhatsApp, and OTA channels
@@ -168,7 +168,7 @@ Use this context to generate a workflow that aligns with the user's existing con
 - What's the desired response time?
 - Should this workflow handle any specific conditions? (high-value events, returning clients, specific channels?)
 - What systems need to be checked? (PMS availability, CRM history, calendar?)
-- What's the handoff point to human staff?`,
+- When should this escalate to hotel staff?`,
           'Front Desk Agent': `This is a Front Desk agent. When helping build a new workflow, ask about:
 - What triggers this workflow? (guest call, walk-in request, service issue?)
 - What types of requests should this handle? (information, room changes, complaints, amenities?)
@@ -191,8 +191,8 @@ Use this context to generate a workflow that aligns with the user's existing con
 
         systemPrompt += `\n\nNEW WORKFLOW MODE: The user is creating a brand new workflow from scratch. Be GUIDED and CONVERSATIONAL:
 1. Start by asking what this workflow should do and what triggers it
-2. Ask 2-3 focused clarifying questions based on their response (don't ask everything at once)
-3. Once you have enough context, generate the workflow
+2. Ask EXACTLY 2 focused clarifying questions per response — no more. Keep them short and specific. If you say "let me ask two more questions" then ask exactly two, not three.
+3. Once you have enough context (usually after 1-2 rounds of questions), generate the workflow
 4. Keep it focused — 3-6 steps is ideal for a new workflow
 
 ${guidance}
@@ -315,5 +315,37 @@ function parseJsonResponse(text: string): AgentBuilderResponse {
       workflow: { trigger: '', steps: [], guardrails: [] },
       connections: [],
     };
+  }
+}
+
+/**
+ * Generate a short description for a workflow based on its steps.
+ * Used when saving a new workflow to populate the overview tile.
+ */
+export async function generateWorkflowDescription(workflow: AgentWorkflow): Promise<string> {
+  try {
+    const stepsText = workflow.steps
+      .map((s, i) => `Step ${i + 1}: ${s.label} — ${s.description}`)
+      .join('\n');
+
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 100,
+      messages: [
+        {
+          role: 'user',
+          content: `Write a 1-sentence description (under 25 words) for this hotel agent workflow. No quotes, no markdown, just the sentence.\n\nWorkflow: ${workflow.name || 'Untitled'}\nTrigger: ${workflow.trigger}\nSteps:\n${stepsText}`,
+        },
+      ],
+    });
+
+    const textBlock = response.content.find((block) => block.type === 'text');
+    if (textBlock && textBlock.type === 'text') {
+      return textBlock.text.trim();
+    }
+    return '';
+  } catch (error) {
+    console.error('Failed to generate workflow description:', error);
+    return '';
   }
 }

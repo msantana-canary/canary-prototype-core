@@ -24,6 +24,7 @@ import type { AgentViewTab } from '@/lib/products/agents/types';
 import WorkflowVisualizer from './WorkflowVisualizer';
 import WorkflowOverview from './WorkflowOverview';
 import AgentChat from './AgentChat';
+import { generateWorkflowDescription } from '@/lib/products/agents/services/agent-builder-api';
 
 export default function WorkflowsStep() {
   const selectedWorkflowId = useAgentStore((s) => s.selectedWorkflowId);
@@ -31,6 +32,7 @@ export default function WorkflowsStep() {
   const selectWorkflow = useAgentStore((s) => s.selectWorkflow);
   const wizardWorkflows = useAgentStore((s) => s.wizardWorkflows);
   const setWizardWorkflows = useAgentStore((s) => s.setWizardWorkflows);
+  const setBuilderWorkflow = useAgentStore((s) => s.setBuilderWorkflow);
 
   // No workflow selected — show overview grid
   if (!selectedWorkflowId) {
@@ -39,34 +41,61 @@ export default function WorkflowsStep() {
 
   // Workflow selected — show detail with header + editable name + steps
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
     const updated = wizardWorkflows.map((wf) =>
-      wf.id === selectedWorkflowId ? { ...wf, name: e.target.value } : wf
+      wf.id === selectedWorkflowId ? { ...wf, name: newName } : wf
     );
     setWizardWorkflows(updated);
+    // Also update currentWorkflow so the input reflects the change
+    if (currentWorkflow) {
+      setBuilderWorkflow({ ...currentWorkflow, name: newName });
+    }
   };
 
   const workflowName = currentWorkflow?.name || '';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', margin: '-24px' }}>
-      {/* Header bar — back arrow + title, white bg, border-bottom */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', margin: '-24px', overflow: 'hidden' }}>
+      {/* Header bar — matches sidebar height: padding 8px 24px */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 0,
+          justifyContent: 'space-between',
           padding: '8px 24px',
           backgroundColor: '#fff',
           borderBottom: '1px solid #E5E5E5',
           flexShrink: 0,
+          minHeight: 56,
         }}
       >
-        <CanaryButton type={ButtonType.TEXT} onClick={() => selectWorkflow(null)}>
-          <Icon path={mdiArrowLeft} size={0.83} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+          <CanaryButton type={ButtonType.TEXT} onClick={() => selectWorkflow(null)}>
+            <Icon path={mdiArrowLeft} size={0.83} />
+          </CanaryButton>
+          <span style={{ fontSize: 16, fontWeight: 500, lineHeight: '24px', color: '#000', padding: '4px' }}>
+            {currentWorkflow && currentWorkflow.steps.length > 0 ? 'Edit Workflow' : 'Create New Workflow'}
+          </span>
+        </div>
+        <CanaryButton
+          type={ButtonType.PRIMARY}
+          onClick={async () => {
+            if (currentWorkflow && selectedWorkflowId) {
+              // Generate description if missing and workflow has steps
+              let description = currentWorkflow.description || '';
+              if (!description && currentWorkflow.steps.length > 0) {
+                description = await generateWorkflowDescription(currentWorkflow);
+              }
+              const updated = wizardWorkflows.map((wf) =>
+                wf.id === selectedWorkflowId ? { ...currentWorkflow, description } : wf
+              );
+              setWizardWorkflows(updated);
+            }
+            selectWorkflow(null);
+          }}
+        >
+          Save
         </CanaryButton>
-        <span style={{ fontSize: 16, fontWeight: 500, lineHeight: '24px', color: '#000', padding: '4px' }}>
-          {currentWorkflow && currentWorkflow.steps.length > 0 ? 'Edit Workflow' : 'Create New Workflow'}
-        </span>
       </div>
 
       {/* Scrollable content */}
@@ -107,7 +136,7 @@ export function WorkflowsSidebar() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Sticky header */}
+      {/* Sticky header — minHeight matches left panel header */}
       <div
         style={{
           position: 'sticky',
@@ -117,8 +146,9 @@ export function WorkflowsSidebar() {
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          padding: '16px 24px',
+          padding: '8px 24px',
           borderBottom: '1px solid #E5E5E5',
+          minHeight: 56,
         }}
       >
         <div

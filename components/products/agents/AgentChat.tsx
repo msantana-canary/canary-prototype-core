@@ -53,8 +53,31 @@ const TEMPLATE_CHIP_MAP: Record<string, string[]> = {
   'No-Show Prevention Agent': ['Set outreach schedule', 'Add SMS follow-up', 'Configure charge rules'],
 };
 
-function getTemplateChips(templateName: string): string[] {
-  return TEMPLATE_CHIP_MAP[templateName] ?? ['Customize the workflow', 'Add a new capability', 'Modify the guardrails'];
+// Per-workflow chips — contextual to the specific workflow being edited
+const WORKFLOW_CHIP_MAP: Record<string, string[]> = {
+  'Sales Inquiry Response': ['Add urgency detection for events within 7 days', 'Include site visit scheduling', 'Add budget-based response tiers'],
+  'Cold Lead Follow-up': ['Change follow-up interval to 72 hours', 'Add re-engagement discount offer', 'Include win-back email template'],
+  'Post-Meeting Contract Prep': ['Add BEO (banquet event order) generation', 'Include attrition clause conditions', 'Add multi-signer routing'],
+};
+
+// Chips for creating a brand new workflow
+const NEW_WORKFLOW_CHIPS: Record<string, string[]> = {
+  'Sales & Events Agent': ['Build a rebooking outreach workflow', 'Create a post-event feedback collector', 'Set up a contract renewal reminder'],
+  'Front Desk Agent': ['Build a late checkout request handler', 'Create a VIP arrival preparation workflow', 'Set up a noise complaint resolution flow'],
+  'Guest Messaging Agent': ['Build an FAQ auto-responder', 'Create a check-in reminder sequence', 'Set up a post-stay review request'],
+};
+
+function getWorkflowChips(workflowName: string | undefined, templateName: string | undefined, isNew: boolean): string[] {
+  if (isNew && templateName) {
+    return NEW_WORKFLOW_CHIPS[templateName] ?? ['Describe the trigger for this workflow', 'What should happen when it runs?', 'What conditions should it handle?'];
+  }
+  if (workflowName && WORKFLOW_CHIP_MAP[workflowName]) {
+    return WORKFLOW_CHIP_MAP[workflowName];
+  }
+  if (templateName) {
+    return TEMPLATE_CHIP_MAP[templateName] ?? ['Customize the workflow', 'Add a new step', 'Modify conditions'];
+  }
+  return SCRATCH_CHIPS;
 }
 
 export default function AgentChat({ onTabSwitch, existingAgent, sidebar }: AgentChatProps) {
@@ -86,8 +109,10 @@ export default function AgentChat({ onTabSwitch, existingAgent, sidebar }: Agent
   const seededWorkflowRef = useRef<string | null>(null);
   useEffect(() => {
     if (!sidebar || !currentWorkflow?.id) return;
-    // Only seed once per workflow (reset when switching workflows)
+    // Only seed once per workflow — reset when switching
     if (seededWorkflowRef.current === currentWorkflow.id) return;
+    // If messages were cleared (workflow switch), allow re-seeding
+    if (builderMessages.length > 0) return;
     seededWorkflowRef.current = currentWorkflow.id;
 
     const name = currentWorkflow.name || '';
@@ -185,7 +210,13 @@ export default function AgentChat({ onTabSwitch, existingAgent, sidebar }: Agent
         }
 
         if (result.workflow && Array.isArray(result.workflow.steps) && result.workflow.steps.length > 0) {
-          setBuilderWorkflow(result.workflow);
+          // Preserve user's workflow name and id when AI updates steps
+          const current = useAgentStore.getState().currentWorkflow;
+          setBuilderWorkflow({
+            ...result.workflow,
+            id: current?.id || result.workflow.id,
+            name: current?.name || result.workflow.name,
+          });
           if (!existingAgent) {
             onTabSwitch('workflows', true);
           }
@@ -238,14 +269,17 @@ export default function AgentChat({ onTabSwitch, existingAgent, sidebar }: Agent
   const hasUserMessages = builderMessages.some((m) => m.role === 'user');
   const isExistingContext = !!existingAgent && !hasUserMessages;
 
+  const isNewWorkflow = sidebar && currentWorkflow && currentWorkflow.steps.length === 0;
   const chips = isExistingContext
     ? [
         `How is ${existingAgent.name} performing?`,
         'Show me the connections',
         'What are the guardrails?',
       ]
+    : sidebar
+    ? getWorkflowChips(currentWorkflow?.name || undefined, wizardTemplate?.name, !!isNewWorkflow)
     : wizardTemplate
-    ? getTemplateChips(wizardTemplate.name)
+    ? TEMPLATE_CHIP_MAP[wizardTemplate.name] ?? SCRATCH_CHIPS
     : SCRATCH_CHIPS;
 
   const headerSubtitle = existingAgent
@@ -432,19 +466,45 @@ function ChatBubble({ role, content }: { role: 'user' | 'assistant'; content: st
   const renderContent = (text: string) => {
     const lines = text.split('\n');
     const elements: React.ReactNode[] = [];
-    let currentList: { type: 'ul' | 'ol'; items: string[] } | null = null;
 
-    const flushList = () => {
-      if (!currentList) return;
-      const ListTag = currentList.type === 'ul' ? 'ul' : 'ol';
+    // Group lines into numbered sections with optional bullet sub-items
+    interface ListSection { title: string; subItems: string[] }
+    let numberedSections: ListSection[] = [];
+    let currentBullets: string[] = [];
+    let inNumberedList = false;
+
+    const flushNumbered = () => {
+      if (numberedSections.length === 0) return;
       elements.push(
-        <ListTag key={`list-${elements.length}`} style={{ margin: '4px 0', paddingLeft: 20, listStyle: currentList.type === 'ul' ? 'disc' : 'decimal' }}>
-          {currentList.items.map((item, i) => (
-            <li key={i} style={{ marginBottom: 2 }}>{renderInline(item, `li-${elements.length}-${i}`)}</li>
+        <ol key={`ol-${elements.length}`} style={{ margin: '4px 0', paddingLeft: 20, listStyle: 'decimal' }}>
+          {numberedSections.map((section, si) => (
+            <li key={si} style={{ marginBottom: section.subItems.length > 0 ? 8 : 2 }}>
+              {renderInline(section.title, `oli-${elements.length}-${si}`)}
+              {section.subItems.length > 0 && (
+                <ul style={{ margin: '4px 0', paddingLeft: 16, listStyle: 'disc' }}>
+                  {section.subItems.map((sub, subi) => (
+                    <li key={subi} style={{ marginBottom: 2 }}>{renderInline(sub, `sub-${elements.length}-${si}-${subi}`)}</li>
+                  ))}
+                </ul>
+              )}
+            </li>
           ))}
-        </ListTag>
+        </ol>
       );
-      currentList = null;
+      numberedSections = [];
+      inNumberedList = false;
+    };
+
+    const flushBullets = () => {
+      if (currentBullets.length === 0) return;
+      elements.push(
+        <ul key={`ul-${elements.length}`} style={{ margin: '4px 0', paddingLeft: 20, listStyle: 'disc' }}>
+          {currentBullets.map((item, i) => (
+            <li key={i} style={{ marginBottom: 2 }}>{renderInline(item, `uli-${elements.length}-${i}`)}</li>
+          ))}
+        </ul>
+      );
+      currentBullets = [];
     };
 
     for (let i = 0; i < lines.length; i++) {
@@ -452,22 +512,35 @@ function ChatBubble({ role, content }: { role: 'user' | 'assistant'; content: st
       const bulletMatch = line.match(/^[\s]*[-•]\s+(.*)/);
       const numberMatch = line.match(/^[\s]*(\d+)[.)]\s+(.*)/);
 
-      if (bulletMatch) {
-        if (!currentList || currentList.type !== 'ul') { flushList(); currentList = { type: 'ul', items: [] }; }
-        currentList.items.push(bulletMatch[1]);
-      } else if (numberMatch) {
-        if (!currentList || currentList.type !== 'ol') { flushList(); currentList = { type: 'ol', items: [] }; }
-        currentList.items.push(numberMatch[2]);
+      if (numberMatch) {
+        // Flush standalone bullets if any
+        if (!inNumberedList) flushBullets();
+        inNumberedList = true;
+        numberedSections.push({ title: numberMatch[2], subItems: [] });
+      } else if (bulletMatch && inNumberedList && numberedSections.length > 0) {
+        // Sub-bullet under a numbered item
+        numberedSections[numberedSections.length - 1].subItems.push(bulletMatch[1]);
+      } else if (bulletMatch) {
+        // Standalone bullet (not under a number)
+        flushNumbered();
+        currentBullets.push(bulletMatch[1]);
       } else {
-        flushList();
         if (line.trim() === '') {
-          elements.push(<div key={`br-${i}`} style={{ height: 8 }} />);
+          // Empty line — don't flush numbered lists (they often have blank lines between items)
+          // Only add spacing if we're NOT in the middle of a numbered list
+          if (!inNumberedList && currentBullets.length === 0) {
+            elements.push(<div key={`br-${i}`} style={{ height: 8 }} />);
+          }
         } else {
+          // Actual non-list text — flush everything
+          flushNumbered();
+          flushBullets();
           elements.push(<p key={`p-${i}`} style={{ margin: 0 }}>{renderInline(line, `p-${i}`)}</p>);
         }
       }
     }
-    flushList();
+    flushNumbered();
+    flushBullets();
     return elements;
   };
 
