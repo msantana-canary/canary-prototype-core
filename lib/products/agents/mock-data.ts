@@ -830,6 +830,17 @@ const serviceTicketAgent: Agent = {
       {
         id: 'st-s5',
         type: 'action',
+        label: 'Staff Review',
+        description: 'Staff reviews the recommended ticket and approves, rejects, or re-categorizes before it is created in the vendor system.',
+        conditions: [
+          { id: 'st-c10', condition: 'If approved', action: 'Create ticket in vendor system (Hotsos, Flexkeeping, etc.) and proceed to tracking' },
+          { id: 'st-c11', condition: 'If rejected — invalid request', action: 'Close recommendation and log reason' },
+          { id: 'st-c12', condition: 'If rejected — wrong category', action: 'Re-assess ticket type and resubmit recommendation to staff' },
+        ],
+      },
+      {
+        id: 'st-s6',
+        type: 'action',
         label: 'Track Resolution',
         description: 'Monitor ticket status from vendor system and send follow-up to guest when resolved.',
         conditions: [
@@ -873,6 +884,166 @@ const serviceTicketAgent: Agent = {
 // Replaces current Chat AI — multi-capability guest-facing agent.
 // ---------------------------------------------------------------------------
 
+// Front Desk individual workflows (one per capability)
+const fdWorkflowBooking: AgentWorkflow = {
+  id: 'wf-fd-booking',
+  name: 'Booking Request',
+  description: 'Handles new reservation requests — checks availability, presents options, processes booking, and sends confirmation.',
+  trigger: 'Booking Intent Detected',
+  triggerDescription: 'Guest asks about availability, rates, or wants to make a reservation.',
+  steps: [
+    { id: 'fdb-s1', type: 'action', label: 'Check Availability', description: 'Query PMS for room availability matching guest dates, room type, and guest count.',
+      conditions: [
+        { id: 'fdb-c1', condition: 'If rooms available', action: 'Present options with rates and descriptions' },
+        { id: 'fdb-c2', condition: 'If no availability for requested dates', action: 'Suggest alternative dates or nearby properties' },
+        { id: 'fdb-c3', condition: 'If webchat channel', action: 'Include interactive booking form widget' },
+      ],
+    },
+    { id: 'fdb-s2', type: 'response', label: 'Present Options', description: 'Show available rooms with rates, amenities, and booking links. Include photos on webchat.' },
+    { id: 'fdb-s3', type: 'action', label: 'Process Booking', description: 'Create the reservation in the PMS via booking gateway.',
+      conditions: [
+        { id: 'fdb-c4', condition: 'If booking succeeds', action: 'Generate confirmation with details' },
+        { id: 'fdb-c5', condition: 'If payment required upfront', action: 'Capture payment via payment gateway before confirming' },
+        { id: 'fdb-c6', condition: 'If booking fails', action: 'Apologize and suggest calling the front desk' },
+      ],
+    },
+    { id: 'fdb-s4', type: 'response', label: 'Send Confirmation', description: 'Send booking confirmation with confirmation number, dates, room type, and check-in instructions.' },
+  ],
+  guardrails: ['Never override published rates without manager approval.', 'Always include cancellation policy in booking confirmation.'],
+};
+
+const fdWorkflowFAQ: AgentWorkflow = {
+  id: 'wf-fd-faq',
+  name: 'FAQ & Information',
+  description: 'Answers guest questions about hotel facilities, policies, nearby places, and general inquiries using the knowledge base.',
+  trigger: 'Information Request Detected',
+  triggerDescription: 'Guest asks a question about the hotel, amenities, policies, or local area.',
+  steps: [
+    { id: 'fdf-s1', type: 'action', label: 'Search Knowledge Base', description: 'Query hotel knowledge base using semantic search to find the best matching answer.',
+      conditions: [
+        { id: 'fdf-c1', condition: 'If high-confidence match found', action: 'Use KB answer as response basis' },
+        { id: 'fdf-c2', condition: 'If question is about nearby places/restaurants', action: 'Search places database for recommendations' },
+        { id: 'fdf-c3', condition: 'If no match found', action: 'Generate best-effort response, flag for KB gap review' },
+      ],
+    },
+    { id: 'fdf-s2', type: 'response', label: 'Compose Answer', description: 'Generate a helpful, conversational response using KB content, tailored to the guest and channel.' },
+  ],
+  guardrails: ['Never fabricate information not in the knowledge base.', 'If unsure, say "let me check with the team" and escalate.'],
+};
+
+const fdWorkflowServiceTicket: AgentWorkflow = {
+  id: 'wf-fd-ticket',
+  name: 'Service Request',
+  description: 'Handles guest service requests — identifies issue, matches ticket type, acknowledges guest, and recommends ticket for staff approval.',
+  trigger: 'Service Request Detected',
+  triggerDescription: 'Guest reports an issue or requests a service (housekeeping, maintenance, amenities).',
+  steps: [
+    { id: 'fdt-s1', type: 'action', label: 'Identify Issue', description: 'Parse the service request and match against available ticket types via embedding search.',
+      conditions: [
+        { id: 'fdt-c1', condition: 'If clear match found', action: 'Use matched ticket type' },
+        { id: 'fdt-c2', condition: 'If ambiguous', action: 'Ask one clarifying question before proceeding' },
+        { id: 'fdt-c3', condition: 'If safety issue (leak, fire, lockout)', action: 'Skip ticket — escalate to staff immediately' },
+      ],
+    },
+    { id: 'fdt-s2', type: 'response', label: 'Acknowledge Guest', description: 'Confirm receipt of the request and provide estimated response time.' },
+    { id: 'fdt-s3', type: 'action', label: 'Create Recommended Ticket', description: 'Generate a recommended ticket with room, issue type, priority, and guest context for staff review.' },
+  ],
+  guardrails: ['Route safety issues directly to staff — do not create a ticket.', 'Never create duplicate tickets for the same room and issue.'],
+};
+
+const fdWorkflowUpsell: AgentWorkflow = {
+  id: 'wf-fd-upsell',
+  name: 'Upsell Offer',
+  description: 'Identifies upsell opportunities and presents room upgrades, early check-in, late checkout, and add-on offers to guests.',
+  trigger: 'Upsell Opportunity Detected',
+  triggerDescription: 'Guest mentions interest in upgrades, early arrival, late departure, or additional services.',
+  steps: [
+    { id: 'fdu-s1', type: 'action', label: 'Search Available Upsells', description: 'Query available upsell options based on guest reservation, room type, and dates.',
+      conditions: [
+        { id: 'fdu-c1', condition: 'If room upgrades available', action: 'Include upgrade options with price difference' },
+        { id: 'fdu-c2', condition: 'If early check-in or late checkout available', action: 'Include time-based options' },
+        { id: 'fdu-c3', condition: 'If no relevant upsells', action: 'Acknowledge request and suggest contacting front desk' },
+      ],
+    },
+    { id: 'fdu-s2', type: 'response', label: 'Present Offer', description: 'Show upsell options with pricing and benefits in a guest-friendly format.' },
+    { id: 'fdu-s3', type: 'action', label: 'Process Acceptance', description: 'If guest accepts, process the upsell — update reservation and capture payment if needed.',
+      conditions: [
+        { id: 'fdu-c4', condition: 'If accepted', action: 'Update reservation in PMS and confirm to guest' },
+        { id: 'fdu-c5', condition: 'If declined', action: 'Acknowledge gracefully, no follow-up' },
+      ],
+    },
+  ],
+  guardrails: ['Never push upsells to guests who have complained.', 'Respect guest preferences — no repeat offers for declined upsells.'],
+};
+
+const fdWorkflowCheckout: AgentWorkflow = {
+  id: 'wf-fd-checkout',
+  name: 'Guest Checkout',
+  description: 'Processes checkout requests — generates folio, handles disputes, and sends departure confirmation.',
+  trigger: 'Checkout Request Detected',
+  triggerDescription: 'Guest indicates they want to check out or asks about their bill.',
+  steps: [
+    { id: 'fdc-s1', type: 'action', label: 'Generate Folio', description: 'Pull the guest folio from PMS with all charges, taxes, and credits.' },
+    { id: 'fdc-s2', type: 'response', label: 'Send Folio', description: 'Send the itemized folio to the guest for review via their messaging channel.',
+      conditions: [
+        { id: 'fdc-c1', condition: 'If guest has outstanding balance', action: 'Include payment link with folio' },
+        { id: 'fdc-c2', condition: 'If balance is zero or pre-paid', action: 'Confirm no further charges needed' },
+      ],
+    },
+    { id: 'fdc-s3', type: 'action', label: 'Process Checkout', description: 'Mark the reservation as checked out in PMS. Release room for housekeeping.',
+      conditions: [
+        { id: 'fdc-c3', condition: 'If guest disputes a charge', action: 'Escalate to front desk — do not auto-resolve billing disputes' },
+        { id: 'fdc-c4', condition: 'If late checkout fee applies', action: 'Inform guest of fee before processing' },
+      ],
+    },
+    { id: 'fdc-s4', type: 'response', label: 'Departure Confirmation', description: 'Send thank-you message with feedback survey link and rebooking incentive.' },
+  ],
+  guardrails: ['Never adjust charges without staff approval.', 'Always include feedback survey in departure message.'],
+};
+
+const fdWorkflowSurvey: AgentWorkflow = {
+  id: 'wf-fd-survey',
+  name: 'Survey Response',
+  description: 'Processes guest survey responses — logs feedback, acknowledges the guest, and escalates negative reviews.',
+  trigger: 'Survey Response Received',
+  triggerDescription: 'Guest replies to a satisfaction survey sent during or after their stay.',
+  steps: [
+    { id: 'fds-s1', type: 'action', label: 'Log Response', description: 'Record the survey response with score, comments, and guest details.' },
+    { id: 'fds-s2', type: 'response', label: 'Acknowledge Guest', description: 'Thank the guest for their feedback.',
+      conditions: [
+        { id: 'fds-c1', condition: 'If positive feedback (4-5 stars)', action: 'Thank warmly and invite to leave a public review' },
+        { id: 'fds-c2', condition: 'If negative feedback (1-2 stars)', action: 'Apologize and escalate to management for follow-up' },
+        { id: 'fds-c3', condition: 'If neutral (3 stars)', action: 'Thank and ask if there is anything we can improve' },
+      ],
+    },
+  ],
+  guardrails: ['Never argue with negative feedback.', 'Escalate all negative reviews to duty manager within 1 hour.'],
+};
+
+const fdWorkflowEscalation: AgentWorkflow = {
+  id: 'wf-fd-escalation',
+  name: 'Staff Escalation',
+  description: 'Handles cases the agent cannot resolve — routes to the right staff member with full context.',
+  trigger: 'Escalation Required',
+  triggerDescription: 'Agent cannot generate a response, guest is upset, or topic is marked as staff-only.',
+  steps: [
+    { id: 'fde-s1', type: 'action', label: 'Determine Escalation Reason', description: 'Classify why escalation is needed — no AI response, anger detected, staff-only topic, or audit failure.',
+      conditions: [
+        { id: 'fde-c1', condition: 'If anger or frustration detected', action: 'Priority escalation — notify manager immediately via SMS' },
+        { id: 'fde-c2', condition: 'If staff-only topic (rates, billing, complaints)', action: 'Route to specific department' },
+        { id: 'fde-c3', condition: 'If AI simply cannot respond', action: 'Standard escalation to front desk' },
+      ],
+    },
+    { id: 'fde-s2', type: 'handoff', label: 'Notify Staff', description: 'Send escalation notification via configured channels (email, SMS, WhatsApp) with full conversation context.',
+      conditions: [
+        { id: 'fde-c4', condition: 'If staff responds within escalation window', action: 'Mark as handled' },
+        { id: 'fde-c5', condition: 'If no response within window', action: 'Re-escalate via secondary channel' },
+      ],
+    },
+  ],
+  guardrails: ['Never leave a guest without acknowledgment — always send "I\'m connecting you with our team."', 'Include full conversation history in every escalation.'],
+};
+
 const frontDeskAgent: Agent = {
   id: 'agent-front-desk',
   name: 'Front Desk Agent',
@@ -904,88 +1075,8 @@ const frontDeskAgent: Agent = {
     ...p,
     enabled: ['prod-messages', 'prod-checkin', 'prod-checkout', 'prod-upsells', 'prod-knowledge-base'].includes(p.id),
   })),
-  workflow: {
-    id: 'wf-fd-main',
-    name: 'Guest Message Handler',
-    description: 'Routes inbound guest messages to the right capability based on detected intent, generates responses, and escalates when needed.',
-    trigger: 'Guest Message Received',
-    triggerDescription: 'New message from a guest on any enabled channel (SMS, WhatsApp, OTA, webchat).',
-    steps: [
-      {
-        id: 'fd-s1',
-        type: 'action',
-        label: 'Detect Intent',
-        description: 'Analyze the guest message to determine what they need — booking, information, service request, upsell, checkout, survey response, or general conversation.',
-        conditions: [
-          { id: 'fd-c1', condition: 'If booking intent', action: 'Route to booking capability' },
-          { id: 'fd-c2', condition: 'If information/FAQ request', action: 'Search knowledge base for answer' },
-          { id: 'fd-c3', condition: 'If service request', action: 'Route to service ticket flow' },
-          { id: 'fd-c4', condition: 'If upsell opportunity (upgrade, early check-in, late checkout)', action: 'Route to upsells capability' },
-          { id: 'fd-c5', condition: 'If checkout request', action: 'Trigger checkout flow immediately' },
-          { id: 'fd-c6', condition: 'If survey response', action: 'Log response and send acknowledgment' },
-          { id: 'fd-c7', condition: 'If general conversation/small talk', action: 'Generate friendly conversational response' },
-        ],
-      },
-      {
-        id: 'fd-s2',
-        type: 'action',
-        label: 'Execute Capability',
-        description: 'Run the matched capability — search knowledge base, check availability, create ticket recommendation, or generate upsell offer.',
-        conditions: [
-          { id: 'fd-c8', condition: 'If multiple intents detected', action: 'Execute all matching capabilities in parallel, merge responses' },
-          { id: 'fd-c9', condition: 'If capability requires guest data', action: 'Look up reservation, room number, and stay details from PMS' },
-          { id: 'fd-c10', condition: 'If no capability matches', action: 'Generate best-effort response from knowledge base, flag for review' },
-        ],
-      },
-      {
-        id: 'fd-s3',
-        type: 'response',
-        label: 'Generate Response',
-        description: 'Compose a personalized response combining capability output with guest context, matching the channel format and guest language.',
-        conditions: [
-          { id: 'fd-c11', condition: 'If guest language differs from hotel default', action: 'Translate response to guest language' },
-          { id: 'fd-c12', condition: 'If OTA channel (Booking.com, Expedia)', action: 'Keep within platform character limits and formatting' },
-          { id: 'fd-c13', condition: 'If webchat', action: 'Include rich elements (booking form widget, upsell cards) if applicable' },
-        ],
-      },
-      {
-        id: 'fd-s4',
-        type: 'action',
-        label: 'Quality Audit',
-        description: 'Review the generated response for safety, tone appropriateness, and accuracy before sending.',
-        conditions: [
-          { id: 'fd-c14', condition: 'If audit passes', action: 'Proceed to send' },
-          { id: 'fd-c15', condition: 'If audit fails (tone, safety, accuracy)', action: 'Attempt rewrite — if still fails, escalate to staff' },
-        ],
-      },
-      {
-        id: 'fd-s5',
-        type: 'response',
-        label: 'Send Response',
-        description: 'Deliver the response to the guest via their messaging channel.',
-      },
-      {
-        id: 'fd-s6',
-        type: 'handoff',
-        label: 'Escalate When Needed',
-        description: 'Transfer to staff when the agent cannot resolve the request or the guest needs personal attention.',
-        conditions: [
-          { id: 'fd-c16', condition: 'If no response could be generated', action: 'Handoff to front desk staff with full conversation context' },
-          { id: 'fd-c17', condition: 'If guest expresses anger or frustration', action: 'Escalate immediately — notify manager via SMS and email' },
-          { id: 'fd-c18', condition: 'If topic is marked as staff-only', action: 'Do not respond — route directly to appropriate department' },
-          { id: 'fd-c19', condition: 'If staff has not responded within escalation window', action: 'Re-escalate via secondary notification channel' },
-        ],
-      },
-    ],
-    guardrails: [
-      'Never share other guests\' information or room numbers.',
-      'Always match the language the guest writes in.',
-      'Keep OTA responses within platform character limits.',
-      'Route safety concerns to staff immediately — do not attempt to resolve.',
-      'Never override room rates or create unauthorized discounts.',
-      'If unsure about any response, escalate rather than guess.',
-    ],
-  },
+  workflow: fdWorkflowBooking,
+  workflows: [fdWorkflowBooking, fdWorkflowFAQ, fdWorkflowServiceTicket, fdWorkflowUpsell, fdWorkflowCheckout, fdWorkflowSurvey, fdWorkflowEscalation],
   tone: 'Natural',
   metrics: {
     totalConversations: 2341,

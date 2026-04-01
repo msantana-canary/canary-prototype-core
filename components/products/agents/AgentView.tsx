@@ -73,7 +73,7 @@ export default function AgentView() {
     setWizardCommunicationStyle(agent.tone || '');
     setWizardGuardrailsText(agent.workflow.guardrails.map((g) => `• ${g}`).join('\n'));
     setBuilderWorkflow(agent.workflow);
-    setWizardWorkflows([agent.workflow]);
+    setWizardWorkflows(agent.workflows && agent.workflows.length > 0 ? agent.workflows : [agent.workflow]);
     // Agent-specific fields we can derive
     setWizardResponsibilities([]);
     setWizardBehavioralGuidelines('');

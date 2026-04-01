@@ -154,6 +154,7 @@ export interface Agent {
   connections: Connection[];
   capabilities: CanaryProduct[];
   workflow: AgentWorkflow;
+  workflows?: AgentWorkflow[];  // Multiple workflows for orchestrator agents
   tone: string;  // "Natural" | "Formal" | "Casual" | "Luxury"
   metrics: AgentMetrics;
   recentActivity: { time: string; description: string }[];
