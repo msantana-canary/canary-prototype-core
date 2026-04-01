@@ -1102,20 +1102,161 @@ const frontDeskAgent: Agent = {
 };
 
 // ---------------------------------------------------------------------------
-// Check-in Automation Agent (Pressure Test #4)
-// Full digital check-in flow: reg card → payment → ID → addons → PMS sync.
+// Check-in Processing Agent (Pressure Test #4 — REVISED)
+// Automates STAFF's post-submission workflow — not the guest's check-in form.
+// Eliminates the double-work of processing in both Canary AND PMS.
 // ---------------------------------------------------------------------------
+
+// Individual check-in processing workflows
+const ciWorkflowProcessSubmission: AgentWorkflow = {
+  id: 'wf-ci-process',
+  name: 'Process Submission',
+  description: 'Validates check-in data, syncs to PMS, and auto-marks verified if all checks pass.',
+  trigger: 'Check-in Submitted',
+  triggerDescription: 'Guest completes and submits their pre-arrival check-in form.',
+  steps: [
+    { id: 'cip-s1', type: 'action', label: 'Validate Completeness', description: 'Check that all required fields are filled — registration card, payment (if required), ID (if required).',
+      conditions: [
+        { id: 'cip-c1', condition: 'If all required steps complete', action: 'Proceed to PMS sync' },
+        { id: 'cip-c2', condition: 'If partially submitted (missing required steps)', action: 'Flag as incomplete — send guest a reminder to finish' },
+      ],
+    },
+    { id: 'cip-s2', type: 'action', label: 'Sync to PMS', description: 'Push registration card data, payment method, and guest details to PMS via gateway API.',
+      conditions: [
+        { id: 'cip-c3', condition: 'If auto-post enabled and sync succeeds', action: 'Log confirmation and proceed' },
+        { id: 'cip-c4', condition: 'If auto-post enabled and sync fails', action: 'Retry once, then alert front desk with error details' },
+        { id: 'cip-c5', condition: 'If auto-post not enabled', action: 'Flag for staff to manually enter in PMS' },
+      ],
+    },
+    { id: 'cip-s3', type: 'action', label: 'Auto-verify Eligibility', description: 'Check if submission qualifies for automatic check-in — valid ID, deposit captured, no flags.',
+      conditions: [
+        { id: 'cip-c6', condition: 'If all verifications pass', action: 'Auto-mark as Verified (ready for check-in)' },
+        { id: 'cip-c7', condition: 'If any verification pending', action: 'Hold in Submitted status until resolved' },
+        { id: 'cip-c8', condition: 'If issues detected (failed ID, declined payment)', action: 'Flag for front desk review with specific issue noted' },
+      ],
+    },
+    { id: 'cip-s4', type: 'response', label: 'Notify Staff', description: 'Send notification to hotel staff with submission summary and any required actions.',
+      conditions: [
+        { id: 'cip-c9', condition: 'If auto-verified (no issues)', action: 'Low-priority notification — submission processed successfully' },
+        { id: 'cip-c10', condition: 'If flags or exceptions', action: 'High-priority alert with specific items needing attention' },
+      ],
+    },
+  ],
+  guardrails: ['Log every PMS sync attempt for audit trail.', 'Never auto-verify if ID verification is pending or failed.', 'Always notify staff of exceptions — never silently skip.'],
+};
+
+const ciWorkflowIdReview: AgentWorkflow = {
+  id: 'wf-ci-id',
+  name: 'ID Verification Review',
+  description: 'Auto-validates ID documents from OCR results, checks expiry and document type, flags issues for manual review.',
+  trigger: 'ID Document Submitted',
+  triggerDescription: 'Guest uploads ID photos or completes OCR scan during check-in.',
+  steps: [
+    { id: 'cid-s1', type: 'action', label: 'Validate OCR Results', description: 'Check extracted data — name match, document type accepted, issue/expiry dates valid.',
+      conditions: [
+        { id: 'cid-c1', condition: 'If OCR extraction successful and all fields match', action: 'Auto-approve ID verification' },
+        { id: 'cid-c2', condition: 'If name mismatch between ID and reservation', action: 'Flag for staff review — possible different guest' },
+        { id: 'cid-c3', condition: 'If document is expired', action: 'Reject and request new document from guest' },
+        { id: 'cid-c4', condition: 'If manual upload (no OCR)', action: 'Queue for staff visual review' },
+      ],
+    },
+    { id: 'cid-s2', type: 'action', label: 'Push to PMS', description: 'Post verified identity and document information to PMS guest profile.',
+      conditions: [
+        { id: 'cid-c5', condition: 'If passport with visa info', action: 'Include visa details in PMS posting' },
+        { id: 'cid-c6', condition: 'If local ID (no passport)', action: 'Post national ID number and document type' },
+      ],
+    },
+  ],
+  guardrails: ['Never auto-approve if name does not match reservation.', 'Always store document images for compliance — never delete before checkout.'],
+};
+
+const ciWorkflowPayment: AgentWorkflow = {
+  id: 'wf-ci-payment',
+  name: 'Payment Reconciliation',
+  description: 'Syncs deposit to PMS, handles failed payments, and processes refunds when needed.',
+  trigger: 'Deposit Captured or Failed',
+  triggerDescription: 'Payment gateway returns result after guest submits credit card during check-in.',
+  steps: [
+    { id: 'cipay-s1', type: 'action', label: 'Verify Deposit Status', description: 'Check payment intent status — fulfilled, pending, or failed.',
+      conditions: [
+        { id: 'cipay-c1', condition: 'If deposit captured successfully', action: 'Sync deposit amount and card token to PMS' },
+        { id: 'cipay-c2', condition: 'If deposit pending', action: 'Monitor and retry — sync once confirmed' },
+        { id: 'cipay-c3', condition: 'If deposit failed after max retries', action: 'Flag reservation for front desk collection on arrival' },
+      ],
+    },
+    { id: 'cipay-s2', type: 'action', label: 'Sync to PMS', description: 'Post payment method and deposit record to PMS so front desk sees it on arrival.',
+      conditions: [
+        { id: 'cipay-c4', condition: 'If PMS accepts payment posting', action: 'Mark payment as reconciled' },
+        { id: 'cipay-c5', condition: 'If PMS rejects (duplicate, format error)', action: 'Log error and flag for staff to manually enter' },
+      ],
+    },
+  ],
+  guardrails: ['Never store raw card numbers — only tokenized references.', 'Log all payment attempts for PCI compliance.'],
+};
+
+const ciWorkflowRoomAssignment: AgentWorkflow = {
+  id: 'wf-ci-room',
+  name: 'Room Assignment & Key',
+  description: 'Fetches room assignment from PMS, updates Canary, generates mobile key, and notifies guest.',
+  trigger: 'Room Assigned in PMS',
+  triggerDescription: 'PMS webhook or polling detects that a room number has been assigned to the reservation.',
+  steps: [
+    { id: 'ciroom-s1', type: 'action', label: 'Fetch Room Assignment', description: 'Pull room number from PMS and update the Canary check-in record.',
+      conditions: [
+        { id: 'ciroom-c1', condition: 'If room matches requested type', action: 'Accept assignment and proceed' },
+        { id: 'ciroom-c2', condition: 'If room is out-of-order or not ready', action: 'Alert housekeeping and hold key generation' },
+      ],
+    },
+    { id: 'ciroom-s2', type: 'action', label: 'Generate Mobile Key', description: 'Trigger mobile key creation via key provider (Vostio, Dormakaba) and prepare for delivery.',
+      conditions: [
+        { id: 'ciroom-c3', condition: 'If mobile key enabled for property', action: 'Generate key and add to Apple/Google Wallet' },
+        { id: 'ciroom-c4', condition: 'If mobile key not enabled', action: 'Skip — guest will get physical key at front desk' },
+      ],
+    },
+    { id: 'ciroom-s3', type: 'response', label: 'Notify Guest', description: 'Send guest their room number, mobile key link, and arrival instructions via SMS/email.',
+    },
+    { id: 'ciroom-s4', type: 'action', label: 'Mark Checked In', description: 'Update check-in status to Checked In in Canary. Complete the check-in lifecycle.',
+    },
+  ],
+  guardrails: ['Never assign a room that is out of order.', 'Always confirm room readiness with housekeeping status before sending key.'],
+};
+
+const ciWorkflowUpsells: AgentWorkflow = {
+  id: 'wf-ci-upsells',
+  name: 'Upsell Processing',
+  description: 'Auto-processes accepted upsells — applies upgrades to PMS reservation and captures additional payment.',
+  trigger: 'Upsell Accepted During Check-in',
+  triggerDescription: 'Guest accepts a room upgrade, early check-in, late checkout, or add-on during the check-in flow.',
+  steps: [
+    { id: 'ciup-s1', type: 'action', label: 'Validate Availability', description: 'Confirm the accepted upsell is still available (room type, time slot) at time of processing.',
+      conditions: [
+        { id: 'ciup-c1', condition: 'If still available', action: 'Proceed to apply' },
+        { id: 'ciup-c2', condition: 'If no longer available (sold out since guest checked in)', action: 'Notify guest of unavailability, process refund if pre-charged' },
+      ],
+    },
+    { id: 'ciup-s2', type: 'action', label: 'Apply to PMS', description: 'Update the reservation in PMS with the upgrade — new room type, early arrival time, or late departure.',
+      conditions: [
+        { id: 'ciup-c3', condition: 'If room upgrade', action: 'Change room type in PMS, adjust rate' },
+        { id: 'ciup-c4', condition: 'If early check-in', action: 'Update arrival time in PMS, notify housekeeping for early room prep' },
+        { id: 'ciup-c5', condition: 'If late checkout', action: 'Update departure time in PMS' },
+      ],
+    },
+    { id: 'ciup-s3', type: 'action', label: 'Capture Payment', description: 'Charge the additional amount for the upsell to the guest\'s card on file.' },
+    { id: 'ciup-s4', type: 'response', label: 'Confirm to Guest', description: 'Send confirmation of the upsell with updated details — new room type, check-in time, or checkout time.' },
+  ],
+  guardrails: ['Never charge for an upsell that cannot be fulfilled.', 'Always confirm room availability before applying upgrade in PMS.', 'Notify housekeeping immediately for early check-in requests.'],
+};
 
 const checkInAgent: Agent = {
   id: 'agent-checkin',
-  name: 'Check-in Agent',
-  role: 'Digital Check-in Coordinator',
-  description: 'Automates the full guest check-in flow — registration card, payment capture, ID verification, upsell offers, and PMS synchronization.',
+  name: 'Check-in Processing Agent',
+  role: 'Post-Submission Processor',
+  description: 'Automates the hotel staff workflow after guests submit pre-arrival check-in — PMS sync, ID review, payment reconciliation, room assignment, and upsell processing. Eliminates the double-work of managing both Canary and PMS.',
   status: 'active',
   triggers: [
     {
       id: 'trig-ci-1',
-      intent: 'Guest opens check-in link',
+      intent: 'Guest submits pre-arrival check-in',
       channels: [
         { channel: 'voice', enabled: false },
         { channel: 'sms', enabled: true },
@@ -1129,125 +1270,35 @@ const checkInAgent: Agent = {
   ],
   connections: [
     { id: 'conn-pms', name: 'Property Management System', type: 'pms', status: 'connected', description: 'Reservation data, room assignment, guest sync' },
-    { id: 'conn-payment', name: 'Payment Gateway', type: 'payment', status: 'connected', description: 'Deposit capture via Shift4/Stripe' },
-    { id: 'conn-kb', name: 'Knowledge Base', type: 'knowledge-base', status: 'connected', description: 'Hotel policies for check-in rules' },
+    { id: 'conn-payment', name: 'Payment Gateway', type: 'payment', status: 'connected', description: 'Deposit capture and reconciliation' },
+    { id: 'conn-kb', name: 'Knowledge Base', type: 'knowledge-base', status: 'connected', description: 'Hotel policies and check-in rules' },
   ],
   capabilities: CANARY_PRODUCTS.map((p) => ({
     ...p,
     enabled: ['prod-checkin', 'prod-upsells', 'prod-authorizations', 'prod-messages', 'prod-knowledge-base'].includes(p.id),
   })),
-  workflow: {
-    id: 'wf-checkin-main',
-    name: 'Guest Check-in Flow',
-    description: 'Guides guests through digital check-in: registration, payment, ID verification, upsells, and PMS submission.',
-    trigger: 'Check-in Link Opened',
-    triggerDescription: 'Guest clicks the check-in link received via SMS or email before arrival.',
-    steps: [
-      {
-        id: 'ci-s1',
-        type: 'action',
-        label: 'Load Reservation',
-        description: 'Fetch reservation details from PMS — guest name, dates, room type, rate code, special requests.',
-        conditions: [
-          { id: 'ci-c1', condition: 'If reservation found', action: 'Pre-fill registration card with known details' },
-          { id: 'ci-c2', condition: 'If reservation not found', action: 'Show manual lookup by confirmation number or guest name' },
-          { id: 'ci-c3', condition: 'If reservation already checked in', action: 'Show check-in complete status — no action needed' },
-        ],
-      },
-      {
-        id: 'ci-s2',
-        type: 'action',
-        label: 'Registration Card',
-        description: 'Collect guest information — name, email, phone, address, nationality, date of birth. Pre-filled fields are editable.',
-        conditions: [
-          { id: 'ci-c4', condition: 'If additional guests on reservation', action: 'Collect registration details for each additional guest after primary' },
-          { id: 'ci-c5', condition: 'If required fields missing', action: 'Validate and highlight — do not proceed until complete' },
-        ],
-      },
-      {
-        id: 'ci-s3',
-        type: 'action',
-        label: 'Payment Capture',
-        description: 'Collect credit card for deposit or incidentals guarantee. Amount based on hotel policy and rate code.',
-        conditions: [
-          { id: 'ci-c6', condition: 'If payment step is disabled by hotel', action: 'Skip — proceed to next step' },
-          { id: 'ci-c7', condition: 'If payment succeeds', action: 'Store deposit record and proceed' },
-          { id: 'ci-c8', condition: 'If payment fails', action: 'Allow retry (max 3 attempts), then allow skip if step is optional' },
-          { id: 'ci-c9', condition: 'If payment fails and step is required', action: 'Block progress — notify front desk to assist' },
-        ],
-      },
-      {
-        id: 'ci-s4',
-        type: 'action',
-        label: 'ID Verification',
-        description: 'Verify guest identity via document upload or OCR scanning (Incode). Validates document type, expiry, and country.',
-        conditions: [
-          { id: 'ci-c10', condition: 'If OCR enabled (Incode)', action: 'Launch camera iframe for real-time document scanning and liveness check' },
-          { id: 'ci-c11', condition: 'If manual upload only', action: 'Guest uploads front and back photos of ID document' },
-          { id: 'ci-c12', condition: 'If ID step is optional and guest skips', action: 'Log skip and proceed — flag for front desk verification on arrival' },
-          { id: 'ci-c13', condition: 'If document is expired', action: 'Reject and ask for valid document' },
-        ],
-      },
-      {
-        id: 'ci-s5',
-        type: 'action',
-        label: 'Upsell Offers',
-        description: 'Present available upgrades and add-ons — room upgrade, early check-in, late checkout, amenity packages.',
-        conditions: [
-          { id: 'ci-c14', condition: 'If upgrades available for room type', action: 'Show upgrade options with pricing' },
-          { id: 'ci-c15', condition: 'If no addons configured', action: 'Skip step entirely' },
-          { id: 'ci-c16', condition: 'If guest is loyalty member', action: 'Show loyalty-specific offers and benefits' },
-        ],
-      },
-      {
-        id: 'ci-s6',
-        type: 'action',
-        label: 'Review & Submit',
-        description: 'Guest reviews all entered information and confirms submission. Data syncs to PMS on submit.',
-        conditions: [
-          { id: 'ci-c17', condition: 'If all required steps complete', action: 'Enable submit button — sync to PMS' },
-          { id: 'ci-c18', condition: 'If PMS sync succeeds', action: 'Assign room and generate mobile key (if enabled)' },
-          { id: 'ci-c19', condition: 'If PMS sync fails', action: 'Queue for retry — notify front desk of pending check-in' },
-        ],
-      },
-      {
-        id: 'ci-s7',
-        type: 'response',
-        label: 'Post-Check-in',
-        description: 'Send confirmation to guest with room number, mobile key, and welcome message. Enroll in loyalty program if opted in.',
-        conditions: [
-          { id: 'ci-c20', condition: 'If mobile key enabled', action: 'Send mobile key via Apple/Google Wallet' },
-          { id: 'ci-c21', condition: 'If loyalty enrollment opted in', action: 'Trigger membership enrollment and confirm tier' },
-        ],
-      },
-    ],
-    guardrails: [
-      'Never store raw credit card numbers — use payment gateway tokenization only.',
-      'Always validate ID documents against expiry date and accepted types.',
-      'Do not assign rooms that are out of order or not ready.',
-      'Log all step completions and skips for audit trail.',
-      'If deposit fails and is required, do not allow check-in completion.',
-    ],
-  },
-  tone: 'Formal',
+  workflow: ciWorkflowProcessSubmission,
+  workflows: [ciWorkflowProcessSubmission, ciWorkflowIdReview, ciWorkflowPayment, ciWorkflowRoomAssignment, ciWorkflowUpsells],
+  tone: '',
   metrics: {
     totalConversations: 1856,
     resolutionRate: 94,
     avgResponseTime: '< 1 min',
-    satisfactionScore: 4.6,
+    satisfactionScore: 0,
   },
   recentActivity: [
-    { time: '11:02 AM', description: 'Completed check-in for Room 718 — ID verified via Incode, deposit captured, mobile key sent.' },
-    { time: '10:45 AM', description: 'Room upgrade accepted — Room 302 → Suite 1201, $85/night upgrade charge captured.' },
-    { time: '10:20 AM', description: 'Payment failed for Room 415 — notified front desk, guest will present card on arrival.' },
-    { time: '9:58 AM', description: 'Loyalty enrollment completed for Room 603 — Gold Elite tier confirmed.' },
+    { time: '11:02 AM', description: 'Auto-verified submission for Res #CTL-44218 — ID passed, deposit synced to PMS, marked ready.' },
+    { time: '10:45 AM', description: 'Applied room upgrade for Res #CTL-38901 — Standard → Deluxe, $45/night captured, PMS updated.' },
+    { time: '10:20 AM', description: 'Flagged Res #CTL-41557 — deposit failed 3x, marked for front desk collection on arrival.' },
+    { time: '9:58 AM', description: 'Mobile key generated for Room 718 — sent via Apple Wallet, guest notified via SMS.' },
+    { time: '9:30 AM', description: 'ID name mismatch for Res #CTL-39204 — flagged for staff visual review.' },
   ],
   createdAt: '2026-01-05',
   rules: [
-    { id: 'ci-r1', condition: 'IF VIP or Diamond loyalty tier', action: 'Auto-assign best available room in requested category', enabled: true },
-    { id: 'ci-r2', condition: 'IF group booking (10+ rooms)', action: 'Route to group coordinator — do not auto-assign individual rooms', enabled: true },
-    { id: 'ci-r3', condition: 'IF payment declines 3 times', action: 'Allow check-in without deposit, flag for front desk collection on arrival', enabled: true },
-    { id: 'ci-r4', condition: 'DEFAULT', action: 'Process check-in per standard hotel configuration', enabled: true },
+    { id: 'ci-r1', condition: 'IF VIP or Diamond loyalty tier', action: 'Priority processing — auto-verify and assign best available room', enabled: true },
+    { id: 'ci-r2', condition: 'IF group booking (10+ rooms)', action: 'Route to group coordinator — do not auto-process individually', enabled: true },
+    { id: 'ci-r3', condition: 'IF PMS sync fails twice', action: 'Alert front desk immediately — do not silently retry', enabled: true },
+    { id: 'ci-r4', condition: 'DEFAULT', action: 'Auto-process per hotel check-in configuration', enabled: true },
   ],
 };
 
