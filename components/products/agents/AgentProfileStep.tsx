@@ -44,6 +44,8 @@ export default function AgentProfileStep() {
   const setAvoidedTopics = useAgentStore((s) => s.setWizardAvoidedTopics);
   const communicationStyle = useAgentStore((s) => s.wizardCommunicationStyle);
   const setCommunicationStyle = useAgentStore((s) => s.setWizardCommunicationStyle);
+  const wizardTemplate = useAgentStore((s) => s.wizardTemplate);
+  const isScratch = wizardTemplate?.id === 'tpl-scratch' || !wizardTemplate;
 
   const [newResponsibility, setNewResponsibility] = useState('');
 
@@ -60,57 +62,29 @@ export default function AgentProfileStep() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Agent description — no card bg, sits directly on #FAFAFA page */}
-      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 8,
-            backgroundColor: '#EAEEF9',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            padding: 8,
-          }}
-        >
-          <Icon path={mdiAccountGroupOutline} size={1} color={colors.colorBlueDark1} />
-        </div>
-        <div style={{ flex: 1 }}>
-          <textarea
-            ref={(el) => {
-              if (el) {
-                el.style.height = '0px';
-                el.style.height = el.scrollHeight + 'px';
-              }
-            }}
-            value={agentDescription}
-            onChange={(e) => {
-              setAgentDescription(e.target.value);
-              const el = e.target;
-              el.style.height = '0px';
-              el.style.height = el.scrollHeight + 'px';
-            }}
-            rows={1}
+      {/* Agent description — shown for templates only (read-only context) */}
+      {!isScratch && agentDescription && (
+        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+          <div
             style={{
-              fontSize: 16,
-              fontWeight: 400,
-              lineHeight: '24px',
-              color: '#000',
-              border: 'none',
-              background: 'transparent',
-              outline: 'none',
-              width: '100%',
-              padding: 0,
-              resize: 'none',
-              overflow: 'hidden',
-              fontFamily: 'var(--font-roboto), sans-serif',
+              width: 40,
+              height: 40,
+              borderRadius: 8,
+              backgroundColor: '#EAEEF9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              padding: 8,
             }}
-            placeholder="Describe what this agent does..."
-          />
+          >
+            <Icon path={mdiAccountGroupOutline} size={1} color={colors.colorBlueDark1} />
+          </div>
+          <p style={{ fontSize: 16, fontWeight: 400, lineHeight: '24px', color: '#000', margin: 0, flex: 1 }}>
+            {agentDescription}
+          </p>
         </div>
-      </div>
+      )}
 
       {/* Agent name — same tile style as workflow name */}
       <div

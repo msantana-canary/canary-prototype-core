@@ -747,7 +747,420 @@ const riley: Agent = {
   ],
 };
 
-export const mockAgents: Agent[] = [alex, javis, ava, riley];
+// ---------------------------------------------------------------------------
+// Service Ticket Agent (Pressure Test #2)
+// AI recommends tickets from guest messages, staff approves and creates.
+// ---------------------------------------------------------------------------
+
+const serviceTicketAgent: Agent = {
+  id: 'agent-service-ticket',
+  name: 'Service Ticket Agent',
+  role: 'Service Request Coordinator',
+  description: 'Detects service requests in guest messages, recommends tickets to staff, and tracks resolution through vendor systems.',
+  status: 'active',
+  triggers: [
+    {
+      id: 'trig-st-1',
+      intent: 'Guest reports service issue via messaging',
+      channels: [
+        { channel: 'voice', enabled: false },
+        { channel: 'sms', enabled: true },
+        { channel: 'whatsapp', enabled: true },
+        { channel: 'email', enabled: false },
+        { channel: 'booking-com', enabled: false },
+        { channel: 'expedia', enabled: false },
+        { channel: 'webchat', enabled: false },
+      ],
+    },
+  ],
+  connections: [
+    { id: 'conn-pms', name: 'Property Management System', type: 'pms', status: 'connected', description: 'Room number and reservation lookup' },
+    { id: 'conn-kb', name: 'Knowledge Base', type: 'knowledge-base', status: 'connected', description: 'Ticket type matching and FAQ' },
+  ],
+  capabilities: CANARY_PRODUCTS.map((p) => ({
+    ...p,
+    enabled: ['prod-messages', 'prod-knowledge-base'].includes(p.id),
+  })),
+  workflow: {
+    id: 'wf-service-ticket',
+    name: 'Service Ticket Resolution',
+    description: 'Detects service requests, gathers details, recommends tickets, and tracks through to resolution.',
+    trigger: 'Service Request Detected',
+    triggerDescription: 'Guest message identified as a service request (housekeeping, maintenance, amenity, etc.).',
+    steps: [
+      {
+        id: 'st-s1',
+        type: 'action',
+        label: 'Analyze Guest Message',
+        description: 'Parse the guest message to identify service request intent and urgency.',
+        conditions: [
+          { id: 'st-c1', condition: 'If message is unclear or vague', action: 'Ask clarifying question — what room, what issue, when did it start?' },
+          { id: 'st-c2', condition: 'If multiple issues mentioned', action: 'Address highest priority first, queue remaining' },
+          { id: 'st-c3', condition: 'If guest expresses anger or frustration', action: 'Acknowledge emotion first, then proceed to resolution' },
+        ],
+      },
+      {
+        id: 'st-s2',
+        type: 'action',
+        label: 'Match Ticket Type',
+        description: 'Search available ticket types via embeddings to find the best match for the reported issue.',
+        conditions: [
+          { id: 'st-c4', condition: 'If exact match found (similarity > 0.75)', action: 'Use matched ticket type' },
+          { id: 'st-c5', condition: 'If partial match', action: 'Present top 2-3 options to staff for selection' },
+          { id: 'st-c6', condition: 'If no match found', action: 'Create generic "Other" ticket and flag for staff categorization' },
+          { id: 'st-c7', condition: 'If duplicate ticket exists for same room', action: 'Skip creation, update existing ticket with new context' },
+        ],
+      },
+      {
+        id: 'st-s3',
+        type: 'response',
+        label: 'Acknowledge Guest',
+        description: 'Send confirmation to guest that their request has been received and is being addressed.',
+        conditions: [
+          { id: 'st-c8', condition: 'If urgent (safety, leak, lockout)', action: 'Send immediate acknowledgment with expected response time' },
+          { id: 'st-c9', condition: 'If routine (towels, toiletries)', action: 'Confirm receipt and estimated delivery time' },
+        ],
+      },
+      {
+        id: 'st-s4',
+        type: 'action',
+        label: 'Create Recommended Ticket',
+        description: 'Generate a recommended ticket for staff review with room number, issue type, priority, and guest context.',
+      },
+      {
+        id: 'st-s5',
+        type: 'action',
+        label: 'Track Resolution',
+        description: 'Monitor ticket status from vendor system and send follow-up to guest when resolved.',
+        conditions: [
+          { id: 'st-c10', condition: 'If resolved within SLA', action: 'Send satisfaction check to guest' },
+          { id: 'st-c11', condition: 'If exceeds SLA', action: 'Escalate to department manager and notify guest of delay' },
+          { id: 'st-c12', condition: 'If staff rejects recommended ticket', action: 'Log reason and reassess — ask guest for more details if needed' },
+        ],
+      },
+    ],
+    guardrails: [
+      'Never promise a specific resolution time — use estimates.',
+      'Always confirm room number before creating a ticket.',
+      'Route safety issues (fire, water, lockout) to staff immediately — do not wait for ticket approval.',
+      'Never create duplicate tickets for the same room and issue.',
+    ],
+  },
+  tone: 'Natural',
+  metrics: {
+    totalConversations: 847,
+    resolutionRate: 89,
+    avgResponseTime: '45 sec',
+    satisfactionScore: 4.2,
+  },
+  recentActivity: [
+    { time: '10:15 AM', description: 'Created ticket for Room 412 — broken AC unit. Priority: High.' },
+    { time: '9:48 AM', description: 'Resolved ticket for Room 308 — extra towels delivered in 12 min.' },
+    { time: '9:22 AM', description: 'Escalated Room 115 — water leak, staff notified immediately.' },
+    { time: '8:55 AM', description: 'Duplicate skipped — Room 412 already has active AC ticket.' },
+  ],
+  createdAt: '2026-02-20',
+  rules: [
+    { id: 'st-r1', condition: 'IF safety issue (fire, water, lockout)', action: 'Bypass recommendation — alert staff directly', enabled: true },
+    { id: 'st-r2', condition: 'IF same room + same issue within 24 hours', action: 'Update existing ticket instead of creating new', enabled: true },
+    { id: 'st-r3', condition: 'IF guest has made 3+ requests this stay', action: 'Flag as high-attention guest for front desk', enabled: true },
+    { id: 'st-r4', condition: 'DEFAULT', action: 'Create recommended ticket for staff review', enabled: true },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Front Desk Orchestrator (Pressure Test #3)
+// Replaces current Chat AI — multi-capability guest-facing agent.
+// ---------------------------------------------------------------------------
+
+const frontDeskAgent: Agent = {
+  id: 'agent-front-desk',
+  name: 'Front Desk Agent',
+  role: 'Guest Communication Orchestrator',
+  description: 'Manages all guest messaging across channels. Handles bookings, FAQ, service requests, upsells, checkout, and surveys — routing to the right capability based on guest intent.',
+  status: 'active',
+  triggers: [
+    {
+      id: 'trig-fd-1',
+      intent: 'Guest sends message on any channel',
+      channels: [
+        { channel: 'voice', enabled: false },
+        { channel: 'sms', enabled: true },
+        { channel: 'whatsapp', enabled: true },
+        { channel: 'email', enabled: false },
+        { channel: 'booking-com', enabled: true },
+        { channel: 'expedia', enabled: true },
+        { channel: 'webchat', enabled: true },
+      ],
+    },
+  ],
+  connections: [
+    { id: 'conn-pms', name: 'Property Management System', type: 'pms', status: 'connected', description: 'Reservation lookup and room assignment' },
+    { id: 'conn-kb', name: 'Knowledge Base', type: 'knowledge-base', status: 'connected', description: 'Hotel FAQs, policies, and property info' },
+    { id: 'conn-payment', name: 'Payment Gateway', type: 'payment', status: 'connected', description: 'Process payments for bookings and upsells' },
+    { id: 'conn-calendar', name: 'Google Calendar', type: 'calendar', status: 'optional', description: 'Staff scheduling for handoffs' },
+  ],
+  capabilities: CANARY_PRODUCTS.map((p) => ({
+    ...p,
+    enabled: ['prod-messages', 'prod-checkin', 'prod-checkout', 'prod-upsells', 'prod-knowledge-base'].includes(p.id),
+  })),
+  workflow: {
+    id: 'wf-fd-main',
+    name: 'Guest Message Handler',
+    description: 'Routes inbound guest messages to the right capability based on detected intent, generates responses, and escalates when needed.',
+    trigger: 'Guest Message Received',
+    triggerDescription: 'New message from a guest on any enabled channel (SMS, WhatsApp, OTA, webchat).',
+    steps: [
+      {
+        id: 'fd-s1',
+        type: 'action',
+        label: 'Detect Intent',
+        description: 'Analyze the guest message to determine what they need — booking, information, service request, upsell, checkout, survey response, or general conversation.',
+        conditions: [
+          { id: 'fd-c1', condition: 'If booking intent', action: 'Route to booking capability' },
+          { id: 'fd-c2', condition: 'If information/FAQ request', action: 'Search knowledge base for answer' },
+          { id: 'fd-c3', condition: 'If service request', action: 'Route to service ticket flow' },
+          { id: 'fd-c4', condition: 'If upsell opportunity (upgrade, early check-in, late checkout)', action: 'Route to upsells capability' },
+          { id: 'fd-c5', condition: 'If checkout request', action: 'Trigger checkout flow immediately' },
+          { id: 'fd-c6', condition: 'If survey response', action: 'Log response and send acknowledgment' },
+          { id: 'fd-c7', condition: 'If general conversation/small talk', action: 'Generate friendly conversational response' },
+        ],
+      },
+      {
+        id: 'fd-s2',
+        type: 'action',
+        label: 'Execute Capability',
+        description: 'Run the matched capability — search knowledge base, check availability, create ticket recommendation, or generate upsell offer.',
+        conditions: [
+          { id: 'fd-c8', condition: 'If multiple intents detected', action: 'Execute all matching capabilities in parallel, merge responses' },
+          { id: 'fd-c9', condition: 'If capability requires guest data', action: 'Look up reservation, room number, and stay details from PMS' },
+          { id: 'fd-c10', condition: 'If no capability matches', action: 'Generate best-effort response from knowledge base, flag for review' },
+        ],
+      },
+      {
+        id: 'fd-s3',
+        type: 'response',
+        label: 'Generate Response',
+        description: 'Compose a personalized response combining capability output with guest context, matching the channel format and guest language.',
+        conditions: [
+          { id: 'fd-c11', condition: 'If guest language differs from hotel default', action: 'Translate response to guest language' },
+          { id: 'fd-c12', condition: 'If OTA channel (Booking.com, Expedia)', action: 'Keep within platform character limits and formatting' },
+          { id: 'fd-c13', condition: 'If webchat', action: 'Include rich elements (booking form widget, upsell cards) if applicable' },
+        ],
+      },
+      {
+        id: 'fd-s4',
+        type: 'action',
+        label: 'Quality Audit',
+        description: 'Review the generated response for safety, tone appropriateness, and accuracy before sending.',
+        conditions: [
+          { id: 'fd-c14', condition: 'If audit passes', action: 'Proceed to send' },
+          { id: 'fd-c15', condition: 'If audit fails (tone, safety, accuracy)', action: 'Attempt rewrite — if still fails, escalate to staff' },
+        ],
+      },
+      {
+        id: 'fd-s5',
+        type: 'response',
+        label: 'Send Response',
+        description: 'Deliver the response to the guest via their messaging channel.',
+      },
+      {
+        id: 'fd-s6',
+        type: 'handoff',
+        label: 'Escalate When Needed',
+        description: 'Transfer to staff when the agent cannot resolve the request or the guest needs personal attention.',
+        conditions: [
+          { id: 'fd-c16', condition: 'If no response could be generated', action: 'Handoff to front desk staff with full conversation context' },
+          { id: 'fd-c17', condition: 'If guest expresses anger or frustration', action: 'Escalate immediately — notify manager via SMS and email' },
+          { id: 'fd-c18', condition: 'If topic is marked as staff-only', action: 'Do not respond — route directly to appropriate department' },
+          { id: 'fd-c19', condition: 'If staff has not responded within escalation window', action: 'Re-escalate via secondary notification channel' },
+        ],
+      },
+    ],
+    guardrails: [
+      'Never share other guests\' information or room numbers.',
+      'Always match the language the guest writes in.',
+      'Keep OTA responses within platform character limits.',
+      'Route safety concerns to staff immediately — do not attempt to resolve.',
+      'Never override room rates or create unauthorized discounts.',
+      'If unsure about any response, escalate rather than guess.',
+    ],
+  },
+  tone: 'Natural',
+  metrics: {
+    totalConversations: 2341,
+    resolutionRate: 91,
+    avgResponseTime: '22 sec',
+    satisfactionScore: 4.5,
+  },
+  recentActivity: [
+    { time: '10:30 AM', description: 'Answered FAQ about pool hours for Room 602 via WhatsApp.' },
+    { time: '10:12 AM', description: 'Processed room upgrade request for Room 815 — Executive Suite, $45/night.' },
+    { time: '9:55 AM', description: 'Created service ticket for Room 203 — noise complaint, routed to security.' },
+    { time: '9:40 AM', description: 'Handled checkout request for Room 1104 — folio sent via SMS.' },
+    { time: '9:18 AM', description: 'Escalated to front desk — guest in Room 507 requesting rate adjustment (staff-only topic).' },
+  ],
+  createdAt: '2026-01-10',
+  rules: [
+    { id: 'fd-r1', condition: 'IF safety or emergency issue', action: 'Escalate to staff immediately — do not attempt AI resolution', enabled: true },
+    { id: 'fd-r2', condition: 'IF rate or billing dispute', action: 'Route to front desk manager — staff-only topic', enabled: true },
+    { id: 'fd-r3', condition: 'IF guest is VIP or loyalty elite', action: 'Use premium tone, prioritize response, CC guest services manager', enabled: true },
+    { id: 'fd-r4', condition: 'IF OTA guest with booking.com or Expedia', action: 'Include OTA-specific policies in response', enabled: true },
+    { id: 'fd-r5', condition: 'DEFAULT', action: 'Respond via matched capability with standard tone', enabled: true },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// Check-in Automation Agent (Pressure Test #4)
+// Full digital check-in flow: reg card → payment → ID → addons → PMS sync.
+// ---------------------------------------------------------------------------
+
+const checkInAgent: Agent = {
+  id: 'agent-checkin',
+  name: 'Check-in Agent',
+  role: 'Digital Check-in Coordinator',
+  description: 'Automates the full guest check-in flow — registration card, payment capture, ID verification, upsell offers, and PMS synchronization.',
+  status: 'active',
+  triggers: [
+    {
+      id: 'trig-ci-1',
+      intent: 'Guest opens check-in link',
+      channels: [
+        { channel: 'voice', enabled: false },
+        { channel: 'sms', enabled: true },
+        { channel: 'whatsapp', enabled: false },
+        { channel: 'email', enabled: true },
+        { channel: 'booking-com', enabled: false },
+        { channel: 'expedia', enabled: false },
+        { channel: 'webchat', enabled: false },
+      ],
+    },
+  ],
+  connections: [
+    { id: 'conn-pms', name: 'Property Management System', type: 'pms', status: 'connected', description: 'Reservation data, room assignment, guest sync' },
+    { id: 'conn-payment', name: 'Payment Gateway', type: 'payment', status: 'connected', description: 'Deposit capture via Shift4/Stripe' },
+    { id: 'conn-kb', name: 'Knowledge Base', type: 'knowledge-base', status: 'connected', description: 'Hotel policies for check-in rules' },
+  ],
+  capabilities: CANARY_PRODUCTS.map((p) => ({
+    ...p,
+    enabled: ['prod-checkin', 'prod-upsells', 'prod-authorizations', 'prod-messages', 'prod-knowledge-base'].includes(p.id),
+  })),
+  workflow: {
+    id: 'wf-checkin-main',
+    name: 'Guest Check-in Flow',
+    description: 'Guides guests through digital check-in: registration, payment, ID verification, upsells, and PMS submission.',
+    trigger: 'Check-in Link Opened',
+    triggerDescription: 'Guest clicks the check-in link received via SMS or email before arrival.',
+    steps: [
+      {
+        id: 'ci-s1',
+        type: 'action',
+        label: 'Load Reservation',
+        description: 'Fetch reservation details from PMS — guest name, dates, room type, rate code, special requests.',
+        conditions: [
+          { id: 'ci-c1', condition: 'If reservation found', action: 'Pre-fill registration card with known details' },
+          { id: 'ci-c2', condition: 'If reservation not found', action: 'Show manual lookup by confirmation number or guest name' },
+          { id: 'ci-c3', condition: 'If reservation already checked in', action: 'Show check-in complete status — no action needed' },
+        ],
+      },
+      {
+        id: 'ci-s2',
+        type: 'action',
+        label: 'Registration Card',
+        description: 'Collect guest information — name, email, phone, address, nationality, date of birth. Pre-filled fields are editable.',
+        conditions: [
+          { id: 'ci-c4', condition: 'If additional guests on reservation', action: 'Collect registration details for each additional guest after primary' },
+          { id: 'ci-c5', condition: 'If required fields missing', action: 'Validate and highlight — do not proceed until complete' },
+        ],
+      },
+      {
+        id: 'ci-s3',
+        type: 'action',
+        label: 'Payment Capture',
+        description: 'Collect credit card for deposit or incidentals guarantee. Amount based on hotel policy and rate code.',
+        conditions: [
+          { id: 'ci-c6', condition: 'If payment step is disabled by hotel', action: 'Skip — proceed to next step' },
+          { id: 'ci-c7', condition: 'If payment succeeds', action: 'Store deposit record and proceed' },
+          { id: 'ci-c8', condition: 'If payment fails', action: 'Allow retry (max 3 attempts), then allow skip if step is optional' },
+          { id: 'ci-c9', condition: 'If payment fails and step is required', action: 'Block progress — notify front desk to assist' },
+        ],
+      },
+      {
+        id: 'ci-s4',
+        type: 'action',
+        label: 'ID Verification',
+        description: 'Verify guest identity via document upload or OCR scanning (Incode). Validates document type, expiry, and country.',
+        conditions: [
+          { id: 'ci-c10', condition: 'If OCR enabled (Incode)', action: 'Launch camera iframe for real-time document scanning and liveness check' },
+          { id: 'ci-c11', condition: 'If manual upload only', action: 'Guest uploads front and back photos of ID document' },
+          { id: 'ci-c12', condition: 'If ID step is optional and guest skips', action: 'Log skip and proceed — flag for front desk verification on arrival' },
+          { id: 'ci-c13', condition: 'If document is expired', action: 'Reject and ask for valid document' },
+        ],
+      },
+      {
+        id: 'ci-s5',
+        type: 'action',
+        label: 'Upsell Offers',
+        description: 'Present available upgrades and add-ons — room upgrade, early check-in, late checkout, amenity packages.',
+        conditions: [
+          { id: 'ci-c14', condition: 'If upgrades available for room type', action: 'Show upgrade options with pricing' },
+          { id: 'ci-c15', condition: 'If no addons configured', action: 'Skip step entirely' },
+          { id: 'ci-c16', condition: 'If guest is loyalty member', action: 'Show loyalty-specific offers and benefits' },
+        ],
+      },
+      {
+        id: 'ci-s6',
+        type: 'action',
+        label: 'Review & Submit',
+        description: 'Guest reviews all entered information and confirms submission. Data syncs to PMS on submit.',
+        conditions: [
+          { id: 'ci-c17', condition: 'If all required steps complete', action: 'Enable submit button — sync to PMS' },
+          { id: 'ci-c18', condition: 'If PMS sync succeeds', action: 'Assign room and generate mobile key (if enabled)' },
+          { id: 'ci-c19', condition: 'If PMS sync fails', action: 'Queue for retry — notify front desk of pending check-in' },
+        ],
+      },
+      {
+        id: 'ci-s7',
+        type: 'response',
+        label: 'Post-Check-in',
+        description: 'Send confirmation to guest with room number, mobile key, and welcome message. Enroll in loyalty program if opted in.',
+        conditions: [
+          { id: 'ci-c20', condition: 'If mobile key enabled', action: 'Send mobile key via Apple/Google Wallet' },
+          { id: 'ci-c21', condition: 'If loyalty enrollment opted in', action: 'Trigger membership enrollment and confirm tier' },
+        ],
+      },
+    ],
+    guardrails: [
+      'Never store raw credit card numbers — use payment gateway tokenization only.',
+      'Always validate ID documents against expiry date and accepted types.',
+      'Do not assign rooms that are out of order or not ready.',
+      'Log all step completions and skips for audit trail.',
+      'If deposit fails and is required, do not allow check-in completion.',
+    ],
+  },
+  tone: 'Formal',
+  metrics: {
+    totalConversations: 1856,
+    resolutionRate: 94,
+    avgResponseTime: '< 1 min',
+    satisfactionScore: 4.6,
+  },
+  recentActivity: [
+    { time: '11:02 AM', description: 'Completed check-in for Room 718 — ID verified via Incode, deposit captured, mobile key sent.' },
+    { time: '10:45 AM', description: 'Room upgrade accepted — Room 302 → Suite 1201, $85/night upgrade charge captured.' },
+    { time: '10:20 AM', description: 'Payment failed for Room 415 — notified front desk, guest will present card on arrival.' },
+    { time: '9:58 AM', description: 'Loyalty enrollment completed for Room 603 — Gold Elite tier confirmed.' },
+  ],
+  createdAt: '2026-01-05',
+  rules: [
+    { id: 'ci-r1', condition: 'IF VIP or Diamond loyalty tier', action: 'Auto-assign best available room in requested category', enabled: true },
+    { id: 'ci-r2', condition: 'IF group booking (10+ rooms)', action: 'Route to group coordinator — do not auto-assign individual rooms', enabled: true },
+    { id: 'ci-r3', condition: 'IF payment declines 3 times', action: 'Allow check-in without deposit, flag for front desk collection on arrival', enabled: true },
+    { id: 'ci-r4', condition: 'DEFAULT', action: 'Process check-in per standard hotel configuration', enabled: true },
+  ],
+};
+
+export const mockAgents: Agent[] = [alex, javis, ava, riley, serviceTicketAgent, frontDeskAgent, checkInAgent];
 
 // ---------------------------------------------------------------------------
 // Agent Templates
