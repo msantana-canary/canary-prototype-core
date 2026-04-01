@@ -20,6 +20,10 @@ import {
 import { useAgentStore } from '@/lib/products/agents/store';
 import type { AgentViewTab } from '@/lib/products/agents/types';
 import OverviewTab from './OverviewTab';
+import AgentProfileStep from './AgentProfileStep';
+import CapabilitiesStep from './CapabilitiesStep';
+import WorkflowsStep from './WorkflowsStep';
+import ConnectorsStep from './ConnectorsStep';
 import AgentChat from './AgentChat';
 
 const TABS: { id: AgentViewTab; label: string }[] = [
@@ -37,6 +41,18 @@ export default function AgentView() {
   const editAgentTab = useAgentStore((s) => s.editAgentTab);
   const setEditAgentTab = useAgentStore((s) => s.setEditAgentTab);
 
+  const setAgentName = useAgentStore((s) => s.setAgentName);
+  const setAgentDescription = useAgentStore((s) => s.setAgentDescription);
+  const setWizardCapabilities = useAgentStore((s) => s.setWizardCapabilities);
+  const setWizardConnectors = useAgentStore((s) => s.setWizardConnectors);
+  const setWizardWorkflows = useAgentStore((s) => s.setWizardWorkflows);
+  const setWizardResponsibilities = useAgentStore((s) => s.setWizardResponsibilities);
+  const setWizardBehavioralGuidelines = useAgentStore((s) => s.setWizardBehavioralGuidelines);
+  const setWizardGuardrailsText = useAgentStore((s) => s.setWizardGuardrailsText);
+  const setWizardAvoidedTopics = useAgentStore((s) => s.setWizardAvoidedTopics);
+  const setWizardCommunicationStyle = useAgentStore((s) => s.setWizardCommunicationStyle);
+  const setBuilderWorkflow = useAgentStore((s) => s.setBuilderWorkflow);
+
   // Slide-over animation
   const [shouldRender, setShouldRender] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
@@ -47,7 +63,32 @@ export default function AgentView() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Hydrate wizard state from agent data so step components can render
   const agent = agents.find((a) => a.id === selectedAgentId);
+  useEffect(() => {
+    if (!agent) return;
+    setAgentName(agent.name);
+    setAgentDescription(agent.description);
+    setWizardCapabilities(agent.capabilities);
+    setWizardCommunicationStyle(agent.tone || '');
+    setWizardGuardrailsText(agent.workflow.guardrails.map((g) => `• ${g}`).join('\n'));
+    setBuilderWorkflow(agent.workflow);
+    setWizardWorkflows([agent.workflow]);
+    // Agent-specific fields we can derive
+    setWizardResponsibilities([]);
+    setWizardBehavioralGuidelines('');
+    setWizardAvoidedTopics([]);
+    setWizardConnectors(
+      agent.connections.map((c) => ({
+        id: c.id,
+        name: c.name,
+        type: c.type,
+        status: c.status === 'connected' ? 'connected' as const : c.status === 'needed' ? 'setup-required' as const : 'not-available' as const,
+      }))
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agent?.id]);
+
   if (!agent) return null;
 
   const handleBack = () => {
@@ -64,13 +105,13 @@ export default function AgentView() {
       case 'overview':
         return <OverviewTab />;
       case 'profile':
-        return <div style={{ color: '#666', fontSize: 14 }}>Agent Profile editing — reuses AgentProfileStep in edit mode</div>;
+        return <AgentProfileStep />;
       case 'capabilities':
-        return <div style={{ color: '#666', fontSize: 14 }}>Capabilities editing — reuses CapabilitiesStep in edit mode</div>;
+        return <CapabilitiesStep />;
       case 'workflows':
-        return <div style={{ color: '#666', fontSize: 14 }}>Workflows editing — reuses WorkflowsStep in edit mode</div>;
+        return <WorkflowsStep />;
       case 'connectors':
-        return <div style={{ color: '#666', fontSize: 14 }}>Connectors editing — reuses ConnectorsStep in edit mode</div>;
+        return <ConnectorsStep />;
       default:
         return <OverviewTab />;
     }

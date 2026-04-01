@@ -10,7 +10,7 @@
 
 import React, { useState, KeyboardEvent } from 'react';
 import Icon from '@mdi/react';
-import { mdiAccountGroupOutline, mdiDeleteOutline } from '@mdi/js';
+import { mdiAccountGroupOutline, mdiDeleteOutline, mdiChevronDown, mdiChevronRight } from '@mdi/js';
 import {
   CanaryInput,
   CanaryInputMultiple,
@@ -60,7 +60,7 @@ export default function AgentProfileStep() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Agent identity — no card bg, sits directly on #FAFAFA page */}
+      {/* Agent description — no card bg, sits directly on #FAFAFA page */}
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         <div
           style={{
@@ -78,24 +78,6 @@ export default function AgentProfileStep() {
           <Icon path={mdiAccountGroupOutline} size={1} color={colors.colorBlueDark1} />
         </div>
         <div style={{ flex: 1 }}>
-          <input
-            value={agentName}
-            onChange={(e) => setAgentName(e.target.value)}
-            style={{
-              fontSize: 18,
-              fontWeight: 500,
-              lineHeight: '28px',
-              color: '#000',
-              border: 'none',
-              background: 'transparent',
-              outline: 'none',
-              width: '100%',
-              padding: 0,
-              marginBottom: 4,
-              fontFamily: 'var(--font-roboto), sans-serif',
-            }}
-            placeholder="Agent name"
-          />
           <textarea
             ref={(el) => {
               if (el) {
@@ -128,6 +110,24 @@ export default function AgentProfileStep() {
             placeholder="Describe what this agent does..."
           />
         </div>
+      </div>
+
+      {/* Agent name — same tile style as workflow name */}
+      <div
+        style={{
+          backgroundColor: '#fff',
+          border: '1px solid #E5E5E5',
+          borderRadius: 4,
+          padding: 16,
+        }}
+      >
+        <CanaryInput
+          size={InputSize.NORMAL}
+          value={agentName}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAgentName(e.target.value)}
+          placeholder="Agent name"
+          label="Agent name"
+        />
       </div>
 
       {/* Responsibilities card — white bg on #FAFAFA */}
@@ -202,7 +202,7 @@ export default function AgentProfileStep() {
         </div>
       </div>
 
-      {/* Guidelines & Tone card — white bg on #FAFAFA */}
+      {/* Operating Rules — always shown */}
       <div
         style={{
           backgroundColor: '#fff',
@@ -213,27 +213,19 @@ export default function AgentProfileStep() {
       >
         <div style={{ marginBottom: 16 }}>
           <p style={{ fontSize: 18, fontWeight: 500, lineHeight: '28px', color: '#000', margin: 0 }}>
-            Guidelines & Tone
+            Operating Rules
           </p>
           <p style={{ fontSize: 16, fontWeight: 400, lineHeight: '24px', color: '#000', margin: '4px 0 0 0' }}>
-            How should this agent communicate and behave?
+            Define how this agent should operate and what it should never do.
           </p>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <CanarySelect
-            label="Communication style"
-            size={InputSize.NORMAL}
-            value={communicationStyle}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCommunicationStyle(e.target.value)}
-            options={COMMUNICATION_STYLES}
-          />
-
           <CanaryTextArea
-            label="Behavioral Guidelines"
+            label="Rules & Guidelines"
             value={behavioralGuidelines}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBehavioralGuidelines(e.target.value)}
-            placeholder="Enter behavioral guidelines..."
+            placeholder="Enter operating rules and guidelines..."
             rows={6}
           />
 
@@ -244,6 +236,86 @@ export default function AgentProfileStep() {
             placeholder="Enter guardrails (what the agent should never do)..."
             rows={4}
           />
+        </div>
+      </div>
+
+      {/* Communication Settings — optional, collapsible */}
+      <CommunicationSettings
+        communicationStyle={communicationStyle}
+        setCommunicationStyle={setCommunicationStyle}
+        avoidedTopics={avoidedTopics}
+        setAvoidedTopics={setAvoidedTopics}
+      />
+    </div>
+  );
+}
+
+/** Collapsible Communication Settings section */
+function CommunicationSettings({
+  communicationStyle,
+  setCommunicationStyle,
+  avoidedTopics,
+  setAvoidedTopics,
+}: {
+  communicationStyle: string;
+  setCommunicationStyle: (s: string) => void;
+  avoidedTopics: string[];
+  setAvoidedTopics: (t: string[]) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(
+    // Default open if there's already a communication style set (template flow)
+    communicationStyle !== '' && communicationStyle !== 'Natural'
+  );
+
+  return (
+    <div
+      style={{
+        backgroundColor: '#fff',
+        border: '1px solid #E5E5E5',
+        borderRadius: 8,
+        overflow: 'hidden',
+      }}
+    >
+      {/* Collapsible header */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          padding: 24,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
+      >
+        <div>
+          <p style={{ fontSize: 18, fontWeight: 500, lineHeight: '28px', color: '#000', margin: 0 }}>
+            Communication Settings
+          </p>
+          <p style={{ fontSize: 14, fontWeight: 400, lineHeight: '22px', color: '#999', margin: '4px 0 0 0' }}>
+            Optional — configure how this agent communicates with guests
+          </p>
+        </div>
+        <Icon
+          path={isOpen ? mdiChevronDown : mdiChevronRight}
+          size={1}
+          color="#999"
+        />
+      </button>
+
+      {/* Collapsible content */}
+      {isOpen && (
+        <div style={{ padding: '0 24px 24px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <CanarySelect
+            label="Communication style"
+            size={InputSize.NORMAL}
+            value={communicationStyle}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCommunicationStyle(e.target.value)}
+            options={COMMUNICATION_STYLES}
+          />
 
           <CanaryInputMultiple
             label="Avoided Topics"
@@ -252,7 +324,7 @@ export default function AgentProfileStep() {
             placeholder="Add topics..."
           />
         </div>
-      </div>
+      )}
     </div>
   );
 }

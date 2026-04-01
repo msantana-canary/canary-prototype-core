@@ -629,7 +629,125 @@ export const mockActivityFeed: ActivityFeedItem[] = [
   },
 ];
 
-export const mockAgents: Agent[] = [alex, javis, ava];
+// ---------------------------------------------------------------------------
+// Riley — Email Reservation Agent (Backend Automation, Pressure Test #1)
+// ---------------------------------------------------------------------------
+
+const riley: Agent = {
+  id: 'agent-email-res',
+  name: 'Email Reservation Agent',
+  role: 'Reservation Processor',
+  description: 'Processes reservation-related emails (cancellations, modifications, confirmations) and updates the PMS automatically.',
+  status: 'active',
+  triggers: [
+    {
+      id: 'trig-riley-1',
+      intent: 'Reservation email received',
+      channels: [
+        { channel: 'voice', enabled: false },
+        { channel: 'sms', enabled: false },
+        { channel: 'whatsapp', enabled: false },
+        { channel: 'email', enabled: true },
+        { channel: 'booking-com', enabled: false },
+        { channel: 'expedia', enabled: false },
+        { channel: 'webchat', enabled: false },
+      ],
+    },
+  ],
+  connections: [
+    { id: 'conn-pms', name: 'Property Management System', type: 'pms', status: 'connected', description: 'PMS for reservation lookup and updates' },
+    { id: 'conn-kb', name: 'Knowledge Base', type: 'knowledge-base', status: 'connected', description: 'Cancellation policies and property rules' },
+  ],
+  capabilities: CANARY_PRODUCTS.map((p) => ({
+    ...p,
+    enabled: p.id === 'prod-knowledge-base',
+  })),
+  workflow: {
+    id: 'wf-email-cancel',
+    name: 'Process Cancellation Email',
+    description: 'Parses inbound cancellation emails, validates against PMS policy, cancels or flags for review.',
+    trigger: 'Cancellation Email Received',
+    triggerDescription: 'Inbound email matching cancellation keywords detected in reservations inbox.',
+    steps: [
+      {
+        id: 'er-s1',
+        type: 'action',
+        label: 'Parse Email Content',
+        description: 'Extract confirmation number, guest name, dates, and cancellation reason from the email body.',
+        conditions: [
+          { id: 'er-c1', condition: 'If confirmation number is missing', action: 'Search PMS by guest name and dates' },
+          { id: 'er-c2', condition: 'If multiple reservations match', action: 'Flag for staff review' },
+        ],
+      },
+      {
+        id: 'er-s2',
+        type: 'action',
+        label: 'Validate Cancellation Policy',
+        description: 'Check the reservation against the property cancellation policy in PMS.',
+        conditions: [
+          { id: 'er-c3', condition: 'If within free cancellation window', action: 'Proceed — no charge' },
+          { id: 'er-c4', condition: 'If within penalty window', action: 'Calculate penalty amount' },
+          { id: 'er-c5', condition: 'If non-refundable rate', action: 'Flag for staff review' },
+        ],
+      },
+      {
+        id: 'er-s3',
+        type: 'action',
+        label: 'Update PMS',
+        description: 'Cancel the reservation in the PMS and release inventory.',
+        conditions: [
+          { id: 'er-c6', condition: 'If PMS write succeeds', action: 'Log and proceed to confirmation' },
+          { id: 'er-c7', condition: 'If PMS write fails', action: 'Retry once, then escalate to IT' },
+        ],
+      },
+      {
+        id: 'er-s4',
+        type: 'response',
+        label: 'Send Confirmation',
+        description: 'Email guest with cancellation number, charges applied, and refund timeline.',
+      },
+      {
+        id: 'er-s5',
+        type: 'handoff',
+        label: 'Escalate Exceptions',
+        description: 'Route flagged items to the appropriate team for manual review.',
+        conditions: [
+          { id: 'er-c8', condition: 'If non-refundable or policy exception', action: 'Send to revenue manager' },
+          { id: 'er-c9', condition: 'If PMS error persisted', action: 'Send to IT support' },
+          { id: 'er-c10', condition: 'If guest disputed terms', action: 'Send to front desk manager' },
+        ],
+      },
+    ],
+    guardrails: [
+      'Never cancel without matching confirmation number or guest identity.',
+      'Always apply the correct cancellation policy.',
+      'Log every action for audit trail.',
+      'Never process group/event booking cancellations — route to sales team.',
+    ],
+  },
+  tone: '',
+  metrics: {
+    totalConversations: 312,
+    resolutionRate: 96,
+    avgResponseTime: '< 1 min',
+    satisfactionScore: 0,
+  },
+  recentActivity: [
+    { time: '9:42 AM', description: 'Cancelled reservation #CTL-88421 — free cancellation window, no charge applied.' },
+    { time: '9:15 AM', description: 'Flagged reservation #CTL-77102 for revenue manager — non-refundable rate.' },
+    { time: '8:58 AM', description: 'Processed modification for #CTL-90315 — dates shifted from Apr 12-14 to Apr 19-21.' },
+    { time: '8:30 AM', description: 'Escalated OTA reservation #BK-445521 — routed to Booking.com portal team.' },
+  ],
+  createdAt: '2026-03-15',
+  rules: [
+    { id: 'er-r1', condition: 'IF group or event booking', action: 'Route to sales team — do not auto-cancel', enabled: true },
+    { id: 'er-r2', condition: 'IF OTA reservation', action: 'Flag for OTA portal cancellation', enabled: true },
+    { id: 'er-r3', condition: 'IF VIP or loyalty member', action: 'Flag for front desk manager review', enabled: true },
+    { id: 'er-r4', condition: 'DEFAULT', action: 'Process per standard policy', enabled: true },
+  ],
+};
+
+export const mockAgents: Agent[] = [alex, javis, ava, riley];
 
 // ---------------------------------------------------------------------------
 // Agent Templates
@@ -1242,6 +1360,112 @@ const templateLoyalty: AgentTemplate = {
     ],
   },
   defaultTone: 'Luxury',
+};
+
+// ---------------------------------------------------------------------------
+// Backend Automation Agent — Pressure Test #1
+// No guest communication. Reads emails, updates PMS, sends confirmations.
+// ---------------------------------------------------------------------------
+
+const templateEmailReservation: AgentTemplate = {
+  id: 'tpl-email-reservation',
+  name: 'Email Reservation Agent',
+  role: 'Reservation Processor',
+  description:
+    'Processes reservation-related emails (cancellations, modifications, confirmations) and updates the PMS automatically.',
+  icon: 'mdiEmailOutline',
+  tier: 'core',
+  isLocked: false,
+  defaultTriggers: [
+    {
+      id: 'trig-er-1',
+      intent: 'Reservation email received',
+      channels: [
+        { channel: 'voice', enabled: false },
+        { channel: 'sms', enabled: false },
+        { channel: 'whatsapp', enabled: false },
+        { channel: 'email', enabled: true },
+        { channel: 'booking-com', enabled: false },
+        { channel: 'expedia', enabled: false },
+        { channel: 'webchat', enabled: false },
+      ],
+    },
+  ],
+  defaultConnections: [
+    cn(conn.pms, { status: 'needed' }),
+    conn.kb,
+  ],
+  defaultCapabilities: ['prod-knowledge-base'],
+  defaultWorkflow: {
+    id: 'wf-email-cancel',
+    name: 'Process Cancellation Email',
+    description: 'Parses inbound cancellation emails, validates against PMS policy, cancels or flags for review, and sends confirmation.',
+    trigger: 'Cancellation Email Received',
+    triggerDescription: 'Inbound email matching cancellation keywords detected in reservations inbox.',
+    steps: [
+      {
+        id: 'er-s1',
+        type: 'action',
+        label: 'Parse Email Content',
+        description: 'Extract confirmation number, guest name, dates, and cancellation reason from the email body.',
+        conditions: [
+          { id: 'er-c1', condition: 'If confirmation number is missing', action: 'Search PMS by guest name and dates to find matching reservation' },
+          { id: 'er-c2', condition: 'If multiple reservations match', action: 'Flag for staff review — do not auto-cancel' },
+        ],
+      },
+      {
+        id: 'er-s2',
+        type: 'action',
+        label: 'Validate Cancellation Policy',
+        description: 'Check the reservation against the property cancellation policy in PMS.',
+        conditions: [
+          { id: 'er-c3', condition: 'If within free cancellation window', action: 'Proceed to cancel — no charge' },
+          { id: 'er-c4', condition: 'If within penalty window', action: 'Calculate penalty amount per policy' },
+          { id: 'er-c5', condition: 'If non-refundable rate', action: 'Flag for staff review — cannot auto-cancel' },
+        ],
+      },
+      {
+        id: 'er-s3',
+        type: 'action',
+        label: 'Update PMS',
+        description: 'Cancel the reservation in the PMS and release the inventory. Apply charges if applicable.',
+        conditions: [
+          { id: 'er-c6', condition: 'If PMS write succeeds', action: 'Log confirmation and proceed to notification' },
+          { id: 'er-c7', condition: 'If PMS write fails', action: 'Retry once, then flag for staff with error details' },
+        ],
+      },
+      {
+        id: 'er-s4',
+        type: 'response',
+        label: 'Send Confirmation',
+        description: 'Send a cancellation confirmation email to the guest with cancellation number, any charges applied, and refund timeline.',
+      },
+      {
+        id: 'er-s5',
+        type: 'handoff',
+        label: 'Escalate Exceptions',
+        description: 'Route flagged items to the front desk team for manual review.',
+        conditions: [
+          { id: 'er-c8', condition: 'If non-refundable or policy exception', action: 'Send to revenue manager with full context' },
+          { id: 'er-c9', condition: 'If PMS error persisted', action: 'Send to IT support with error log' },
+          { id: 'er-c10', condition: 'If guest disputed the cancellation terms', action: 'Send to front desk manager for guest resolution' },
+        ],
+      },
+    ],
+    guardrails: [
+      'Never cancel a reservation without matching the confirmation number or guest identity.',
+      'Always apply the correct cancellation policy — no manual overrides without staff approval.',
+      'Log every cancellation action for audit trail.',
+      'Never process cancellations for group/event bookings — route to sales team.',
+    ],
+  },
+  defaultTone: '',
+  defaultRules: [
+    { id: 'er-r1', condition: 'IF group or event booking', action: 'Route to sales team — do not auto-cancel', enabled: true },
+    { id: 'er-r2', condition: 'IF OTA reservation (Booking.com, Expedia)', action: 'Do not cancel in PMS — flag for OTA portal cancellation', enabled: true },
+    { id: 'er-r3', condition: 'IF VIP or loyalty member', action: 'Flag for front desk manager review before processing', enabled: true },
+    { id: 'er-r4', condition: 'DEFAULT', action: 'Process cancellation per standard policy', enabled: true },
+  ],
 };
 
 export const agentTemplates: AgentTemplate[] = [

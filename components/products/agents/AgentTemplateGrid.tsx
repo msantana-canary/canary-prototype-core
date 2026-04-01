@@ -24,6 +24,7 @@ import {
   mdiTrendingUp,
   mdiCreditCardOutline,
   mdiStarOutline,
+  mdiEmailOutline,
 } from '@mdi/js';
 import {
   CanaryButton,
@@ -52,6 +53,7 @@ const ICON_MAP: Record<string, string> = {
   mdiTrendingUp,
   mdiCreditCardOutline,
   mdiStarOutline,
+  mdiEmailOutline,
 };
 
 type TierKey = 'included' | 'core' | 'premium';

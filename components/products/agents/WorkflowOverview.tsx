@@ -63,9 +63,9 @@ export default function WorkflowOverview() {
           gap: 16,
         }}
       >
-        {workflows.map((wf) => (
+        {workflows.map((wf, i) => (
           <div
-            key={wf.id || wf.name}
+            key={wf.id || wf.name || `wf-${i}`}
             onClick={() => selectWorkflow(wf.id || null)}
             className="cap-card"
             style={{

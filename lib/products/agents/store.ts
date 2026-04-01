@@ -183,6 +183,33 @@ const initialWizardState = {
 
 const STEP_ORDER: WizardStep[] = ['profile', 'capabilities', 'workflows', 'connectors'];
 
+const TEMPLATE_RESPONSIBILITIES: Record<string, string[]> = {
+  'tpl-sales-events': [
+    'Respond to inbound sales and event inquiries via email',
+    'Identify event type, dates, headcount, and budget from inquiry details',
+    'Check availability of event spaces and room blocks',
+    'Draft and send personalized proposals with availability and pricing',
+    'Schedule meetings and site visits with prospective clients',
+    'Follow up on leads that haven\'t responded',
+    'Qualify and route leads to the appropriate sales team member',
+    'Flag high-value events for Director of Sales review',
+  ],
+  'tpl-email-reservation': [
+    'Monitor inbound emails for reservation-related requests',
+    'Parse cancellation, modification, and confirmation emails',
+    'Validate requests against property cancellation policy',
+    'Update reservations in the PMS automatically',
+    'Send confirmation emails to guests after processing',
+    'Flag exceptions for staff review (non-refundable, disputes, OTA bookings)',
+    'Log all actions for audit trail',
+  ],
+};
+
+const TEMPLATE_GUIDELINES: Record<string, string> = {
+  'tpl-sales-events': '• Always greet by name and reference their specific event details\n• Keep responses warm, concise, and professional\n• Push for ACH payments when possible\n• Include a CTA to schedule a meeting or site visit in every response\n• Reference past booking history for returning clients',
+  'tpl-email-reservation': '• Always verify confirmation number before processing any changes\n• Apply cancellation policy exactly as configured — no manual overrides\n• Log every action with timestamp for audit compliance\n• Route OTA reservations to the OTA portal — do not modify in PMS directly\n• Retry PMS writes once on failure before escalating',
+};
+
 export const useAgentStore = create<AgentStoreState>((set, get) => ({
   currentView: 'dashboard',
   selectedAgentId: null,
@@ -295,21 +322,8 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
       wizardTone: template.defaultTone,
       wizardRules: template.defaultRules ? [...template.defaultRules] : [],
       wizardCommunicationStyle: template.defaultTone,
-      wizardResponsibilities: template.id === 'tpl-sales-events'
-        ? [
-            'Respond to inbound sales and event inquiries via email',
-            'Identify event type, dates, headcount, and budget from inquiry details',
-            'Check availability of event spaces and room blocks',
-            'Draft and send personalized proposals with availability and pricing',
-            'Schedule meetings and site visits with prospective clients',
-            'Follow up on leads that haven\'t responded',
-            'Qualify and route leads to the appropriate sales team member',
-            'Flag high-value events for Director of Sales review',
-          ]
-        : [],
-      wizardBehavioralGuidelines: template.id === 'tpl-sales-events'
-        ? '• Always greet by name and reference their specific event details\n• Keep responses warm, concise, and professional\n• Push for ACH payments when possible\n• Include a CTA to schedule a meeting or site visit in every response\n• Reference past booking history for returning clients'
-        : '',
+      wizardResponsibilities: TEMPLATE_RESPONSIBILITIES[template.id] || [],
+      wizardBehavioralGuidelines: TEMPLATE_GUIDELINES[template.id] || '',
       wizardGuardrailsText: template.defaultWorkflow.guardrails.map((g) => `• ${g}`).join('\n'),
       wizardAvoidedTopics: template.id === 'tpl-sales-events'
         ? ['Complaints', 'Last Checkout Disputes', 'Legal Questions']
