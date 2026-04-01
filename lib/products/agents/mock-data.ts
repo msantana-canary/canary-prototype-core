@@ -651,6 +651,75 @@ export const mockActivityFeed: ActivityFeedItem[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Email Reservation Agent — individual workflows
+// ---------------------------------------------------------------------------
+
+const erWorkflowModification: AgentWorkflow = {
+  id: 'wf-email-modify',
+  name: 'Process Modification Email',
+  description: 'Parses date change, room type, and guest count modification requests from inbound emails and applies them to the PMS.',
+  trigger: 'Modification Email Received',
+  triggerDescription: 'Inbound email matching modification keywords (change dates, switch rooms, add guest, etc.).',
+  steps: [
+    { id: 'erm-s1', type: 'action', label: 'Parse Modification Request', description: 'Extract confirmation number, requested changes (dates, room type, guest count), and reason from email.',
+      conditions: [
+        { id: 'erm-c1', condition: 'If confirmation number found', action: 'Look up reservation in PMS' },
+        { id: 'erm-c2', condition: 'If no confirmation number', action: 'Search by guest name + original dates' },
+        { id: 'erm-c3', condition: 'If multiple changes requested', action: 'Process each change sequentially' },
+      ],
+    },
+    { id: 'erm-s2', type: 'action', label: 'Validate Changes', description: 'Check if the requested modifications are possible — date availability, room type availability, rate impact.',
+      conditions: [
+        { id: 'erm-c4', condition: 'If new dates available at same rate', action: 'Apply change directly' },
+        { id: 'erm-c5', condition: 'If new dates available at different rate', action: 'Flag rate difference for guest confirmation before applying' },
+        { id: 'erm-c6', condition: 'If requested dates/room not available', action: 'Suggest closest alternatives and notify guest' },
+        { id: 'erm-c7', condition: 'If modification violates policy (e.g., non-modifiable rate)', action: 'Flag for staff review' },
+      ],
+    },
+    { id: 'erm-s3', type: 'action', label: 'Update PMS', description: 'Apply the validated changes to the reservation in the PMS — update dates, room type, guest count, and rate.',
+      conditions: [
+        { id: 'erm-c8', condition: 'If PMS update succeeds', action: 'Log changes and proceed to confirmation' },
+        { id: 'erm-c9', condition: 'If PMS update fails', action: 'Retry once, then flag for staff with error details' },
+      ],
+    },
+    { id: 'erm-s4', type: 'response', label: 'Send Confirmation', description: 'Email guest with updated reservation details — new dates, room type, rate, and any price difference.' },
+  ],
+  guardrails: [
+    'Never modify a reservation without matching the confirmation number or guest identity.',
+    'Always show rate impact before applying changes that affect pricing.',
+    'Log all modifications for audit trail.',
+  ],
+};
+
+const erWorkflowConfirmation: AgentWorkflow = {
+  id: 'wf-email-confirm',
+  name: 'Process Confirmation Email',
+  description: 'Matches inbound confirmation emails to pending reservations and marks them as confirmed in the PMS.',
+  trigger: 'Confirmation Email Received',
+  triggerDescription: 'Inbound email from guest confirming their upcoming reservation.',
+  steps: [
+    { id: 'erc-s1', type: 'action', label: 'Match Reservation', description: 'Extract confirmation number or guest details from the email and locate the reservation in PMS.',
+      conditions: [
+        { id: 'erc-c1', condition: 'If exact reservation match found', action: 'Proceed to verify details' },
+        { id: 'erc-c2', condition: 'If multiple possible matches', action: 'Flag for staff to select correct reservation' },
+        { id: 'erc-c3', condition: 'If no match found', action: 'Reply asking guest for confirmation number' },
+      ],
+    },
+    { id: 'erc-s2', type: 'action', label: 'Verify & Confirm', description: 'Confirm reservation details match what the guest expects — dates, room type, rate, guest count.',
+      conditions: [
+        { id: 'erc-c4', condition: 'If details match guest expectations', action: 'Mark as confirmed in PMS' },
+        { id: 'erc-c5', condition: 'If guest mentions discrepancies', action: 'Flag for staff review before confirming' },
+      ],
+    },
+    { id: 'erc-s3', type: 'response', label: 'Send Confirmation', description: 'Reply to guest with confirmed reservation summary — dates, room type, rate, check-in instructions, and pre-arrival check-in link.' },
+  ],
+  guardrails: [
+    'Never confirm a reservation that has unresolved discrepancies.',
+    'Always include pre-arrival check-in link in confirmation emails.',
+  ],
+};
+
+// ---------------------------------------------------------------------------
 // Riley — Email Reservation Agent (Backend Automation, Pressure Test #1)
 // ---------------------------------------------------------------------------
 
@@ -774,6 +843,8 @@ const riley: Agent = {
     { id: 'er-r4', condition: 'DEFAULT', action: 'Process per standard policy', enabled: true },
   ],
 };
+// Attach all workflows to riley
+riley.workflows = [riley.workflow, erWorkflowModification, erWorkflowConfirmation];
 
 // ---------------------------------------------------------------------------
 // Service Ticket Agent (Pressure Test #2)
