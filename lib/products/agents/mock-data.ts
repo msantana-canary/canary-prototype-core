@@ -398,6 +398,13 @@ const alex: Agent = {
     resolutionRate: 94,
     avgResponseTime: '1.2s',
     satisfactionScore: 4.8,
+    heroStat: { label: 'Avg. Call Duration', value: '2.4 min', subtitle: 'Industry avg: 6.8 min' },
+    cards: [
+      { label: 'Calls Handled', value: '2,847', subtitle: 'this month' },
+      { label: 'Resolved by AI', value: '94%', subtitle: '+3% from last month' },
+      { label: 'Avg. Response Time', value: '1.2s', subtitle: 'pickup to greeting' },
+      { label: 'Transfer Rate', value: '6%', subtitle: '-1% from last month' },
+    ],
   },
   recentActivity: [
     { time: '2 min ago', description: 'Handled call about late checkout request for room 1204.' },
@@ -425,6 +432,13 @@ const javis: Agent = {
     resolutionRate: 89,
     avgResponseTime: '0.8s',
     satisfactionScore: 4.6,
+    heroStat: { label: 'Avg. Response Time', value: '0.8 sec', subtitle: 'Across all channels' },
+    cards: [
+      { label: 'Messages Handled', value: '5,123', subtitle: 'this month' },
+      { label: 'Resolution Rate', value: '89%', subtitle: 'without staff handoff' },
+      { label: 'Active Channels', value: '4', subtitle: 'SMS, WhatsApp, Booking.com, Webchat' },
+      { label: 'Satisfaction', value: '4.6/5', subtitle: 'from guest surveys' },
+    ],
   },
   recentActivity: [
     { time: '1 min ago', description: 'Replied to WhatsApp message about early check-in availability.' },
@@ -452,6 +466,13 @@ const ava: Agent = {
     resolutionRate: 91,
     avgResponseTime: '1.0s',
     satisfactionScore: 4.7,
+    heroStat: { label: 'Avg. Response Time', value: '1.0 sec', subtitle: 'Webchat visitors only' },
+    cards: [
+      { label: 'Chats Handled', value: '1,456', subtitle: 'this month' },
+      { label: 'Resolution Rate', value: '91%', subtitle: 'without staff handoff' },
+      { label: 'Avg. Chat Duration', value: '3.2 min', subtitle: 'per conversation' },
+      { label: 'Satisfaction', value: '4.7/5', subtitle: 'from post-chat survey' },
+    ],
   },
   recentActivity: [
     { time: '5 min ago', description: 'Helped visitor compare suite options and start a booking.' },
@@ -731,6 +752,13 @@ const riley: Agent = {
     resolutionRate: 96,
     avgResponseTime: '< 1 min',
     satisfactionScore: 0,
+    heroStat: { label: 'Avg. Processing Time', value: '< 1 min', subtitle: 'Email received to PMS updated' },
+    cards: [
+      { label: 'Emails Processed', value: '312', subtitle: 'this month' },
+      { label: 'Auto-Processed', value: '96%', subtitle: 'without staff intervention' },
+      { label: 'PMS Sync Success', value: '99.2%', subtitle: '3 failures this month' },
+      { label: 'Escalation Rate', value: '4%', subtitle: 'OTA + non-refundable' },
+    ],
   },
   recentActivity: [
     { time: '9:42 AM', description: 'Cancelled reservation #CTL-88421 — free cancellation window, no charge applied.' },
@@ -863,6 +891,13 @@ const serviceTicketAgent: Agent = {
     resolutionRate: 89,
     avgResponseTime: '45 sec',
     satisfactionScore: 4.2,
+    heroStat: { label: 'Avg. Resolution Time', value: '18 min', subtitle: 'From request to completion' },
+    cards: [
+      { label: 'Tickets Created', value: '847', subtitle: 'this month' },
+      { label: 'Avg. Resolution Time', value: '18 min', subtitle: 'request to close' },
+      { label: 'SLA Met', value: '89%', subtitle: 'within target time' },
+      { label: 'Satisfaction', value: '4.2/5', subtitle: 'post-resolution survey' },
+    ],
   },
   recentActivity: [
     { time: '10:15 AM', description: 'Created ticket for Room 412 — broken AC unit. Priority: High.' },
@@ -1083,6 +1118,13 @@ const frontDeskAgent: Agent = {
     resolutionRate: 91,
     avgResponseTime: '22 sec',
     satisfactionScore: 4.5,
+    heroStat: { label: 'Avg. Response Time', value: '22 sec', subtitle: 'Across all capabilities' },
+    cards: [
+      { label: 'Messages Handled', value: '2,341', subtitle: 'this month' },
+      { label: 'Resolution Rate', value: '91%', subtitle: 'without staff handoff' },
+      { label: 'Capabilities Used', value: '5', subtitle: 'Bookings, FAQ, Tickets, Upsells, Checkout' },
+      { label: 'Satisfaction', value: '4.5/5', subtitle: 'from guest surveys' },
+    ],
   },
   recentActivity: [
     { time: '10:30 AM', description: 'Answered FAQ about pool hours for Room 602 via WhatsApp.' },
@@ -1285,6 +1327,13 @@ const checkInAgent: Agent = {
     resolutionRate: 94,
     avgResponseTime: '< 1 min',
     satisfactionScore: 0,
+    heroStat: { label: 'Auto-Verify Rate', value: '94%', subtitle: 'Submissions processed without staff intervention' },
+    cards: [
+      { label: 'Submissions Processed', value: '1,856', subtitle: 'this month' },
+      { label: 'Auto-Verified', value: '94%', subtitle: 'no staff review needed' },
+      { label: 'PMS Sync Success', value: '98.7%', subtitle: '24 retries this month' },
+      { label: 'Deposit Capture Rate', value: '97%', subtitle: '56 failed, 41 recovered' },
+    ],
   },
   recentActivity: [
     { time: '11:02 AM', description: 'Auto-verified submission for Res #CTL-44218 — ID passed, deposit synced to PMS, marked ready.' },

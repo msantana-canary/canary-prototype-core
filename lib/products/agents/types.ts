@@ -138,6 +138,10 @@ export interface AgentMetrics {
   resolutionRate: number;
   avgResponseTime: string;
   satisfactionScore: number;
+  /** Hero stat for the overview — label + value + subtitle */
+  heroStat?: { label: string; value: string; subtitle?: string };
+  /** Custom metric cards for the overview (4 cards) */
+  cards?: { label: string; value: string; subtitle?: string }[];
 }
 
 // ---------------------------------------------------------------------------

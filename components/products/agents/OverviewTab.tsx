@@ -55,9 +55,20 @@ function MetricCard({ label, value, subtitle }: MetricCardProps) {
   );
 }
 
+// Fallback metrics if agent doesn't have custom ones
+const DEFAULT_HERO = { label: 'Total Actions', value: '—', subtitle: 'No data yet' };
+const DEFAULT_CARDS = [
+  { label: 'Total', value: '—', subtitle: 'this month' },
+  { label: 'Resolution Rate', value: '—', subtitle: '' },
+  { label: 'Avg. Time', value: '—', subtitle: '' },
+  { label: 'Score', value: '—', subtitle: '' },
+];
+
 export default function OverviewTab() {
   const selectedThreadId = useAgentStore((s) => s.selectedThreadId);
   const setSelectedThread = useAgentStore((s) => s.setSelectedThread);
+  const selectedAgentId = useAgentStore((s) => s.selectedAgentId);
+  const agents = useAgentStore((s) => s.agents);
 
   // If a thread is selected, show the detail view
   if (selectedThreadId) {
@@ -69,12 +80,9 @@ export default function OverviewTab() {
     );
   }
 
-  const metricCards = [
-    { label: 'Inquiries Handled', value: '47', subtitle: 'this month' },
-    { label: 'Meetings Scheduled', value: '12', subtitle: 'this month' },
-    { label: 'Proposals Sent', value: '34', subtitle: 'this month' },
-    { label: 'Handoff Rate', value: '8%', subtitle: '-2% from last 30 days' },
-  ];
+  const agent = agents.find((a) => a.id === selectedAgentId);
+  const heroStat = agent?.metrics.heroStat || DEFAULT_HERO;
+  const metricCards = agent?.metrics.cards || DEFAULT_CARDS;
 
   return (
     <div>
@@ -108,11 +116,13 @@ export default function OverviewTab() {
         }}
       >
         <CanaryCard>
-          <p style={{ fontSize: 13, color: colors.colorBlack3, margin: '0 0 4px 0' }}>Avg. Response Time</p>
+          <p style={{ fontSize: 13, color: colors.colorBlack3, margin: '0 0 4px 0' }}>{heroStat.label}</p>
           <p style={{ fontSize: 32, fontWeight: 600, color: colors.colorBlack1, margin: '0 0 4px 0' }}>
-            2.1 minutes
+            {heroStat.value}
           </p>
-          <p style={{ fontSize: 13, color: colors.colorBlack4, margin: 0 }}>Industry avg: 4.2 hours</p>
+          {heroStat.subtitle && (
+            <p style={{ fontSize: 13, color: colors.colorBlack4, margin: 0 }}>{heroStat.subtitle}</p>
+          )}
         </CanaryCard>
       </div>
 
