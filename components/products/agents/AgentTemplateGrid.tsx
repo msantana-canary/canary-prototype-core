@@ -73,6 +73,7 @@ const TIER_CONFIG: Record<TierKey, { label: string; tagColor?: TagColor; customC
 export default function AgentTemplateGrid() {
   const goBack = useAgentStore((s) => s.goBack);
   const startFromTemplate = useAgentStore((s) => s.startFromTemplate);
+  const startFromScratch = useAgentStore((s) => s.startFromScratch);
 
   const handleTemplateClick = (template: AgentTemplate) => {
     if (template.isLocked) return;
@@ -81,6 +82,19 @@ export default function AgentTemplateGrid() {
 
   return (
     <div style={{ padding: 32 }}>
+      <style>{`
+        @keyframes templateGridFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .scratch-card {
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .scratch-card:hover {
+          border-color: #2858C4 !important;
+          box-shadow: 0 2px 12px rgba(40, 88, 196, 0.12);
+        }
+      `}</style>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <CanaryButton
@@ -95,18 +109,74 @@ export default function AgentTemplateGrid() {
           Create a new agent
         </h1>
         <p style={{ fontSize: '0.875rem', color: colors.colorBlack3, margin: 0 }}>
-          Choose a template to get started
+          Choose a template to get started, or build from scratch.
         </p>
       </div>
 
       {/* Template grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
-        {agentTemplates.map((template) => (
-          <TemplateCard
+        {/* Start from Scratch card — first in grid */}
+        <div
+          className="scratch-card"
+          onClick={startFromScratch}
+          style={{
+            border: '2px dashed #93ABE1',
+            borderRadius: 8,
+            padding: 24,
+            cursor: 'pointer',
+            minHeight: 200,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+            opacity: 0,
+            animationName: 'templateGridFadeIn',
+            animationDuration: '0.35s',
+            animationTimingFunction: 'ease-out',
+            animationFillMode: 'forwards',
+          }}
+        >
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
+              backgroundColor: '#EAEEF9',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Icon path={mdiStarOutline} size={1} color="#2858C4" />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: 16, fontWeight: 500, color: '#2858C4', margin: '0 0 4px 0' }}>
+              Start from Scratch
+            </p>
+            <p style={{ fontSize: 13, color: '#666', margin: 0, lineHeight: '18px' }}>
+              Build a custom agent with your own configuration
+            </p>
+          </div>
+        </div>
+
+        {agentTemplates.map((template, idx) => (
+          <div
             key={template.id}
-            template={template}
-            onClick={() => handleTemplateClick(template)}
-          />
+            style={{
+              opacity: 0,
+              animationName: 'templateGridFadeIn',
+              animationDuration: '0.35s',
+              animationTimingFunction: 'ease-out',
+              animationFillMode: 'forwards',
+              animationDelay: `${(idx + 1) * 0.05}s`,
+            }}
+          >
+            <TemplateCard
+              template={template}
+              onClick={() => handleTemplateClick(template)}
+            />
+          </div>
         ))}
       </div>
     </div>

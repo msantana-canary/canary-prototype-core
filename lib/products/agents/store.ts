@@ -344,11 +344,35 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
   // -- Start wizard from scratch --
   startFromScratch: () => {
     const emptyCapabilities = CANARY_PRODUCTS.map((p) => ({ ...p, enabled: false }));
+    // Create a minimal "scratch" template marker so the wizard renders
+    const scratchTemplate: AgentTemplate = {
+      id: 'tpl-scratch',
+      name: 'Custom Agent',
+      role: 'Custom',
+      description: '',
+      icon: 'mdiStarOutline',
+      tier: 'included',
+      isLocked: false,
+      defaultTriggers: [],
+      defaultConnections: [],
+      defaultCapabilities: [],
+      defaultWorkflow: { trigger: '', steps: [], guardrails: [] },
+      defaultTone: '',
+    };
     set({
       ...initialWizardState,
+      wizardTemplate: scratchTemplate,
+      agentName: '',
+      agentDescription: '',
       wizardCapabilities: emptyCapabilities,
       wizardConnections: availableConnections.map((c) => ({ ...c })),
       wizardConnectors: mockConnectors.map((c) => ({ ...c, status: 'setup-required' as const })),
+      wizardWorkflows: [],
+      wizardResponsibilities: [],
+      wizardBehavioralGuidelines: '',
+      wizardGuardrailsText: '',
+      wizardAvoidedTopics: [],
+      wizardCommunicationStyle: '',
       builderMessages: [],
       currentView: 'wizard',
     });
