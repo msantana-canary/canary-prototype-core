@@ -121,7 +121,8 @@ export interface AgentWorkflow {
   id?: string;
   name?: string;           // "Sales Inquiry Response"
   description?: string;    // LLM-generated summary for the overview tile
-  trigger: string;         // summary text for the visual diagram trigger node
+  trigger: string;         // short label: "Receive Inquiry"
+  triggerDescription?: string; // detail: "Incoming email detected in sales inbox..."
   steps: WorkflowStep[];
   guardrails: string[];
 }

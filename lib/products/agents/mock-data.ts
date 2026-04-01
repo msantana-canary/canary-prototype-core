@@ -474,20 +474,11 @@ export const mockWorkflowColdLead: AgentWorkflow = {
   id: 'wf-cold-lead',
   name: 'Cold Lead Follow-up',
   description: 'Re-engages leads that went silent after initial proposal. Sends progressive follow-ups based on event type and timeline.',
-  trigger: 'No response 48 hours after proposal sent',
+  trigger: 'Detect Silent Lead',
+  triggerDescription: 'Monitor for leads with no response after 48 hours from initial proposal.',
   steps: [
     {
       id: 'cl-s1',
-      type: 'trigger',
-      label: 'Detect Silent Lead',
-      description: 'Monitor for leads with no response after 48 hours from initial proposal.',
-      conditions: [
-        { id: 'cl-c1', condition: 'If lead opened email but didn\'t reply', action: 'Flag as warm — they\'re interested but busy' },
-        { id: 'cl-c2', condition: 'If email bounced or was undeliverable', action: 'Try alternate contact method or archive' },
-      ],
-    },
-    {
-      id: 'cl-s2',
       type: 'action',
       label: 'Assess Lead Priority',
       description: 'Check event value, timeline, and previous engagement to determine follow-up urgency.',
@@ -531,14 +522,9 @@ export const mockWorkflowContractPrep: AgentWorkflow = {
   id: 'wf-contract-prep',
   name: 'Post-Meeting Contract Prep',
   description: 'After a site visit or meeting is completed, prepares and sends a contract draft with deposit schedule and cancellation terms.',
-  trigger: 'Meeting or site visit marked as completed',
+  trigger: 'Meeting Completed',
+  triggerDescription: 'Detect when a scheduled meeting or site visit is marked as completed in the calendar.',
   steps: [
-    {
-      id: 'cp-s1',
-      type: 'trigger',
-      label: 'Meeting Completed',
-      description: 'Detect when a scheduled meeting or site visit is marked as completed in the calendar.',
-    },
     {
       id: 'cp-s2',
       type: 'action',
@@ -917,14 +903,9 @@ const templateSalesEvents: AgentTemplate = {
     id: 'wf-sales-inquiry',
     name: 'Sales Inquiry Response',
     description: 'Responds to inbound event and group booking inquiries with availability, proposals, and meeting scheduling.',
-    trigger: 'Sales inquiry received via email',
+    trigger: 'Receive Inquiry',
+    triggerDescription: 'Incoming email detected in sales inbox. Extract sender, subject, body.',
     steps: [
-      {
-        id: 'se-s0',
-        type: 'trigger',
-        label: 'Receive Inquiry',
-        description: 'Incoming email detected in sales inbox. Extract sender, subject, body.',
-      },
       {
         id: 'se-s1',
         type: 'action',

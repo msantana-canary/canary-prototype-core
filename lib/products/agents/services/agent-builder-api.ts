@@ -35,7 +35,8 @@ const TOOLS: Anthropic.Tool[] = [
         workflow: {
           type: 'object',
           properties: {
-            trigger: { type: 'string', description: 'What triggers this workflow' },
+            trigger: { type: 'string', description: 'Short trigger label, e.g. "Receive Inquiry" or "Detect Silent Lead"' },
+            triggerDescription: { type: 'string', description: 'Detailed trigger description, e.g. "Incoming email detected in sales inbox. Extract sender, subject, body."' },
             steps: {
               type: 'array',
               items: {
@@ -199,6 +200,7 @@ Enabled capabilities: ${capList || 'none'}`;
     if (currentWorkflow && currentWorkflow.steps.length > 0) {
       const workflowJson = JSON.stringify({
         trigger: currentWorkflow.trigger,
+        triggerDescription: currentWorkflow.triggerDescription || '',
         steps: currentWorkflow.steps.map((s) => ({
           id: s.id,
           type: s.type,

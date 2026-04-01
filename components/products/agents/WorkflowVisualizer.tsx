@@ -11,6 +11,8 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import Icon from '@mdi/react';
+import { mdiFlashOutline } from '@mdi/js';
 import type { AgentWorkflow, WorkflowStep, StepCondition } from '@/lib/products/agents/types';
 
 interface WorkflowVisualizerProps {
@@ -140,6 +142,56 @@ export default function WorkflowVisualizer({ workflow, isAnimating }: WorkflowVi
           to { max-height: 200px; opacity: 1; }
         }
       `}</style>
+
+      {/* Trigger card — precedes all steps */}
+      {workflow.trigger && (
+        <>
+          <div
+            style={{
+              width: '100%',
+              backgroundColor: '#EAEEF9',
+              border: '1px solid #2858C4',
+              borderRadius: 4,
+              padding: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+            }}
+          >
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 8,
+                backgroundColor: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                padding: 8,
+              }}
+            >
+              <Icon path={mdiFlashOutline} size={1} color="#2858C4" />
+            </div>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 500, lineHeight: '22px', color: '#2858C4', margin: 0 }}>
+                Trigger: {workflow.trigger}
+              </p>
+              {workflow.triggerDescription && (
+                <p style={{ fontSize: 14, fontWeight: 400, lineHeight: 1.5, color: '#2858C4', margin: 0 }}>
+                  {workflow.triggerDescription}
+                </p>
+              )}
+            </div>
+          </div>
+          {/* Connector to first step */}
+          {workflow.steps.length > 0 && (
+            <div style={{ height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 0, height: 24, borderLeft: '1px dashed #93ABE1' }} />
+            </div>
+          )}
+        </>
+      )}
 
       {workflow.steps.map((step, i) => {
         const stepHighlighted = isStepHighlighted(step.id);
