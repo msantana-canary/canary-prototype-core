@@ -8,7 +8,7 @@
  * Renders on top of the dashboard as an absolute overlay.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@mdi/react';
 import { mdiArrowLeft } from '@mdi/js';
 import {
@@ -41,6 +41,21 @@ export default function WizardLayout({ children, sidebar, title }: WizardLayoutP
   // Slide-over animation lifecycle (same pattern as CheckInDetailPanel)
   const [shouldRender, setShouldRender] = useState(false);
   const [animateIn, setAnimateIn] = useState(false);
+
+  // Track step transitions for directional animation
+  const prevStepRef = useRef(wizardCurrentStep);
+  const [stepDirection, setStepDirection] = useState<'forward' | 'backward'>('forward');
+  const [stepFadeKey, setStepFadeKey] = useState(0);
+
+  useEffect(() => {
+    if (wizardCurrentStep !== prevStepRef.current) {
+      const prevIdx = STEP_ORDER.indexOf(prevStepRef.current);
+      const nextIdx = STEP_ORDER.indexOf(wizardCurrentStep);
+      setStepDirection(nextIdx > prevIdx ? 'forward' : 'backward');
+      setStepFadeKey((k) => k + 1);
+      prevStepRef.current = wizardCurrentStep;
+    }
+  }, [wizardCurrentStep]);
 
   useEffect(() => {
     setShouldRender(true);
@@ -115,7 +130,28 @@ export default function WizardLayout({ children, sidebar, title }: WizardLayoutP
           className="flex-1 overflow-y-auto"
           style={{ padding: 24, background: '#FAFAFA' }}
         >
-          {children}
+          <style>{`
+            @keyframes wizardStepForward {
+              from { opacity: 0; transform: translateX(20px); }
+              to   { opacity: 1; transform: translateX(0); }
+            }
+            @keyframes wizardStepBackward {
+              from { opacity: 0; transform: translateX(-20px); }
+              to   { opacity: 1; transform: translateX(0); }
+            }
+          `}</style>
+          <div
+            key={stepFadeKey}
+            style={{
+              opacity: 0,
+              animationName: stepDirection === 'forward' ? 'wizardStepForward' : 'wizardStepBackward',
+              animationDuration: '0.35s',
+              animationTimingFunction: 'ease-out',
+              animationFillMode: 'forwards',
+            }}
+          >
+            {children}
+          </div>
         </div>
 
         {/* Optional right sidebar — 400px, white bg, per Figma */}

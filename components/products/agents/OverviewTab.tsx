@@ -69,8 +69,25 @@ export default function OverviewTab() {
     );
   }
 
+  const metricCards = [
+    { label: 'Inquiries Handled', value: '47', subtitle: 'this month' },
+    { label: 'Meetings Scheduled', value: '12', subtitle: 'this month' },
+    { label: 'Proposals Sent', value: '34', subtitle: 'this month' },
+    { label: 'Handoff Rate', value: '8%', subtitle: '-2% from last 30 days' },
+  ];
+
   return (
     <div>
+      <style>{`
+        @keyframes overviewFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes activityItemFadeIn {
+          from { opacity: 0; transform: translateX(-6px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
       {/* Section header */}
       <h2 style={{ fontSize: 18, fontWeight: 500, margin: '0 0 4px 0', color: colors.colorBlack1 }}>
         Performance/Activity
@@ -80,26 +97,44 @@ export default function OverviewTab() {
       </p>
 
       {/* Hero stat */}
-      <CanaryCard>
-        <p style={{ fontSize: 13, color: colors.colorBlack3, margin: '0 0 4px 0' }}>Avg. Response Time</p>
-        <p style={{ fontSize: 32, fontWeight: 600, color: colors.colorBlack1, margin: '0 0 4px 0' }}>
-          2.1 minutes
-        </p>
-        <p style={{ fontSize: 13, color: colors.colorBlack4, margin: 0 }}>Industry avg: 4.2 hours</p>
-      </CanaryCard>
+      <div
+        style={{
+          opacity: 0,
+          animationName: 'overviewFadeIn',
+          animationDuration: '0.4s',
+          animationTimingFunction: 'ease-out',
+          animationFillMode: 'forwards',
+          animationDelay: '0.05s',
+        }}
+      >
+        <CanaryCard>
+          <p style={{ fontSize: 13, color: colors.colorBlack3, margin: '0 0 4px 0' }}>Avg. Response Time</p>
+          <p style={{ fontSize: 32, fontWeight: 600, color: colors.colorBlack1, margin: '0 0 4px 0' }}>
+            2.1 minutes
+          </p>
+          <p style={{ fontSize: 13, color: colors.colorBlack4, margin: 0 }}>Industry avg: 4.2 hours</p>
+        </CanaryCard>
+      </div>
 
       <div style={{ height: 16 }} />
 
       {/* Metric cards row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-        <MetricCard label="Inquiries Handled" value="47" subtitle="this month" />
-        <MetricCard label="Meetings Scheduled" value="12" subtitle="this month" />
-        <MetricCard label="Proposals Sent" value="34" subtitle="this month" />
-        <MetricCard
-          label="Handoff Rate"
-          value="8%"
-          subtitle="-2% from last 30 days"
-        />
+        {metricCards.map((mc, idx) => (
+          <div
+            key={mc.label}
+            style={{
+              opacity: 0,
+              animationName: 'overviewFadeIn',
+              animationDuration: '0.35s',
+              animationTimingFunction: 'ease-out',
+              animationFillMode: 'forwards',
+              animationDelay: `${0.1 + idx * 0.06}s`,
+            }}
+          >
+            <MetricCard label={mc.label} value={mc.value} subtitle={mc.subtitle} />
+          </div>
+        ))}
       </div>
 
       <div style={{ height: 24 }} />
@@ -109,16 +144,27 @@ export default function OverviewTab() {
         Activity Feed
       </h3>
       <CanaryList hasOuterBorder>
-        {mockActivityFeed.map((item) => (
-          <CanaryListItem
+        {mockActivityFeed.map((item, idx) => (
+          <div
             key={item.id}
-            title={item.title}
-            subtitle={item.description}
-            isClickable
-            onClick={() => item.inquiryId && setSelectedThread(item.inquiryId)}
-            rightContent={activityStatusTag(item.status)}
-            padding="normal"
-          />
+            style={{
+              opacity: 0,
+              animationName: 'activityItemFadeIn',
+              animationDuration: '0.3s',
+              animationTimingFunction: 'ease-out',
+              animationFillMode: 'forwards',
+              animationDelay: `${0.15 + idx * 0.04}s`,
+            }}
+          >
+            <CanaryListItem
+              title={item.title}
+              subtitle={item.description}
+              isClickable
+              onClick={() => item.inquiryId && setSelectedThread(item.inquiryId)}
+              rightContent={activityStatusTag(item.status)}
+              padding="normal"
+            />
+          </div>
         ))}
       </CanaryList>
     </div>

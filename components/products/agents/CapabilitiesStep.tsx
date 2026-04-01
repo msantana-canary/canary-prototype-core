@@ -88,6 +88,10 @@ export default function CapabilitiesStep() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <style>{`
+        @keyframes capCardFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
         .cap-card {
           transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
         }
@@ -159,7 +163,7 @@ export default function CapabilitiesStep() {
           gap: 16,
         }}
       >
-        {activeCapabilities.map((cap) => (
+        {activeCapabilities.map((cap, idx) => (
           <div
             key={cap.id}
             className={`cap-card ${recentlyAdded.has(cap.id) ? 'cap-card-added' : ''}`}
@@ -171,6 +175,12 @@ export default function CapabilitiesStep() {
               display: 'flex',
               flexDirection: 'column',
               gap: 8,
+              opacity: 0,
+              animationName: 'capCardFadeIn',
+              animationDuration: '0.35s',
+              animationTimingFunction: 'ease-out',
+              animationFillMode: 'forwards',
+              animationDelay: `${idx * 0.05}s`,
             }}
           >
             {/* Header: icon left, gear+delete right */}

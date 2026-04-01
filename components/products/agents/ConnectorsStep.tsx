@@ -62,6 +62,10 @@ export default function ConnectorsStep() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <style>{`
+        @keyframes connCardFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
         .conn-card {
           transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
@@ -133,7 +137,7 @@ export default function ConnectorsStep() {
           gap: 16,
         }}
       >
-        {sorted.map((conn) => (
+        {sorted.map((conn, idx) => (
           <div
             key={conn.id}
             className="conn-card"
@@ -145,6 +149,12 @@ export default function ConnectorsStep() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              opacity: 0,
+              animationName: 'connCardFadeIn',
+              animationDuration: '0.35s',
+              animationTimingFunction: 'ease-out',
+              animationFillMode: 'forwards',
+              animationDelay: `${idx * 0.05}s`,
             }}
           >
             <span style={{ fontSize: 14, fontWeight: 500, lineHeight: '22px', color: '#000' }}>
@@ -165,6 +175,12 @@ export default function ConnectorsStep() {
             alignItems: 'center',
             justifyContent: 'space-between',
             cursor: 'pointer',
+            opacity: 0,
+            animationName: 'connCardFadeIn',
+            animationDuration: '0.35s',
+            animationTimingFunction: 'ease-out',
+            animationFillMode: 'forwards',
+            animationDelay: `${sorted.length * 0.05}s`,
           }}
         >
           <span style={{ fontSize: 14, fontWeight: 500, lineHeight: '22px', color: '#2858C4' }}>

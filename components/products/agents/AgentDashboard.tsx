@@ -20,6 +20,12 @@ export default function AgentDashboard() {
 
   return (
     <div className="flex flex-col h-full">
+      <style>{`
+        @keyframes dashCardFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
       {/* Header — matches standard settings header pattern */}
       <div
         className="flex items-center justify-between bg-white shrink-0"
@@ -36,12 +42,23 @@ export default function AgentDashboard() {
       {/* Agent grid */}
       <div style={{ padding: 24, flex: 1, overflowY: 'auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
-          {agents.map((agent) => (
-            <AgentCard
+          {agents.map((agent, idx) => (
+            <div
               key={agent.id}
-              agent={agent}
-              onClick={() => selectAgent(agent.id)}
-            />
+              style={{
+                opacity: 0,
+                animationName: 'dashCardFadeIn',
+                animationDuration: '0.35s',
+                animationTimingFunction: 'ease-out',
+                animationFillMode: 'forwards',
+                animationDelay: `${idx * 0.06}s`,
+              }}
+            >
+              <AgentCard
+                agent={agent}
+                onClick={() => selectAgent(agent.id)}
+              />
+            </div>
           ))}
         </div>
       </div>

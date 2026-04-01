@@ -9,7 +9,7 @@
  * Matches Figma node 101-15204.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@mdi/react';
 import { mdiArrowLeft, mdiChatOutline } from '@mdi/js';
 import {
@@ -96,9 +96,20 @@ export default function AgentView() {
     setTimeout(() => goBack(), 500);
   };
 
+  // Tab content fade transition
+  const [tabFadeKey, setTabFadeKey] = useState(0);
+  const prevTabRef = useRef(editAgentTab);
+
   const handleTabSwitch = (tab: AgentViewTab) => {
     setEditAgentTab(tab);
   };
+
+  useEffect(() => {
+    if (editAgentTab !== prevTabRef.current) {
+      setTabFadeKey((k) => k + 1);
+      prevTabRef.current = editAgentTab;
+    }
+  }, [editAgentTab]);
 
   const renderTabContent = () => {
     switch (editAgentTab) {
@@ -169,7 +180,24 @@ export default function AgentView() {
           </div>
           {/* Tab content — #FAFAFA bg */}
           <div className="flex-1 overflow-y-auto" style={{ padding: 24, background: '#FAFAFA' }}>
-            {renderTabContent()}
+            <style>{`
+              @keyframes tabContentFade {
+                from { opacity: 0; }
+                to   { opacity: 1; }
+              }
+            `}</style>
+            <div
+              key={tabFadeKey}
+              style={{
+                opacity: 0,
+                animationName: 'tabContentFade',
+                animationDuration: '0.3s',
+                animationTimingFunction: 'ease-out',
+                animationFillMode: 'forwards',
+              }}
+            >
+              {renderTabContent()}
+            </div>
           </div>
         </div>
 

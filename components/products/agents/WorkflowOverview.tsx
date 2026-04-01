@@ -28,6 +28,19 @@ export default function WorkflowOverview() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <style>{`
+        @keyframes wfTileFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .wf-tile {
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .wf-tile:hover {
+          border-color: #C9D5F0 !important;
+          box-shadow: 0 2px 8px rgba(40, 88, 196, 0.08);
+        }
+      `}</style>
       {/* Intro block */}
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         <div
@@ -67,7 +80,7 @@ export default function WorkflowOverview() {
           <div
             key={wf.id || wf.name || `wf-${i}`}
             onClick={() => selectWorkflow(wf.id || null)}
-            className="cap-card"
+            className="wf-tile"
             style={{
               backgroundColor: '#fff',
               border: '1px solid #E5E5E5',
@@ -78,6 +91,12 @@ export default function WorkflowOverview() {
               justifyContent: 'space-between',
               cursor: 'pointer',
               minHeight: 120,
+              opacity: 0,
+              animationName: 'wfTileFadeIn',
+              animationDuration: '0.35s',
+              animationTimingFunction: 'ease-out',
+              animationFillMode: 'forwards',
+              animationDelay: `${i * 0.06}s`,
             }}
           >
             <div>
@@ -120,6 +139,12 @@ export default function WorkflowOverview() {
             gap: 8,
             cursor: 'pointer',
             minHeight: 120,
+            opacity: 0,
+            animationName: 'wfTileFadeIn',
+            animationDuration: '0.35s',
+            animationTimingFunction: 'ease-out',
+            animationFillMode: 'forwards',
+            animationDelay: `${workflows.length * 0.06}s`,
           }}
         >
           <Icon path={mdiPlusCircleOutline} size={1} color="#2858C4" />
