@@ -10,6 +10,7 @@
  */
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import Icon from '@mdi/react';
 import {
   mdiLinkVariant,
@@ -267,8 +268,8 @@ export default function ConnectorsStep() {
         </div>
       </div>
 
-      {/* Setup/Connecting Modal */}
-      {connectPhase === 'confirm' && connectingId && (
+      {/* Setup/Connecting Modal — portaled to body so overlay covers full page */}
+      {connectPhase === 'confirm' && connectingId && createPortal(
         <CanaryModal
           isOpen={!!connectingId}
           onClose={() => setConnectingId(null)}
@@ -289,10 +290,11 @@ export default function ConnectorsStep() {
           <p style={{ fontSize: 14, color: '#666', margin: 0, lineHeight: '22px' }}>
             This will establish a connection to {connectingConnector?.name}. In production, you&apos;d be redirected to authenticate with the provider.
           </p>
-        </CanaryModal>
+        </CanaryModal>,
+        document.body,
       )}
 
-      {(connectPhase === 'connecting' || connectPhase === 'done') && connectingId && (
+      {(connectPhase === 'connecting' || connectPhase === 'done') && connectingId && createPortal(
         <CanaryModal
           isOpen={!!connectingId}
           onClose={() => {}}
@@ -363,7 +365,8 @@ export default function ConnectorsStep() {
               }
             `}</style>
           </div>
-        </CanaryModal>
+        </CanaryModal>,
+        document.body,
       )}
     </div>
   );
