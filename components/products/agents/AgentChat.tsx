@@ -55,16 +55,48 @@ const TEMPLATE_CHIP_MAP: Record<string, string[]> = {
 
 // Per-workflow chips — contextual to the specific workflow being edited
 const WORKFLOW_CHIP_MAP: Record<string, string[]> = {
+  // Sales & Events
   'Sales Inquiry Response': ['Add urgency detection for events within 7 days', 'Include site visit scheduling', 'Add budget-based response tiers'],
   'Cold Lead Follow-up': ['Change follow-up interval to 72 hours', 'Add re-engagement discount offer', 'Include win-back email template'],
   'Post-Meeting Contract Prep': ['Add BEO (banquet event order) generation', 'Include attrition clause conditions', 'Add multi-signer routing'],
+  // Front Desk
+  'Booking Request': ['Add rate comparison across room types', 'Include cancellation policy in confirmation', 'Add group booking handling'],
+  'FAQ & Information': ['Add seasonal hours handling', 'Include nearby restaurant recommendations', 'Add multilingual response support'],
+  'Service Request': ['Add priority escalation for VIP guests', 'Include photo upload for issue reporting', 'Add duplicate request detection'],
+  'Upsell Offer': ['Add time-based offers (afternoon upgrade deals)', 'Include loyalty member pricing', 'Add bundle discount for multiple upsells'],
+  'Guest Checkout': ['Add express checkout option', 'Include rebooking incentive in departure message', 'Add dispute resolution escalation path'],
+  'Survey Response': ['Add sentiment analysis for open-ended feedback', 'Include automatic review site redirect for 5-star ratings', 'Add manager follow-up for 1-2 star reviews'],
+  'Staff Escalation': ['Add department-specific routing rules', 'Include guest history summary in escalation', 'Add re-escalation timer customization'],
+  // Voice AI
+  'Inbound Call Handler': ['Add after-hours greeting variation', 'Include caller ID-based personalization', 'Add Spanish language support'],
+  // Housekeeping
+  'Housekeeping Service Request': ['Add minibar restock as a separate category', 'Include estimated delivery time by request type', 'Add VIP priority handling'],
+  // No-Show Prevention
+  'Pre-Arrival Outreach': ['Change outreach window to 5 days before arrival', 'Add loyalty-specific messaging', 'Include weather-based local tips in messages'],
+  // Email Reservation
+  'Process Cancellation Email': ['Add partial cancellation handling (reduce room count)', 'Include waitlist offer for cancelled dates', 'Add group cancellation routing'],
+  'Process Modification Email': ['Add rate lock guarantee messaging', 'Include upgrade suggestions when changing dates', 'Add multi-room modification handling'],
+  'Process Confirmation Email': ['Add pre-arrival upsell offer in confirmation', 'Include parking and transport info', 'Add loyalty enrollment prompt'],
+  // Check-in Processing
+  'Process Submission': ['Add auto-assign room on verification', 'Include welcome SMS on successful processing', 'Add special request flagging for housekeeping'],
+  'ID Verification Review': ['Add secondary document acceptance (utility bill)', 'Include name mismatch tolerance threshold', 'Add VIP bypass for known returning guests'],
+  'Payment Reconciliation': ['Add automatic retry schedule (1hr, 4hr, 12hr)', 'Include alternative payment method prompt', 'Add surcharge calculation for international cards'],
+  'Room Assignment & Key': ['Add floor preference matching', 'Include connecting room logic for families', 'Add accessibility room auto-assignment'],
+  'Upsell Processing': ['Add dynamic pricing based on occupancy', 'Include bundle discount when multiple upsells accepted', 'Add waitlist for sold-out upgrades'],
+  // Service Ticket
+  'Service Ticket Resolution': ['Add photo attachment requirement for maintenance', 'Include guest satisfaction check 30 min after resolution', 'Add recurring issue detection across stays'],
 };
 
 // Chips for creating a brand new workflow
 const NEW_WORKFLOW_CHIPS: Record<string, string[]> = {
   'Sales & Events Agent': ['Build a rebooking outreach workflow', 'Create a post-event feedback collector', 'Set up a contract renewal reminder'],
-  'Front Desk Agent': ['Build a late checkout request handler', 'Create a VIP arrival preparation workflow', 'Set up a noise complaint resolution flow'],
-  'Guest Messaging Agent': ['Build an FAQ auto-responder', 'Create a check-in reminder sequence', 'Set up a post-stay review request'],
+  'Front Desk Agent': ['Build a lost and found request handler', 'Create a VIP arrival preparation workflow', 'Set up a noise complaint resolution flow'],
+  'Voice AI Agent': ['Build a reservation confirmation call flow', 'Create an after-hours voicemail handler', 'Set up a wake-up call workflow'],
+  'Housekeeping Agent': ['Build a proactive mid-stay housekeeping offer', 'Create a turndown service workflow', 'Set up a deep clean scheduling flow'],
+  'No-Show Prevention Agent': ['Build a rebooking incentive for past no-shows', 'Create a VIP concierge pre-arrival workflow', 'Set up a transportation arrangement outreach'],
+  'Check-in Processing Agent': ['Build a group check-in batch processor', 'Create a loyalty welcome package trigger', 'Set up an early arrival room readiness workflow'],
+  'Email Reservation Agent': ['Build a waitlist management workflow', 'Create an OTA rate parity checker', 'Set up a booking anniversary outreach'],
+  'Service Ticket Agent': ['Build a preventive maintenance scheduler', 'Create a guest compensation workflow', 'Set up a recurring issue alert for engineering'],
 };
 
 function getWorkflowChips(workflowName: string | undefined, templateName: string | undefined, isNew: boolean): string[] {
