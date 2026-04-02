@@ -34,6 +34,7 @@ import {
   colors,
 } from '@canary-ui/components';
 import { useAgentStore } from '@/lib/products/agents/store';
+import CapabilityConfigModal, { CONFIGURABLE_CAPABILITIES } from './CapabilityConfigModal';
 
 const CAPABILITY_ICON_MAP: Record<string, string> = {
   mdiMessageTextOutline,
@@ -56,6 +57,8 @@ export default function CapabilitiesStep() {
   const capabilities = useAgentStore((s) => s.wizardCapabilities);
   const setCapabilities = useAgentStore((s) => s.setWizardCapabilities);
   const [recentlyAdded, setRecentlyAdded] = React.useState<Set<string>>(new Set());
+  const [configCapId, setConfigCapId] = React.useState<string | null>(null);
+  const configCap = capabilities.find((c) => c.id === configCapId);
 
   const activeCapabilities = capabilities.filter((c) => c.enabled);
 
@@ -187,11 +190,14 @@ export default function CapabilitiesStep() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Icon path={getIcon(cap.icon)} size={1} color="#000" />
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <CanaryButton
-                  type={ButtonType.ICON_SECONDARY}
-                  size={ButtonSize.COMPACT}
-                  icon={<Icon path={mdiCogOutline} size={0.83} />}
-                />
+                {CONFIGURABLE_CAPABILITIES.has(cap.id) && (
+                  <CanaryButton
+                    type={ButtonType.ICON_SECONDARY}
+                    size={ButtonSize.COMPACT}
+                    icon={<Icon path={mdiCogOutline} size={0.83} />}
+                    onClick={() => setConfigCapId(cap.id)}
+                  />
+                )}
                 <CanaryButton
                   type={ButtonType.ICON_SECONDARY}
                   size={ButtonSize.COMPACT}
@@ -233,6 +239,14 @@ export default function CapabilitiesStep() {
           </p>
         </div>
       </div>
+
+      {/* Config modal */}
+      <CapabilityConfigModal
+        isOpen={!!configCapId}
+        onClose={() => setConfigCapId(null)}
+        capabilityId={configCapId || ''}
+        capabilityName={configCap?.name || ''}
+      />
     </div>
   );
 }
@@ -322,11 +336,13 @@ export function CapabilitiesSidebar() {
             {/* Icon + gear on same row */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Icon path={getIcon(cap.icon)} size={1} color="#000" />
-              <CanaryButton
-                type={ButtonType.ICON_SECONDARY}
-                size={ButtonSize.COMPACT}
-                icon={<Icon path={mdiCogOutline} size={0.83} />}
-              />
+              {CONFIGURABLE_CAPABILITIES.has(cap.id) && (
+                <CanaryButton
+                  type={ButtonType.ICON_SECONDARY}
+                  size={ButtonSize.COMPACT}
+                  icon={<Icon path={mdiCogOutline} size={0.83} />}
+                />
+              )}
             </div>
             <div>
               <p style={{ fontSize: 14, fontWeight: 500, lineHeight: '22px', color: '#000', margin: 0 }}>
