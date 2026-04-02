@@ -28,6 +28,8 @@ export const emptyFilterCriteria: BroadcastFilterCriteria = {
   rateCodes: [],
   groupCodes: [],
   roomNumbers: [],
+  lengthOfStay: null,
+  guestRecurrence: null,
 };
 
 export function isFilterEmpty(filters: BroadcastFilterCriteria): boolean {
@@ -35,7 +37,9 @@ export function isFilterEmpty(filters: BroadcastFilterCriteria): boolean {
     filters.loyaltyTiers.length === 0 &&
     filters.rateCodes.length === 0 &&
     filters.groupCodes.length === 0 &&
-    filters.roomNumbers.length === 0
+    filters.roomNumbers.length === 0 &&
+    filters.lengthOfStay === null &&
+    filters.guestRecurrence === null
   );
 }
 
@@ -45,6 +49,8 @@ export function getActiveFilterCount(filters: BroadcastFilterCriteria): number {
   if (filters.rateCodes.length > 0) count++;
   if (filters.groupCodes.length > 0) count++;
   if (filters.roomNumbers.length > 0) count++;
+  if (filters.lengthOfStay !== null) count++;
+  if (filters.guestRecurrence !== null) count++;
   return count;
 }
 
@@ -69,6 +75,16 @@ export function getFilteredGuestEntries(
     }
     if (filters.roomNumbers.length > 0) {
       if (!entry.room || !filters.roomNumbers.includes(entry.room)) return false;
+    }
+    if (filters.lengthOfStay !== null) {
+      if (entry.stayNights == null) return false;
+      if (filters.lengthOfStay === 'one-night' && entry.stayNights !== 1) return false;
+      if (filters.lengthOfStay === 'multiple-nights' && entry.stayNights <= 1) return false;
+    }
+    if (filters.guestRecurrence !== null) {
+      if (entry.isReturningGuest == null) return false;
+      if (filters.guestRecurrence === 'first-time' && entry.isReturningGuest) return false;
+      if (filters.guestRecurrence === 'recurring' && !entry.isReturningGuest) return false;
     }
     return true;
   });

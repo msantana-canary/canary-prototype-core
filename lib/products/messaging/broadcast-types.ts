@@ -11,11 +11,16 @@ export type GuestSegment = 'expecting' | 'checked-in' | 'checked-out' | 'departi
 
 export type LoyaltyTier = 'non-member' | 'club-member' | 'silver-elite' | 'gold-elite' | 'platinum-elite' | 'diamond-elite';
 
+export type LengthOfStay = 'one-night' | 'multiple-nights';
+export type GuestRecurrence = 'first-time' | 'recurring';
+
 export interface BroadcastFilterCriteria {
   loyaltyTiers: LoyaltyTier[];
   rateCodes: string[];
   groupCodes: string[];
   roomNumbers: string[];
+  lengthOfStay: LengthOfStay | null;
+  guestRecurrence: GuestRecurrence | null;
 }
 
 export interface SavedFilter {
@@ -51,6 +56,8 @@ export interface BroadcastGuestEntry {
   rateCode?: string;
   groupCode?: string;
   room?: string;
+  stayNights?: number;
+  isReturningGuest?: boolean;
 }
 
 export interface BroadcastMessage {

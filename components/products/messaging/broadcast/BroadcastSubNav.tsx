@@ -8,11 +8,13 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { CanaryTabs, CanaryButton, ButtonType } from '@canary-ui/components';
 import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
 
 export function BroadcastSubNav() {
-  const { activeGroupTab, setActiveGroupTab, savedFilters, openManageFiltersModal } = useBroadcastStore();
+  const router = useRouter();
+  const { activeGroupTab, setActiveGroupTab, savedFilters } = useBroadcastStore();
 
   const tabs = [
     {
@@ -40,8 +42,8 @@ export function BroadcastSubNav() {
 
       {/* Manage filters */}
       {savedFilters.length > 0 && (
-        <CanaryButton type={ButtonType.TEXT} onClick={openManageFiltersModal}>
-          Manage filters
+        <CanaryButton type={ButtonType.TEXT} onClick={() => router.push('/settings/segments')}>
+          Manage segments
         </CanaryButton>
       )}
     </div>

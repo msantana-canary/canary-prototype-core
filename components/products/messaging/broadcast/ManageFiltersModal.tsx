@@ -52,7 +52,7 @@ export function ManageFiltersModal({ isOpen, onClose }: ManageFiltersModalProps)
       <CanaryModal
         isOpen={isOpen && !editingFilter}
         onClose={onClose}
-        title="Manage saved filters"
+        title="Manage guest segments"
         size="medium"
         className="!max-w-[560px]"
       >
@@ -63,7 +63,7 @@ export function ManageFiltersModal({ isOpen, onClose }: ManageFiltersModalProps)
               className="font-['Roboto',sans-serif] text-[10px] font-medium leading-[16px] uppercase"
               style={{ color: '#666666' }}
             >
-              Filter Name
+              Segment Name
             </span>
           </div>
 
@@ -75,7 +75,7 @@ export function ManageFiltersModal({ isOpen, onClose }: ManageFiltersModalProps)
                   className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
                   style={{ color: '#999999' }}
                 >
-                  No saved filters yet
+                  No saved guest segments yet
                 </span>
               </div>
             ) : (
@@ -128,7 +128,7 @@ export function ManageFiltersModal({ isOpen, onClose }: ManageFiltersModalProps)
         <CanaryModal
           isOpen={true}
           onClose={() => setDeletingFilter(null)}
-          title="Remove this filter"
+          title="Remove this guest segment"
           size="small"
           footer={
             <div className="flex justify-end gap-2">
@@ -145,13 +145,13 @@ export function ManageFiltersModal({ isOpen, onClose }: ManageFiltersModalProps)
             className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
             style={{ color: '#333333' }}
           >
-            This saved filter will be deleted. You can recreate it anytime from the filter modal.
+            This guest segment will be deleted. You can recreate it anytime from the filter modal.
           </p>
         </CanaryModal>
       )}
 
       {/* Toast: Filter edit saved */}
-      <Toast message="Filter successfully saved" isOpen={showSaveToast} variant="success" />
+      <Toast message="Guest segment saved" isOpen={showSaveToast} variant="success" />
     </>
   );
 }

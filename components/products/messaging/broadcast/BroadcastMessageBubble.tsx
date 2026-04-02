@@ -50,6 +50,12 @@ function FiltersAppliedModal({
   if (snapshot.criteria.roomNumbers.length > 0) {
     rows.push({ label: 'Room Number', value: snapshot.criteria.roomNumbers.join(', ') });
   }
+  if (snapshot.criteria.lengthOfStay) {
+    rows.push({ label: 'Length of Stay', value: snapshot.criteria.lengthOfStay === 'one-night' ? 'One night' : 'Multiple nights' });
+  }
+  if (snapshot.criteria.guestRecurrence) {
+    rows.push({ label: 'Guest Recurrence', value: snapshot.criteria.guestRecurrence === 'first-time' ? 'First-time guest' : 'Recurring guest' });
+  }
 
   return (
     <CanaryModal
