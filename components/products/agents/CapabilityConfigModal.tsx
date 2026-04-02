@@ -13,6 +13,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   CanaryButton,
+  CanaryCheckbox,
   CanaryModal,
   CanarySwitch,
   CanarySelect,
@@ -140,11 +141,17 @@ function MessagesConfig() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div>
+      <div
+        style={{
+          border: '1px solid #E5E5E5',
+          borderRadius: 8,
+          padding: 20,
+        }}
+      >
         <p style={{ fontSize: 14, fontWeight: 500, color: '#000', margin: '0 0 4px 0' }}>
           Active Channels
         </p>
-        <p style={{ fontSize: 14, color: '#666', margin: '0 0 12px 0' }}>
+        <p style={{ fontSize: 14, color: '#666', margin: '0 0 16px 0' }}>
           Select which messaging channels this agent can respond on.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -157,10 +164,7 @@ function MessagesConfig() {
             />
           ))}
         </div>
-      </div>
-
-      <div style={{ borderTop: '1px solid #E5E5E5', paddingTop: 16 }}>
-        <p style={{ fontSize: 13, color: '#999', margin: 0 }}>
+        <p style={{ fontSize: 13, color: '#999', margin: '16px 0 0 0' }}>
           {selectedChannels.size} of {CHANNEL_OPTIONS.length} channels active
         </p>
       </div>
@@ -172,24 +176,60 @@ function MessagesConfig() {
 // Calls Config — Transfer Categories, Welcome Message, Follow-up SMS
 // ---------------------------------------------------------------------------
 
+const TRANSFER_CATEGORIES = [
+  { id: 'front-desk', label: 'Front Desk' },
+  { id: 'restaurant', label: 'Restaurant' },
+  { id: 'bar', label: 'Bar' },
+  { id: 'sales', label: 'Sales' },
+  { id: 'maintenance', label: 'Maintenance' },
+  { id: 'shuttle', label: 'Shuttle' },
+  { id: 'accounting', label: 'Accounting' },
+  { id: 'spa', label: 'Spa' },
+];
+
+const CALL_SETTINGS = [
+  { id: 'follow-up-sms', label: 'Send follow-up SMS after calls' },
+  { id: 'push-back-transfer', label: 'Push back on immediate transfer requests' },
+  { id: 'use-previous-summaries', label: 'Reference previous call summaries' },
+];
+
 function CallsConfig() {
-  const [followUpSms, setFollowUpSms] = useState(true);
-  const [pushBackTransfer, setPushBackTransfer] = useState(true);
   const [welcomeMessage, setWelcomeMessage] = useState(
     'Thank you for calling {{hotel_name}}. How can I help you today?'
   );
-  const [transfers, setTransfers] = useState({
-    frontDesk: true,
-    restaurant: true,
-    bar: false,
-    sales: true,
-    maintenance: true,
-    shuttle: false,
-  });
+  const [selectedTransfers, setSelectedTransfers] = useState<Set<string>>(
+    new Set(['front-desk', 'restaurant', 'sales', 'maintenance'])
+  );
+  const [selectedSettings, setSelectedSettings] = useState<Set<string>>(
+    new Set(['follow-up-sms', 'push-back-transfer'])
+  );
+
+  const toggleTransfer = (id: string) => {
+    setSelectedTransfers((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSetting = (id: string) => {
+    setSelectedSettings((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div>
+    <div
+      style={{
+        border: '1px solid #E5E5E5',
+        borderRadius: 8,
+        overflow: 'hidden',
+      }}
+    >
+      {/* Welcome Message */}
+      <div style={{ padding: 20 }}>
         <p style={{ fontSize: 14, fontWeight: 500, color: '#000', margin: '0 0 8px 0' }}>Welcome Message</p>
         <CanaryTextArea
           value={welcomeMessage}
@@ -202,24 +242,47 @@ function CallsConfig() {
         </p>
       </div>
 
-      <div>
-        <p style={{ fontSize: 14, fontWeight: 500, color: '#000', margin: '0 0 8px 0' }}>Transfer Categories</p>
-        <p style={{ fontSize: 13, color: '#666', margin: '0 0 12px 0' }}>
+      <div style={{ height: 1, backgroundColor: '#E5E5E5' }} />
+
+      {/* Transfer Categories */}
+      <div style={{ padding: 20 }}>
+        <p style={{ fontSize: 14, fontWeight: 500, color: '#000', margin: '0 0 4px 0' }}>Transfer Categories</p>
+        <p style={{ fontSize: 14, color: '#666', margin: '0 0 16px 0' }}>
           Which departments can this agent transfer calls to?
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <CanarySwitch label="Front Desk" checked={transfers.frontDesk} onChange={(v: boolean) => setTransfers({ ...transfers, frontDesk: v })} />
-          <CanarySwitch label="Restaurant" checked={transfers.restaurant} onChange={(v: boolean) => setTransfers({ ...transfers, restaurant: v })} />
-          <CanarySwitch label="Bar" checked={transfers.bar} onChange={(v: boolean) => setTransfers({ ...transfers, bar: v })} />
-          <CanarySwitch label="Sales" checked={transfers.sales} onChange={(v: boolean) => setTransfers({ ...transfers, sales: v })} />
-          <CanarySwitch label="Maintenance" checked={transfers.maintenance} onChange={(v: boolean) => setTransfers({ ...transfers, maintenance: v })} />
-          <CanarySwitch label="Shuttle" checked={transfers.shuttle} onChange={(v: boolean) => setTransfers({ ...transfers, shuttle: v })} />
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {TRANSFER_CATEGORIES.map((cat) => (
+            <ChannelChip
+              key={cat.id}
+              label={cat.label}
+              isSelected={selectedTransfers.has(cat.id)}
+              onClick={() => toggleTransfer(cat.id)}
+            />
+          ))}
         </div>
+        <p style={{ fontSize: 13, color: '#999', margin: '16px 0 0 0' }}>
+          {selectedTransfers.size} of {TRANSFER_CATEGORIES.length} departments enabled
+        </p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <CanarySwitch label="Send follow-up SMS after calls" checked={followUpSms} onChange={setFollowUpSms} />
-        <CanarySwitch label="Push back on immediate transfer requests" checked={pushBackTransfer} onChange={setPushBackTransfer} />
+      <div style={{ height: 1, backgroundColor: '#E5E5E5' }} />
+
+      {/* Call Settings */}
+      <div style={{ padding: 20 }}>
+        <p style={{ fontSize: 14, fontWeight: 500, color: '#000', margin: '0 0 4px 0' }}>Call Settings</p>
+        <p style={{ fontSize: 14, color: '#666', margin: '0 0 16px 0' }}>
+          Additional behaviors for this agent during and after calls.
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {CALL_SETTINGS.map((setting) => (
+            <ChannelChip
+              key={setting.id}
+              label={setting.label}
+              isSelected={selectedSettings.has(setting.id)}
+              onClick={() => toggleSetting(setting.id)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -229,35 +292,62 @@ function CallsConfig() {
 // Upsells Config — Offer Types, Approval Threshold
 // ---------------------------------------------------------------------------
 
+const UPSELL_OFFER_TYPES = [
+  { id: 'room-upgrade', label: 'Room Upgrade' },
+  { id: 'early-checkin', label: 'Early Check-in' },
+  { id: 'late-checkout', label: 'Late Checkout' },
+  { id: 'amenity-package', label: 'Amenity Package' },
+  { id: 'dining-credit', label: 'Dining Credit' },
+  { id: 'spa-package', label: 'Spa Package' },
+];
+
 function UpsellsConfig() {
   const [approvalThreshold, setApprovalThreshold] = useState('50');
-  const [offers, setOffers] = useState({
-    roomUpgrade: true,
-    earlyCheckIn: true,
-    lateCheckout: true,
-    amenityPackage: false,
-    dining: false,
-    spa: false,
-  });
+  const [selectedOffers, setSelectedOffers] = useState<Set<string>>(
+    new Set(['room-upgrade', 'early-checkin', 'late-checkout'])
+  );
+
+  const toggleOffer = (id: string) => {
+    setSelectedOffers((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div>
-        <p style={{ fontSize: 14, fontWeight: 500, color: '#000', margin: '0 0 8px 0' }}>Available Offer Types</p>
-        <p style={{ fontSize: 13, color: '#666', margin: '0 0 12px 0' }}>
+    <div
+      style={{
+        border: '1px solid #E5E5E5',
+        borderRadius: 8,
+        overflow: 'hidden',
+      }}
+    >
+      {/* Offer Types */}
+      <div style={{ padding: 20 }}>
+        <p style={{ fontSize: 14, fontWeight: 500, color: '#000', margin: '0 0 4px 0' }}>Available Offer Types</p>
+        <p style={{ fontSize: 14, color: '#666', margin: '0 0 16px 0' }}>
           Which upsell types can this agent offer to guests?
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <CanarySwitch label="Room Upgrade" checked={offers.roomUpgrade} onChange={(v: boolean) => setOffers({ ...offers, roomUpgrade: v })} />
-          <CanarySwitch label="Early Check-in" checked={offers.earlyCheckIn} onChange={(v: boolean) => setOffers({ ...offers, earlyCheckIn: v })} />
-          <CanarySwitch label="Late Checkout" checked={offers.lateCheckout} onChange={(v: boolean) => setOffers({ ...offers, lateCheckout: v })} />
-          <CanarySwitch label="Amenity Package" checked={offers.amenityPackage} onChange={(v: boolean) => setOffers({ ...offers, amenityPackage: v })} />
-          <CanarySwitch label="Dining Credit" checked={offers.dining} onChange={(v: boolean) => setOffers({ ...offers, dining: v })} />
-          <CanarySwitch label="Spa Package" checked={offers.spa} onChange={(v: boolean) => setOffers({ ...offers, spa: v })} />
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {UPSELL_OFFER_TYPES.map((offer) => (
+            <ChannelChip
+              key={offer.id}
+              label={offer.label}
+              isSelected={selectedOffers.has(offer.id)}
+              onClick={() => toggleOffer(offer.id)}
+            />
+          ))}
         </div>
+        <p style={{ fontSize: 13, color: '#999', margin: '16px 0 0 0' }}>
+          {selectedOffers.size} of {UPSELL_OFFER_TYPES.length} offer types active
+        </p>
       </div>
 
-      <div>
+      <div style={{ height: 1, backgroundColor: '#E5E5E5' }} />
+
+      {/* Auto-Approval Threshold */}
+      <div style={{ padding: 20 }}>
         <p style={{ fontSize: 14, fontWeight: 500, color: '#000', margin: '0 0 8px 0' }}>Auto-Approval Threshold</p>
         <CanaryInput
           size={InputSize.NORMAL}
@@ -282,27 +372,25 @@ function ContractsConfig() {
   const [multiSigner, setMultiSigner] = useState(true);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div>
-        <CanarySelect
-          label="Contract Template"
-          size={InputSize.NORMAL}
-          value={template}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTemplate(e.target.value)}
-          options={[
-            { value: 'standard-event', label: 'Standard Event Contract' },
-            { value: 'wedding-package', label: 'Wedding Package Agreement' },
-            { value: 'corporate-master', label: 'Corporate Master Agreement' },
-            { value: 'group-booking', label: 'Group Booking Contract' },
-            { value: 'custom', label: 'Custom Template' },
-          ]}
-        />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <CanarySelect
+        label="Contract Template"
+        size={InputSize.NORMAL}
+        value={template}
+        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTemplate(e.target.value)}
+        options={[
+          { value: 'standard-event', label: 'Standard Event Contract' },
+          { value: 'wedding-package', label: 'Wedding Package Agreement' },
+          { value: 'corporate-master', label: 'Corporate Master Agreement' },
+          { value: 'group-booking', label: 'Group Booking Contract' },
+          { value: 'custom', label: 'Custom Template' },
+        ]}
+      />
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <CanarySwitch label="Auto-send contracts after proposal acceptance" checked={autoSend} onChange={setAutoSend} />
-        <CanarySwitch label="Require staff review before sending" checked={requireReview} onChange={setRequireReview} />
-        <CanarySwitch label="Enable multi-signer support (e.g., bride + parents)" checked={multiSigner} onChange={setMultiSigner} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <CanaryCheckbox size="normal" label="Auto-send contracts after proposal acceptance" checked={autoSend} onChange={() => setAutoSend(!autoSend)} />
+        <CanaryCheckbox size="normal" label="Require staff review before sending" checked={requireReview} onChange={() => setRequireReview(!requireReview)} />
+        <CanaryCheckbox size="normal" label="Enable multi-signer support (e.g., bride + parents)" checked={multiSigner} onChange={() => setMultiSigner(!multiSigner)} />
       </div>
     </div>
   );
@@ -319,25 +407,23 @@ function AuthorizationsConfig() {
   const [genericLink, setGenericLink] = useState(false);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div>
-        <CanarySelect
-          label="Authorization Form Template"
-          size={InputSize.NORMAL}
-          value={formTemplate}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormTemplate(e.target.value)}
-          options={[
-            { value: 'v1', label: 'Standard Authorization Form (V1)' },
-            { value: 'v2', label: 'Enhanced Authorization Form (V2)' },
-            { value: 'voice-booking', label: 'Voice Booking Authorization' },
-          ]}
-        />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <CanarySelect
+        label="Authorization Form Template"
+        size={InputSize.NORMAL}
+        value={formTemplate}
+        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormTemplate(e.target.value)}
+        options={[
+          { value: 'v1', label: 'Standard Authorization Form (V1)' },
+          { value: 'v2', label: 'Enhanced Authorization Form (V2)' },
+          { value: 'voice-booking', label: 'Voice Booking Authorization' },
+        ]}
+      />
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <CanarySwitch label="Require ID verification by default" checked={requireId} onChange={setRequireId} />
-        <CanarySwitch label="Require amount verification by default" checked={requireAmount} onChange={setRequireAmount} />
-        <CanarySwitch label="Enable generic link (public, no reservation attached)" checked={genericLink} onChange={setGenericLink} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <CanaryCheckbox size="normal" label="Require ID verification by default" checked={requireId} onChange={() => setRequireId(!requireId)} />
+        <CanaryCheckbox size="normal" label="Require amount verification by default" checked={requireAmount} onChange={() => setRequireAmount(!requireAmount)} />
+        <CanaryCheckbox size="normal" label="Enable generic link (public, no reservation attached)" checked={genericLink} onChange={() => setGenericLink(!genericLink)} />
       </div>
     </div>
   );
