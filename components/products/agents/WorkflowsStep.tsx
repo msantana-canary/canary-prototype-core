@@ -70,9 +70,7 @@ export default function WorkflowsStep() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-          <CanaryButton type={ButtonType.TEXT} onClick={() => selectWorkflow(null)}>
-            <Icon path={mdiArrowLeft} size={0.83} />
-          </CanaryButton>
+          <CanaryButton type={ButtonType.ICON_SECONDARY} onClick={() => selectWorkflow(null)} icon={<Icon path={mdiArrowLeft} size={0.83} />} />
           <span style={{ fontSize: 16, fontWeight: 500, lineHeight: '24px', color: '#000', padding: '4px' }}>
             {currentWorkflow && currentWorkflow.steps.length > 0 ? 'Edit Workflow' : 'Create New Workflow'}
           </span>

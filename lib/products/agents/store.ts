@@ -141,6 +141,7 @@ interface AgentStoreState {
 
   // Deploy + reset
   resetBuilder: () => void;
+  saveDraft: () => void;
   deployAgent: () => void;
   showToast: (message: string) => void;
 }
@@ -467,6 +468,34 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
   resetBuilder: () => set(initialWizardState),
 
   // -- Deploy agent from wizard data --
+  saveDraft: () => {
+    const state = get();
+    const draftAgent: Agent = {
+      id: `agent-draft-${Date.now()}`,
+      name: state.agentName || 'Untitled Agent',
+      role: state.wizardTemplate?.role ?? 'Custom',
+      description: state.agentDescription || '',
+      status: 'draft',
+      triggers: state.wizardTriggers,
+      connections: state.wizardConnections,
+      capabilities: state.wizardCapabilities,
+      workflow: state.currentWorkflow ?? { trigger: '', steps: [], guardrails: [] },
+      workflows: state.wizardWorkflows.length > 0 ? state.wizardWorkflows : undefined,
+      tone: state.wizardCommunicationStyle || state.wizardTone,
+      metrics: { totalConversations: 0, resolutionRate: 0, avgResponseTime: '—', satisfactionScore: 0 },
+      recentActivity: [],
+      createdAt: new Date().toISOString(),
+      rules: state.wizardRules,
+    };
+    set((s) => ({
+      agents: [...s.agents, draftAgent],
+      currentView: 'dashboard',
+      selectedAgentId: null,
+      ...initialWizardState,
+    }));
+    get().showToast(`"${draftAgent.name}" saved as draft`);
+  },
+
   deployAgent: () => {
     const state = get();
     const newAgent: Agent = {

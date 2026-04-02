@@ -9,10 +9,12 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Icon from '@mdi/react';
-import { mdiArrowLeft } from '@mdi/js';
+import { mdiClose } from '@mdi/js';
 import {
   CanaryButton,
+  CanaryModal,
   ButtonType,
   IconPosition,
   colors,
@@ -36,6 +38,7 @@ export default function WizardLayout({ children, sidebar, title }: WizardLayoutP
   const nextWizardStep = useAgentStore((s) => s.nextWizardStep);
   const prevWizardStep = useAgentStore((s) => s.prevWizardStep);
   const goBack = useAgentStore((s) => s.goBack);
+  const saveDraft = useAgentStore((s) => s.saveDraft);
   const setShowDeployModal = useAgentStore((s) => s.setShowDeployModal);
 
   // Slide-over animation lifecycle (same pattern as CheckInDetailPanel)
@@ -68,14 +71,22 @@ export default function WizardLayout({ children, sidebar, title }: WizardLayoutP
   const isLastStep = currentStepIdx === STEP_ORDER.length - 1;
   const stepLabel = title || WIZARD_STEPS.find((s) => s.id === wizardCurrentStep)?.label || '';
 
+  const [showExitModal, setShowExitModal] = useState(false);
+
   const handleBack = () => {
-    if (isFirstStep) {
-      // Animate out, then go back to dashboard
-      setAnimateIn(false);
-      setTimeout(() => goBack(), 500);
-    } else {
-      prevWizardStep();
-    }
+    // Always show exit warning — back closes the builder
+    setShowExitModal(true);
+  };
+
+  const handleExitWithoutSaving = () => {
+    setShowExitModal(false);
+    setAnimateIn(false);
+    setTimeout(() => goBack(), 500);
+  };
+
+  const handleSaveAndExit = () => {
+    setShowExitModal(false);
+    saveDraft();
   };
 
   const handleNext = () => {
@@ -101,10 +112,8 @@ export default function WizardLayout({ children, sidebar, title }: WizardLayoutP
         style={{ padding: '16px 24px', borderBottom: '1px solid #E5E5E5' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {/* Icon-only back button */}
-          <CanaryButton type={ButtonType.TEXT} onClick={handleBack}>
-            <Icon path={mdiArrowLeft} size={0.83} />
-          </CanaryButton>
+          {/* X button — closes the builder */}
+          <CanaryButton type={ButtonType.ICON_SECONDARY} onClick={handleBack} icon={<Icon path={mdiClose} size={0.83} />} />
           {/* Title + progress bar stacked */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <h1 style={{ fontSize: 18, fontWeight: 500, lineHeight: '28px', color: '#000', margin: 0, fontFamily: 'var(--font-roboto), sans-serif' }}>
@@ -114,9 +123,11 @@ export default function WizardLayout({ children, sidebar, title }: WizardLayoutP
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CanaryButton type={ButtonType.SHADED} onClick={() => {/* Save draft */}}>
-            Save Draft
-          </CanaryButton>
+          {!isFirstStep && (
+            <CanaryButton type={ButtonType.SHADED} onClick={prevWizardStep}>
+              Back
+            </CanaryButton>
+          )}
           <CanaryButton type={ButtonType.PRIMARY} onClick={handleNext}>
             {isLastStep ? 'Deploy' : 'Next'}
           </CanaryButton>
@@ -168,6 +179,32 @@ export default function WizardLayout({ children, sidebar, title }: WizardLayoutP
           </div>
         )}
       </div>
+
+      {/* Exit warning modal */}
+      {showExitModal && createPortal(
+        <CanaryModal
+          isOpen={showExitModal}
+          onClose={() => setShowExitModal(false)}
+          title="Leave agent builder?"
+          size="small"
+          closeOnOverlayClick
+          footer={
+            <div className="flex items-center justify-end gap-2">
+              <CanaryButton type={ButtonType.TEXT} onClick={handleExitWithoutSaving}>
+                Leave without saving
+              </CanaryButton>
+              <CanaryButton type={ButtonType.PRIMARY} onClick={handleSaveAndExit}>
+                Save as draft
+              </CanaryButton>
+            </div>
+          }
+        >
+          <p style={{ fontSize: 14, color: '#666', margin: 0, lineHeight: '22px' }}>
+            You have unsaved changes. Would you like to save your progress as a draft, or leave without saving?
+          </p>
+        </CanaryModal>,
+        document.body,
+      )}
     </div>
   );
 }

@@ -147,16 +147,13 @@ export default function AgentView() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CanaryButton type={ButtonType.TEXT} onClick={handleBack}>
-            <Icon path={mdiArrowLeft} size={0.83} />
-          </CanaryButton>
+          <CanaryButton type={ButtonType.ICON_SECONDARY} onClick={handleBack} icon={<Icon path={mdiArrowLeft} size={0.83} />} />
           <h1 style={{ fontSize: 18, fontWeight: 500, lineHeight: '28px', color: '#000', margin: 0 }}>
             {agent.name}
           </h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CanaryButton type={ButtonType.SHADED}>Save Draft</CanaryButton>
-          <CanaryButton type={ButtonType.PRIMARY}>Next</CanaryButton>
+          <CanaryButton type={ButtonType.PRIMARY}>Save</CanaryButton>
         </div>
       </div>
 
