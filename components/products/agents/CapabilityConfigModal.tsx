@@ -86,26 +86,83 @@ export default function CapabilityConfigModal({ isOpen, onClose, capabilityId, c
 // Messages Config — Channel Selection
 // ---------------------------------------------------------------------------
 
+const CHANNEL_OPTIONS = [
+  { id: 'sms', label: 'SMS' },
+  { id: 'whatsapp', label: 'WhatsApp' },
+  { id: 'booking-com', label: 'Booking.com' },
+  { id: 'expedia', label: 'Expedia' },
+  { id: 'webchat', label: 'Webchat' },
+  { id: 'email', label: 'Email' },
+];
+
+function ChannelChip({ label, isSelected, onClick }: { label: string; isSelected: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        height: 40,
+        minWidth: 72,
+        padding: '0 16px',
+        borderRadius: 120,
+        fontSize: 14,
+        fontWeight: 500,
+        lineHeight: '22px',
+        cursor: 'pointer',
+        transition: 'all 0.15s ease',
+        border: isSelected ? 'none' : '1px solid #2858C4',
+        backgroundColor: isSelected ? '#2858C4' : '#fff',
+        color: isSelected ? '#fff' : '#2858C4',
+        fontFamily: "var(--font-roboto), 'Roboto', sans-serif",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
 function MessagesConfig() {
-  const [channels, setChannels] = useState({
-    sms: true,
-    whatsapp: true,
-    bookingCom: false,
-    expedia: false,
-    webchat: true,
-  });
+  const [selectedChannels, setSelectedChannels] = useState<Set<string>>(
+    new Set(['sms', 'whatsapp', 'webchat'])
+  );
+
+  const toggleChannel = (id: string) => {
+    setSelectedChannels((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <p style={{ fontSize: 14, color: '#666', margin: 0 }}>
-        Select which messaging channels this agent can respond on.
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <CanarySwitch label="SMS" checked={channels.sms} onChange={(v: boolean) => setChannels({ ...channels, sms: v })} />
-        <CanarySwitch label="WhatsApp" checked={channels.whatsapp} onChange={(v: boolean) => setChannels({ ...channels, whatsapp: v })} />
-        <CanarySwitch label="Booking.com" checked={channels.bookingCom} onChange={(v: boolean) => setChannels({ ...channels, bookingCom: v })} />
-        <CanarySwitch label="Expedia" checked={channels.expedia} onChange={(v: boolean) => setChannels({ ...channels, expedia: v })} />
-        <CanarySwitch label="Webchat" checked={channels.webchat} onChange={(v: boolean) => setChannels({ ...channels, webchat: v })} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div>
+        <p style={{ fontSize: 14, fontWeight: 500, color: '#000', margin: '0 0 4px 0' }}>
+          Active Channels
+        </p>
+        <p style={{ fontSize: 14, color: '#666', margin: '0 0 12px 0' }}>
+          Select which messaging channels this agent can respond on.
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {CHANNEL_OPTIONS.map((ch) => (
+            <ChannelChip
+              key={ch.id}
+              label={ch.label}
+              isSelected={selectedChannels.has(ch.id)}
+              onClick={() => toggleChannel(ch.id)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ borderTop: '1px solid #E5E5E5', paddingTop: 16 }}>
+        <p style={{ fontSize: 13, color: '#999', margin: 0 }}>
+          {selectedChannels.size} of {CHANNEL_OPTIONS.length} channels active
+        </p>
       </div>
     </div>
   );
