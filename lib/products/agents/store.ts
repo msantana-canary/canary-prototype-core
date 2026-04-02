@@ -184,6 +184,23 @@ const initialWizardState = {
 const STEP_ORDER: WizardStep[] = ['profile', 'capabilities', 'workflows', 'connectors'];
 
 const TEMPLATE_RESPONSIBILITIES: Record<string, string[]> = {
+  'tpl-front-desk': [
+    'Respond to guest messages across all enabled channels',
+    'Answer hotel FAQ and property questions from knowledge base',
+    'Process booking requests and check availability',
+    'Handle service requests and create tickets',
+    'Offer upsells (room upgrades, early check-in, late checkout)',
+    'Process checkout requests and send folio',
+    'Escalate to staff when unable to resolve',
+  ],
+  'tpl-voice-ai': [
+    'Answer inbound hotel phone calls',
+    'Identify callers and personalize greetings',
+    'Answer hotel questions from knowledge base',
+    'Look up and confirm reservations',
+    'Transfer calls to appropriate departments',
+    'Send follow-up SMS after calls',
+  ],
   'tpl-sales-events': [
     'Respond to inbound sales and event inquiries via email',
     'Identify event type, dates, headcount, and budget from inquiry details',
@@ -193,6 +210,20 @@ const TEMPLATE_RESPONSIBILITIES: Record<string, string[]> = {
     'Follow up on leads that haven\'t responded',
     'Qualify and route leads to the appropriate sales team member',
     'Flag high-value events for Director of Sales review',
+  ],
+  'tpl-housekeeping': [
+    'Process guest housekeeping service requests',
+    'Create tasks in vendor management system',
+    'Track task completion and follow up with guests',
+    'Route maintenance issues to correct department',
+    'Send proactive housekeeping offers during stay',
+  ],
+  'tpl-no-show': [
+    'Send pre-arrival messages to upcoming guests',
+    'Encourage mobile pre-check-in completion',
+    'Monitor guest engagement with outreach messages',
+    'Flag non-responsive guests for front desk attention',
+    'Send arrival day reminders and property information',
   ],
   'tpl-email-reservation': [
     'Monitor inbound emails for reservation-related requests',
@@ -206,7 +237,11 @@ const TEMPLATE_RESPONSIBILITIES: Record<string, string[]> = {
 };
 
 const TEMPLATE_GUIDELINES: Record<string, string> = {
+  'tpl-front-desk': '• Match channel tone — casual for SMS, structured for email, concise for OTA\n• Always confirm before making reservation changes\n• Route billing disputes to staff — never auto-resolve\n• Match the language the guest writes in\n• Escalate safety or harassment concerns to manager immediately',
+  'tpl-voice-ai': '• Keep greetings warm and under 10 seconds\n• Always offer to transfer when the guest asks — don\'t push back more than once\n• Never share guest room numbers or personal info to unverified callers\n• Send follow-up SMS with key details after every resolved call\n• Keep hold time under 30 seconds before offering callback',
   'tpl-sales-events': '• Always greet by name and reference their specific event details\n• Keep responses warm, concise, and professional\n• Push for ACH payments when possible\n• Include a CTA to schedule a meeting or site visit in every response\n• Reference past booking history for returning clients',
+  'tpl-housekeeping': '• Always confirm room number before creating any task\n• Route maintenance issues (broken, leaking) to maintenance, not housekeeping\n• Don\'t promise specific completion times — use estimates\n• Never enter a room without guest consent or standard checkout protocol\n• Limit follow-ups to 1 per completed task',
+  'tpl-no-show': '• Never send outreach between 10 PM and 8 AM hotel time\n• Maximum 3 outreach messages per reservation\n• Always include opt-out option in messages\n• Don\'t send to OTA reservations managed by the OTA\n• Try alternate channel if first channel gets no engagement',
   'tpl-email-reservation': '• Always verify confirmation number before processing any changes\n• Apply cancellation policy exactly as configured — no manual overrides\n• Log every action with timestamp for audit compliance\n• Route OTA reservations to the OTA portal — do not modify in PMS directly\n• Retry PMS writes once on failure before escalating',
 };
 
