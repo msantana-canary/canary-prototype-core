@@ -162,7 +162,7 @@ export default function AgentView() {
         {/* Main content with tabs */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Tab bar */}
-          <div style={{ padding: '0 24px', borderBottom: '1px solid #E5E5E5', backgroundColor: '#fff' }}>
+          <div style={{ padding: '0 24px', borderBottom: '1px solid #E5E5E5', backgroundColor: '#fff', height: 57, display: 'flex', alignItems: 'stretch' }}>
             <CanaryTabs
               variant="text"
               defaultTab={editAgentTab}

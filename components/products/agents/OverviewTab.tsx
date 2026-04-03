@@ -70,17 +70,19 @@ export default function OverviewTab() {
   const selectedAgentId = useAgentStore((s) => s.selectedAgentId);
   const agents = useAgentStore((s) => s.agents);
 
+  const agent = agents.find((a) => a.id === selectedAgentId);
+
   // If a thread is selected, show the detail view
   if (selectedThreadId) {
     return (
       <ThreadDetailView
         inquiryId={selectedThreadId}
         onBack={() => setSelectedThread(null)}
+        agentName={agent?.name}
       />
     );
   }
 
-  const agent = agents.find((a) => a.id === selectedAgentId);
   const heroStat = agent?.metrics.heroStat || DEFAULT_HERO;
   const metricCards = agent?.metrics.cards || DEFAULT_CARDS;
 
