@@ -164,6 +164,10 @@ export interface Agent {
   recentActivity: { time: string; description: string }[];
   createdAt: string;
   rules: GambitRule[];
+  // Profile fields (populated for deployed agents, used by AgentProfileStep)
+  responsibilities?: string[];
+  behavioralGuidelines?: string;
+  avoidedTopics?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -226,14 +230,14 @@ export interface ConnectorConfig {
 // Activity Feed (for Overview tab)
 // ---------------------------------------------------------------------------
 
-export type ActivityStatus = 'responded' | 'meeting-scheduled' | 'follow-up-sent' | 'handed-off' | 'processing';
+export type ActivityStatus = 'completed' | 'in-progress' | 'escalated' | 'flagged' | 'failed';
 
 export interface ActivityFeedItem {
   id: string;
-  title: string;          // "Responded to Sarah Chen, Meridian Corp"
-  description: string;    // "Corporate retreat, 45 guests, Apr 15-17 — 2.1 min — 9:15 AM"
+  title: string;          // "[Terminal step outcome] — [Primary entity]"
+  description: string;    // "[Workflow name] · [Key detail] · [Duration]"
   status: ActivityStatus;
-  inquiryId?: string;     // links to SalesInquiry for thread detail
+  inquiryId?: string;     // links to timeline data for detail view
 }
 
 // ---------------------------------------------------------------------------

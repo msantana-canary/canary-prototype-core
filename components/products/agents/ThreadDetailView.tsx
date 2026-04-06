@@ -3,23 +3,23 @@
 /**
  * ThreadDetailView — Rich timeline view of a single agent interaction.
  *
- * Shows the full chronological story: workflow execution (trigger + steps),
- * capability tool calls (activity cards), and conversation (messages).
- * Two mock scenarios: completed check-in + in-progress sales inquiry.
+ * Looks up timeline data by activity item ID from the centralized timelineData store.
+ * Supports all agent types: sales, voice, front desk, check-in, email reservation, service tickets.
  *
  * CTA hookups:
- * - "View Check-in" → navigates to /check-in (Emily Smith's submission)
- * - "View Transcript" → opens CallDetailsModal with parking call
+ * - "View Check-in" → navigates to /check-in?guest=guest-emily
+ * - "View Transcript" → opens CallDetailsModal with call data
  */
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import ActivityTimeline, { MOCK_COMPLETED_TIMELINE, MOCK_COMPLETED_SALES_TIMELINE, MOCK_INPROGRESS_TIMELINE } from './ActivityTimeline';
+import ActivityTimeline from './ActivityTimeline';
 import { CallDetailsModal } from '@/components/products/calls/CallDetailsModal';
-import { mockSalesInquiries } from '@/lib/products/agents/mock-data';
+import { timelineData } from '@/lib/products/agents/timeline-data';
+import { agentActivityFeeds } from '@/lib/products/agents/mock-data';
 import type { CallSummary } from '@/lib/products/calls/dashboard-types';
 
-// Mock call matching the timeline's "Incoming call — Handled by AI" event
+// Mock call for the "View Transcript" CTA in timelines that include call events
 const MOCK_PARKING_CALL: CallSummary = {
   uuid: 'call-timeline-parking',
   terminal_state: 'handled',
@@ -61,8 +61,6 @@ export default function ThreadDetailView({ inquiryId, onBack, agentName }: Threa
   const router = useRouter();
   const [showCallModal, setShowCallModal] = useState(false);
 
-  const inquiry = mockSalesInquiries.find((i) => i.id === inquiryId);
-
   const handleAction = (label: string) => {
     if (label === 'View Check-in') {
       router.push('/check-in?guest=guest-emily');
@@ -71,24 +69,33 @@ export default function ThreadDetailView({ inquiryId, onBack, agentName }: Threa
     }
   };
 
-  // Pick the right timeline based on inquiry status
-  const isProcessing = inquiry?.status === 'processing';
-  const getTimeline = () => {
-    if (!inquiry) return MOCK_COMPLETED_TIMELINE; // fallback to check-in
-    if (isProcessing) return MOCK_INPROGRESS_TIMELINE;
-    return MOCK_COMPLETED_SALES_TIMELINE;
-  };
+  // Look up timeline data by activity item ID
+  const timeline = timelineData[inquiryId];
+
+  // Find the activity feed item to get title/subtitle
+  const activityItem = Object.values(agentActivityFeeds)
+    .flat()
+    .find((item) => item.inquiryId === inquiryId);
+
+  if (!timeline) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center', color: '#666' }}>
+        <p>No timeline data available for this activity.</p>
+      </div>
+    );
+  }
 
   return (
     <>
       <ActivityTimeline
-        events={getTimeline()}
+        events={timeline.events}
         onBack={onBack}
-        title={inquiry ? inquiry.from : 'Guest Interaction'}
-        subtitle={inquiry ? inquiry.subject : undefined}
+        title={activityItem?.title || 'Activity Detail'}
+        subtitle={activityItem?.description}
         agentName={agentName}
         onAction={handleAction}
-        animated={isProcessing}
+        animated={timeline.animated}
+        hideHeader
       />
 
       <CallDetailsModal

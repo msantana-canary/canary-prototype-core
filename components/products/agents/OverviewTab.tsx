@@ -18,22 +18,22 @@ import {
   colors,
 } from '@canary-ui/components';
 import { useAgentStore } from '@/lib/products/agents/store';
-import { mockActivityFeed } from '@/lib/products/agents/mock-data';
+import { agentActivityFeeds } from '@/lib/products/agents/mock-data';
 import type { ActivityStatus } from '@/lib/products/agents/types';
 import ThreadDetailView from './ThreadDetailView';
 
 function activityStatusTag(status: ActivityStatus) {
   switch (status) {
-    case 'responded':
-      return <CanaryTag label="Responded" color={TagColor.SUCCESS} size={TagSize.COMPACT} />;
-    case 'meeting-scheduled':
-      return <CanaryTag label="Meeting Scheduled" color={TagColor.INFO} size={TagSize.COMPACT} />;
-    case 'follow-up-sent':
-      return <CanaryTag label="Follow-up Sent" color={TagColor.WARNING} size={TagSize.COMPACT} />;
-    case 'handed-off':
-      return <CanaryTag label="Handed Off" color={TagColor.DEFAULT} size={TagSize.COMPACT} />;
-    case 'processing':
-      return <CanaryTag label="Processing" color={TagColor.DEFAULT} size={TagSize.COMPACT} />;
+    case 'completed':
+      return <CanaryTag label="Completed" color={TagColor.SUCCESS} size={TagSize.COMPACT} />;
+    case 'in-progress':
+      return <CanaryTag label="In Progress" color={TagColor.INFO} size={TagSize.COMPACT} />;
+    case 'escalated':
+      return <CanaryTag label="Escalated" color={TagColor.WARNING} size={TagSize.COMPACT} />;
+    case 'flagged':
+      return <CanaryTag label="Flagged" color={TagColor.WARNING} size={TagSize.COMPACT} />;
+    case 'failed':
+      return <CanaryTag label="Failed" color={TagColor.ERROR} size={TagSize.COMPACT} />;
   }
 }
 
@@ -156,7 +156,7 @@ export default function OverviewTab() {
         Activity Feed
       </h3>
       <CanaryList hasOuterBorder>
-        {mockActivityFeed.map((item, idx) => (
+        {(agent ? agentActivityFeeds[agent.id] || [] : []).map((item, idx) => (
           <div
             key={item.id}
             style={{

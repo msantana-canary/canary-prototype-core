@@ -11,20 +11,22 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiChatOutline } from '@mdi/js';
+import { mdiArrowLeft, mdiClose } from '@mdi/js';
 import {
   CanaryButton,
   CanaryTabs,
   ButtonType,
 } from '@canary-ui/components';
 import { useAgentStore } from '@/lib/products/agents/store';
+import { agentActivityFeeds } from '@/lib/products/agents/mock-data';
 import type { AgentViewTab } from '@/lib/products/agents/types';
 import OverviewTab from './OverviewTab';
 import AgentProfileStep from './AgentProfileStep';
-import CapabilitiesStep from './CapabilitiesStep';
+import CapabilitiesStep, { CapabilitiesSidebar } from './CapabilitiesStep';
 import WorkflowsStep from './WorkflowsStep';
-import ConnectorsStep from './ConnectorsStep';
-import AgentChat from './AgentChat';
+import ConnectorsStep, { ConnectorsSidebar } from './ConnectorsStep';
+// AgentChat hidden for now — may bring back as test console later
+// import AgentChat from './AgentChat';
 
 const TABS: { id: AgentViewTab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -40,6 +42,8 @@ export default function AgentView() {
   const goBack = useAgentStore((s) => s.goBack);
   const editAgentTab = useAgentStore((s) => s.editAgentTab);
   const setEditAgentTab = useAgentStore((s) => s.setEditAgentTab);
+  const selectedThreadId = useAgentStore((s) => s.selectedThreadId);
+  const setSelectedThread = useAgentStore((s) => s.setSelectedThread);
 
   const setAgentName = useAgentStore((s) => s.setAgentName);
   const setAgentDescription = useAgentStore((s) => s.setAgentDescription);
@@ -52,6 +56,7 @@ export default function AgentView() {
   const setWizardAvoidedTopics = useAgentStore((s) => s.setWizardAvoidedTopics);
   const setWizardCommunicationStyle = useAgentStore((s) => s.setWizardCommunicationStyle);
   const setBuilderWorkflow = useAgentStore((s) => s.setBuilderWorkflow);
+  const selectWorkflow = useAgentStore((s) => s.selectWorkflow);
 
   // Slide-over animation
   const [shouldRender, setShouldRender] = useState(false);
@@ -74,10 +79,11 @@ export default function AgentView() {
     setWizardGuardrailsText(agent.workflow.guardrails.map((g) => `• ${g}`).join('\n'));
     setBuilderWorkflow(agent.workflow);
     setWizardWorkflows(agent.workflows && agent.workflows.length > 0 ? agent.workflows : [agent.workflow]);
-    // Agent-specific fields we can derive
-    setWizardResponsibilities([]);
-    setWizardBehavioralGuidelines('');
-    setWizardAvoidedTopics([]);
+    selectWorkflow(null); // Reset workflow selection when switching agents
+    // Profile fields — populated from agent data
+    setWizardResponsibilities(agent.responsibilities || []);
+    setWizardBehavioralGuidelines(agent.behavioralGuidelines || '');
+    setWizardAvoidedTopics(agent.avoidedTopics || []);
     setWizardConnectors(
       agent.connections.map((c) => ({
         id: c.id,
@@ -111,6 +117,7 @@ export default function AgentView() {
     }
   }, [editAgentTab]);
 
+  // Tabs that need a sidebar render as a flex row: [content | sidebar]
   const renderTabContent = () => {
     switch (editAgentTab) {
       case 'overview':
@@ -118,11 +125,21 @@ export default function AgentView() {
       case 'profile':
         return <AgentProfileStep />;
       case 'capabilities':
-        return <CapabilitiesStep />;
+        return (
+          <div style={{ display: 'flex', height: '100%' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}><CapabilitiesStep /></div>
+            <div style={{ width: 340, borderLeft: '1px solid #E5E5E5', overflowY: 'auto', background: '#fff', flexShrink: 0 }}><CapabilitiesSidebar /></div>
+          </div>
+        );
       case 'workflows':
         return <WorkflowsStep />;
       case 'connectors':
-        return <ConnectorsStep />;
+        return (
+          <div style={{ display: 'flex', height: '100%' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}><ConnectorsStep /></div>
+            <div style={{ width: 340, borderLeft: '1px solid #E5E5E5', overflowY: 'auto', background: '#fff', flexShrink: 0 }}><ConnectorsSidebar /></div>
+          </div>
+        );
       default:
         return <OverviewTab />;
     }
@@ -147,7 +164,7 @@ export default function AgentView() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CanaryButton type={ButtonType.ICON_SECONDARY} onClick={handleBack} icon={<Icon path={mdiArrowLeft} size={0.83} />} />
+          <CanaryButton type={ButtonType.ICON_SECONDARY} onClick={handleBack} icon={<Icon path={mdiClose} size={0.83} />} />
           <h1 style={{ fontSize: 18, fontWeight: 500, lineHeight: '28px', color: '#000', margin: 0 }}>
             {agent.name}
           </h1>
@@ -157,26 +174,62 @@ export default function AgentView() {
         </div>
       </div>
 
-      {/* Tabs + Content + Chat */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Main content with tabs */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Tab bar */}
-          <div style={{ padding: '0 24px', borderBottom: '1px solid #E5E5E5', backgroundColor: '#fff', height: 57, display: 'flex', alignItems: 'stretch' }}>
-            <CanaryTabs
-              variant="text"
-              defaultTab={editAgentTab}
-              key={editAgentTab}
-              onChange={(tabId: string) => setEditAgentTab(tabId as AgentViewTab)}
-              tabs={TABS.map((t) => ({
-                id: t.id,
-                label: t.label,
-                content: null,
-              }))}
-            />
+      {/* Tabs + Content — full width */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Tab bar — swaps to detail header when viewing an activity thread */}
+          <style>{`
+            @keyframes threadHeaderSlideIn {
+              from { opacity: 0; transform: translateX(-12px); }
+              to   { opacity: 1; transform: translateX(0); }
+            }
+          `}</style>
+          <div style={{ borderBottom: '1px solid #E5E5E5', backgroundColor: '#fff', height: 57, display: 'flex', alignItems: selectedThreadId ? 'center' : 'flex-end', overflow: 'hidden' }}>
+            {selectedThreadId ? (() => {
+              const threadItem = Object.values(agentActivityFeeds).flat().find((item) => item.inquiryId === selectedThreadId);
+              return (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px',
+                  animationName: 'threadHeaderSlideIn',
+                  animationDuration: '0.25s',
+                  animationTimingFunction: 'ease-out',
+                  animationFillMode: 'forwards',
+                }}>
+                  <CanaryButton type={ButtonType.ICON_SECONDARY} onClick={() => setSelectedThread(null)} icon={<Icon path={mdiArrowLeft} size={0.83} />} />
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 500, lineHeight: '22px', color: '#000', margin: 0 }}>
+                      {threadItem?.title || 'Activity Detail'}
+                    </p>
+                    {threadItem?.description && (
+                      <p style={{ fontSize: 12, color: '#666', margin: 0, lineHeight: '18px' }}>
+                        {threadItem.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })() : (
+              <CanaryTabs
+                variant="text"
+                defaultTab={editAgentTab}
+                key={editAgentTab}
+                onChange={(tabId: string) => setEditAgentTab(tabId as AgentViewTab)}
+                tabs={TABS.map((t) => ({
+                  id: t.id,
+                  label: t.label,
+                  content: null,
+                }))}
+              />
+            )}
           </div>
-          {/* Tab content — #FAFAFA bg */}
-          <div className="flex-1 overflow-y-auto" style={{ padding: 24, background: '#FAFAFA' }}>
+          {/* Tab content — #FAFAFA bg. Tabs with sidebars manage their own scroll. */}
+          <div className="flex-1" style={{
+            padding: (editAgentTab === 'capabilities' || editAgentTab === 'connectors') ? 0 : 24,
+            background: '#FAFAFA',
+            overflow: (editAgentTab === 'capabilities' || editAgentTab === 'connectors') ? 'hidden' : 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+          }}>
             <style>{`
               @keyframes tabContentFade {
                 from { opacity: 0; }
@@ -191,61 +244,13 @@ export default function AgentView() {
                 animationDuration: '0.3s',
                 animationTimingFunction: 'ease-out',
                 animationFillMode: 'forwards',
+                flex: 1,
+                minHeight: 0,
               }}
             >
               {renderTabContent()}
             </div>
           </div>
-        </div>
-
-        {/* Right chat panel — 400px, white bg */}
-        <div
-          className="shrink-0 flex flex-col overflow-hidden"
-          style={{
-            width: 400,
-            borderLeft: '1px solid #E5E5E5',
-            background: '#fff',
-          }}
-        >
-          {/* Chat header — sticky */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '8px 24px',
-              borderBottom: '1px solid #E5E5E5',
-              flexShrink: 0,
-            }}
-          >
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
-                backgroundColor: '#E5E5E5',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <Icon path={mdiChatOutline} size={1} color="#000" />
-            </div>
-            <span style={{ fontSize: 16, fontWeight: 500, lineHeight: '24px', color: '#000' }}>
-              Chat with {agent.name}
-            </span>
-          </div>
-
-          {/* AgentChat — real, wired to Claude API */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <AgentChat
-              onTabSwitch={handleTabSwitch}
-              existingAgent={agent}
-              sidebar
-            />
-          </div>
-        </div>
       </div>
     </div>
   );

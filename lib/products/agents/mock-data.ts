@@ -198,48 +198,54 @@ export const mockSalesInquiries: SalesInquiry[] = [
 // ---------------------------------------------------------------------------
 
 const alexWorkflow: AgentWorkflow = {
-  trigger: 'Inbound phone call',
+  id: 'wf-voice-main',
+  name: 'Inbound Call Handler',
+  description: 'Handles inbound calls — greets, identifies guest, routes to abilities, transfers or resolves.',
+  trigger: 'Inbound Call Received',
+  triggerDescription: 'Guest calls the hotel phone number routed through Canary Voice.',
   steps: [
-    {
-      id: 'alex-s1',
-      type: 'response',
-      label: 'Greet guest',
-      description:
-        'Answer the call with a warm greeting and identify the caller.',
+    { id: 'va-s1', type: 'response', label: 'Greet Caller', description: 'Welcome guest with personalized greeting if identified, generic if not.',
+      conditions: [
+        { id: 'va-c1', condition: 'If guest identified by phone number', action: 'Use personalized welcome with name and reservation reference' },
+        { id: 'va-c2', condition: 'If unknown caller', action: 'Use standard hotel greeting — "Thank you for calling The Statler, how can I help?"' },
+      ],
     },
-    {
-      id: 'alex-s2',
-      type: 'condition',
-      label: 'Identify intent',
-      description:
-        'Classify the caller\'s request — information, reservation, service, or transfer.',
+    { id: 'va-s2', type: 'action', label: 'Identify Intent', description: 'Determine what the caller needs — information, reservation, transfer, or service.',
+      conditions: [
+        { id: 'va-c3', condition: 'If reservation question', action: 'Look up reservation in PMS by phone number, name, or confirmation number' },
+        { id: 'va-c4', condition: 'If FAQ or hotel info', action: 'Search knowledge base for matching answer' },
+        { id: 'va-c5', condition: 'If requesting specific department', action: 'Prepare transfer to requested department' },
+        { id: 'va-c6', condition: 'If reporting issue', action: 'Gather details and create service ticket' },
+      ],
     },
-    {
-      id: 'alex-s3',
-      type: 'action',
-      label: 'Route to capability',
-      description:
-        'Dispatch the request to the appropriate capability (KB, reservations, service requests).',
+    { id: 'va-s3', type: 'action', label: 'Execute Ability', description: 'Run the matched voice ability — KB answer, reservation lookup, booking link, or call transfer.',
+      conditions: [
+        { id: 'va-c7', condition: 'If answer found in KB', action: 'Respond verbally with the answer' },
+        { id: 'va-c8', condition: 'If reservation found', action: 'Read back reservation details — dates, room type, confirmation number' },
+        { id: 'va-c9', condition: 'If needs booking', action: 'Offer to text a booking link to the caller\'s phone' },
+        { id: 'va-c10', condition: 'If complex request beyond abilities', action: 'Prepare transfer with context summary for staff' },
+      ],
     },
-    {
-      id: 'alex-s4',
-      type: 'response',
-      label: 'Handle or handoff',
-      description:
-        'Resolve the request directly or transfer the call to the correct department.',
+    { id: 'va-s4', type: 'handoff', label: 'Transfer or Resolve', description: 'Either resolve the call or transfer to the appropriate department with a summary.',
+      conditions: [
+        { id: 'va-c11', condition: 'If resolved', action: 'Thank guest and end call' },
+        { id: 'va-c12', condition: 'If transfer needed', action: 'Announce transfer, provide staff with call summary' },
+        { id: 'va-c13', condition: 'If guest insists on human', action: 'Transfer immediately — don\'t push back more than once' },
+      ],
     },
-    {
-      id: 'alex-s5',
-      type: 'handoff',
-      label: 'Escalation check',
-      description:
-        'If the guest is upset or the request is unresolved after two attempts, transfer to a manager.',
+    { id: 'va-s5', type: 'response', label: 'Post-Call Follow-up', description: 'Send follow-up SMS with relevant info, booking links, or confirmation.',
+      conditions: [
+        { id: 'va-c14', condition: 'If booking discussed', action: 'Text booking link to caller\'s phone number' },
+        { id: 'va-c15', condition: 'If information shared', action: 'Text a summary of the key details discussed' },
+        { id: 'va-c16', condition: 'If guest opted out of SMS', action: 'Skip follow-up — respect preference' },
+      ],
     },
   ],
   guardrails: [
-    'Never provide room numbers or guest names to unverified callers.',
-    'Always offer to transfer to a staff member if the guest requests it.',
-    'Do not process payments or refunds — transfer to front desk.',
+    'Never share other guests\' room numbers or personal information.',
+    'Always offer to transfer when the guest asks — don\'t push back more than once.',
+    'Keep hold time under 30 seconds before offering callback or transfer.',
+    'Never process payments or refunds over the phone — direct to secure link.',
   ],
 };
 
@@ -383,7 +389,7 @@ const avaTriggers: AgentTrigger[] = [
 
 const alex: Agent = {
   id: 'agent-alex',
-  name: 'Alex',
+  name: 'Voice AI Agent',
   role: 'Voice AI Agent',
   description:
     'Handles all inbound phone calls for the front desk, answers guest questions, and routes calls to appropriate departments.',
@@ -412,7 +418,22 @@ const alex: Agent = {
     { time: '38 min ago', description: 'Answered question about pool hours and towel service.' },
   ],
   createdAt: '2026-01-12',
-  rules: [],
+  rules: [
+    { id: 'va-r1', condition: 'IF caller asks for another guest\'s room number', action: 'Never disclose — offer to transfer or take a message', enabled: true },
+    { id: 'va-r2', condition: 'IF caller insists on speaking to a human', action: 'Transfer immediately — do not push back more than once', enabled: true },
+    { id: 'va-r3', condition: 'IF caller requests payment or refund', action: 'Never process over phone — transfer to front desk', enabled: true },
+    { id: 'va-r4', condition: 'DEFAULT', action: 'Attempt AI resolution, offer SMS follow-up with details', enabled: true },
+  ],
+  responsibilities: [
+    'Answer all inbound calls to the hotel front desk line',
+    'Identify guest by phone number and greet by name when possible',
+    'Answer questions about hotel amenities, hours, and policies using knowledge base',
+    'Look up reservations by confirmation number, name, or phone',
+    'Transfer calls to the correct department when needed',
+    'Send follow-up SMS with booking links, directions, or key details after calls',
+  ],
+  behavioralGuidelines: 'Keep responses concise and conversational — callers expect quick answers, not scripts. Match the guest\'s energy level. If a caller sounds rushed, be efficient. If they\'re chatty, be warm. Always confirm before transferring. Never leave a caller on hold for more than 30 seconds without checking back in.',
+  avoidedTopics: ['Other guests\' room numbers or personal info', 'Specific pricing or rate negotiations', 'Payment processing or refunds', 'Staff schedules or internal operations'],
 };
 
 const javis: Agent = {
@@ -613,42 +634,56 @@ export const mockConnectors: ConnectorConfig[] = [
 // ---------------------------------------------------------------------------
 
 export const mockActivityFeed: ActivityFeedItem[] = [
-  {
-    id: 'act-1',
-    title: 'Responded to Sarah Chen, Meridian Corp',
-    description: 'Corporate retreat, 45 guests, Apr 15-17 — 2.1 min — 9:15 AM',
-    status: 'responded',
-    inquiryId: 'inq-1',
-  },
-  {
-    id: 'act-2',
-    title: 'Scheduled site visit with James Rodriguez',
-    description: 'Wedding reception, 120 guests, Jun 14 — 1.8 min — 10:30 AM',
-    status: 'meeting-scheduled',
-    inquiryId: 'inq-2',
-  },
-  {
-    id: 'act-3',
-    title: 'Sent follow-up to Amanda Torres',
-    description: 'Conference, 200+ attendees, Sep 12-14 — auto — 8:02 AM',
-    status: 'follow-up-sent',
-    inquiryId: 'inq-5',
-  },
-  {
-    id: 'act-4',
-    title: 'Handed off to sales team — Lisa Park, TechForward',
-    description: 'Complex multi-venue request — 11:45 AM',
-    status: 'handed-off',
-    inquiryId: 'inq-3',
-  },
-  {
-    id: 'act-5',
-    title: 'Responded to David Kim',
-    description: 'Anniversary dinner, 30 guests, Apr 5 — 3.4 min — Yesterday',
-    status: 'responded',
-    inquiryId: 'inq-4',
-  },
+  { id: 'act-1', title: 'Response sent — Sarah Chen', description: 'Inquiry Response · Corporate retreat, 45 guests · 2.1 min', status: 'completed', inquiryId: 'inq-1' },
+  { id: 'act-2', title: 'Site visit scheduled — James Rodriguez', description: 'Inquiry Response · Wedding reception, 120 guests · 1.8 min', status: 'completed', inquiryId: 'inq-2' },
+  { id: 'act-3', title: 'Follow-up sent — Amanda Torres', description: 'Cold Lead Follow-up · Conference, 200+ attendees · auto', status: 'completed', inquiryId: 'inq-5' },
+  { id: 'act-4', title: 'Drafting proposal — Lisa Park', description: 'Inquiry Response · Team offsite, 25 people · in progress', status: 'in-progress', inquiryId: 'inq-3' },
+  { id: 'act-5', title: 'Response sent — David Kim', description: 'Inquiry Response · Anniversary dinner, 30 guests · 3.4 min', status: 'completed', inquiryId: 'inq-4' },
 ];
+
+/**
+ * Per-agent activity feed items for the Overview tab.
+ * Universal format: Title = [outcome] — [entity], Subtitle = [workflow] · [detail] · [duration]
+ * Statuses: completed | in-progress | escalated | flagged | failed
+ */
+export const agentActivityFeeds: Record<string, ActivityFeedItem[]> = {
+  'agent-sales-events': mockActivityFeed,
+
+  'agent-alex': [
+    { id: 'alex-1', title: 'Call resolved — Emily Smith', description: 'Call Handling · Parking directions · 1m 12s', status: 'completed', inquiryId: 'alex-1' },
+    { id: 'alex-2', title: 'Call transferred — Noah Davis', description: 'Call Handling · Dinner reservation · 42s', status: 'escalated', inquiryId: 'alex-2' },
+    { id: 'alex-3', title: 'Call resolved — Hiroshi Nakamura', description: 'Call Handling · Room service hours · 1m 05s', status: 'completed', inquiryId: 'alex-3' },
+    { id: 'alex-4', title: 'Handling call — Priya Sharma', description: 'Call Handling · Taxi request · in progress', status: 'in-progress', inquiryId: 'alex-4' },
+  ],
+
+  'agent-front-desk': [
+    { id: 'fd-1', title: 'Resolved — Brooklyn Simmons', description: 'FAQ + Upsell + Service Request · 3 workflows · 4 min', status: 'completed', inquiryId: 'fd-1' },
+    { id: 'fd-2', title: 'Booking completed — Marco Bitanga-Sevilla', description: 'Booking · Room 112, Mar 20-22 · 2.3 min', status: 'completed', inquiryId: 'fd-2' },
+    { id: 'fd-3', title: 'Escalated — Thomas Kim', description: 'Escalation · Billing discrepancy, guest frustrated · 1.2 min', status: 'escalated', inquiryId: 'fd-3' },
+    { id: 'fd-4', title: 'Checking availability — Chloe Dubois', description: 'Booking · Spa appointment, Sunday · in progress', status: 'in-progress', inquiryId: 'fd-4' },
+  ],
+
+  'agent-checkin': [
+    { id: 'ci-1', title: 'Auto-verified — Emily Smith', description: 'Process Submission · Room 412, mobile key issued · 8s', status: 'completed', inquiryId: 'ci-1' },
+    { id: 'ci-2', title: 'Auto-verified — Brooklyn Simmons', description: 'Process Submission · Room 130, mobile key issued · 6s', status: 'completed', inquiryId: 'ci-2' },
+    { id: 'ci-3', title: 'ID mismatch — Sarah Martinez', description: 'ID Verification Review · Name mismatch, staff review required', status: 'flagged', inquiryId: 'ci-3' },
+    { id: 'ci-4', title: 'Validating — Olivia Brown-Henderson', description: 'Process Submission · Checking completeness · in progress', status: 'in-progress', inquiryId: 'ci-4' },
+  ],
+
+  'agent-email-res': [
+    { id: 'er-1', title: 'Cancelled — Michael Torres', description: 'Process Cancellation · #CTL-88421, no charge · 42s', status: 'completed', inquiryId: 'er-1' },
+    { id: 'er-2', title: 'Modified — Jennifer Walsh', description: 'Process Modification · Dates shifted Apr 12→19 · 38s', status: 'completed', inquiryId: 'er-2' },
+    { id: 'er-3', title: 'Flagged — Robert Kim', description: 'Process Cancellation · Non-refundable rate, revenue manager', status: 'flagged', inquiryId: 'er-3' },
+    { id: 'er-4', title: 'Validating policy — Amanda Liu', description: 'Process Cancellation · #CTL-93102 · in progress', status: 'in-progress', inquiryId: 'er-4' },
+  ],
+
+  'agent-service-ticket': [
+    { id: 'st-1', title: 'Ticket resolved — Lucia Rossi', description: 'Service Resolution · Extra blankets, Room 226 · 45 min', status: 'completed', inquiryId: 'st-1' },
+    { id: 'st-2', title: 'Maintenance dispatched — Andre Williams', description: 'Service Resolution · AC repair, Room 124 · tracking', status: 'flagged', inquiryId: 'st-2' },
+    { id: 'st-3', title: 'Ticket resolved — Fatima Al-Hassan', description: 'Service Resolution · Suite key issue, Room 602 · 20 min', status: 'completed', inquiryId: 'st-3' },
+    { id: 'st-4', title: 'Analyzing request — Maya Patel', description: 'Service Resolution · Blocked drain, Room 331 · in progress', status: 'in-progress', inquiryId: 'st-4' },
+  ],
+};
 
 // ---------------------------------------------------------------------------
 // Email Reservation Agent — individual workflows
@@ -842,6 +877,16 @@ const riley: Agent = {
     { id: 'er-r3', condition: 'IF VIP or loyalty member', action: 'Flag for front desk manager review', enabled: true },
     { id: 'er-r4', condition: 'DEFAULT', action: 'Process per standard policy', enabled: true },
   ],
+  responsibilities: [
+    'Monitor reservations inbox for cancellation, modification, and confirmation emails',
+    'Parse reservation details (confirmation number, dates, guest name) from email content',
+    'Validate changes against hotel cancellation and modification policies',
+    'Update reservations in Oracle Opera PMS automatically',
+    'Send confirmation emails to guests after processing',
+    'Escalate policy exceptions and OTA reservations to appropriate staff',
+  ],
+  behavioralGuidelines: 'Process every email within 60 seconds of receipt. Always match confirmation numbers before making changes. Log every PMS write for audit trail. Never auto-cancel group bookings or event reservations — those go to the sales team.',
+  avoidedTopics: [],
 };
 // Attach all workflows to riley
 riley.workflows = [riley.workflow, erWorkflowModification, erWorkflowConfirmation];
@@ -983,6 +1028,16 @@ const serviceTicketAgent: Agent = {
     { id: 'st-r3', condition: 'IF guest has made 3+ requests this stay', action: 'Flag as high-attention guest for front desk', enabled: true },
     { id: 'st-r4', condition: 'DEFAULT', action: 'Create recommended ticket for staff review', enabled: true },
   ],
+  responsibilities: [
+    'Detect service requests in guest messages (housekeeping, maintenance, amenities)',
+    'Ask clarifying questions when the issue is vague or missing details',
+    'Match requests to the correct ticket type using semantic search',
+    'Create recommended tickets for staff approval with room, issue, and priority',
+    'Track ticket resolution and send follow-up to guests when complete',
+    'Deduplicate requests — update existing tickets instead of creating new ones',
+  ],
+  behavioralGuidelines: 'Always acknowledge the guest\'s issue with empathy before creating a ticket. Confirm the room number before submitting. For urgent issues (safety, water, lockout), bypass the recommendation step and alert staff directly. Never promise a specific resolution time — use estimates.',
+  avoidedTopics: ['Blaming hotel staff or departments', 'Promising specific resolution times', 'Compensation or refund offers'],
 };
 
 // ---------------------------------------------------------------------------
@@ -1212,6 +1267,18 @@ const frontDeskAgent: Agent = {
     { id: 'fd-r4', condition: 'IF OTA guest with booking.com or Expedia', action: 'Include OTA-specific policies in response', enabled: true },
     { id: 'fd-r5', condition: 'DEFAULT', action: 'Respond via matched capability with standard tone', enabled: true },
   ],
+  responsibilities: [
+    'Handle all in-stay guest messaging across SMS, WhatsApp, Booking.com, and Expedia',
+    'Answer guest questions about hotel amenities, policies, and local area using knowledge base',
+    'Process room bookings and check availability in PMS',
+    'Create and track service tickets for maintenance and housekeeping requests',
+    'Present and process upsell offers (late checkout, room upgrades, amenities)',
+    'Handle checkout requests and send folios',
+    'Collect post-stay survey responses',
+    'Escalate complex issues or frustrated guests to front desk staff',
+  ],
+  behavioralGuidelines: 'You are the hotel\'s primary messaging agent — guests expect fast, helpful responses on any topic. Match the guest\'s tone. Use the knowledge base first before escalating. If you don\'t know the answer, say so honestly and offer to connect them with staff. Never make up information about rates, availability, or policies.',
+  avoidedTopics: ['Rate negotiations or price matching', 'Staff complaints or internal issues', 'Other guests\' information', 'Legal or liability topics'],
 };
 
 // ---------------------------------------------------------------------------
@@ -1420,9 +1487,147 @@ const checkInAgent: Agent = {
     { id: 'ci-r3', condition: 'IF PMS sync fails twice', action: 'Alert front desk immediately — do not silently retry', enabled: true },
     { id: 'ci-r4', condition: 'DEFAULT', action: 'Auto-process per hotel check-in configuration', enabled: true },
   ],
+  responsibilities: [
+    'Validate completeness of guest check-in submissions (registration card, ID, payment)',
+    'Sync registration data and payment methods to Oracle Opera PMS',
+    'Auto-verify eligible submissions (valid ID, deposit captured, no flags)',
+    'Process ID verification via OCR — validate name match, document type, expiry',
+    'Reconcile deposits — sync successful payments, flag failures for front desk',
+    'Assign rooms and generate mobile keys when PMS room assignment is ready',
+    'Process upsells accepted during check-in (upgrades, early arrival, late checkout)',
+  ],
+  behavioralGuidelines: 'This is a backend automation agent — no direct guest communication. Process every submission as fast as possible. Never auto-verify if ID verification is pending or failed. Always log PMS sync attempts for audit trail. Alert staff immediately on any failure that blocks a guest from checking in.',
+  avoidedTopics: [],
 };
 
-export const mockAgents: Agent[] = [alex, javis, ava, riley, serviceTicketAgent, frontDeskAgent, checkInAgent];
+const salesEventsAgent: Agent = {
+  id: 'agent-sales-events',
+  name: 'Sales & Events Agent',
+  role: 'Sales & Events Coordinator',
+  description: 'Responds to group booking and event inquiries. Qualifies leads, checks availability, and schedules meetings.',
+  status: 'active',
+  triggers: [
+    {
+      id: 'trig-se-1',
+      intent: 'Sales inquiry received',
+      channels: [
+        { channel: 'voice', enabled: false },
+        { channel: 'sms', enabled: false },
+        { channel: 'whatsapp', enabled: false },
+        { channel: 'email', enabled: true },
+        { channel: 'booking-com', enabled: false },
+        { channel: 'expedia', enabled: false },
+        { channel: 'webchat', enabled: false },
+      ],
+    },
+    {
+      id: 'trig-se-2',
+      intent: 'Event booking follow-up',
+      channels: [
+        { channel: 'voice', enabled: false },
+        { channel: 'sms', enabled: true },
+        { channel: 'whatsapp', enabled: false },
+        { channel: 'email', enabled: true },
+        { channel: 'booking-com', enabled: false },
+        { channel: 'expedia', enabled: false },
+        { channel: 'webchat', enabled: false },
+      ],
+    },
+  ],
+  connections: [conn.pms, conn.crm, conn.kb],
+  capabilities: allProductsWithEnabled(['prod-messages', 'prod-contracts', 'prod-payment-links', 'prod-knowledge-base']),
+  workflow: {
+    id: 'wf-sales-inquiry',
+    name: 'Sales Inquiry Response',
+    description: 'Responds to inbound event and group booking inquiries with availability, proposals, and meeting scheduling.',
+    trigger: 'Receive Inquiry',
+    triggerDescription: 'Incoming email detected in sales inbox. Extract sender, subject, body.',
+    steps: [
+      {
+        id: 'se-s1', type: 'action', label: 'Parse Details',
+        description: 'Identify event type, dates, headcount, budget, and contact info. Classify lead urgency.',
+        conditions: [
+          { id: 'cond-q1', condition: 'If missing critical info (dates or headcount)', action: 'Reply asking for details before proceeding' },
+          { id: 'cond-q2', condition: 'If spam or irrelevant inquiry', action: 'Archive, don\'t respond' },
+          { id: 'cond-q3', condition: 'If urgent (event within 30 days)', action: 'Flag as priority, expedite response' },
+        ],
+      },
+      {
+        id: 'se-s2', type: 'action', label: 'Check Availability',
+        description: 'Query PMS for room block and event space availability for requested dates.',
+        conditions: [
+          { id: 'cond-a1', condition: 'If fully available', action: 'Continue with full availability summary' },
+          { id: 'cond-a2', condition: 'If partial overlap', action: 'Suggest alternative dates or adjusted room block' },
+          { id: 'cond-a3', condition: 'If completely unavailable', action: 'Suggest nearest available dates' },
+        ],
+      },
+      {
+        id: 'se-s3', type: 'response', label: 'Draft Response',
+        description: 'Compose personalized response based on inquiry type and availability.',
+        conditions: [
+          { id: 'cond-d1', condition: 'If inquiry is detailed', action: 'Generate mini-proposal with availability, packages, and highlights' },
+          { id: 'cond-d2', condition: 'If inquiry is vague', action: 'Lead with clarifying questions' },
+          { id: 'cond-d3', condition: 'If budget > $50K', action: 'Use VIP template, CC General Manager' },
+        ],
+      },
+      { id: 'se-s4', type: 'action', label: 'Send Response', description: 'Deliver email with CTA to schedule a meeting or site visit.' },
+      {
+        id: 'se-s5', type: 'action', label: 'Follow Up',
+        description: 'Automated follow-up cadence based on lead type and urgency.',
+        conditions: [
+          { id: 'cond-f1', condition: 'If corporate event', action: 'Follow up in 48 hours, then weekly' },
+          { id: 'cond-f2', condition: 'If wedding', action: 'Follow up in 1 week, monthly touchpoints' },
+          { id: 'cond-f3', condition: 'If no response after 2nd follow-up', action: 'Handoff to sales team' },
+        ],
+      },
+    ],
+    guardrails: [
+      'Never commit to final rates without revenue manager approval.',
+      'Always include cancellation policy in proposals.',
+      'Flag events over $50K for Director of Sales follow-up.',
+    ],
+  },
+  tone: 'Formal',
+  metrics: {
+    totalConversations: 89,
+    resolutionRate: 92,
+    avgResponseTime: '2.1 min',
+    satisfactionScore: 0,
+    heroStat: { label: 'Avg. Response Time', value: '2.1 min', subtitle: 'Industry avg: 4.2 hours' },
+    cards: [
+      { label: 'Inquiries Handled', value: '89', subtitle: 'this month' },
+      { label: 'Proposals Sent', value: '73', subtitle: '82% conversion to proposal' },
+      { label: 'Meetings Scheduled', value: '31', subtitle: '42% of proposals' },
+      { label: 'Revenue Pipeline', value: '$2.4M', subtitle: 'active proposals' },
+    ],
+  },
+  recentActivity: [
+    { time: '15 min ago', description: 'Responded to corporate retreat inquiry from Sarah Chen — 45 guests, Apr 15-17.' },
+    { time: '1 hr ago', description: 'Sent follow-up to James Rodriguez — wedding reception site visit scheduled.' },
+    { time: '2 hr ago', description: 'Handed off multi-venue request from Lisa Park to sales team.' },
+  ],
+  createdAt: '2026-03-01',
+  rules: [
+    { id: 'se-r1', condition: 'IF event value > $50K', action: 'Require Director of Sales approval before sending proposal', enabled: true },
+    { id: 'se-r2', condition: 'IF wedding inquiry', action: 'Always mention wedding coordinator availability and include venue photos', enabled: true },
+    { id: 'se-r3', condition: 'IF returning corporate client', action: 'Reference past booking history, offer loyalty rate', enabled: true },
+    { id: 'se-r4', condition: 'DEFAULT', action: 'Respond within 5 minutes, include CTA to schedule meeting or site visit', enabled: true },
+  ],
+  responsibilities: [
+    'Monitor sales inbox for event and group booking inquiries',
+    'Parse inquiry details — event type, dates, headcount, budget, contact info',
+    'Check room block and event space availability in PMS',
+    'Draft and send personalized proposals with venue details and pricing',
+    'Schedule meetings and site visits via calendar integration',
+    'Follow up on cold leads with progressive outreach cadence',
+    'Prepare contracts after meetings with deposit schedules and terms',
+  ],
+  behavioralGuidelines: 'Respond to every inquiry within 5 minutes — speed wins deals. Be consultative, not transactional. Ask clarifying questions when details are missing rather than guessing. Always include a CTA (schedule a call, book a site visit). Never quote final rates without revenue manager approval — use "starting from" language.',
+  avoidedTopics: ['Competitor comparisons or disparagement', 'Final pricing without revenue manager approval', 'Guarantees about date availability beyond 48 hours', 'Internal revenue targets or occupancy rates'],
+};
+salesEventsAgent.workflows = [salesEventsAgent.workflow, mockWorkflowColdLead, mockWorkflowContractPrep];
+
+export const mockAgents: Agent[] = [alex, salesEventsAgent, riley, serviceTicketAgent, frontDeskAgent, checkInAgent];
 
 // ---------------------------------------------------------------------------
 // Agent Templates

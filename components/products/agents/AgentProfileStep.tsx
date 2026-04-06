@@ -45,7 +45,9 @@ export default function AgentProfileStep() {
   const communicationStyle = useAgentStore((s) => s.wizardCommunicationStyle);
   const setCommunicationStyle = useAgentStore((s) => s.setWizardCommunicationStyle);
   const wizardTemplate = useAgentStore((s) => s.wizardTemplate);
-  const isScratch = wizardTemplate?.id === 'tpl-scratch' || !wizardTemplate;
+  const selectedAgentId = useAgentStore((s) => s.selectedAgentId);
+  const isEditing = !!selectedAgentId;
+  const isScratch = !isEditing && (wizardTemplate?.id === 'tpl-scratch' || !wizardTemplate);
 
   const [newResponsibility, setNewResponsibility] = useState('');
 
