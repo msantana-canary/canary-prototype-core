@@ -18,15 +18,14 @@ import {
   ButtonType,
 } from '@canary-ui/components';
 import { useAgentStore } from '@/lib/products/agents/store';
-import { agentActivityFeeds } from '@/lib/products/agents/mock-data';
+import { agentActivityFeeds, mockConnectors } from '@/lib/products/agents/mock-data';
 import type { AgentViewTab } from '@/lib/products/agents/types';
 import OverviewTab from './OverviewTab';
 import AgentProfileStep from './AgentProfileStep';
 import CapabilitiesStep, { CapabilitiesSidebar } from './CapabilitiesStep';
 import WorkflowsStep from './WorkflowsStep';
 import ConnectorsStep, { ConnectorsSidebar } from './ConnectorsStep';
-// AgentChat hidden for now — may bring back as test console later
-// import AgentChat from './AgentChat';
+import AgentChat from './AgentChat';
 
 const TABS: { id: AgentViewTab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -57,6 +56,9 @@ export default function AgentView() {
   const setWizardCommunicationStyle = useAgentStore((s) => s.setWizardCommunicationStyle);
   const setBuilderWorkflow = useAgentStore((s) => s.setBuilderWorkflow);
   const selectWorkflow = useAgentStore((s) => s.selectWorkflow);
+  const selectedWorkflowId = useAgentStore((s) => s.selectedWorkflowId);
+  const wizardWorkflows = useAgentStore((s) => s.wizardWorkflows);
+  const currentWorkflow = useAgentStore((s) => s.currentWorkflow);
 
   // Slide-over animation
   const [shouldRender, setShouldRender] = useState(false);
@@ -84,14 +86,21 @@ export default function AgentView() {
     setWizardResponsibilities(agent.responsibilities || []);
     setWizardBehavioralGuidelines(agent.behavioralGuidelines || '');
     setWizardAvoidedTopics(agent.avoidedTopics || []);
-    setWizardConnectors(
-      agent.connections.map((c) => ({
-        id: c.id,
-        name: c.name,
-        type: c.type,
-        status: c.status === 'connected' ? 'connected' as const : c.status === 'needed' ? 'setup-required' as const : 'not-available' as const,
-      }))
-    );
+    // Agent's connectors + remaining property catalog as 'unassigned' (available to add)
+    const agentConnIds = new Set(agent.connections.map((c) => c.id));
+    const agentConns = agent.connections.map((c) => ({
+      id: c.id,
+      name: c.name,
+      type: c.type,
+      status: c.status === 'connected' ? 'connected' as const : c.status === 'not-available' ? 'not-available' as const : 'setup-required' as const,
+    }));
+    const remainingConns = mockConnectors
+      .filter((c) => !agentConnIds.has(c.id))
+      .map((c) => ({
+        ...c,
+        status: c.status === 'not-available' ? 'not-available' as const : 'unassigned' as const,
+      }));
+    setWizardConnectors([...agentConns, ...remainingConns]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agent?.id]);
 
@@ -132,7 +141,17 @@ export default function AgentView() {
           </div>
         );
       case 'workflows':
-        return <WorkflowsStep />;
+        if (selectedWorkflowId) {
+          return (
+            <div style={{ display: 'flex', height: '100%' }}>
+              <div style={{ flex: 1, overflow: 'hidden' }}><WorkflowsStep hideHeader /></div>
+              <div style={{ width: 400, borderLeft: '1px solid #E5E5E5', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fff' }}>
+                <AgentChat existingAgent={agent} sidebar />
+              </div>
+            </div>
+          );
+        }
+        return <WorkflowsStep hideHeader />;
       case 'connectors':
         return (
           <div style={{ display: 'flex', height: '100%' }}>
@@ -183,49 +202,100 @@ export default function AgentView() {
               to   { opacity: 1; transform: translateX(0); }
             }
           `}</style>
-          <div style={{ borderBottom: '1px solid #E5E5E5', backgroundColor: '#fff', height: 57, display: 'flex', alignItems: selectedThreadId ? 'center' : 'flex-end', overflow: 'hidden' }}>
-            {selectedThreadId ? (() => {
-              const threadItem = Object.values(agentActivityFeeds).flat().find((item) => item.inquiryId === selectedThreadId);
-              return (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px',
-                  animationName: 'threadHeaderSlideIn',
-                  animationDuration: '0.25s',
-                  animationTimingFunction: 'ease-out',
-                  animationFillMode: 'forwards',
-                }}>
-                  <CanaryButton type={ButtonType.ICON_SECONDARY} onClick={() => setSelectedThread(null)} icon={<Icon path={mdiArrowLeft} size={0.83} />} />
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 500, lineHeight: '22px', color: '#000', margin: 0 }}>
-                      {threadItem?.title || 'Activity Detail'}
-                    </p>
-                    {threadItem?.description && (
-                      <p style={{ fontSize: 12, color: '#666', margin: 0, lineHeight: '18px' }}>
-                        {threadItem.description}
-                      </p>
+          {(() => {
+            const showDetailHeader = selectedThreadId || (editAgentTab === 'workflows' && selectedWorkflowId);
+            const detailHeader = (() => {
+              if (selectedThreadId) {
+                const threadItem = Object.values(agentActivityFeeds).flat().find((item) => item.inquiryId === selectedThreadId);
+                return {
+                  title: threadItem?.title || 'Activity Detail',
+                  subtitle: threadItem?.description,
+                  onBack: () => setSelectedThread(null),
+                };
+              }
+              if (editAgentTab === 'workflows' && selectedWorkflowId) {
+                const wf = wizardWorkflows.find((w) => w.id === selectedWorkflowId);
+                const isNewWorkflow = !wf || wf.steps.length === 0;
+                return {
+                  title: isNewWorkflow ? 'New Workflow' : 'Edit Workflow',
+                  subtitle: undefined,
+                  onBack: () => selectWorkflow(null),
+                };
+              }
+              return null;
+            })();
+
+            return (
+              <div style={{ borderBottom: '1px solid #E5E5E5', backgroundColor: '#fff', height: 57, display: 'flex', alignItems: showDetailHeader ? 'center' : 'flex-end', justifyContent: 'space-between', overflow: 'hidden' }}>
+                {showDetailHeader && detailHeader ? (
+                  <>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 8, padding: '0 24px',
+                      animationName: 'threadHeaderSlideIn',
+                      animationDuration: '0.25s',
+                      animationTimingFunction: 'ease-out',
+                      animationFillMode: 'forwards',
+                    }}>
+                      <CanaryButton type={ButtonType.ICON_SECONDARY} onClick={detailHeader.onBack} icon={<Icon path={mdiArrowLeft} size={0.83} />} />
+                      <div>
+                        <p style={{ fontSize: 16, fontWeight: 500, lineHeight: '24px', color: '#000', margin: 0 }}>
+                          {detailHeader.title}
+                        </p>
+                        {detailHeader.subtitle && (
+                          <p style={{ fontSize: 12, color: '#666', margin: 0, lineHeight: '18px' }}>
+                            {detailHeader.subtitle}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {editAgentTab === 'workflows' && selectedWorkflowId && (
+                      <div style={{ padding: '0 24px' }}>
+                        <CanaryButton
+                          type={ButtonType.SHADED}
+                          onClick={async () => {
+                            if (currentWorkflow && selectedWorkflowId) {
+                              const { generateWorkflowDescription } = await import('@/lib/products/agents/services/agent-builder-api');
+                              let description = currentWorkflow.description || '';
+                              if (!description && currentWorkflow.steps.length > 0) {
+                                description = await generateWorkflowDescription(currentWorkflow);
+                              }
+                              const updated = wizardWorkflows.map((wf) =>
+                                wf.id === selectedWorkflowId ? { ...currentWorkflow, description } : wf
+                              );
+                              setWizardWorkflows(updated);
+                            }
+                            selectWorkflow(null);
+                          }}
+                        >
+                          {(() => {
+                            const wf = wizardWorkflows.find((w) => w.id === selectedWorkflowId);
+                            return (!wf || wf.steps.length === 0) ? 'Save workflow' : 'Save edits';
+                          })()}
+                        </CanaryButton>
+                      </div>
                     )}
-                  </div>
-                </div>
-              );
-            })() : (
-              <CanaryTabs
-                variant="text"
-                defaultTab={editAgentTab}
-                key={editAgentTab}
-                onChange={(tabId: string) => setEditAgentTab(tabId as AgentViewTab)}
-                tabs={TABS.map((t) => ({
-                  id: t.id,
-                  label: t.label,
-                  content: null,
-                }))}
-              />
-            )}
-          </div>
+                  </>
+                ) : (
+                  <CanaryTabs
+                    variant="text"
+                    defaultTab={editAgentTab}
+                    key={editAgentTab}
+                    onChange={(tabId: string) => setEditAgentTab(tabId as AgentViewTab)}
+                    tabs={TABS.map((t) => ({
+                      id: t.id,
+                      label: t.label,
+                      content: null,
+                    }))}
+                  />
+                )}
+              </div>
+            );
+          })()}
           {/* Tab content — #FAFAFA bg. Tabs with sidebars manage their own scroll. */}
           <div className="flex-1" style={{
-            padding: (editAgentTab === 'capabilities' || editAgentTab === 'connectors') ? 0 : 24,
+            padding: (editAgentTab === 'capabilities' || editAgentTab === 'connectors' || (editAgentTab === 'workflows' && selectedWorkflowId)) ? 0 : 24,
             background: '#FAFAFA',
-            overflow: (editAgentTab === 'capabilities' || editAgentTab === 'connectors') ? 'hidden' : 'auto',
+            overflow: (editAgentTab === 'capabilities' || editAgentTab === 'connectors' || (editAgentTab === 'workflows' && selectedWorkflowId)) ? 'hidden' : 'auto',
             display: 'flex',
             flexDirection: 'column',
             minHeight: 0,

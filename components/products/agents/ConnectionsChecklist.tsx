@@ -28,7 +28,9 @@ interface ConnectionsChecklistProps {
 const STATUS_CONFIG: Record<ConnectionStatus, { label: string; color: TagColor; icon: string }> = {
   connected: { label: 'Connected', color: TagColor.SUCCESS, icon: mdiCheckCircleOutline },
   needed: { label: 'Setup Required', color: TagColor.WARNING, icon: mdiAlertCircleOutline },
+  'setup-required': { label: 'Setup Required', color: TagColor.WARNING, icon: mdiAlertCircleOutline },
   optional: { label: 'Optional', color: TagColor.DEFAULT, icon: mdiMinusCircleOutline },
+  'not-available': { label: 'Not Available', color: TagColor.DEFAULT, icon: mdiMinusCircleOutline },
 };
 
 const TYPE_ICON: Record<string, string> = {

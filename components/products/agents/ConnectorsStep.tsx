@@ -30,7 +30,11 @@ import {
   colors,
 } from '@canary-ui/components';
 import { useAgentStore } from '@/lib/products/agents/store';
+import { mockConnectors } from '@/lib/products/agents/mock-data';
 import type { ConnectorConfig, ConnectorStatus as ConnectorStatusType } from '@/lib/products/agents/types';
+
+// Property-level status lookup — the source of truth for what's actually connected
+const propertyStatus = new Map(mockConnectors.map((c) => [c.id, c.status]));
 
 function ConnectorStatusBadge({ status, onSetup }: { status: ConnectorStatusType; onSetup?: () => void }) {
   switch (status) {
@@ -48,6 +52,12 @@ function ConnectorStatusBadge({ status, onSetup }: { status: ConnectorStatusType
           Not available
         </span>
       );
+    case 'unassigned':
+      return (
+        <span style={{ fontSize: 14, fontWeight: 400, color: colors.colorBlueDark1, lineHeight: '22px' }}>
+          Available
+        </span>
+      );
   }
 }
 
@@ -63,15 +73,16 @@ export default function ConnectorsStep() {
   const [recentlyAdded, setRecentlyAdded] = useState<Set<string>>(new Set());
   const [recentlyConnected, setRecentlyConnected] = useState<Set<string>>(new Set());
 
-  // Main grid: non-"not-available" connectors
-  const mainConnectors = connectors.filter((c) => c.status !== 'not-available');
+  // Main grid: connectors assigned to this agent (not unassigned or not-available)
+  const mainConnectors = connectors.filter((c) => c.status !== 'not-available' && c.status !== 'unassigned');
   const sorted = [...mainConnectors].sort((a, b) => {
-    const order: Record<string, number> = { connected: 0, 'setup-required': 1, 'not-available': 2 };
+    const order: Record<string, number> = { connected: 0, 'setup-required': 1 };
     return (order[a.status] ?? 2) - (order[b.status] ?? 2);
   });
 
   const handleRemove = (id: string) => {
-    setConnectors(connectors.map((c) => c.id === id ? { ...c, status: 'not-available' as const } : c));
+    // Move to sidebar as 'unassigned' — retains property-level availability
+    setConnectors(connectors.map((c) => c.id === id ? { ...c, status: 'unassigned' as const } : c));
   };
 
   const handleSetup = (id: string) => {
@@ -387,12 +398,14 @@ export function ConnectorsSidebar() {
     return () => el.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Sidebar shows not-available connectors + any that were removed from grid
-  const sidebarConnectors = connectors.filter((c) => c.status === 'not-available');
+  // Sidebar shows connectors not assigned to this agent
+  const sidebarConnectors = connectors.filter((c) => c.status === 'not-available' || c.status === 'unassigned');
 
   const handleAdd = (id: string) => {
+    // Restore property-level status when adding to this agent
+    const realStatus = propertyStatus.get(id) || 'setup-required';
     setConnectors(connectors.map((c) =>
-      c.id === id ? { ...c, status: 'setup-required' as const } : c
+      c.id === id ? { ...c, status: realStatus } : c
     ));
     window.dispatchEvent(new CustomEvent('connector-added', { detail: id }));
   };
@@ -440,11 +453,16 @@ export function ConnectorsSidebar() {
             All connectors are configured.
           </p>
         )}
-        {sidebarConnectors.map((conn) => (
+        {sidebarConnectors.map((conn) => {
+          // Show property-level status in sidebar so user knows what they're getting
+          const displayStatus = conn.status === 'unassigned'
+            ? (propertyStatus.get(conn.id) || 'setup-required')
+            : conn.status;
+          return (
           <div
             key={conn.id}
             className="conn-sidebar-card"
-            onClick={() => handleAdd(conn.id)}
+            onClick={conn.status !== 'not-available' ? () => handleAdd(conn.id) : undefined}
             style={{
               backgroundColor: '#fff',
               border: '1px solid #E5E5E5',
@@ -453,14 +471,17 @@ export function ConnectorsSidebar() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              cursor: conn.status !== 'not-available' ? 'pointer' : 'default',
+              opacity: conn.status === 'not-available' ? 0.5 : 1,
             }}
           >
             <span style={{ fontSize: 14, fontWeight: 500, lineHeight: '22px', color: '#000' }}>
               {conn.name}
             </span>
-            <ConnectorStatusBadge status={conn.status} />
+            <ConnectorStatusBadge status={displayStatus} />
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

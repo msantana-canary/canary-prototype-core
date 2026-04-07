@@ -26,6 +26,7 @@ export default function AgentBuilderPage() {
   const wizardTemplate = useAgentStore((s) => s.wizardTemplate);
   const wizardCurrentStep = useAgentStore((s) => s.wizardCurrentStep);
   const selectedWorkflowId = useAgentStore((s) => s.selectedWorkflowId);
+  const selectedAgentId = useAgentStore((s) => s.selectedAgentId);
   const toastMessage = useAgentStore((s) => s.toastMessage);
 
   const renderWizardStep = () => {
@@ -50,7 +51,7 @@ export default function AgentBuilderPage() {
 
       {/* Wizard slide-over: template grid first, then wizard steps */}
       {currentView === 'wizard' && (
-        wizardTemplate
+        (wizardTemplate || selectedAgentId)
           ? <WizardLayout
               sidebar={
                 wizardCurrentStep === 'capabilities' ? <CapabilitiesSidebar /> :

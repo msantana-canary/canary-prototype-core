@@ -26,7 +26,7 @@ import WorkflowOverview from './WorkflowOverview';
 import AgentChat from './AgentChat';
 import { generateWorkflowDescription } from '@/lib/products/agents/services/agent-builder-api';
 
-export default function WorkflowsStep() {
+export default function WorkflowsStep({ hideHeader }: { hideHeader?: boolean } = {}) {
   const selectedWorkflowId = useAgentStore((s) => s.selectedWorkflowId);
   const currentWorkflow = useAgentStore((s) => s.currentWorkflow);
   const selectWorkflow = useAgentStore((s) => s.selectWorkflow);
@@ -38,6 +38,8 @@ export default function WorkflowsStep() {
   if (!selectedWorkflowId) {
     return <WorkflowOverview />;
   }
+
+  // Detail view renders below with slide-in animation
 
   // Workflow selected — show detail with header + editable name + steps
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,46 +57,59 @@ export default function WorkflowsStep() {
   const workflowName = currentWorkflow?.name || '';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', margin: '-24px', overflow: 'hidden' }}>
-      {/* Header bar — matches sidebar height: padding 8px 24px */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '8px 24px',
-          backgroundColor: '#fff',
-          borderBottom: '1px solid #E5E5E5',
-          flexShrink: 0,
-          minHeight: 56,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-          <CanaryButton type={ButtonType.ICON_SECONDARY} onClick={() => selectWorkflow(null)} icon={<Icon path={mdiArrowLeft} size={0.83} />} />
-          <span style={{ fontSize: 16, fontWeight: 500, lineHeight: '24px', color: '#000', padding: '4px' }}>
-            {currentWorkflow && currentWorkflow.steps.length > 0 ? 'Edit Workflow' : 'Create New Workflow'}
-          </span>
-        </div>
-        <CanaryButton
-          type={ButtonType.PRIMARY}
-          onClick={async () => {
-            if (currentWorkflow && selectedWorkflowId) {
-              // Generate description if missing and workflow has steps
-              let description = currentWorkflow.description || '';
-              if (!description && currentWorkflow.steps.length > 0) {
-                description = await generateWorkflowDescription(currentWorkflow);
-              }
-              const updated = wizardWorkflows.map((wf) =>
-                wf.id === selectedWorkflowId ? { ...currentWorkflow, description } : wf
-              );
-              setWizardWorkflows(updated);
-            }
-            selectWorkflow(null);
+    <div style={{
+      display: 'flex', flexDirection: 'column', height: '100%', margin: hideHeader ? undefined : '-24px', overflow: 'hidden',
+      animationName: 'workflowDetailSlideIn',
+      animationDuration: '0.3s',
+      animationTimingFunction: 'ease-out',
+      animationFillMode: 'forwards',
+    }}>
+      <style>{`
+        @keyframes workflowDetailSlideIn {
+          from { opacity: 0; transform: translateX(20px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
+      {/* Header bar — hidden when parent (AgentView) handles it in the tab bar */}
+      {!hideHeader && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '8px 24px',
+            backgroundColor: '#fff',
+            borderBottom: '1px solid #E5E5E5',
+            flexShrink: 0,
+            minHeight: 56,
           }}
         >
-          Save
-        </CanaryButton>
-      </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+            <CanaryButton type={ButtonType.ICON_SECONDARY} onClick={() => selectWorkflow(null)} icon={<Icon path={mdiArrowLeft} size={0.83} />} />
+            <span style={{ fontSize: 16, fontWeight: 500, lineHeight: '24px', color: '#000', padding: '4px' }}>
+              {currentWorkflow && currentWorkflow.steps.length > 0 ? 'Edit Workflow' : 'Create New Workflow'}
+            </span>
+          </div>
+          <CanaryButton
+            type={ButtonType.PRIMARY}
+            onClick={async () => {
+              if (currentWorkflow && selectedWorkflowId) {
+                let description = currentWorkflow.description || '';
+                if (!description && currentWorkflow.steps.length > 0) {
+                  description = await generateWorkflowDescription(currentWorkflow);
+                }
+                const updated = wizardWorkflows.map((wf) =>
+                  wf.id === selectedWorkflowId ? { ...currentWorkflow, description } : wf
+                );
+                setWizardWorkflows(updated);
+              }
+              selectWorkflow(null);
+            }}
+          >
+            Save
+          </CanaryButton>
+        </div>
+      )}
 
       {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>

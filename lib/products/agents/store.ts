@@ -258,7 +258,44 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
 
   // -- Navigation --
   setView: (view) => set({ currentView: view }),
-  selectAgent: (id) => set({ selectedAgentId: id, currentView: 'detail', editAgentTab: 'overview' }),
+  selectAgent: (id) => {
+    const agent = get().agents.find((a) => a.id === id);
+    if (agent && agent.status === 'draft') {
+      // Resume wizard with draft data hydrated
+      set({
+        currentView: 'wizard',
+        selectedAgentId: id,
+        wizardCurrentStep: 'profile',
+        agentName: agent.name,
+        agentDescription: agent.description,
+        wizardTriggers: agent.triggers,
+        wizardCapabilities: agent.capabilities,
+        wizardCommunicationStyle: agent.tone || '',
+        wizardGuardrailsText: agent.workflow.guardrails?.map((g: string) => `• ${g}`).join('\n') || '',
+        wizardRules: agent.rules,
+        wizardResponsibilities: agent.responsibilities || [],
+        wizardBehavioralGuidelines: agent.behavioralGuidelines || '',
+        wizardAvoidedTopics: agent.avoidedTopics || [],
+        currentWorkflow: agent.workflow,
+        wizardWorkflows: agent.workflows && agent.workflows.length > 0 ? agent.workflows : [agent.workflow],
+        wizardConnectors: (() => {
+          const agentConnIds = new Set(agent.connections.map((c) => c.id));
+          const agentConns = agent.connections.map((c) => ({
+            id: c.id, name: c.name, type: c.type,
+            status: c.status === 'connected' ? 'connected' as const : c.status === 'not-available' ? 'not-available' as const : 'setup-required' as const,
+          }));
+          const remaining = mockConnectors
+            .filter((c) => !agentConnIds.has(c.id))
+            .map((c) => ({ ...c, status: c.status === 'not-available' ? 'not-available' as const : 'unassigned' as const }));
+          return [...agentConns, ...remaining];
+        })(),
+        selectedWorkflowId: null,
+        builderMessages: [],
+      });
+    } else {
+      set({ selectedAgentId: id, currentView: 'detail', editAgentTab: 'overview' });
+    }
+  },
   goBack: () => set({ currentView: 'dashboard', selectedAgentId: null, showDeployModal: false, selectedThreadId: null, ...initialWizardState }),
 
   // -- Agent CRUD --
@@ -364,7 +401,20 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
       wizardAvoidedTopics: template.id === 'tpl-sales-events'
         ? ['Complaints', 'Last Checkout Disputes', 'Legal Questions']
         : [],
-      wizardConnectors: mockConnectors.map((c) => ({ ...c })),
+      wizardConnectors: (() => {
+        const templateConnIds = new Set(template.defaultConnections.map((c) => c.id));
+        const templateConns = template.defaultConnections.map((c) => {
+          const propStatus = mockConnectors.find((mc) => mc.id === c.id)?.status;
+          return {
+            id: c.id, name: c.name, type: c.type,
+            status: propStatus === 'connected' ? 'connected' as const : 'setup-required' as const,
+          };
+        });
+        const remaining = mockConnectors
+          .filter((c) => !templateConnIds.has(c.id))
+          .map((c) => ({ ...c, status: c.status === 'not-available' ? 'not-available' as const : 'unassigned' as const }));
+        return [...templateConns, ...remaining];
+      })(),
       wizardWorkflows: template.id === 'tpl-sales-events'
         ? [template.defaultWorkflow, mockWorkflowColdLead, mockWorkflowContractPrep]
         : [template.defaultWorkflow],
@@ -402,7 +452,10 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
       agentDescription: '',
       wizardCapabilities: emptyCapabilities,
       wizardConnections: availableConnections.map((c) => ({ ...c })),
-      wizardConnectors: mockConnectors.map((c) => ({ ...c, status: 'setup-required' as const })),
+      wizardConnectors: mockConnectors.map((c) => ({
+        ...c,
+        status: c.status === 'not-available' ? 'not-available' as const : 'unassigned' as const,
+      })),
       wizardWorkflows: [],
       wizardResponsibilities: [],
       wizardBehavioralGuidelines: '',
@@ -477,7 +530,9 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
       description: state.agentDescription || '',
       status: 'draft',
       triggers: state.wizardTriggers,
-      connections: state.wizardConnections,
+      connections: state.wizardConnectors.length > 0
+        ? state.wizardConnectors.filter((c) => c.status !== 'unassigned' && c.status !== 'not-available').map((c) => ({ id: c.id, name: c.name, type: c.type, status: c.status as any, description: '' }))
+        : state.wizardConnections,
       capabilities: state.wizardCapabilities,
       workflow: state.currentWorkflow ?? { trigger: '', steps: [], guardrails: [] },
       workflows: state.wizardWorkflows.length > 0 ? state.wizardWorkflows : undefined,
@@ -486,9 +541,16 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
       recentActivity: [],
       createdAt: new Date().toISOString(),
       rules: state.wizardRules,
+      responsibilities: state.wizardResponsibilities,
+      behavioralGuidelines: state.wizardBehavioralGuidelines,
+      avoidedTopics: state.wizardAvoidedTopics,
     };
+    // If resuming a draft, replace it; otherwise add new
+    const existingDraftId = state.selectedAgentId;
     set((s) => ({
-      agents: [...s.agents, draftAgent],
+      agents: existingDraftId
+        ? s.agents.map((a) => a.id === existingDraftId ? draftAgent : a)
+        : [...s.agents, draftAgent],
       currentView: 'dashboard',
       selectedAgentId: null,
       ...initialWizardState,
@@ -498,24 +560,34 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
 
   deployAgent: () => {
     const state = get();
+    const existingDraftId = state.selectedAgentId;
     const newAgent: Agent = {
-      id: `agent-${Date.now()}`,
+      id: existingDraftId || `agent-${Date.now()}`,
       name: state.agentName || 'New Agent',
       role: state.wizardTemplate?.role ?? 'Custom',
       description: state.agentDescription || '',
       status: 'active',
       triggers: state.wizardTriggers,
-      connections: state.wizardConnections,
+      connections: state.wizardConnectors.length > 0
+        ? state.wizardConnectors.filter((c) => c.status !== 'unassigned' && c.status !== 'not-available').map((c) => ({ id: c.id, name: c.name, type: c.type, status: c.status as any, description: '' }))
+        : state.wizardConnections,
       capabilities: state.wizardCapabilities,
       workflow: state.currentWorkflow ?? { trigger: 'Manual', steps: [], guardrails: state.wizardGuardrails },
-      tone: state.wizardTone,
+      workflows: state.wizardWorkflows.length > 0 ? state.wizardWorkflows : undefined,
+      tone: state.wizardCommunicationStyle || state.wizardTone,
       metrics: { totalConversations: 0, resolutionRate: 0, avgResponseTime: '\u2014', satisfactionScore: 0 },
       recentActivity: [],
       createdAt: new Date().toISOString(),
       rules: state.wizardRules,
+      responsibilities: state.wizardResponsibilities,
+      behavioralGuidelines: state.wizardBehavioralGuidelines,
+      avoidedTopics: state.wizardAvoidedTopics,
     };
+    // If deploying from a draft, replace it; otherwise add new
     set((s) => ({
-      agents: [...s.agents, newAgent],
+      agents: existingDraftId
+        ? s.agents.map((a) => a.id === existingDraftId ? newAgent : a)
+        : [...s.agents, newAgent],
       currentView: 'dashboard',
       selectedAgentId: null,
       ...initialWizardState,

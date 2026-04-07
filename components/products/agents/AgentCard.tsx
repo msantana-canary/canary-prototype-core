@@ -3,20 +3,17 @@
 /**
  * AgentCard — Individual agent card for the dashboard grid.
  *
- * Shows agent avatar, name, role, active status dot, current activity / first trigger,
- * and one key metric. v2: "View Activity" link for agents with sales inquiry data.
+ * Shows agent name, status, hero stat (the value proposition),
+ * and proof of life (last active time or volume metric).
  */
 
 import React from 'react';
-import Icon from '@mdi/react';
-import { mdiChevronRight } from '@mdi/js';
 import { colors } from '@canary-ui/components';
 import type { Agent, AgentStatus } from '@/lib/products/agents/types';
 
 interface AgentCardProps {
   agent: Agent;
   onClick: () => void;
-  onViewActivity?: () => void;
 }
 
 const AVATAR_COLORS: Record<AgentStatus, string> = {
@@ -31,33 +28,28 @@ const STATUS_DOT: Record<AgentStatus, { color: string; label: string }> = {
   draft: { color: colors.colorBlack4, label: 'Draft' },
 };
 
-// Agents whose role matches Sales get the activity link
-const SALES_ROLES = ['Sales & Events Coordinator', 'Sales & Events Agent'];
-
-export default function AgentCard({ agent, onClick, onViewActivity }: AgentCardProps) {
+export default function AgentCard({ agent, onClick }: AgentCardProps) {
   const avatarBg = AVATAR_COLORS[agent.status];
   const statusDot = STATUS_DOT[agent.status];
+  const heroStat = agent.metrics.heroStat;
+  const hasMetrics = agent.metrics.totalConversations > 0;
   const latestActivity = agent.recentActivity[0];
-  const firstTrigger = agent.triggers[0];
-  const conversationsToday = agent.metrics.totalConversations > 0
-    ? Math.round(agent.metrics.totalConversations / 30)
-    : 0;
 
-  const hasSalesActivity = agent.status === 'active' && (
-    SALES_ROLES.includes(agent.role) ||
-    agent.rules.length > 0
-  );
+  // Show role only when it differs from name
+  const showRole = agent.role && agent.role !== agent.name;
 
   return (
     <div
       onClick={onClick}
       style={{
-        padding: 16,
+        padding: 20,
         cursor: 'pointer',
         backgroundColor: colors.colorWhite,
         border: `1px solid ${colors.colorBlack6}`,
         borderRadius: 8,
         transition: 'box-shadow 0.15s ease',
+        display: 'flex',
+        flexDirection: 'column',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)';
@@ -66,8 +58,8 @@ export default function AgentCard({ agent, onClick, onViewActivity }: AgentCardP
         e.currentTarget.style.boxShadow = 'none';
       }}
     >
-      {/* Top row: avatar + name/role + status */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+      {/* Top row: avatar + name + status */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <div
           style={{
             width: 32,
@@ -79,106 +71,75 @@ export default function AgentCard({ agent, onClick, onViewActivity }: AgentCardP
             justifyContent: 'center',
             color: colors.colorWhite,
             fontWeight: 600,
-            fontSize: '0.8125rem',
+            fontSize: 13,
             flexShrink: 0,
           }}
         >
           {agent.name.charAt(0).toUpperCase()}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: '0.9375rem', color: colors.colorBlack2, lineHeight: 1.3 }}>
+          <div style={{ fontWeight: 600, fontSize: 15, color: colors.colorBlack1, lineHeight: 1.3 }}>
             {agent.name}
           </div>
-          <div style={{ fontSize: '0.8125rem', color: colors.colorBlack3, lineHeight: 1.3 }}>
-            {agent.role}
-          </div>
+          {showRole && (
+            <div style={{ fontSize: 13, color: colors.colorBlack3, lineHeight: 1.3 }}>
+              {agent.role}
+            </div>
+          )}
         </div>
-        {/* Status dot + label */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-          <div
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
-              backgroundColor: statusDot.color,
-            }}
-          />
-          <span style={{ fontSize: '0.75rem', color: colors.colorBlack3, fontWeight: 500 }}>
+          <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: statusDot.color }} />
+          <span style={{ fontSize: 12, color: colors.colorBlack3, fontWeight: 500 }}>
             {statusDot.label}
           </span>
         </div>
       </div>
 
-      {/* Current activity or first trigger as hint */}
-      {(latestActivity || firstTrigger) && (
-        <div
-          style={{
-            fontSize: '0.8125rem',
-            color: colors.colorBlack3,
-            lineHeight: 1.45,
-            marginBottom: 10,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {latestActivity ? (
-            <>
-              {latestActivity.description}
-              <span style={{ color: colors.colorBlack4, marginLeft: 4 }}>
-                {latestActivity.time}
-              </span>
-            </>
-          ) : (
-            <span style={{ color: colors.colorBlack4, fontStyle: 'italic' }}>
-              Trigger: {firstTrigger.intent}
-            </span>
+      {/* Hero stat — the value proposition */}
+      {hasMetrics && heroStat ? (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 28, fontWeight: 600, color: colors.colorBlack1, lineHeight: 1.2 }}>
+            {heroStat.value}
+          </div>
+          <div style={{ fontSize: 13, color: colors.colorBlack3, marginTop: 2 }}>
+            {heroStat.label}
+          </div>
+          {heroStat.subtitle && (
+            <div style={{ fontSize: 12, color: colors.colorBlack4, marginTop: 2 }}>
+              {heroStat.subtitle}
+            </div>
           )}
+        </div>
+      ) : (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 14, color: colors.colorBlack4, fontStyle: 'italic' }}>
+            {agent.status === 'draft' ? 'Draft — not yet deployed' : 'Just deployed — awaiting first interaction'}
+          </div>
         </div>
       )}
 
-      {/* Bottom row: metric + optional activity link */}
+      {/* Bottom: volume + last active */}
       <div
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
           borderTop: `1px solid ${colors.colorBlack7}`,
-          paddingTop: 8,
+          paddingTop: 10,
+          fontSize: 12,
+          color: colors.colorBlack4,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: 'auto',
         }}
       >
-        <div style={{ fontSize: '0.75rem', color: colors.colorBlack4 }}>
-          {conversationsToday > 0
-            ? `~${conversationsToday} conversations/day  \u00B7  ${agent.metrics.resolutionRate}% resolved`
-            : 'No conversations yet'}
-        </div>
-
-        {/* View Activity link for sales agents */}
-        {hasSalesActivity && onViewActivity && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewActivity();
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-              fontSize: '0.75rem',
-              fontWeight: 500,
-              color: colors.colorBlueDark1,
-              transition: 'opacity 0.15s ease',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.7'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-          >
-            View Activity
-            <Icon path={mdiChevronRight} size={0.55} color={colors.colorBlueDark1} />
-          </button>
+        {hasMetrics ? (
+          <>
+            <span>{agent.metrics.cards?.[0]?.value ?? `${agent.metrics.totalConversations}`} {agent.metrics.cards?.[0]?.subtitle ?? 'total'}</span>
+            {latestActivity && (
+              <span>Last active {latestActivity.time}</span>
+            )}
+          </>
+        ) : (
+          <span>0 conversations</span>
         )}
       </div>
     </div>

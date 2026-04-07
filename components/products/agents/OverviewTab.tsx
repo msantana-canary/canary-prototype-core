@@ -179,6 +179,7 @@ export default function OverviewTab() {
           </div>
         ))}
       </CanaryList>
+      <div style={{ height: 24 }} />
     </div>
   );
 }

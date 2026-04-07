@@ -42,8 +42,8 @@ export interface AgentTrigger {
 // Connections (external system integrations — NOT channels)
 // ---------------------------------------------------------------------------
 
-export type ConnectionType = 'pms' | 'crm' | 'pos' | 'calendar' | 'payment' | 'knowledge-base';
-export type ConnectionStatus = 'connected' | 'needed' | 'optional';
+export type ConnectionType = 'pms' | 'crm' | 'pos' | 'calendar' | 'payment' | 'knowledge-base' | 'voice' | 'email' | 'task-management' | 'mobile-key';
+export type ConnectionStatus = 'connected' | 'needed' | 'optional' | 'not-available' | 'setup-required';
 
 export interface Connection {
   id: string;
@@ -216,7 +216,7 @@ export interface SalesInquiry {
 // Connectors (named external systems with integration status)
 // ---------------------------------------------------------------------------
 
-export type ConnectorStatus = 'connected' | 'setup-required' | 'not-available';
+export type ConnectorStatus = 'connected' | 'setup-required' | 'not-available' | 'unassigned';
 
 export interface ConnectorConfig {
   id: string;

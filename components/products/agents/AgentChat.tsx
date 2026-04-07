@@ -29,7 +29,7 @@ import { generateAgentWorkflow } from '@/lib/products/agents/services/agent-buil
 import type { Agent, AgentViewTab } from '@/lib/products/agents/types';
 
 interface AgentChatProps {
-  onTabSwitch: (tab: AgentViewTab, animate?: boolean) => void;
+  onTabSwitch?: (tab: AgentViewTab, animate?: boolean) => void;
   existingAgent?: Agent;
   /** Sidebar mode: hides header, uses compact styling */
   sidebar?: boolean;
@@ -101,7 +101,7 @@ const NEW_WORKFLOW_CHIPS: Record<string, string[]> = {
 
 function getWorkflowChips(workflowName: string | undefined, templateName: string | undefined, isNew: boolean): string[] {
   if (isNew && templateName) {
-    return NEW_WORKFLOW_CHIPS[templateName] ?? ['Describe the trigger for this workflow', 'What should happen when it runs?', 'What conditions should it handle?'];
+    return NEW_WORKFLOW_CHIPS[templateName] ?? ['Build a guest request handler', 'Create an automated follow-up flow', 'Set up an escalation and handoff workflow'];
   }
   if (workflowName && WORKFLOW_CHIP_MAP[workflowName]) {
     return WORKFLOW_CHIP_MAP[workflowName];
@@ -153,10 +153,10 @@ export default function AgentChat({ onTabSwitch, existingAgent, sidebar }: Agent
     const hasConditions = currentWorkflow.steps.some((s) => s.conditions && s.conditions.length > 0);
 
     if (isNew) {
-      const templateName = wizardTemplate?.name || 'your agent';
+      const agentLabel = wizardTemplate?.name || existingAgent?.name || 'your agent';
       addBuilderMessage({
         role: 'assistant',
-        content: `Let's build a new workflow for your **${templateName}**.\n\nTo get started, tell me:\n- What should trigger this workflow?\n- What's the goal or expected outcome?\n- Are there any specific steps or conditions you already have in mind?\n\nDescribe what you need and I'll create the workflow for you.`,
+        content: `Let's build a new workflow for your **${agentLabel}**.\n\nTo get started, tell me:\n- What should trigger this workflow?\n- What's the goal or expected outcome?\n- Are there any specific steps or conditions you already have in mind?\n\nDescribe what you need and I'll create the workflow for you.`,
       });
     } else {
       addBuilderMessage({
@@ -250,14 +250,14 @@ export default function AgentChat({ onTabSwitch, existingAgent, sidebar }: Agent
             name: current?.name || result.workflow.name,
           });
           if (!existingAgent) {
-            onTabSwitch('workflows', true);
+            onTabSwitch?.('workflows', true);
           }
         }
 
         if (result.connections && Array.isArray(result.connections) && result.connections.length > 0) {
           setBuilderConnections(result.connections);
           if (!existingAgent && !result.workflow?.steps?.length) {
-            onTabSwitch('connectors');
+            onTabSwitch?.('connectors');
           }
         }
 
@@ -299,17 +299,12 @@ export default function AgentChat({ onTabSwitch, existingAgent, sidebar }: Agent
   }, [handleSend]);
 
   const hasUserMessages = builderMessages.some((m) => m.role === 'user');
-  const isExistingContext = !!existingAgent && !hasUserMessages;
+  const isExistingContext = !!existingAgent && !hasUserMessages && !sidebar;
 
   const isNewWorkflow = sidebar && currentWorkflow && currentWorkflow.steps.length === 0;
-  const chips = isExistingContext
-    ? [
-        `How is ${existingAgent.name} performing?`,
-        'Show me the connections',
-        'What are the guardrails?',
-      ]
-    : sidebar
-    ? getWorkflowChips(currentWorkflow?.name || undefined, wizardTemplate?.name, !!isNewWorkflow)
+  const agentLabel = wizardTemplate?.name || existingAgent?.name;
+  const chips = sidebar
+    ? getWorkflowChips(currentWorkflow?.name || undefined, agentLabel, !!isNewWorkflow)
     : wizardTemplate
     ? TEMPLATE_CHIP_MAP[wizardTemplate.name] ?? SCRATCH_CHIPS
     : SCRATCH_CHIPS;

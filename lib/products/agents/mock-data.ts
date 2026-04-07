@@ -70,6 +70,48 @@ const conn = {
     status: 'optional' as const,
     description: 'Restaurant and retail transaction data.',
   },
+  twilio: {
+    id: 'conn-twilio',
+    name: 'Twilio Voice',
+    type: 'voice' as const,
+    status: 'connected' as const,
+    description: 'Inbound and outbound voice call routing.',
+  },
+  sendgrid: {
+    id: 'conn-sendgrid',
+    name: 'SendGrid Email',
+    type: 'email' as const,
+    status: 'connected' as const,
+    description: 'Transactional email delivery for confirmations and proposals.',
+  },
+  hotsos: {
+    id: 'conn-hotsos',
+    name: 'HotSOS',
+    type: 'task-management' as const,
+    status: 'connected' as const,
+    description: 'Housekeeping and maintenance task management.',
+  },
+  flexkeeping: {
+    id: 'conn-flexkeeping',
+    name: 'Flexkeeping',
+    type: 'task-management' as const,
+    status: 'not-available' as const,
+    description: 'Alternative task management platform for hotel operations.',
+  },
+  vostio: {
+    id: 'conn-vostio',
+    name: 'Vostio Mobile Key',
+    type: 'mobile-key' as const,
+    status: 'connected' as const,
+    description: 'Mobile key generation and delivery for guest room access.',
+  },
+  dormakaba: {
+    id: 'conn-dormakaba',
+    name: 'Dormakaba Locks',
+    type: 'mobile-key' as const,
+    status: 'not-available' as const,
+    description: 'Alternative mobile key and lock integration.',
+  },
 };
 
 export const availableConnections: Connection[] = [
@@ -206,24 +248,28 @@ const alexWorkflow: AgentWorkflow = {
   steps: [
     { id: 'va-s1', type: 'response', label: 'Greet Caller', description: 'Welcome guest with personalized greeting if identified, generic if not.',
       conditions: [
-        { id: 'va-c1', condition: 'If guest identified by phone number', action: 'Use personalized welcome with name and reservation reference' },
-        { id: 'va-c2', condition: 'If unknown caller', action: 'Use standard hotel greeting — "Thank you for calling The Statler, how can I help?"' },
+        { id: 'va-c1', condition: 'If guest identified by phone number', action: 'Use personalized welcome with name and reservation reference — "Welcome back to The Statler New York, [name]"' },
+        { id: 'va-c2', condition: 'If unknown caller', action: 'Use standard greeting — "Thank you for calling The Statler New York, located on West 54th Street. How may I assist you?"' },
       ],
     },
     { id: 'va-s2', type: 'action', label: 'Identify Intent', description: 'Determine what the caller needs — information, reservation, transfer, or service.',
       conditions: [
-        { id: 'va-c3', condition: 'If reservation question', action: 'Look up reservation in PMS by phone number, name, or confirmation number' },
+        { id: 'va-c3', condition: 'If reservation question', action: 'Look up reservation in PMS by phone number, name, or CTL confirmation number' },
         { id: 'va-c4', condition: 'If FAQ or hotel info', action: 'Search knowledge base for matching answer' },
         { id: 'va-c5', condition: 'If requesting specific department', action: 'Prepare transfer to requested department' },
         { id: 'va-c6', condition: 'If reporting issue', action: 'Gather details and create service ticket' },
+        { id: 'va-c17', condition: 'If caller asks about parking', action: 'Provide W 54th St garage details — $45/night self-park, $65/night valet, in/out privileges included' },
+        { id: 'va-c18', condition: 'If caller asks about dining or restaurant', action: 'Offer to transfer to The Statler Restaurant at ext. 250, or share hours (breakfast 7-10:30 AM, dinner 5:30-10 PM)' },
+        { id: 'va-c19', condition: 'If caller asks about nearby attractions', action: 'Reference Carnegie Hall (2 blocks), Central Park (5 min walk), Times Square (10 min walk)' },
       ],
     },
     { id: 'va-s3', type: 'action', label: 'Execute Ability', description: 'Run the matched voice ability — KB answer, reservation lookup, booking link, or call transfer.',
       conditions: [
         { id: 'va-c7', condition: 'If answer found in KB', action: 'Respond verbally with the answer' },
-        { id: 'va-c8', condition: 'If reservation found', action: 'Read back reservation details — dates, room type, confirmation number' },
+        { id: 'va-c8', condition: 'If reservation found', action: 'Read back reservation details — dates, room type, CTL-XXXXX confirmation number' },
         { id: 'va-c9', condition: 'If needs booking', action: 'Offer to text a booking link to the caller\'s phone' },
         { id: 'va-c10', condition: 'If complex request beyond abilities', action: 'Prepare transfer with context summary for staff' },
+        { id: 'va-c20', condition: 'If caller asks about pool or fitness center', action: 'Pool hours 6 AM – 10 PM (towels provided), fitness center open 24 hours with key card access' },
       ],
     },
     { id: 'va-s4', type: 'handoff', label: 'Transfer or Resolve', description: 'Either resolve the call or transfer to the appropriate department with a summary.',
@@ -231,6 +277,9 @@ const alexWorkflow: AgentWorkflow = {
         { id: 'va-c11', condition: 'If resolved', action: 'Thank guest and end call' },
         { id: 'va-c12', condition: 'If transfer needed', action: 'Announce transfer, provide staff with call summary' },
         { id: 'va-c13', condition: 'If guest insists on human', action: 'Transfer immediately — don\'t push back more than once' },
+        { id: 'va-c21', condition: 'If transfer to restaurant', action: 'Transfer to The Statler Restaurant at ext. 250' },
+        { id: 'va-c22', condition: 'If transfer to maintenance or housekeeping', action: 'Transfer to Maintenance (ext. 300) or Housekeeping (ext. 310) based on issue type' },
+        { id: 'va-c23', condition: 'If transfer to concierge', action: 'Transfer to Concierge desk at ext. 200 — Theresa Webb available weekdays 7 AM – 11 PM' },
       ],
     },
     { id: 'va-s5', type: 'response', label: 'Post-Call Follow-up', description: 'Send follow-up SMS with relevant info, booking links, or confirmation.',
@@ -238,6 +287,7 @@ const alexWorkflow: AgentWorkflow = {
         { id: 'va-c14', condition: 'If booking discussed', action: 'Text booking link to caller\'s phone number' },
         { id: 'va-c15', condition: 'If information shared', action: 'Text a summary of the key details discussed' },
         { id: 'va-c16', condition: 'If guest opted out of SMS', action: 'Skip follow-up — respect preference' },
+        { id: 'va-c24', condition: 'If parking or directions discussed', action: 'Text W 54th St garage address and self-park/valet rates' },
       ],
     },
   ],
@@ -246,6 +296,8 @@ const alexWorkflow: AgentWorkflow = {
     'Always offer to transfer when the guest asks — don\'t push back more than once.',
     'Keep hold time under 30 seconds before offering callback or transfer.',
     'Never process payments or refunds over the phone — direct to secure link.',
+    'Always use "The Statler New York" as the property name — never abbreviate to "Statler."',
+    'For rate inquiries, quote published rack rates only — refer to reservations for corporate/group/promo rates.',
   ],
 };
 
@@ -395,7 +447,7 @@ const alex: Agent = {
     'Handles all inbound phone calls for the front desk, answers guest questions, and routes calls to appropriate departments.',
   status: 'active',
   triggers: alexTriggers,
-  connections: [conn.pms, conn.kb],
+  connections: [conn.twilio, conn.pms, conn.kb, cn(conn.sendgrid, { status: 'setup-required' })],
   capabilities: allProductsWithEnabled(['prod-messages', 'prod-calls', 'prod-checkin', 'prod-knowledge-base']),
   workflow: alexWorkflow,
   tone: 'Natural',
@@ -619,14 +671,18 @@ export const mockWorkflowContractPrep: AgentWorkflow = {
 };
 
 export const mockConnectors: ConnectorConfig[] = [
-  { id: 'cnx-twilio', name: 'Twilio Voice', type: 'pms', status: 'connected' },
-  { id: 'cnx-opera', name: 'Oracle Opera PMS', type: 'pms', status: 'connected' },
-  { id: 'cnx-salesforce', name: 'Salesforce CRM', type: 'crm', status: 'setup-required' },
-  { id: 'cnx-stripe', name: 'Stripe Payments', type: 'payment', status: 'connected' },
-  { id: 'cnx-sendgrid', name: 'SendGrid Email', type: 'knowledge-base', status: 'connected' },
-  { id: 'cnx-calendar', name: 'Google Calendar', type: 'calendar', status: 'setup-required' },
-  { id: 'cnx-square', name: 'Square POS', type: 'pos', status: 'connected' },
-  { id: 'cnx-hotsos', name: 'HotSOS Task Management', type: 'pos', status: 'not-available' },
+  { id: 'conn-twilio', name: 'Twilio Voice', type: 'voice', status: 'connected' },
+  { id: 'conn-pms', name: 'Oracle Opera PMS', type: 'pms', status: 'connected' },
+  { id: 'conn-kb', name: 'Knowledge Base', type: 'knowledge-base', status: 'connected' },
+  { id: 'conn-payment', name: 'Payment Gateway', type: 'payment', status: 'connected' },
+  { id: 'conn-sendgrid', name: 'SendGrid Email', type: 'email', status: 'connected' },
+  { id: 'conn-hotsos', name: 'HotSOS', type: 'task-management', status: 'connected' },
+  { id: 'conn-vostio', name: 'Vostio Mobile Key', type: 'mobile-key', status: 'connected' },
+  { id: 'conn-pos', name: 'Point of Sale', type: 'pos', status: 'connected' },
+  { id: 'conn-crm', name: 'Salesforce CRM', type: 'crm', status: 'setup-required' },
+  { id: 'conn-calendar', name: 'Google Calendar', type: 'calendar', status: 'setup-required' },
+  { id: 'conn-flexkeeping', name: 'Flexkeeping', type: 'task-management', status: 'not-available' },
+  { id: 'conn-dormakaba', name: 'Dormakaba Locks', type: 'mobile-key', status: 'not-available' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -696,9 +752,9 @@ const erWorkflowModification: AgentWorkflow = {
   trigger: 'Modification Email Received',
   triggerDescription: 'Inbound email matching modification keywords (change dates, switch rooms, add guest, etc.).',
   steps: [
-    { id: 'erm-s1', type: 'action', label: 'Parse Modification Request', description: 'Extract confirmation number, requested changes (dates, room type, guest count), and reason from email.',
+    { id: 'erm-s1', type: 'action', label: 'Parse Modification Request', description: 'Extract CTL-XXXXX confirmation number, requested changes (dates, room type, guest count), and reason from email.',
       conditions: [
-        { id: 'erm-c1', condition: 'If confirmation number found', action: 'Look up reservation in PMS' },
+        { id: 'erm-c1', condition: 'If CTL confirmation number found', action: 'Look up reservation in Oracle Opera PMS' },
         { id: 'erm-c2', condition: 'If no confirmation number', action: 'Search by guest name + original dates' },
         { id: 'erm-c3', condition: 'If multiple changes requested', action: 'Process each change sequentially' },
       ],
@@ -707,21 +763,24 @@ const erWorkflowModification: AgentWorkflow = {
       conditions: [
         { id: 'erm-c4', condition: 'If new dates available at same rate', action: 'Apply change directly' },
         { id: 'erm-c5', condition: 'If new dates available at different rate', action: 'Flag rate difference for guest confirmation before applying' },
-        { id: 'erm-c6', condition: 'If requested dates/room not available', action: 'Suggest closest alternatives and notify guest' },
+        { id: 'erm-c6', condition: 'If requested dates/room not available', action: 'Suggest closest alternatives — Standard King, Deluxe Double, or Executive Suite' },
         { id: 'erm-c7', condition: 'If modification violates policy (e.g., non-modifiable rate)', action: 'Flag for staff review' },
+        { id: 'erm-c10', condition: 'If PROMO or ADVANCE rate code', action: 'Non-modifiable — flag for revenue manager, cannot change dates or room type' },
+        { id: 'erm-c11', condition: 'If Diamond/Platinum Elite loyalty member', action: 'Allow one complimentary date change within 48 hours of arrival per Statler loyalty policy' },
       ],
     },
-    { id: 'erm-s3', type: 'action', label: 'Update PMS', description: 'Apply the validated changes to the reservation in the PMS — update dates, room type, guest count, and rate.',
+    { id: 'erm-s3', type: 'action', label: 'Update PMS', description: 'Apply the validated changes to the reservation in Oracle Opera — update dates, room type, guest count, and rate.',
       conditions: [
-        { id: 'erm-c8', condition: 'If PMS update succeeds', action: 'Log changes and proceed to confirmation' },
+        { id: 'erm-c8', condition: 'If PMS update succeeds', action: 'Log changes with CTL confirmation number and proceed to confirmation' },
         { id: 'erm-c9', condition: 'If PMS update fails', action: 'Retry once, then flag for staff with error details' },
       ],
     },
-    { id: 'erm-s4', type: 'response', label: 'Send Confirmation', description: 'Email guest with updated reservation details — new dates, room type, rate, and any price difference.' },
+    { id: 'erm-s4', type: 'response', label: 'Send Confirmation', description: 'Email guest with updated CTL reservation details — new dates, room type, rate, and any price difference.' },
   ],
   guardrails: [
-    'Never modify a reservation without matching the confirmation number or guest identity.',
+    'Never modify a reservation without matching the CTL-XXXXX confirmation number or guest identity.',
     'Always show rate impact before applying changes that affect pricing.',
+    'PROMO and ADVANCE rate codes are non-modifiable — always route to revenue manager.',
     'Log all modifications for audit trail.',
   ],
 };
@@ -744,13 +803,16 @@ const erWorkflowConfirmation: AgentWorkflow = {
       conditions: [
         { id: 'erc-c4', condition: 'If details match guest expectations', action: 'Mark as confirmed in PMS' },
         { id: 'erc-c5', condition: 'If guest mentions discrepancies', action: 'Flag for staff review before confirming' },
+        { id: 'erc-c6', condition: 'If Diamond or Platinum Elite loyalty member', action: 'Include loyalty welcome amenity note and priority room assignment flag' },
       ],
     },
-    { id: 'erc-s3', type: 'response', label: 'Send Confirmation', description: 'Reply to guest with confirmed reservation summary — dates, room type, rate, check-in instructions, and pre-arrival check-in link.' },
+    { id: 'erc-s3', type: 'response', label: 'Send Confirmation', description: 'Reply to guest with confirmed CTL-XXXXX reservation summary — dates, room type, rate, The Statler check-in instructions, and pre-arrival check-in link.' },
   ],
   guardrails: [
     'Never confirm a reservation that has unresolved discrepancies.',
     'Always include pre-arrival check-in link in confirmation emails.',
+    'Include The Statler\'s 48-hour cancellation policy reminder in every confirmation.',
+    'Include parking info (W 54th St garage, $45/night self-park) in confirmation for drive-in guests.',
   ],
 };
 
@@ -779,10 +841,7 @@ const riley: Agent = {
       ],
     },
   ],
-  connections: [
-    { id: 'conn-pms', name: 'Property Management System', type: 'pms', status: 'connected', description: 'PMS for reservation lookup and updates' },
-    { id: 'conn-kb', name: 'Knowledge Base', type: 'knowledge-base', status: 'connected', description: 'Cancellation policies and property rules' },
-  ],
+  connections: [conn.pms, conn.sendgrid, conn.kb],
   capabilities: CANARY_PRODUCTS.map((p) => ({
     ...p,
     enabled: p.id === 'prod-knowledge-base',
@@ -798,30 +857,33 @@ const riley: Agent = {
         id: 'er-s1',
         type: 'action',
         label: 'Parse Email Content',
-        description: 'Extract confirmation number, guest name, dates, and cancellation reason from the email body.',
+        description: 'Extract confirmation number (CTL-XXXXX format), guest name, dates, and cancellation reason from the email body.',
         conditions: [
           { id: 'er-c1', condition: 'If confirmation number is missing', action: 'Search PMS by guest name and dates' },
           { id: 'er-c2', condition: 'If multiple reservations match', action: 'Flag for staff review' },
+          { id: 'er-c11', condition: 'If confirmation number does not match CTL-XXXXX format', action: 'Check if OTA booking number — route to OTA portal team' },
         ],
       },
       {
         id: 'er-s2',
         type: 'action',
         label: 'Validate Cancellation Policy',
-        description: 'Check the reservation against the property cancellation policy in PMS.',
+        description: 'Check the reservation against The Statler\'s cancellation policy — 48-hour free cancellation for standard rates.',
         conditions: [
-          { id: 'er-c3', condition: 'If within free cancellation window', action: 'Proceed — no charge' },
-          { id: 'er-c4', condition: 'If within penalty window', action: 'Calculate penalty amount' },
-          { id: 'er-c5', condition: 'If non-refundable rate', action: 'Flag for staff review' },
+          { id: 'er-c3', condition: 'If within 48-hour free cancellation window', action: 'Proceed — no charge, full refund' },
+          { id: 'er-c4', condition: 'If within penalty window (< 48 hours)', action: 'Calculate one-night penalty per Statler policy' },
+          { id: 'er-c5', condition: 'If non-refundable rate (PROMO or ADVANCE rate codes)', action: 'Flag for revenue manager — no auto-cancellation allowed' },
+          { id: 'er-c12', condition: 'If Diamond Elite or Platinum Elite loyalty member', action: 'Apply courtesy late cancellation — waive penalty up to 24 hours before arrival' },
+          { id: 'er-c13', condition: 'If group block reservation (10+ rooms)', action: 'Route to sales team (Sarah Kim) — group cancellation terms apply' },
         ],
       },
       {
         id: 'er-s3',
         type: 'action',
         label: 'Update PMS',
-        description: 'Cancel the reservation in the PMS and release inventory.',
+        description: 'Cancel the reservation in Oracle Opera PMS and release inventory.',
         conditions: [
-          { id: 'er-c6', condition: 'If PMS write succeeds', action: 'Log and proceed to confirmation' },
+          { id: 'er-c6', condition: 'If PMS write succeeds', action: 'Log CTL confirmation number and proceed to confirmation' },
           { id: 'er-c7', condition: 'If PMS write fails', action: 'Retry once, then escalate to IT' },
         ],
       },
@@ -829,7 +891,7 @@ const riley: Agent = {
         id: 'er-s4',
         type: 'response',
         label: 'Send Confirmation',
-        description: 'Email guest with cancellation number, charges applied, and refund timeline.',
+        description: 'Email guest with CTL cancellation number, charges applied, refund timeline, and rebooking link for The Statler New York.',
       },
       {
         id: 'er-s5',
@@ -837,15 +899,18 @@ const riley: Agent = {
         label: 'Escalate Exceptions',
         description: 'Route flagged items to the appropriate team for manual review.',
         conditions: [
-          { id: 'er-c8', condition: 'If non-refundable or policy exception', action: 'Send to revenue manager' },
+          { id: 'er-c8', condition: 'If non-refundable (PROMO/ADVANCE) or policy exception', action: 'Send to revenue manager' },
           { id: 'er-c9', condition: 'If PMS error persisted', action: 'Send to IT support' },
           { id: 'er-c10', condition: 'If guest disputed terms', action: 'Send to front desk manager' },
+          { id: 'er-c14', condition: 'If loyalty member requests exception beyond courtesy window', action: 'Route to guest services manager for discretionary approval' },
         ],
       },
     ],
     guardrails: [
-      'Never cancel without matching confirmation number or guest identity.',
-      'Always apply the correct cancellation policy.',
+      'Never cancel without matching CTL-XXXXX confirmation number or verified guest identity.',
+      'Always apply The Statler\'s 48-hour free cancellation policy for standard rates.',
+      'PROMO and ADVANCE rate codes are always non-refundable — never auto-cancel.',
+      'Diamond and Platinum Elite members get courtesy late cancellation up to 24 hours before arrival.',
       'Log every action for audit trail.',
       'Never process group/event booking cancellations — route to sales team.',
     ],
@@ -917,10 +982,7 @@ const serviceTicketAgent: Agent = {
       ],
     },
   ],
-  connections: [
-    { id: 'conn-pms', name: 'Property Management System', type: 'pms', status: 'connected', description: 'Room number and reservation lookup' },
-    { id: 'conn-kb', name: 'Knowledge Base', type: 'knowledge-base', status: 'connected', description: 'Ticket type matching and FAQ' },
-  ],
+  connections: [conn.hotsos, conn.pms, conn.kb, conn.flexkeeping],
   capabilities: CANARY_PRODUCTS.map((p) => ({
     ...p,
     enabled: ['prod-messages', 'prod-knowledge-base'].includes(p.id),
@@ -941,18 +1003,22 @@ const serviceTicketAgent: Agent = {
           { id: 'st-c1', condition: 'If message is unclear or vague', action: 'Ask clarifying question — what room, what issue, when did it start?' },
           { id: 'st-c2', condition: 'If multiple issues mentioned', action: 'Address highest priority first, queue remaining' },
           { id: 'st-c3', condition: 'If guest expresses anger or frustration', action: 'Acknowledge emotion first, then proceed to resolution' },
+          { id: 'st-c13', condition: 'If pool, gym, or fitness center issue', action: 'Route to Operations department (ext. 320) — not Maintenance' },
+          { id: 'st-c14', condition: 'If Diamond or Platinum Elite guest', action: 'Auto-escalate to priority queue — SLA reduced to 15 min for housekeeping, 30 min for maintenance' },
         ],
       },
       {
         id: 'st-s2',
         type: 'action',
         label: 'Match Ticket Type',
-        description: 'Search available ticket types via embeddings to find the best match for the reported issue.',
+        description: 'Search HotSOS ticket categories for the best match — Housekeeping, Maintenance, Engineering, Operations, or Front Desk.',
         conditions: [
-          { id: 'st-c4', condition: 'If exact match found (similarity > 0.75)', action: 'Use matched ticket type' },
-          { id: 'st-c5', condition: 'If partial match', action: 'Present top 2-3 options to staff for selection' },
-          { id: 'st-c6', condition: 'If no match found', action: 'Create generic "Other" ticket and flag for staff categorization' },
+          { id: 'st-c4', condition: 'If exact match found (similarity > 0.75)', action: 'Use matched HotSOS ticket category' },
+          { id: 'st-c5', condition: 'If partial match', action: 'Present top 2-3 HotSOS categories to staff for selection' },
+          { id: 'st-c6', condition: 'If no match found', action: 'Create generic "Guest Request" ticket and flag for staff categorization' },
           { id: 'st-c7', condition: 'If duplicate ticket exists for same room', action: 'Skip creation, update existing ticket with new context' },
+          { id: 'st-c15', condition: 'If HVAC, plumbing, or electrical issue', action: 'Route to Maintenance dept (ext. 300) — James Rodriguez on duty weekdays' },
+          { id: 'st-c16', condition: 'If housekeeping request (towels, cleaning, amenities)', action: 'Route to Housekeeping dept (ext. 310) — SLA 30 minutes' },
         ],
       },
       {
@@ -961,23 +1027,24 @@ const serviceTicketAgent: Agent = {
         label: 'Acknowledge Guest',
         description: 'Send confirmation to guest that their request has been received and is being addressed.',
         conditions: [
-          { id: 'st-c8', condition: 'If urgent (safety, leak, lockout)', action: 'Send immediate acknowledgment with expected response time' },
-          { id: 'st-c9', condition: 'If routine (towels, toiletries)', action: 'Confirm receipt and estimated delivery time' },
+          { id: 'st-c8', condition: 'If urgent (safety, leak, lockout)', action: 'Send immediate acknowledgment — "Our team is on the way"' },
+          { id: 'st-c9', condition: 'If routine housekeeping (towels, toiletries)', action: 'Confirm receipt — estimated delivery within 30 minutes' },
+          { id: 'st-c17', condition: 'If maintenance request (AC, plumbing, electrical)', action: 'Confirm receipt — estimated response within 1 hour' },
         ],
       },
       {
         id: 'st-s4',
         type: 'action',
         label: 'Create Recommended Ticket',
-        description: 'Generate a recommended ticket for staff review with room number, issue type, priority, and guest context.',
+        description: 'Generate a recommended HotSOS ticket for staff review with room number, department (Maintenance ext. 300 / Housekeeping ext. 310 / Operations ext. 320), issue type, priority, and guest context.',
       },
       {
         id: 'st-s5',
         type: 'action',
         label: 'Staff Review',
-        description: 'Staff reviews the recommended ticket and approves, rejects, or re-categorizes before it is created in the vendor system.',
+        description: 'Staff reviews the recommended ticket and approves, rejects, or re-categorizes before it is created in HotSOS.',
         conditions: [
-          { id: 'st-c10', condition: 'If approved', action: 'Create ticket in vendor system (Hotsos, Flexkeeping, etc.) and proceed to tracking' },
+          { id: 'st-c10', condition: 'If approved', action: 'Create ticket in HotSOS and proceed to tracking' },
           { id: 'st-c11', condition: 'If rejected — invalid request', action: 'Close recommendation and log reason' },
           { id: 'st-c12', condition: 'If rejected — wrong category', action: 'Re-assess ticket type and resubmit recommendation to staff' },
         ],
@@ -986,19 +1053,22 @@ const serviceTicketAgent: Agent = {
         id: 'st-s6',
         type: 'action',
         label: 'Track Resolution',
-        description: 'Monitor ticket status from vendor system and send follow-up to guest when resolved.',
+        description: 'Monitor ticket status from HotSOS and send follow-up to guest when resolved.',
         conditions: [
-          { id: 'st-c10', condition: 'If resolved within SLA', action: 'Send satisfaction check to guest' },
-          { id: 'st-c11', condition: 'If exceeds SLA', action: 'Escalate to department manager and notify guest of delay' },
-          { id: 'st-c12', condition: 'If staff rejects recommended ticket', action: 'Log reason and reassess — ask guest for more details if needed' },
+          { id: 'st-c18', condition: 'If housekeeping ticket resolved within 30-min SLA', action: 'Send satisfaction check to guest' },
+          { id: 'st-c19', condition: 'If maintenance ticket resolved within 1-hour SLA', action: 'Send satisfaction check to guest' },
+          { id: 'st-c20', condition: 'If exceeds SLA', action: 'Escalate to department manager and notify guest of delay' },
+          { id: 'st-c21', condition: 'If staff rejects recommended ticket', action: 'Log reason and reassess — ask guest for more details if needed' },
         ],
       },
     ],
     guardrails: [
-      'Never promise a specific resolution time — use estimates.',
+      'Never promise a specific resolution time — use SLA estimates (housekeeping 30 min, maintenance 1 hour).',
       'Always confirm room number before creating a ticket.',
       'Route safety issues (fire, water, lockout) to staff immediately — do not wait for ticket approval.',
       'Never create duplicate tickets for the same room and issue.',
+      'Pool/gym/fitness center issues go to Operations (ext. 320), NOT Maintenance.',
+      'Always include guest loyalty tier in ticket context — Diamond/Platinum get priority SLA.',
     ],
   },
   tone: 'Natural',
@@ -1055,22 +1125,24 @@ const fdWorkflowBooking: AgentWorkflow = {
   steps: [
     { id: 'fdb-s1', type: 'action', label: 'Check Availability', description: 'Query PMS for room availability matching guest dates, room type, and guest count.',
       conditions: [
-        { id: 'fdb-c1', condition: 'If rooms available', action: 'Present options with rates and descriptions' },
-        { id: 'fdb-c2', condition: 'If no availability for requested dates', action: 'Suggest alternative dates or nearby properties' },
+        { id: 'fdb-c1', condition: 'If rooms available', action: 'Present options — Standard King ($289), Deluxe Double ($349), Executive Suite ($489) with descriptions' },
+        { id: 'fdb-c2', condition: 'If no availability for requested dates', action: 'Suggest alternative dates at The Statler — never recommend competing properties' },
         { id: 'fdb-c3', condition: 'If webchat channel', action: 'Include interactive booking form widget' },
+        { id: 'fdb-c7', condition: 'If guest mentions corporate travel', action: 'Ask for corporate rate code (CORP) — apply negotiated rate if valid' },
+        { id: 'fdb-c8', condition: 'If guest mentions AAA or government', action: 'Apply AAA or GOV rate code — verify membership at check-in' },
       ],
     },
-    { id: 'fdb-s2', type: 'response', label: 'Present Options', description: 'Show available rooms with rates, amenities, and booking links. Include photos on webchat.' },
-    { id: 'fdb-s3', type: 'action', label: 'Process Booking', description: 'Create the reservation in the PMS via booking gateway.',
+    { id: 'fdb-s2', type: 'response', label: 'Present Options', description: 'Show available Statler room types with rates, amenities, and booking links. Include photos on webchat.' },
+    { id: 'fdb-s3', type: 'action', label: 'Process Booking', description: 'Create the reservation in Oracle Opera PMS via booking gateway.',
       conditions: [
-        { id: 'fdb-c4', condition: 'If booking succeeds', action: 'Generate confirmation with details' },
-        { id: 'fdb-c5', condition: 'If payment required upfront', action: 'Capture payment via payment gateway before confirming' },
+        { id: 'fdb-c4', condition: 'If booking succeeds', action: 'Generate CTL-XXXXX confirmation with details' },
+        { id: 'fdb-c5', condition: 'If payment required upfront', action: 'Capture payment via Stripe before confirming' },
         { id: 'fdb-c6', condition: 'If booking fails', action: 'Apologize and suggest calling the front desk' },
       ],
     },
-    { id: 'fdb-s4', type: 'response', label: 'Send Confirmation', description: 'Send booking confirmation with confirmation number, dates, room type, and check-in instructions.' },
+    { id: 'fdb-s4', type: 'response', label: 'Send Confirmation', description: 'Send booking confirmation with CTL confirmation number, dates, room type, 48-hour cancellation policy, and check-in instructions.' },
   ],
-  guardrails: ['Never override published rates without manager approval.', 'Always include cancellation policy in booking confirmation.'],
+  guardrails: ['Never override published rates without manager approval.', 'Always include The Statler\'s 48-hour free cancellation policy in booking confirmation.', 'Only offer Standard King, Deluxe Double, or Executive Suite — no room types outside the Statler inventory.'],
 };
 
 const fdWorkflowFAQ: AgentWorkflow = {
@@ -1080,16 +1152,19 @@ const fdWorkflowFAQ: AgentWorkflow = {
   trigger: 'Information Request Detected',
   triggerDescription: 'Guest asks a question about the hotel, amenities, policies, or local area.',
   steps: [
-    { id: 'fdf-s1', type: 'action', label: 'Search Knowledge Base', description: 'Query hotel knowledge base using semantic search to find the best matching answer.',
+    { id: 'fdf-s1', type: 'action', label: 'Search Knowledge Base', description: 'Query The Statler knowledge base using semantic search to find the best matching answer.',
       conditions: [
         { id: 'fdf-c1', condition: 'If high-confidence match found', action: 'Use KB answer as response basis' },
-        { id: 'fdf-c2', condition: 'If question is about nearby places/restaurants', action: 'Search places database for recommendations' },
+        { id: 'fdf-c2', condition: 'If question is about nearby places/restaurants', action: 'Search NYC places database — prioritize Carnegie Hall, Central Park, Times Square area' },
         { id: 'fdf-c3', condition: 'If no match found', action: 'Generate best-effort response, flag for KB gap review' },
+        { id: 'fdf-c4', condition: 'If question about pool or fitness', action: 'Pool hours 6 AM – 10 PM (towels provided poolside), fitness center 24 hours with room key access' },
+        { id: 'fdf-c5', condition: 'If question about parking', action: 'W 54th St garage — $45/night self-park, $65/night valet, in/out privileges included' },
+        { id: 'fdf-c6', condition: 'If question about checkout time', action: 'Standard checkout 11 AM, late checkout available until 2 PM (subject to availability, $50 fee)' },
       ],
     },
     { id: 'fdf-s2', type: 'response', label: 'Compose Answer', description: 'Generate a helpful, conversational response using KB content, tailored to the guest and channel.' },
   ],
-  guardrails: ['Never fabricate information not in the knowledge base.', 'If unsure, say "let me check with the team" and escalate.'],
+  guardrails: ['Never fabricate information not in the knowledge base.', 'If unsure, say "let me check with the team" and escalate.', 'Always use Statler-verified hours and policies — do not guess amenity schedules.'],
 };
 
 const fdWorkflowServiceTicket: AgentWorkflow = {
@@ -1099,17 +1174,19 @@ const fdWorkflowServiceTicket: AgentWorkflow = {
   trigger: 'Service Request Detected',
   triggerDescription: 'Guest reports an issue or requests a service (housekeeping, maintenance, amenities).',
   steps: [
-    { id: 'fdt-s1', type: 'action', label: 'Identify Issue', description: 'Parse the service request and match against available ticket types via embedding search.',
+    { id: 'fdt-s1', type: 'action', label: 'Identify Issue', description: 'Parse the service request and match against HotSOS ticket categories via embedding search.',
       conditions: [
-        { id: 'fdt-c1', condition: 'If clear match found', action: 'Use matched ticket type' },
+        { id: 'fdt-c1', condition: 'If clear match found', action: 'Use matched HotSOS ticket type' },
         { id: 'fdt-c2', condition: 'If ambiguous', action: 'Ask one clarifying question before proceeding' },
         { id: 'fdt-c3', condition: 'If safety issue (leak, fire, lockout)', action: 'Skip ticket — escalate to staff immediately' },
+        { id: 'fdt-c4', condition: 'If housekeeping request', action: 'Route to Housekeeping (ext. 310) via HotSOS — 30 min SLA' },
+        { id: 'fdt-c5', condition: 'If maintenance/repair request', action: 'Route to Maintenance (ext. 300) via HotSOS — 1 hour SLA' },
       ],
     },
-    { id: 'fdt-s2', type: 'response', label: 'Acknowledge Guest', description: 'Confirm receipt of the request and provide estimated response time.' },
-    { id: 'fdt-s3', type: 'action', label: 'Create Recommended Ticket', description: 'Generate a recommended ticket with room, issue type, priority, and guest context for staff review.' },
+    { id: 'fdt-s2', type: 'response', label: 'Acknowledge Guest', description: 'Confirm receipt of the request and provide estimated response time based on Statler SLAs.' },
+    { id: 'fdt-s3', type: 'action', label: 'Create Recommended Ticket', description: 'Generate a recommended HotSOS ticket with room, department code, issue type, priority, and guest context for staff review.' },
   ],
-  guardrails: ['Route safety issues directly to staff — do not create a ticket.', 'Never create duplicate tickets for the same room and issue.'],
+  guardrails: ['Route safety issues directly to staff — do not create a ticket.', 'Never create duplicate tickets for the same room and issue.', 'Use Statler SLA estimates: housekeeping 30 min, maintenance 1 hour.'],
 };
 
 const fdWorkflowUpsell: AgentWorkflow = {
@@ -1119,22 +1196,23 @@ const fdWorkflowUpsell: AgentWorkflow = {
   trigger: 'Upsell Opportunity Detected',
   triggerDescription: 'Guest mentions interest in upgrades, early arrival, late departure, or additional services.',
   steps: [
-    { id: 'fdu-s1', type: 'action', label: 'Search Available Upsells', description: 'Query available upsell options based on guest reservation, room type, and dates.',
+    { id: 'fdu-s1', type: 'action', label: 'Search Available Upsells', description: 'Query available Statler upsell options based on guest reservation, room type, and dates.',
       conditions: [
-        { id: 'fdu-c1', condition: 'If room upgrades available', action: 'Include upgrade options with price difference' },
-        { id: 'fdu-c2', condition: 'If early check-in or late checkout available', action: 'Include time-based options' },
+        { id: 'fdu-c1', condition: 'If room upgrades available', action: 'Offer upgrade — Standard King → Deluxe Double (from $45/night), Deluxe → Executive Suite (from $95/night)' },
+        { id: 'fdu-c2', condition: 'If early check-in or late checkout available', action: 'Late checkout until 2 PM ($50), early check-in from 12 PM ($40, subject to availability)' },
         { id: 'fdu-c3', condition: 'If no relevant upsells', action: 'Acknowledge request and suggest contacting front desk' },
+        { id: 'fdu-c6', condition: 'If guest mentions spa or wellness', action: 'Offer Statler Spa Package — 60-min massage + late checkout ($175)' },
       ],
     },
-    { id: 'fdu-s2', type: 'response', label: 'Present Offer', description: 'Show upsell options with pricing and benefits in a guest-friendly format.' },
-    { id: 'fdu-s3', type: 'action', label: 'Process Acceptance', description: 'If guest accepts, process the upsell — update reservation and capture payment if needed.',
+    { id: 'fdu-s2', type: 'response', label: 'Present Offer', description: 'Show Statler upsell options with pricing and benefits in a guest-friendly format.' },
+    { id: 'fdu-s3', type: 'action', label: 'Process Acceptance', description: 'If guest accepts, process the upsell — update reservation in Oracle Opera and capture payment via Stripe.',
       conditions: [
         { id: 'fdu-c4', condition: 'If accepted', action: 'Update reservation in PMS and confirm to guest' },
         { id: 'fdu-c5', condition: 'If declined', action: 'Acknowledge gracefully, no follow-up' },
       ],
     },
   ],
-  guardrails: ['Never push upsells to guests who have complained.', 'Respect guest preferences — no repeat offers for declined upsells.'],
+  guardrails: ['Never push upsells to guests who have complained.', 'Respect guest preferences — no repeat offers for declined upsells.', 'Diamond Elite members get complimentary late checkout — do not charge them.'],
 };
 
 const fdWorkflowCheckout: AgentWorkflow = {
@@ -1144,22 +1222,24 @@ const fdWorkflowCheckout: AgentWorkflow = {
   trigger: 'Checkout Request Detected',
   triggerDescription: 'Guest indicates they want to check out or asks about their bill.',
   steps: [
-    { id: 'fdc-s1', type: 'action', label: 'Generate Folio', description: 'Pull the guest folio from PMS with all charges, taxes, and credits.' },
+    { id: 'fdc-s1', type: 'action', label: 'Generate Folio', description: 'Pull the guest folio from Oracle Opera PMS with all charges, taxes, and credits.' },
     { id: 'fdc-s2', type: 'response', label: 'Send Folio', description: 'Send the itemized folio to the guest for review via their messaging channel.',
       conditions: [
-        { id: 'fdc-c1', condition: 'If guest has outstanding balance', action: 'Include payment link with folio' },
+        { id: 'fdc-c1', condition: 'If guest has outstanding balance', action: 'Include Stripe payment link with folio' },
         { id: 'fdc-c2', condition: 'If balance is zero or pre-paid', action: 'Confirm no further charges needed' },
+        { id: 'fdc-c5', condition: 'If parking charges present', action: 'Itemize parking separately — $45/night self-park or $65/night valet' },
       ],
     },
-    { id: 'fdc-s3', type: 'action', label: 'Process Checkout', description: 'Mark the reservation as checked out in PMS. Release room for housekeeping.',
+    { id: 'fdc-s3', type: 'action', label: 'Process Checkout', description: 'Mark the reservation as checked out in PMS at standard checkout time (11 AM). Release room for housekeeping.',
       conditions: [
         { id: 'fdc-c3', condition: 'If guest disputes a charge', action: 'Escalate to front desk — do not auto-resolve billing disputes' },
-        { id: 'fdc-c4', condition: 'If late checkout fee applies', action: 'Inform guest of fee before processing' },
+        { id: 'fdc-c4', condition: 'If late checkout (after 11 AM, before 2 PM)', action: 'Apply $50 late checkout fee unless Diamond Elite (complimentary) or pre-purchased upsell' },
+        { id: 'fdc-c6', condition: 'If checkout after 2 PM without approval', action: 'Charge additional half-day rate — escalate to front desk manager' },
       ],
     },
-    { id: 'fdc-s4', type: 'response', label: 'Departure Confirmation', description: 'Send thank-you message with feedback survey link and rebooking incentive.' },
+    { id: 'fdc-s4', type: 'response', label: 'Departure Confirmation', description: 'Send thank-you message from The Statler New York with feedback survey link and rebooking incentive.' },
   ],
-  guardrails: ['Never adjust charges without staff approval.', 'Always include feedback survey in departure message.'],
+  guardrails: ['Never adjust charges without staff approval.', 'Always include feedback survey in departure message.', 'Standard checkout is 11 AM, late checkout until 2 PM ($50 fee, free for Diamond Elite).'],
 };
 
 const fdWorkflowSurvey: AgentWorkflow = {
@@ -1226,12 +1306,7 @@ const frontDeskAgent: Agent = {
       ],
     },
   ],
-  connections: [
-    { id: 'conn-pms', name: 'Property Management System', type: 'pms', status: 'connected', description: 'Reservation lookup and room assignment' },
-    { id: 'conn-kb', name: 'Knowledge Base', type: 'knowledge-base', status: 'connected', description: 'Hotel FAQs, policies, and property info' },
-    { id: 'conn-payment', name: 'Payment Gateway', type: 'payment', status: 'connected', description: 'Process payments for bookings and upsells' },
-    { id: 'conn-calendar', name: 'Google Calendar', type: 'calendar', status: 'optional', description: 'Staff scheduling for handoffs' },
-  ],
+  connections: [conn.pms, conn.kb, conn.payment, conn.hotsos, cn(conn.twilio, { status: 'setup-required' }), cn(conn.sendgrid, { status: 'setup-required' })],
   capabilities: CANARY_PRODUCTS.map((p) => ({
     ...p,
     enabled: ['prod-messages', 'prod-checkin', 'prod-checkout', 'prod-upsells', 'prod-knowledge-base'].includes(p.id),
@@ -1299,13 +1374,14 @@ const ciWorkflowProcessSubmission: AgentWorkflow = {
       conditions: [
         { id: 'cip-c1', condition: 'If all required steps complete', action: 'Proceed to PMS sync' },
         { id: 'cip-c2', condition: 'If partially submitted (missing required steps)', action: 'Flag as incomplete — send guest a reminder to finish' },
+        { id: 'cip-c11', condition: 'If non-prepaid rate and no deposit captured', action: 'Flag for deposit collection — Statler requires $100/night hold for non-prepaid rates' },
       ],
     },
-    { id: 'cip-s2', type: 'action', label: 'Sync to PMS', description: 'Push registration card data, payment method, and guest details to PMS via gateway API.',
+    { id: 'cip-s2', type: 'action', label: 'Sync to PMS', description: 'Push registration card data, payment method, and guest details to Oracle Opera PMS via gateway API.',
       conditions: [
-        { id: 'cip-c3', condition: 'If auto-post enabled and sync succeeds', action: 'Log confirmation and proceed' },
+        { id: 'cip-c3', condition: 'If auto-post enabled and sync succeeds', action: 'Log CTL confirmation and proceed' },
         { id: 'cip-c4', condition: 'If auto-post enabled and sync fails', action: 'Retry once, then alert front desk with error details' },
-        { id: 'cip-c5', condition: 'If auto-post not enabled', action: 'Flag for staff to manually enter in PMS' },
+        { id: 'cip-c5', condition: 'If auto-post not enabled', action: 'Flag for staff to manually enter in Oracle Opera' },
       ],
     },
     { id: 'cip-s3', type: 'action', label: 'Auto-verify Eligibility', description: 'Check if submission qualifies for automatic check-in — valid ID, deposit captured, no flags.',
@@ -1313,6 +1389,8 @@ const ciWorkflowProcessSubmission: AgentWorkflow = {
         { id: 'cip-c6', condition: 'If all verifications pass', action: 'Auto-mark as Verified (ready for check-in)' },
         { id: 'cip-c7', condition: 'If any verification pending', action: 'Hold in Submitted status until resolved' },
         { id: 'cip-c8', condition: 'If issues detected (failed ID, declined payment)', action: 'Flag for front desk review with specific issue noted' },
+        { id: 'cip-c12', condition: 'If Diamond Elite guest', action: 'Priority auto-verify — assign high floor room (10th floor+) if available' },
+        { id: 'cip-c13', condition: 'If ADA accessibility noted on reservation', action: 'Restrict room assignment to 2nd floor ADA-accessible rooms' },
       ],
     },
     { id: 'cip-s4', type: 'response', label: 'Notify Staff', description: 'Send notification to hotel staff with submission summary and any required actions.',
@@ -1322,7 +1400,7 @@ const ciWorkflowProcessSubmission: AgentWorkflow = {
       ],
     },
   ],
-  guardrails: ['Log every PMS sync attempt for audit trail.', 'Never auto-verify if ID verification is pending or failed.', 'Always notify staff of exceptions — never silently skip.'],
+  guardrails: ['Log every PMS sync attempt for audit trail.', 'Never auto-verify if ID verification is pending or failed.', 'Always notify staff of exceptions — never silently skip.', 'Statler requires $100/night deposit hold for all non-prepaid rate codes.', 'Diamond Elite guests get priority processing and high-floor room assignment.'],
 };
 
 const ciWorkflowIdReview: AgentWorkflow = {
@@ -1332,22 +1410,24 @@ const ciWorkflowIdReview: AgentWorkflow = {
   trigger: 'ID Document Submitted',
   triggerDescription: 'Guest uploads ID photos or completes OCR scan during check-in.',
   steps: [
-    { id: 'cid-s1', type: 'action', label: 'Validate OCR Results', description: 'Check extracted data — name match, document type accepted, issue/expiry dates valid.',
+    { id: 'cid-s1', type: 'action', label: 'Validate OCR Results', description: 'Check extracted data — name match, document type accepted (US passport, driver\'s license, state ID), issue/expiry dates valid.',
       conditions: [
         { id: 'cid-c1', condition: 'If OCR extraction successful and all fields match', action: 'Auto-approve ID verification' },
         { id: 'cid-c2', condition: 'If name mismatch between ID and reservation', action: 'Flag for staff review — possible different guest' },
         { id: 'cid-c3', condition: 'If document is expired', action: 'Reject and request new document from guest' },
         { id: 'cid-c4', condition: 'If manual upload (no OCR)', action: 'Queue for staff visual review' },
+        { id: 'cid-c7', condition: 'If document type not accepted (e.g., student ID, library card)', action: 'Reject — only US passport, driver\'s license, or state-issued photo ID accepted per Statler policy' },
+        { id: 'cid-c8', condition: 'If international passport without US visa', action: 'Accept for tourist stays under 90 days — flag if stay exceeds 90 days for compliance review' },
       ],
     },
-    { id: 'cid-s2', type: 'action', label: 'Push to PMS', description: 'Post verified identity and document information to PMS guest profile.',
+    { id: 'cid-s2', type: 'action', label: 'Push to PMS', description: 'Post verified identity and document information to Oracle Opera PMS guest profile.',
       conditions: [
         { id: 'cid-c5', condition: 'If passport with visa info', action: 'Include visa details in PMS posting' },
-        { id: 'cid-c6', condition: 'If local ID (no passport)', action: 'Post national ID number and document type' },
+        { id: 'cid-c6', condition: 'If local ID (driver\'s license or state ID)', action: 'Post ID number, state of issue, and document type' },
       ],
     },
   ],
-  guardrails: ['Never auto-approve if name does not match reservation.', 'Always store document images for compliance — never delete before checkout.'],
+  guardrails: ['Never auto-approve if name does not match reservation.', 'Always store document images for compliance — never delete before checkout.', 'Accepted documents: US passport, driver\'s license, state-issued photo ID, international passport.'],
 };
 
 const ciWorkflowPayment: AgentWorkflow = {
@@ -1357,21 +1437,23 @@ const ciWorkflowPayment: AgentWorkflow = {
   trigger: 'Deposit Captured or Failed',
   triggerDescription: 'Payment gateway returns result after guest submits credit card during check-in.',
   steps: [
-    { id: 'cipay-s1', type: 'action', label: 'Verify Deposit Status', description: 'Check payment intent status — fulfilled, pending, or failed.',
+    { id: 'cipay-s1', type: 'action', label: 'Verify Deposit Status', description: 'Check Stripe payment intent status — fulfilled, pending, or failed. Statler requires $100/night hold for non-prepaid rates.',
       conditions: [
-        { id: 'cipay-c1', condition: 'If deposit captured successfully', action: 'Sync deposit amount and card token to PMS' },
+        { id: 'cipay-c1', condition: 'If deposit captured successfully', action: 'Sync deposit amount and card token to Oracle Opera PMS' },
         { id: 'cipay-c2', condition: 'If deposit pending', action: 'Monitor and retry — sync once confirmed' },
         { id: 'cipay-c3', condition: 'If deposit failed after max retries', action: 'Flag reservation for front desk collection on arrival' },
+        { id: 'cipay-c6', condition: 'If prepaid rate (PROMO, ADVANCE, PKG)', action: 'Skip deposit hold — payment already captured at booking' },
+        { id: 'cipay-c7', condition: 'If deposit amount does not match $100/night requirement', action: 'Recalculate and re-authorize for correct hold amount' },
       ],
     },
-    { id: 'cipay-s2', type: 'action', label: 'Sync to PMS', description: 'Post payment method and deposit record to PMS so front desk sees it on arrival.',
+    { id: 'cipay-s2', type: 'action', label: 'Sync to PMS', description: 'Post payment method and deposit record to Oracle Opera PMS so front desk sees it on arrival.',
       conditions: [
         { id: 'cipay-c4', condition: 'If PMS accepts payment posting', action: 'Mark payment as reconciled' },
         { id: 'cipay-c5', condition: 'If PMS rejects (duplicate, format error)', action: 'Log error and flag for staff to manually enter' },
       ],
     },
   ],
-  guardrails: ['Never store raw card numbers — only tokenized references.', 'Log all payment attempts for PCI compliance.'],
+  guardrails: ['Never store raw card numbers — only tokenized references via Stripe.', 'Log all payment attempts for PCI compliance.', 'Statler deposit policy: $100/night hold for non-prepaid rates (BAR, CORP, AAA, GOV, RACK, LEISURE, WEEKEND).'],
 };
 
 const ciWorkflowRoomAssignment: AgentWorkflow = {
@@ -1381,24 +1463,27 @@ const ciWorkflowRoomAssignment: AgentWorkflow = {
   trigger: 'Room Assigned in PMS',
   triggerDescription: 'PMS webhook or polling detects that a room number has been assigned to the reservation.',
   steps: [
-    { id: 'ciroom-s1', type: 'action', label: 'Fetch Room Assignment', description: 'Pull room number from PMS and update the Canary check-in record.',
+    { id: 'ciroom-s1', type: 'action', label: 'Fetch Room Assignment', description: 'Pull room number from Oracle Opera PMS and update the Canary check-in record.',
       conditions: [
         { id: 'ciroom-c1', condition: 'If room matches requested type', action: 'Accept assignment and proceed' },
-        { id: 'ciroom-c2', condition: 'If room is out-of-order or not ready', action: 'Alert housekeeping and hold key generation' },
+        { id: 'ciroom-c2', condition: 'If room is out-of-order or not ready', action: 'Alert housekeeping (ext. 310) and hold key generation' },
+        { id: 'ciroom-c5', condition: 'If Diamond Elite guest', action: 'Assign high floor (10th floor+) with city view when available' },
+        { id: 'ciroom-c6', condition: 'If ADA accommodation on reservation', action: 'Restrict to 2nd floor ADA-accessible rooms only' },
+        { id: 'ciroom-c7', condition: 'If Platinum Elite guest', action: 'Prefer upper floors (6th+) — do not assign ground floor unless requested' },
       ],
     },
-    { id: 'ciroom-s2', type: 'action', label: 'Generate Mobile Key', description: 'Trigger mobile key creation via key provider (Vostio, Dormakaba) and prepare for delivery.',
+    { id: 'ciroom-s2', type: 'action', label: 'Generate Mobile Key', description: 'Trigger mobile key creation via Vostio integration and prepare for Apple/Google Wallet delivery.',
       conditions: [
-        { id: 'ciroom-c3', condition: 'If mobile key enabled for property', action: 'Generate key and add to Apple/Google Wallet' },
-        { id: 'ciroom-c4', condition: 'If mobile key not enabled', action: 'Skip — guest will get physical key at front desk' },
+        { id: 'ciroom-c3', condition: 'If Vostio mobile key enabled', action: 'Generate key via Vostio API and add to Apple/Google Wallet' },
+        { id: 'ciroom-c4', condition: 'If mobile key not enabled or Vostio unavailable', action: 'Skip — guest will get physical key at front desk' },
       ],
     },
-    { id: 'ciroom-s3', type: 'response', label: 'Notify Guest', description: 'Send guest their room number, mobile key link, and arrival instructions via SMS/email.',
+    { id: 'ciroom-s3', type: 'response', label: 'Notify Guest', description: 'Send guest their room number, Vostio mobile key link, and Statler arrival instructions (151 W 54th St entrance) via SMS/email.',
     },
     { id: 'ciroom-s4', type: 'action', label: 'Mark Checked In', description: 'Update check-in status to Checked In in Canary. Complete the check-in lifecycle.',
     },
   ],
-  guardrails: ['Never assign a room that is out of order.', 'Always confirm room readiness with housekeeping status before sending key.'],
+  guardrails: ['Never assign a room that is out of order.', 'Always confirm room readiness with housekeeping status before sending key.', 'Diamond Elite: floors 10+ with city view. Platinum Elite: floors 6+. ADA: 2nd floor only.', 'Mobile keys generated via Vostio — verify Vostio API status before issuing.'],
 };
 
 const ciWorkflowUpsells: AgentWorkflow = {
@@ -1411,20 +1496,21 @@ const ciWorkflowUpsells: AgentWorkflow = {
     { id: 'ciup-s1', type: 'action', label: 'Validate Availability', description: 'Confirm the accepted upsell is still available (room type, time slot) at time of processing.',
       conditions: [
         { id: 'ciup-c1', condition: 'If still available', action: 'Proceed to apply' },
-        { id: 'ciup-c2', condition: 'If no longer available (sold out since guest checked in)', action: 'Notify guest of unavailability, process refund if pre-charged' },
+        { id: 'ciup-c2', condition: 'If no longer available (sold out since guest checked in)', action: 'Notify guest of unavailability, process refund via Stripe if pre-charged' },
+        { id: 'ciup-c6', condition: 'If Diamond Elite guest requests late checkout', action: 'Complimentary late checkout until 2 PM — no charge, apply directly' },
       ],
     },
-    { id: 'ciup-s2', type: 'action', label: 'Apply to PMS', description: 'Update the reservation in PMS with the upgrade — new room type, early arrival time, or late departure.',
+    { id: 'ciup-s2', type: 'action', label: 'Apply to PMS', description: 'Update the reservation in Oracle Opera with the upgrade — new room type, early arrival time, or late departure.',
       conditions: [
-        { id: 'ciup-c3', condition: 'If room upgrade', action: 'Change room type in PMS, adjust rate' },
-        { id: 'ciup-c4', condition: 'If early check-in', action: 'Update arrival time in PMS, notify housekeeping for early room prep' },
-        { id: 'ciup-c5', condition: 'If late checkout', action: 'Update departure time in PMS' },
+        { id: 'ciup-c3', condition: 'If room upgrade (Standard King → Deluxe Double or Executive Suite)', action: 'Change room type in PMS, adjust rate (from $45/night for upgrade)' },
+        { id: 'ciup-c4', condition: 'If early check-in', action: 'Update arrival time in PMS, notify housekeeping (ext. 310) for early room prep' },
+        { id: 'ciup-c5', condition: 'If late checkout', action: 'Update departure time to 2 PM in PMS, apply $50 fee unless Diamond Elite' },
       ],
     },
-    { id: 'ciup-s3', type: 'action', label: 'Capture Payment', description: 'Charge the additional amount for the upsell to the guest\'s card on file.' },
-    { id: 'ciup-s4', type: 'response', label: 'Confirm to Guest', description: 'Send confirmation of the upsell with updated details — new room type, check-in time, or checkout time.' },
+    { id: 'ciup-s3', type: 'action', label: 'Capture Payment', description: 'Charge the additional amount for the upsell to the guest\'s card on file via Stripe.' },
+    { id: 'ciup-s4', type: 'response', label: 'Confirm to Guest', description: 'Send confirmation of the upsell with updated Statler reservation details — new room type, check-in time, or checkout time.' },
   ],
-  guardrails: ['Never charge for an upsell that cannot be fulfilled.', 'Always confirm room availability before applying upgrade in PMS.', 'Notify housekeeping immediately for early check-in requests.'],
+  guardrails: ['Never charge for an upsell that cannot be fulfilled.', 'Always confirm room availability before applying upgrade in PMS.', 'Notify housekeeping (ext. 310) immediately for early check-in requests.', 'Diamond Elite late checkout until 2 PM is always complimentary — never charge.'],
 };
 
 const checkInAgent: Agent = {
@@ -1448,11 +1534,7 @@ const checkInAgent: Agent = {
       ],
     },
   ],
-  connections: [
-    { id: 'conn-pms', name: 'Property Management System', type: 'pms', status: 'connected', description: 'Reservation data, room assignment, guest sync' },
-    { id: 'conn-payment', name: 'Payment Gateway', type: 'payment', status: 'connected', description: 'Deposit capture and reconciliation' },
-    { id: 'conn-kb', name: 'Knowledge Base', type: 'knowledge-base', status: 'connected', description: 'Hotel policies and check-in rules' },
-  ],
+  connections: [conn.pms, conn.payment, conn.vostio, conn.kb, conn.dormakaba],
   capabilities: CANARY_PRODUCTS.map((p) => ({
     ...p,
     enabled: ['prod-checkin', 'prod-upsells', 'prod-authorizations', 'prod-messages', 'prod-knowledge-base'].includes(p.id),
@@ -1534,7 +1616,7 @@ const salesEventsAgent: Agent = {
       ],
     },
   ],
-  connections: [conn.pms, conn.crm, conn.kb],
+  connections: [conn.pms, conn.sendgrid, conn.kb, cn(conn.crm, { status: 'setup-required' }), cn(conn.calendar, { status: 'setup-required' }), conn.payment],
   capabilities: allProductsWithEnabled(['prod-messages', 'prod-contracts', 'prod-payment-links', 'prod-knowledge-base']),
   workflow: {
     id: 'wf-sales-inquiry',
@@ -1549,42 +1631,50 @@ const salesEventsAgent: Agent = {
         conditions: [
           { id: 'cond-q1', condition: 'If missing critical info (dates or headcount)', action: 'Reply asking for details before proceeding' },
           { id: 'cond-q2', condition: 'If spam or irrelevant inquiry', action: 'Archive, don\'t respond' },
-          { id: 'cond-q3', condition: 'If urgent (event within 30 days)', action: 'Flag as priority, expedite response' },
+          { id: 'cond-q3', condition: 'If urgent (event within 30 days)', action: 'Flag as priority, expedite response — CC Director of Sales Sarah Kim' },
+          { id: 'cond-q4', condition: 'If headcount > 200', action: 'Route to Sarah Kim directly — Grand Ballroom max capacity applies (200 seated, 350 cocktail)' },
+          { id: 'cond-q5', condition: 'If wedding inquiry for Saturday', action: 'Check 12+ month advance calendar — Saturdays at The Statler book over a year out' },
         ],
       },
       {
         id: 'se-s2', type: 'action', label: 'Check Availability',
-        description: 'Query PMS for room block and event space availability for requested dates.',
+        description: 'Query PMS for room block and event space availability — Grand Ballroom (200 seated / 350 cocktail), Breakout Room A (30 pax), Breakout Room B (25 pax), Library Room (36 seated).',
         conditions: [
-          { id: 'cond-a1', condition: 'If fully available', action: 'Continue with full availability summary' },
+          { id: 'cond-a1', condition: 'If fully available', action: 'Continue with full availability summary including venue capacities' },
           { id: 'cond-a2', condition: 'If partial overlap', action: 'Suggest alternative dates or adjusted room block' },
           { id: 'cond-a3', condition: 'If completely unavailable', action: 'Suggest nearest available dates' },
+          { id: 'cond-a4', condition: 'If headcount fits Breakout Rooms only (under 30)', action: 'Recommend Breakout Room A (30 pax) or B (25 pax) — more intimate, lower F&B minimum' },
+          { id: 'cond-a5', condition: 'If wedding with 100+ guests', action: 'Grand Ballroom or Starlight Terrace only — include wedding coordinator availability note' },
         ],
       },
       {
         id: 'se-s3', type: 'response', label: 'Draft Response',
-        description: 'Compose personalized response based on inquiry type and availability.',
+        description: 'Compose personalized response based on inquiry type, venue fit, and availability.',
         conditions: [
-          { id: 'cond-d1', condition: 'If inquiry is detailed', action: 'Generate mini-proposal with availability, packages, and highlights' },
-          { id: 'cond-d2', condition: 'If inquiry is vague', action: 'Lead with clarifying questions' },
+          { id: 'cond-d1', condition: 'If inquiry is detailed', action: 'Generate mini-proposal with venue, catering minimums ($85/person plated, $65 buffet), and highlights' },
+          { id: 'cond-d2', condition: 'If inquiry is vague', action: 'Lead with clarifying questions — dates, headcount, event type, budget range' },
           { id: 'cond-d3', condition: 'If budget > $50K', action: 'Use VIP template, CC General Manager' },
+          { id: 'cond-d4', condition: 'If wedding inquiry', action: 'Include Statler wedding coordinator availability, mention Bridal Suite, and note Saturday lead time (12+ months)' },
         ],
       },
-      { id: 'se-s4', type: 'action', label: 'Send Response', description: 'Deliver email with CTA to schedule a meeting or site visit.' },
+      { id: 'se-s4', type: 'action', label: 'Send Response', description: 'Deliver email with CTA to schedule a meeting or site visit with Director of Sales Sarah Kim.' },
       {
         id: 'se-s5', type: 'action', label: 'Follow Up',
         description: 'Automated follow-up cadence based on lead type and urgency.',
         conditions: [
           { id: 'cond-f1', condition: 'If corporate event', action: 'Follow up in 48 hours, then weekly' },
-          { id: 'cond-f2', condition: 'If wedding', action: 'Follow up in 1 week, monthly touchpoints' },
-          { id: 'cond-f3', condition: 'If no response after 2nd follow-up', action: 'Handoff to sales team' },
+          { id: 'cond-f2', condition: 'If wedding', action: 'Follow up in 1 week, monthly touchpoints — reference wedding coordinator Sarah Kim' },
+          { id: 'cond-f3', condition: 'If no response after 2nd follow-up', action: 'Handoff to Sarah Kim and sales team with full inquiry context' },
         ],
       },
     ],
     guardrails: [
       'Never commit to final rates without revenue manager approval.',
       'Always include cancellation policy in proposals.',
-      'Flag events over $50K for Director of Sales follow-up.',
+      'Flag events over $50K for Director of Sales Sarah Kim.',
+      'Catering minimums: $85/person plated, $65/person buffet — never quote below without approval.',
+      'Grand Ballroom max: 200 seated / 350 cocktail. Do not overbook.',
+      'Saturday weddings require 12+ month lead time — set expectations early.',
     ],
   },
   tone: 'Formal',
@@ -1657,7 +1747,7 @@ const templateFrontDesk: AgentTemplate = {
       ],
     },
   ],
-  defaultConnections: [conn.pms, conn.kb, conn.payment, cn(conn.calendar, { status: 'optional' })],
+  defaultConnections: [conn.pms, conn.kb, conn.payment, conn.hotsos, cn(conn.twilio, { status: 'needed' }), cn(conn.sendgrid, { status: 'needed' })],
   defaultCapabilities: ['prod-messages', 'prod-checkin', 'prod-checkout', 'prod-upsells', 'prod-knowledge-base'],
   defaultWorkflow: fdWorkflowBooking,
   defaultTone: 'Natural',
@@ -1826,7 +1916,7 @@ const templateVoiceAI: AgentTemplate = {
       ],
     },
   ],
-  defaultConnections: [conn.pms, conn.kb],
+  defaultConnections: [conn.twilio, conn.pms, conn.kb, cn(conn.sendgrid, { status: 'needed' })],
   defaultCapabilities: ['prod-messages', 'prod-calls', 'prod-checkin', 'prod-knowledge-base'],
   defaultWorkflow: {
     id: 'wf-voice-main',
@@ -1921,9 +2011,11 @@ const templateSalesEvents: AgentTemplate = {
   ],
   defaultConnections: [
     cn(conn.pms, { status: 'needed' }),
+    cn(conn.sendgrid, { status: 'needed' }),
+    conn.kb,
     cn(conn.crm, { status: 'needed' }),
     cn(conn.calendar, { status: 'optional' }),
-    conn.kb,
+    cn(conn.payment, { status: 'needed' }),
   ],
   defaultCapabilities: ['prod-messages', 'prod-contracts', 'prod-payment-links', 'prod-knowledge-base'],
   defaultWorkflow: {
@@ -2027,7 +2119,7 @@ const templateHousekeeping: AgentTemplate = {
       ],
     },
   ],
-  defaultConnections: [conn.pms, conn.kb],
+  defaultConnections: [conn.pms, conn.kb, cn(conn.hotsos, { status: 'needed' }), conn.flexkeeping],
   defaultCapabilities: ['prod-messages', 'prod-knowledge-base'],
   defaultWorkflow: {
     id: 'wf-hk-request',
@@ -2100,7 +2192,7 @@ const templateServiceTask: AgentTemplate = {
       ],
     },
   ],
-  defaultConnections: [conn.pms, conn.kb],
+  defaultConnections: [conn.pms, conn.kb, cn(conn.hotsos, { status: 'needed' }), conn.flexkeeping],
   defaultCapabilities: ['prod-messages', 'prod-knowledge-base'],
   defaultWorkflow: {
     trigger: 'Guest reports an issue or makes a request',
@@ -2145,7 +2237,7 @@ const templateNoShow: AgentTemplate = {
       ],
     },
   ],
-  defaultConnections: [conn.pms, conn.kb],
+  defaultConnections: [conn.pms, conn.kb, cn(conn.sendgrid, { status: 'needed' })],
   defaultCapabilities: ['prod-messages', 'prod-checkin', 'prod-knowledge-base'],
   defaultWorkflow: {
     id: 'wf-noshow-main',
@@ -2358,6 +2450,7 @@ const templateEmailReservation: AgentTemplate = {
   ],
   defaultConnections: [
     cn(conn.pms, { status: 'needed' }),
+    cn(conn.sendgrid, { status: 'needed' }),
     conn.kb,
   ],
   defaultCapabilities: ['prod-knowledge-base'],

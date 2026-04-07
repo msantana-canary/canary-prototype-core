@@ -10,12 +10,15 @@
 
 import React, { useState, KeyboardEvent } from 'react';
 import Icon from '@mdi/react';
-import { mdiAccountGroupOutline, mdiDeleteOutline, mdiChevronDown, mdiChevronRight } from '@mdi/js';
+import { mdiAccountGroupOutline, mdiDeleteOutline, mdiChevronDown, mdiChevronUp } from '@mdi/js';
 import {
+  CanaryButton,
   CanaryInput,
   CanaryInputMultiple,
   CanarySelect,
   CanaryTextArea,
+  ButtonType,
+  ButtonSize,
   InputSize,
   colors,
 } from '@canary-ui/components';
@@ -64,8 +67,8 @@ export default function AgentProfileStep() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Agent description — shown for templates only (read-only context) */}
-      {!isScratch && agentDescription && (
+      {/* Agent intro — always shown, description is contextual */}
+      {(
         <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
           <div
             style={{
@@ -82,9 +85,14 @@ export default function AgentProfileStep() {
           >
             <Icon path={mdiAccountGroupOutline} size={1} color={colors.colorBlueDark1} />
           </div>
-          <p style={{ fontSize: 16, fontWeight: 400, lineHeight: '24px', color: '#000', margin: 0, flex: 1 }}>
-            {agentDescription}
-          </p>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 18, fontWeight: 500, lineHeight: '28px', color: '#000', margin: '0 0 4px 0' }}>
+              Who is your agent?
+            </p>
+            <p style={{ fontSize: 16, fontWeight: 400, lineHeight: '24px', color: '#000', margin: 0 }}>
+              {agentDescription || 'Define your agent\'s identity — name, responsibilities, communication style, and behavioral guidelines.'}
+            </p>
+          </div>
         </div>
       )}
 
@@ -222,6 +230,7 @@ export default function AgentProfileStep() {
         avoidedTopics={avoidedTopics}
         setAvoidedTopics={setAvoidedTopics}
       />
+      <div style={{ height: 24 }} />
     </div>
   );
 }
@@ -239,8 +248,8 @@ function CommunicationSettings({
   setAvoidedTopics: (t: string[]) => void;
 }) {
   const [isOpen, setIsOpen] = useState(
-    // Default open if there's already a communication style set (template flow)
-    communicationStyle !== '' && communicationStyle !== 'Natural'
+    // Default open if there's a communication style set (guest-facing agents)
+    communicationStyle !== ''
   );
 
   return (
@@ -252,35 +261,27 @@ function CommunicationSettings({
         overflow: 'hidden',
       }}
     >
-      {/* Collapsible header */}
-      <button
+      {/* Collapsible header — matches KBSection pattern */}
+      <div
+        className="flex items-start justify-between cursor-pointer"
+        style={{ padding: '20px 24px' }}
         onClick={() => setIsOpen(!isOpen)}
-        style={{
-          width: '100%',
-          padding: 24,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          textAlign: 'left',
-        }}
       >
-        <div>
-          <p style={{ fontSize: 18, fontWeight: 500, lineHeight: '28px', color: '#000', margin: 0 }}>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ fontSize: 18, fontWeight: 500, color: '#000', margin: 0 }}>
             Communication Settings
-          </p>
+          </h3>
           <p style={{ fontSize: 14, fontWeight: 400, lineHeight: '22px', color: '#999', margin: '4px 0 0 0' }}>
             Optional — configure how this agent communicates with guests
           </p>
         </div>
-        <Icon
-          path={isOpen ? mdiChevronDown : mdiChevronRight}
-          size={1}
-          color="#999"
+        <CanaryButton
+          type={ButtonType.ICON_SECONDARY}
+          size={ButtonSize.COMPACT}
+          icon={<Icon path={isOpen ? mdiChevronUp : mdiChevronDown} size={0.85} />}
+          onClick={(e: React.MouseEvent) => { e.stopPropagation(); setIsOpen(!isOpen); }}
         />
-      </button>
+      </div>
 
       {/* Collapsible content */}
       {isOpen && (
