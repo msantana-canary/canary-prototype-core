@@ -27,13 +27,16 @@ import WorkflowsStep from './WorkflowsStep';
 import ConnectorsStep, { ConnectorsSidebar } from './ConnectorsStep';
 import AgentChat from './AgentChat';
 
-const TABS: { id: AgentViewTab; label: string }[] = [
+const ALL_TABS: { id: AgentViewTab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'profile', label: 'Agent Profile' },
   { id: 'capabilities', label: 'Capabilities' },
   { id: 'connectors', label: 'Connectors' },
   { id: 'workflows', label: 'Workflows' },
 ];
+
+// Draft agents skip Overview (no metrics/activity yet)
+const DRAFT_TABS = ALL_TABS.filter((t) => t.id !== 'overview');
 
 export default function AgentView() {
   const selectedAgentId = useAgentStore((s) => s.selectedAgentId);
@@ -189,7 +192,16 @@ export default function AgentView() {
           </h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CanaryButton type={ButtonType.PRIMARY}>Save</CanaryButton>
+          {agent.status === 'draft' ? (
+            <CanaryButton type={ButtonType.PRIMARY} onClick={() => {
+              // Deploy the draft agent
+              const updatedAgents = agents.map((a) => a.id === agent.id ? { ...a, status: 'active' as const } : a);
+              useAgentStore.setState({ agents: updatedAgents, currentView: 'dashboard', selectedAgentId: null });
+              useAgentStore.getState().showToast(`"${agent.name}" deployed successfully`);
+            }}>Deploy</CanaryButton>
+          ) : (
+            <CanaryButton type={ButtonType.PRIMARY}>Save</CanaryButton>
+          )}
         </div>
       </div>
 
@@ -281,7 +293,7 @@ export default function AgentView() {
                     defaultTab={editAgentTab}
                     key={editAgentTab}
                     onChange={(tabId: string) => setEditAgentTab(tabId as AgentViewTab)}
-                    tabs={TABS.map((t) => ({
+                    tabs={(agent.status === 'draft' ? DRAFT_TABS : ALL_TABS).map((t) => ({
                       id: t.id,
                       label: t.label,
                       content: null,

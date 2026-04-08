@@ -31,6 +31,7 @@ import {
   CanaryCard,
   CanaryTag,
   ButtonType,
+  ButtonSize,
   IconPosition,
   TagColor,
   TagSize,
@@ -74,6 +75,7 @@ export default function AgentTemplateGrid() {
   const goBack = useAgentStore((s) => s.goBack);
   const startFromTemplate = useAgentStore((s) => s.startFromTemplate);
   const startFromScratch = useAgentStore((s) => s.startFromScratch);
+  const startAdvancedBuild = useAgentStore((s) => s.startAdvancedBuild);
 
   const handleTemplateClick = (template: AgentTemplate) => {
     if (template.isLocked) return;
@@ -81,7 +83,7 @@ export default function AgentTemplateGrid() {
   };
 
   return (
-    <div style={{ padding: 32 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <style>{`
         @keyframes templateGridFadeIn {
           from { opacity: 0; transform: translateY(8px); }
@@ -95,41 +97,44 @@ export default function AgentTemplateGrid() {
           box-shadow: 0 2px 12px rgba(40, 88, 196, 0.12);
         }
       `}</style>
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <CanaryButton
-          type={ButtonType.TEXT}
-          icon={<Icon path={mdiArrowLeft} size={0.8} />}
-          iconPosition={IconPosition.LEFT}
-          onClick={goBack}
-        >
-          Back
-        </CanaryButton>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: colors.colorBlack2, margin: '12px 0 4px' }}>
-          Create a new agent
-        </h1>
-        <p style={{ fontSize: '0.875rem', color: colors.colorBlack3, margin: 0 }}>
-          Choose a template to get started, or build from scratch.
-        </p>
+      {/* Header bar — matches wizard/agent view pattern */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '12px 24px',
+          borderBottom: '1px solid #E5E5E5',
+          flexShrink: 0,
+        }}
+      >
+        <CanaryButton type={ButtonType.ICON_SECONDARY} onClick={goBack} icon={<Icon path={mdiArrowLeft} size={0.83} />} />
+        <div>
+          <h1 style={{ fontSize: 18, fontWeight: 500, lineHeight: '28px', color: '#000', margin: 0 }}>
+            Create a new agent
+          </h1>
+          <p style={{ fontSize: 13, color: '#666', margin: 0, lineHeight: '18px' }}>
+            Choose a template to get started, or build from scratch.
+          </p>
+        </div>
       </div>
 
       {/* Template grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
-        {/* Start from Scratch card — first in grid */}
+      <div style={{ padding: 24, flex: 1, overflowY: 'auto', backgroundColor: colors.colorBlack8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+        {/* Start from Scratch card — two modes */}
         <div
           className="scratch-card"
-          onClick={startFromScratch}
           style={{
             border: '2px dashed #93ABE1',
             borderRadius: 8,
-            padding: 24,
-            cursor: 'pointer',
-            minHeight: 200,
+            padding: 16,
+            height: '100%',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 12,
+            gap: 10,
             opacity: 0,
             animationName: 'templateGridFadeIn',
             animationDuration: '0.35s',
@@ -139,8 +144,8 @@ export default function AgentTemplateGrid() {
         >
           <div
             style={{
-              width: 48,
-              height: 48,
+              width: 36,
+              height: 36,
               borderRadius: '50%',
               backgroundColor: '#EAEEF9',
               display: 'flex',
@@ -148,21 +153,30 @@ export default function AgentTemplateGrid() {
               justifyContent: 'center',
             }}
           >
-            <Icon path={mdiStarOutline} size={1} color="#2858C4" />
+            <Icon path={mdiStarOutline} size={0.75} color="#2858C4" />
           </div>
           <div style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: 16, fontWeight: 500, color: '#2858C4', margin: '0 0 4px 0' }}>
-              Start from Scratch
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#000', margin: '0 0 4px 0' }}>
+              Build from Scratch
             </p>
-            <p style={{ fontSize: 13, color: '#666', margin: 0, lineHeight: '18px' }}>
+            <p style={{ fontSize: 13, color: '#666', margin: 0, lineHeight: 1.5 }}>
               Build a custom agent with your own configuration
             </p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
+            <CanaryButton type={ButtonType.PRIMARY} size={ButtonSize.COMPACT} onClick={startFromScratch} style={{ width: '100%' }}>
+              Guided Setup
+            </CanaryButton>
+            <CanaryButton type={ButtonType.SHADED} size={ButtonSize.COMPACT} onClick={startAdvancedBuild} style={{ width: '100%' }}>
+              Advanced Builder
+            </CanaryButton>
           </div>
         </div>
 
         {agentTemplates.map((template, idx) => (
           <div
             key={template.id}
+            className="template-card-wrapper"
             style={{
               opacity: 0,
               animationName: 'templateGridFadeIn',
@@ -179,6 +193,7 @@ export default function AgentTemplateGrid() {
           </div>
         ))}
       </div>
+      </div>
     </div>
   );
 }
@@ -188,15 +203,11 @@ function TemplateCard({ template, onClick }: { template: AgentTemplate; onClick:
   const tierCfg = TIER_CONFIG[template.tier];
 
   return (
-    <div style={{ position: 'relative' }}>
-      <CanaryCard hasBorder onClick={template.isLocked ? undefined : onClick}>
+    <div style={{ position: 'relative', height: '100%' }}>
+      <CanaryCard hasBorder onClick={template.isLocked ? undefined : onClick} className="h-full">
         <div
           style={{
-            padding: 24,
-            cursor: template.isLocked ? 'not-allowed' : 'pointer',
-            minHeight: 200,
             opacity: template.isLocked ? 0.5 : 1,
-            transition: 'opacity 0.15s',
           }}
         >
           {/* Icon + tier badge */}
@@ -229,27 +240,23 @@ function TemplateCard({ template, onClick }: { template: AgentTemplate; onClick:
           <div style={{ fontSize: '0.8125rem', color: colors.colorBlack3, lineHeight: 1.5 }}>
             {template.description}
           </div>
+          {template.isLocked && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 12,
+                color: colors.colorBlack3,
+                marginTop: 12,
+              }}
+            >
+              <Icon path={mdiLockOutline} size={0.55} color={colors.colorBlack3} />
+              <span>{template.lockMessage ?? 'Upgrade to unlock'}</span>
+            </div>
+          )}
         </div>
       </CanaryCard>
-
-      {template.isLocked && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 12,
-            left: 16,
-            right: 16,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: 12,
-            color: colors.colorBlack3,
-          }}
-        >
-          <Icon path={mdiLockOutline} size={0.55} color={colors.colorBlack3} />
-          <span>{template.lockMessage ?? 'Upgrade to unlock'}</span>
-        </div>
-      )}
     </div>
   );
 }

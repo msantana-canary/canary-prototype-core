@@ -114,6 +114,7 @@ interface AgentStoreState {
   // Template-based setup
   startFromTemplate: (template: AgentTemplate) => void;
   startFromScratch: () => void;
+  startAdvancedBuild: () => void;
   setWizardFromTemplate: (template: AgentTemplate) => void;
 
   // Chat actions
@@ -465,6 +466,39 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
       builderMessages: [],
       currentView: 'wizard',
     });
+  },
+
+  // -- Advanced build: creates empty agent, opens edit view with tabs (no wizard) --
+  startAdvancedBuild: () => {
+    const emptyCapabilities = CANARY_PRODUCTS.map((p) => ({ ...p, enabled: false }));
+    const newId = `agent-${Date.now()}`;
+    const emptyAgent: Agent = {
+      id: newId,
+      name: 'Untitled Agent',
+      role: 'Custom',
+      description: '',
+      status: 'draft',
+      triggers: [],
+      connections: [],
+      capabilities: emptyCapabilities,
+      workflow: { trigger: '', steps: [], guardrails: [] },
+      workflows: [],
+      tone: '',
+      metrics: { totalConversations: 0, resolutionRate: 0, avgResponseTime: '—', satisfactionScore: 0 },
+      recentActivity: [],
+      createdAt: new Date().toISOString(),
+      rules: [],
+      responsibilities: [],
+      behavioralGuidelines: '',
+      avoidedTopics: [],
+    };
+    // Add to agents list and open in edit view
+    set((s) => ({
+      agents: [...s.agents, emptyAgent],
+      selectedAgentId: newId,
+      currentView: 'detail',
+      editAgentTab: 'profile',
+    }));
   },
 
   // -- Chat actions --
