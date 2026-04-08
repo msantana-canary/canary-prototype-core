@@ -325,6 +325,7 @@ const alex: Agent = {
   id: 'agent-alex',
   name: 'Voice AI Agent',
   role: 'Voice AI Agent',
+  templateId: 'tpl-voice-ai',
   description:
     'Handles all inbound phone calls for the front desk, answers guest questions, and routes calls to appropriate departments.',
   status: 'active',
@@ -638,6 +639,7 @@ const riley: Agent = {
   id: 'agent-email-res',
   name: 'Email Reservation Agent',
   role: 'Reservation Processor',
+  templateId: 'tpl-reservations',
   description: 'Processes reservation-related emails (cancellations, modifications, confirmations) and updates the PMS automatically.',
   status: 'active',
   triggers: [
@@ -779,6 +781,7 @@ const serviceTicketAgent: Agent = {
   id: 'agent-service-ticket',
   name: 'Service Ticket Agent',
   role: 'Service Request Coordinator',
+  templateId: 'tpl-service-task',
   description: 'Detects service requests in guest messages, recommends tickets to staff, and tracks resolution through vendor systems.',
   status: 'active',
   triggers: [
@@ -1103,6 +1106,7 @@ const frontDeskAgent: Agent = {
   id: 'agent-front-desk',
   name: 'Front Desk Agent',
   role: 'Guest Communication Orchestrator',
+  templateId: 'tpl-front-desk',
   description: 'Manages all guest messaging across channels. Handles bookings, FAQ, service requests, upsells, checkout, and surveys — routing to the right capability based on guest intent.',
   status: 'active',
   triggers: [
@@ -1400,6 +1404,7 @@ const salesEventsAgent: Agent = {
   id: 'agent-sales-events',
   name: 'Sales & Events Agent',
   role: 'Sales & Events Coordinator',
+  templateId: 'tpl-sales-events',
   description: 'Responds to group booking and event inquiries. Qualifies leads, checks availability, and schedules meetings.',
   status: 'active',
   triggers: [

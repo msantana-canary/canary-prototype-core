@@ -8,6 +8,10 @@
  * 2. Detail — step list + chat sidebar when a workflow is selected
  *
  * Detail view replaces the intro block with an editable workflow name input.
+ *
+ * Props:
+ * - hideHeader: parent (AgentView) manages the header in the tab bar
+ * - editable: Advanced Builder mode — full-width editable visualizer, no chat
  */
 
 import React from 'react';
@@ -20,13 +24,13 @@ import {
   InputSize,
 } from '@canary-ui/components';
 import { useAgentStore } from '@/lib/products/agents/store';
-import type { AgentViewTab } from '@/lib/products/agents/types';
+import type { AgentViewTab, AgentWorkflow } from '@/lib/products/agents/types';
 import WorkflowVisualizer from './WorkflowVisualizer';
 import WorkflowOverview from './WorkflowOverview';
 import AgentChat from './AgentChat';
 import { generateWorkflowDescription } from '@/lib/products/agents/services/agent-builder-api';
 
-export default function WorkflowsStep({ hideHeader }: { hideHeader?: boolean } = {}) {
+export default function WorkflowsStep({ hideHeader, editable }: { hideHeader?: boolean; editable?: boolean } = {}) {
   const selectedWorkflowId = useAgentStore((s) => s.selectedWorkflowId);
   const currentWorkflow = useAgentStore((s) => s.currentWorkflow);
   const selectWorkflow = useAgentStore((s) => s.selectWorkflow);
@@ -52,6 +56,15 @@ export default function WorkflowsStep({ hideHeader }: { hideHeader?: boolean } =
     if (currentWorkflow) {
       setBuilderWorkflow({ ...currentWorkflow, name: newName });
     }
+  };
+
+  // Editable mode: propagate visualizer changes to store
+  const handleVisualizerChange = (updatedWorkflow: AgentWorkflow) => {
+    setBuilderWorkflow(updatedWorkflow);
+    const updated = wizardWorkflows.map((wf) =>
+      wf.id === selectedWorkflowId ? updatedWorkflow : wf
+    );
+    setWizardWorkflows(updated);
   };
 
   const workflowName = currentWorkflow?.name || '';
@@ -132,7 +145,11 @@ export default function WorkflowsStep({ hideHeader }: { hideHeader?: boolean } =
         </div>
 
         {/* Workflow steps */}
-        <WorkflowVisualizer workflow={currentWorkflow} />
+        <WorkflowVisualizer
+          workflow={currentWorkflow}
+          editable={editable}
+          onChange={editable ? handleVisualizerChange : undefined}
+        />
       </div>
     </div>
   );

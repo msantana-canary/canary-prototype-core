@@ -20,11 +20,35 @@ import {
   ButtonSize,
 } from '@canary-ui/components';
 import { useAgentStore } from '@/lib/products/agents/store';
+import type { AgentWorkflow } from '@/lib/products/agents/types';
 
 export default function WorkflowOverview() {
   const workflows = useAgentStore((s) => s.wizardWorkflows);
   const selectWorkflow = useAgentStore((s) => s.selectWorkflow);
   const createNewWorkflow = useAgentStore((s) => s.createNewWorkflow);
+  const agents = useAgentStore((s) => s.agents);
+  const selectedAgentId = useAgentStore((s) => s.selectedAgentId);
+  const agent = selectedAgentId ? agents.find((a) => a.id === selectedAgentId) : null;
+  const isManualMode = agent && !agent.templateId;
+
+  const handleCreateWorkflow = () => {
+    if (isManualMode) {
+      // Manual mode: skeleton with blank trigger + Step 1
+      const wfId = `wf-${Date.now()}`;
+      const newWf: AgentWorkflow = {
+        id: wfId,
+        name: '',
+        description: '',
+        trigger: '',
+        steps: [{ id: `step-${Date.now()}`, type: 'action', label: '', description: '' }],
+        guardrails: [],
+      };
+      useAgentStore.getState().addWorkflow(newWf);
+      selectWorkflow(wfId);
+    } else {
+      createNewWorkflow();
+    }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -127,7 +151,7 @@ export default function WorkflowOverview() {
         {/* Create new Workflow card */}
         <div
           className="cap-add-card"
-          onClick={createNewWorkflow}
+          onClick={handleCreateWorkflow}
           style={{
             border: '1px dashed #93ABE1',
             borderRadius: 4,

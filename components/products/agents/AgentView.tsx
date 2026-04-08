@@ -83,7 +83,13 @@ export default function AgentView() {
     setWizardCommunicationStyle(agent.tone || '');
     setWizardGuardrailsText(agent.workflow.guardrails.map((g) => `• ${g}`).join('\n'));
     setBuilderWorkflow(agent.workflow);
-    setWizardWorkflows(agent.workflows && agent.workflows.length > 0 ? agent.workflows : [agent.workflow]);
+    setWizardWorkflows(
+      agent.workflows && agent.workflows.length > 0
+        ? agent.workflows
+        : agent.workflow.trigger
+          ? [agent.workflow]
+          : []
+    );
     selectWorkflow(null); // Reset workflow selection when switching agents
     // Profile fields — populated from agent data
     setWizardResponsibilities(agent.responsibilities || []);
@@ -143,8 +149,14 @@ export default function AgentView() {
             <div style={{ width: 340, borderLeft: '1px solid #E5E5E5', overflowY: 'auto', background: '#fff', flexShrink: 0 }}><CapabilitiesSidebar /></div>
           </div>
         );
-      case 'workflows':
+      case 'workflows': {
+        const isManualMode = !agent.templateId;
         if (selectedWorkflowId) {
+          if (isManualMode) {
+            // Advanced Builder: full-width editable visualizer, no chat
+            return <WorkflowsStep hideHeader editable />;
+          }
+          // Template/Guided: read-only visualizer + chat sidebar
           return (
             <div style={{ display: 'flex', height: '100%' }}>
               <div style={{ flex: 1, overflow: 'hidden' }}><WorkflowsStep hideHeader /></div>
@@ -155,6 +167,7 @@ export default function AgentView() {
           );
         }
         return <WorkflowsStep hideHeader />;
+      }
       case 'connectors':
         return (
           <div style={{ display: 'flex', height: '100%' }}>
@@ -194,9 +207,7 @@ export default function AgentView() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {agent.status === 'draft' ? (
             <CanaryButton type={ButtonType.PRIMARY} onClick={() => {
-              const updatedAgents = agents.map((a) => a.id === agent.id ? { ...a, status: 'active' as const } : a);
-              useAgentStore.setState({ agents: updatedAgents, currentView: 'dashboard', selectedAgentId: null });
-              useAgentStore.getState().showToast(`"${agent.name}" deployed successfully`);
+              useAgentStore.getState().setShowDeployModal(true);
             }}>Deploy</CanaryButton>
           ) : (
             <CanaryButton type={ButtonType.PRIMARY} onClick={() => {

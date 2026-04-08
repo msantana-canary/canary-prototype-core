@@ -168,6 +168,8 @@ export interface Agent {
   responsibilities?: string[];
   behavioralGuidelines?: string;
   avoidedTopics?: string[];
+  // Template origin — determines workflow editor mode (chat vs manual)
+  templateId?: string;
 }
 
 // ---------------------------------------------------------------------------
