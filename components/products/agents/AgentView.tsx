@@ -194,13 +194,30 @@ export default function AgentView() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {agent.status === 'draft' ? (
             <CanaryButton type={ButtonType.PRIMARY} onClick={() => {
-              // Deploy the draft agent
               const updatedAgents = agents.map((a) => a.id === agent.id ? { ...a, status: 'active' as const } : a);
               useAgentStore.setState({ agents: updatedAgents, currentView: 'dashboard', selectedAgentId: null });
               useAgentStore.getState().showToast(`"${agent.name}" deployed successfully`);
             }}>Deploy</CanaryButton>
           ) : (
-            <CanaryButton type={ButtonType.PRIMARY}>Save</CanaryButton>
+            <CanaryButton type={ButtonType.PRIMARY} onClick={() => {
+              const state = useAgentStore.getState();
+              useAgentStore.getState().updateAgent(agent.id, {
+                name: state.agentName || agent.name,
+                description: state.agentDescription || agent.description,
+                capabilities: state.wizardCapabilities,
+                workflow: state.currentWorkflow ?? agent.workflow,
+                workflows: state.wizardWorkflows.length > 0 ? state.wizardWorkflows : agent.workflows,
+                tone: state.wizardCommunicationStyle || agent.tone,
+                rules: state.wizardRules,
+                responsibilities: state.wizardResponsibilities,
+                behavioralGuidelines: state.wizardBehavioralGuidelines,
+                avoidedTopics: state.wizardAvoidedTopics,
+                connections: state.wizardConnectors
+                  .filter((c) => c.status !== 'unassigned' && c.status !== 'not-available')
+                  .map((c) => ({ id: c.id, name: c.name, type: c.type, status: c.status as any, description: '' })),
+              });
+              useAgentStore.getState().showToast(`"${state.agentName || agent.name}" saved`);
+            }}>Save</CanaryButton>
           )}
         </div>
       </div>

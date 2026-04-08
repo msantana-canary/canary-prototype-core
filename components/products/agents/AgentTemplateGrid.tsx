@@ -164,12 +164,16 @@ export default function AgentTemplateGrid() {
             </p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
-            <CanaryButton type={ButtonType.PRIMARY} size={ButtonSize.COMPACT} onClick={startFromScratch} style={{ width: '100%' }}>
-              Guided Setup
-            </CanaryButton>
-            <CanaryButton type={ButtonType.SHADED} size={ButtonSize.COMPACT} onClick={startAdvancedBuild} style={{ width: '100%' }}>
-              Advanced Builder
-            </CanaryButton>
+            <div className="w-full [&_button]:w-full">
+              <CanaryButton type={ButtonType.PRIMARY} size={ButtonSize.COMPACT} onClick={startFromScratch}>
+                Guided Setup
+              </CanaryButton>
+            </div>
+            <div className="w-full [&_button]:w-full">
+              <CanaryButton type={ButtonType.SHADED} size={ButtonSize.COMPACT} onClick={startAdvancedBuild}>
+                Advanced Builder
+              </CanaryButton>
+            </div>
           </div>
         </div>
 
