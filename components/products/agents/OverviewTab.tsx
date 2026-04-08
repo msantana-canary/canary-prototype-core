@@ -6,8 +6,6 @@
  */
 
 import React from 'react';
-import Icon from '@mdi/react';
-import { mdiTrendingDown } from '@mdi/js';
 import {
   CanaryCard,
   CanaryList,

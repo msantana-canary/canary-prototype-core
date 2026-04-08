@@ -32,7 +32,6 @@ import {
   CanaryTag,
   ButtonType,
   ButtonSize,
-  IconPosition,
   TagColor,
   TagSize,
   colors,

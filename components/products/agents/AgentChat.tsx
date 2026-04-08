@@ -14,11 +14,9 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Icon from '@mdi/react';
-import { mdiSendOutline } from '@mdi/js';
 import {
   CanaryButton,
   CanaryChip,
-  CanaryTextArea,
   ButtonType,
   ButtonSize,
   ChipType,

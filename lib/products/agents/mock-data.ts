@@ -301,92 +301,6 @@ const alexWorkflow: AgentWorkflow = {
   ],
 };
 
-const javisWorkflow: AgentWorkflow = {
-  trigger: 'New guest message',
-  steps: [
-    {
-      id: 'javis-s1',
-      type: 'condition',
-      label: 'Identify channel',
-      description:
-        'Determine whether the message arrived via SMS, WhatsApp, or an OTA platform.',
-    },
-    {
-      id: 'javis-s2',
-      type: 'action',
-      label: 'Read context',
-      description:
-        'Pull the guest\'s reservation details, previous conversations, and preferences.',
-    },
-    {
-      id: 'javis-s3',
-      type: 'condition',
-      label: 'Route to capability',
-      description:
-        'Classify the request and route to the matching capability.',
-    },
-    {
-      id: 'javis-s4',
-      type: 'response',
-      label: 'Respond or handoff',
-      description:
-        'Send the response in the original channel, or hand off to staff if needed.',
-    },
-    {
-      id: 'javis-s5',
-      type: 'handoff',
-      label: 'Tone & language check',
-      description:
-        'Ensure response matches the channel tone (formal for email, casual for SMS) and guest language.',
-    },
-  ],
-  guardrails: [
-    'Never share one guest\'s information with another guest.',
-    'Always confirm before making reservation changes.',
-    'Match the language the guest writes in.',
-    'Escalate harassment or safety concerns to a manager immediately.',
-  ],
-};
-
-const avaWorkflow: AgentWorkflow = {
-  trigger: 'Webchat initiated',
-  steps: [
-    {
-      id: 'ava-s1',
-      type: 'response',
-      label: 'Welcome guest',
-      description:
-        'Display a branded greeting and ask how the agent can help.',
-    },
-    {
-      id: 'ava-s2',
-      type: 'condition',
-      label: 'Identify intent',
-      description:
-        'Determine whether the visitor wants information, to book, or to speak with staff.',
-    },
-    {
-      id: 'ava-s3',
-      type: 'action',
-      label: 'Answer or book',
-      description:
-        'Provide information from the knowledge base or walk the guest through the booking flow.',
-    },
-    {
-      id: 'ava-s4',
-      type: 'response',
-      label: 'Close conversation',
-      description:
-        'Confirm the guest\'s needs are met and offer a follow-up link or email confirmation.',
-    },
-  ],
-  guardrails: [
-    'Never promise rates that are not available in the booking engine.',
-    'Do not collect credit card details in the chat — redirect to the secure booking page.',
-    'Offer to connect with a staff member after 3 unresolved exchanges.',
-  ],
-};
-
 // ---------------------------------------------------------------------------
 // Pre-built Agents
 // ---------------------------------------------------------------------------
@@ -403,38 +317,6 @@ const alexTriggers: AgentTrigger[] = [
       { channel: 'booking-com', enabled: false },
       { channel: 'expedia', enabled: false },
       { channel: 'webchat', enabled: false },
-    ],
-  },
-];
-
-const javisTriggers: AgentTrigger[] = [
-  {
-    id: 'trig-javis-1',
-    intent: 'Guest sends message',
-    channels: [
-      { channel: 'voice', enabled: false },
-      { channel: 'sms', enabled: true },
-      { channel: 'whatsapp', enabled: true },
-      { channel: 'email', enabled: false },
-      { channel: 'booking-com', enabled: true },
-      { channel: 'expedia', enabled: false },
-      { channel: 'webchat', enabled: true },
-    ],
-  },
-];
-
-const avaTriggers: AgentTrigger[] = [
-  {
-    id: 'trig-ava-1',
-    intent: 'Guest initiates webchat',
-    channels: [
-      { channel: 'voice', enabled: false },
-      { channel: 'sms', enabled: false },
-      { channel: 'whatsapp', enabled: false },
-      { channel: 'email', enabled: false },
-      { channel: 'booking-com', enabled: false },
-      { channel: 'expedia', enabled: false },
-      { channel: 'webchat', enabled: true },
     ],
   },
 ];
@@ -486,74 +368,6 @@ const alex: Agent = {
   ],
   behavioralGuidelines: 'Keep responses concise and conversational — callers expect quick answers, not scripts. Match the guest\'s energy level. If a caller sounds rushed, be efficient. If they\'re chatty, be warm. Always confirm before transferring. Never leave a caller on hold for more than 30 seconds without checking back in.',
   avoidedTopics: ['Other guests\' room numbers or personal info', 'Specific pricing or rate negotiations', 'Payment processing or refunds', 'Staff schedules or internal operations'],
-};
-
-const javis: Agent = {
-  id: 'agent-javis',
-  name: 'Javis',
-  role: 'Guest Messaging Agent',
-  description:
-    'Handles incoming guest communications via SMS, WhatsApp, and OTA channels. Answers questions and fulfills requests.',
-  status: 'active',
-  triggers: javisTriggers,
-  connections: [conn.pms, conn.kb],
-  capabilities: allProductsWithEnabled(['prod-messages', 'prod-upsells', 'prod-knowledge-base']),
-  workflow: javisWorkflow,
-  tone: 'Natural',
-  metrics: {
-    totalConversations: 5123,
-    resolutionRate: 89,
-    avgResponseTime: '0.8s',
-    satisfactionScore: 4.6,
-    heroStat: { label: 'Avg. Response Time', value: '0.8 sec', subtitle: 'Across all channels' },
-    cards: [
-      { label: 'Messages Handled', value: '5,123', subtitle: 'this month' },
-      { label: 'Resolution Rate', value: '89%', subtitle: 'without staff handoff' },
-      { label: 'Active Channels', value: '4', subtitle: 'SMS, WhatsApp, Booking.com, Webchat' },
-      { label: 'Satisfaction', value: '4.6/5', subtitle: 'from guest surveys' },
-    ],
-  },
-  recentActivity: [
-    { time: '1 min ago', description: 'Replied to WhatsApp message about early check-in availability.' },
-    { time: '8 min ago', description: 'Sent booking confirmation via SMS to guest arriving tomorrow.' },
-    { time: '22 min ago', description: 'Escalated noise complaint from Booking.com guest to front desk.' },
-  ],
-  createdAt: '2026-02-03',
-  rules: [],
-};
-
-const ava: Agent = {
-  id: 'agent-ava',
-  name: 'Ava',
-  role: 'Webchat Agent',
-  description:
-    'Communicates with guests on the hotel website. Provides hotel information, handles booking inquiries, and drives direct reservations.',
-  status: 'active',
-  triggers: avaTriggers,
-  connections: [conn.kb],
-  capabilities: allProductsWithEnabled(['prod-messages', 'prod-knowledge-base']),
-  workflow: avaWorkflow,
-  tone: 'Casual',
-  metrics: {
-    totalConversations: 1456,
-    resolutionRate: 91,
-    avgResponseTime: '1.0s',
-    satisfactionScore: 4.7,
-    heroStat: { label: 'Avg. Response Time', value: '1.0 sec', subtitle: 'Webchat visitors only' },
-    cards: [
-      { label: 'Chats Handled', value: '1,456', subtitle: 'this month' },
-      { label: 'Resolution Rate', value: '91%', subtitle: 'without staff handoff' },
-      { label: 'Avg. Chat Duration', value: '3.2 min', subtitle: 'per conversation' },
-      { label: 'Satisfaction', value: '4.7/5', subtitle: 'from post-chat survey' },
-    ],
-  },
-  recentActivity: [
-    { time: '5 min ago', description: 'Helped visitor compare suite options and start a booking.' },
-    { time: '19 min ago', description: 'Answered question about pet policy and nearby dog parks.' },
-    { time: '45 min ago', description: 'Transferred chat to reservations team for group booking inquiry.' },
-  ],
-  createdAt: '2026-02-18',
-  rules: [],
 };
 
 // ---------------------------------------------------------------------------
