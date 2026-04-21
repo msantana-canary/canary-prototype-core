@@ -21,11 +21,10 @@ import React, { useState } from 'react';
 import { CanaryTabs } from '@canary-ui/components';
 import { useCheckInConfigStore } from '@/lib/products/guest-preview/check-in-config-store';
 const useGoToNextStep = () => useCheckInConfigStore((s) => s.goToNextStep);
-import { GuestBottomSheet } from '@/components/core/GuestBottomSheet';
 import { GuestCounter } from '@/components/core/GuestCounter';
 import Image from 'next/image';
 import Icon from '@mdi/react';
-import { mdiPlus, mdiCheck, mdiAccountOutline, mdiBedOutline, mdiRuler } from '@mdi/js';
+import { mdiPlus, mdiCheck, mdiClose, mdiAccountOutline, mdiBedOutline, mdiRuler } from '@mdi/js';
 
 // ── Data ──
 
@@ -80,6 +79,7 @@ export function Addons() {
   const [selectedUpgrade, setSelectedUpgrade] = useState<string | null>(null);
   const [addonQuantities, setAddonQuantities] = useState<Record<string, number>>({});
   const [detailItem, setDetailItem] = useState<RoomUpgrade | null>(null);
+  const [addonDetail, setAddonDetail] = useState<AddonItem | null>(null);
 
   // Cart logic
   const upgradeTotal = selectedUpgrade
@@ -194,12 +194,15 @@ export function Addons() {
                       borderBottom: index < ADDON_ITEMS.length - 1 ? '1px solid rgba(0,0,0,0.12)' : undefined,
                     }}
                   >
-                    {/* Thumbnail */}
-                    <div className="relative flex-shrink-0 rounded-[5px] overflow-hidden" style={{ width: 64, height: 64 }}>
+                    {/* Thumbnail + Info — clickable for detail */}
+                    <div
+                      className="relative flex-shrink-0 rounded-[5px] overflow-hidden cursor-pointer"
+                      style={{ width: 64, height: 64 }}
+                      onClick={() => setAddonDetail(item)}
+                    >
                       <Image src={item.image} alt={item.name} fill className="object-cover" />
                     </div>
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setAddonDetail(item)}>
                       <p style={{ fontSize: 15, fontWeight: 700, lineHeight: '1.4', color: theme.fontColor }}>{item.name}</p>
                       <p style={{ fontSize: 14, fontWeight: 600, color: '#555', lineHeight: '1.4' }}>
                         {item.isFree ? 'Complimentary' : `$${item.price}${item.priceUnit || ''}`}
@@ -274,61 +277,151 @@ export function Addons() {
         )}
       </div>
 
-      {/* ── Room upgrade detail bottom sheet ── */}
-      <GuestBottomSheet
-        isOpen={!!detailItem}
-        onClose={() => setDetailItem(null)}
-        title={detailItem?.name ?? ''}
-      >
-        {detailItem && (
-          <div className="flex flex-col" style={{ gap: 24 }}>
-            {/* Hero image */}
-            <div className="relative w-full rounded-lg overflow-hidden" style={{ height: 200 }}>
+      {/* ── Room upgrade detail — full takeover (Figma 5:1850) ── */}
+      {detailItem && (
+        <div className="absolute inset-0 z-50 flex flex-col justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div
+            className="flex flex-col overflow-hidden"
+            style={{
+              backgroundColor: '#fcf9f4',
+              borderTopLeftRadius: 8,
+              borderTopRightRadius: 8,
+              maxHeight: '95%',
+              animation: 'bottom-sheet-up 300ms ease-out',
+            }}
+          >
+            {/* Full-bleed hero image with carousel dots */}
+            <div className="relative flex-shrink-0" style={{ height: 296 }}>
               <Image src={detailItem.image} alt={detailItem.name} fill className="object-cover" />
+              {/* Carousel dots */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 items-center" style={{ width: 100, justifyContent: 'center' }}>
+                <div className="rounded-full" style={{ width: 6, height: 6, backgroundColor: 'rgba(255,255,255,0.4)' }} />
+                <div className="rounded-full" style={{ width: 8, height: 8, backgroundColor: '#fff' }} />
+                <div className="rounded-full" style={{ width: 6, height: 6, backgroundColor: 'rgba(255,255,255,0.4)' }} />
+                <div className="rounded-full" style={{ width: 6, height: 6, backgroundColor: 'rgba(255,255,255,0.4)' }} />
+              </div>
+              {/* Close X button overlaid */}
+              <button
+                onClick={() => setDetailItem(null)}
+                className="absolute top-4 right-4 flex items-center justify-center rounded"
+                style={{ width: 36, height: 36, backgroundColor: 'rgba(0,0,0,0.4)' }}
+              >
+                <Icon path={mdiClose} size={0.8} color="#fff" />
+              </button>
             </div>
 
-            {/* Specs */}
-            <div className="flex flex-wrap items-center" style={{ gap: '8px 16px' }}>
-              <span className="flex items-center gap-1.5">
-                <Icon path={mdiAccountOutline} size={0.6} color="#666" />
-                <span style={{ fontSize: 14, color: '#666' }}>{detailItem.guests} guests</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Icon path={mdiBedOutline} size={0.6} color="#666" />
-                <span style={{ fontSize: 14, color: '#666' }}>{detailItem.beds}</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Icon path={mdiRuler} size={0.6} color="#666" />
-                <span style={{ fontSize: 14, color: '#666' }}>{detailItem.sqft} sq ft</span>
-              </span>
+            {/* Content — scrollable */}
+            <div className="flex-1 overflow-y-auto" style={{ padding: '24px 24px 32px' }}>
+              <div className="flex flex-col" style={{ gap: 12 }}>
+                {/* Title */}
+                <h2 style={{ fontSize: 24, fontWeight: 600, lineHeight: '36px', color: theme.fontColor }}>
+                  {detailItem.name}
+                </h2>
+                {/* Tags row — 16px Medium #666 uppercase */}
+                <div className="flex flex-wrap items-center" style={{ gap: '4px 16px' }}>
+                  <span className="flex items-center gap-1.5">
+                    <Icon path={mdiAccountOutline} size={0.6} color="#666" />
+                    <span style={{ fontSize: 16, fontWeight: 500, color: '#666', textTransform: 'uppercase' }}>{detailItem.guests}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Icon path={mdiBedOutline} size={0.6} color="#666" />
+                    <span style={{ fontSize: 16, fontWeight: 500, color: '#666', textTransform: 'uppercase' }}>{detailItem.beds}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Icon path={mdiRuler} size={0.6} color="#666" />
+                    <span style={{ fontSize: 16, fontWeight: 500, color: '#666', textTransform: 'uppercase' }}>{detailItem.sqft} SQ FT</span>
+                  </span>
+                </div>
+                {/* Price */}
+                <p style={{ fontSize: 24, fontWeight: 600, lineHeight: '36px', color: theme.fontColor }}>
+                  +${detailItem.pricePerNight}/night
+                </p>
+              </div>
+              {/* Description */}
+              <p style={{ fontSize: 18, lineHeight: '28px', color: '#000', marginTop: 24, paddingBottom: 32 }}>
+                {detailItem.description}
+              </p>
             </div>
 
-            {/* Price */}
-            <p style={{ fontSize: 24, fontWeight: 600, color: theme.fontColor }}>
-              +${detailItem.pricePerNight}/night
-            </p>
-
-            {/* Description */}
-            <p style={{ fontSize: 16, lineHeight: '24px', color: '#555' }}>
-              {detailItem.description}
-            </p>
-
-            {/* Request button */}
-            <button
-              onClick={() => {
-                setSelectedUpgrade(
-                  selectedUpgrade === detailItem.id ? null : detailItem.id
-                );
-                setDetailItem(null);
-              }}
-              className="w-full h-[48px] flex items-center justify-center rounded text-[16px] font-medium text-white"
-              style={{ backgroundColor: theme.primaryColor }}
-            >
-              {selectedUpgrade === detailItem.id ? 'Remove' : 'Request'}
-            </button>
+            {/* Sticky Request button */}
+            <div style={{ padding: 16, backgroundColor: '#fcf9f4', boxShadow: '0 0 32px rgba(0,0,0,0.12)' }}>
+              <button
+                onClick={() => {
+                  setSelectedUpgrade(selectedUpgrade === detailItem.id ? null : detailItem.id);
+                  setDetailItem(null);
+                }}
+                className="w-full h-[48px] flex items-center justify-center rounded text-[18px] font-medium text-white"
+                style={{ backgroundColor: theme.primaryColor }}
+              >
+                {selectedUpgrade === detailItem.id ? 'Remove' : 'Request'}
+              </button>
+            </div>
           </div>
-        )}
-      </GuestBottomSheet>
+        </div>
+      )}
+
+      {/* ── Add-on detail — same takeover pattern ── */}
+      {addonDetail && (
+        <div className="absolute inset-0 z-50 flex flex-col justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div
+            className="flex flex-col overflow-hidden"
+            style={{
+              backgroundColor: '#fcf9f4',
+              borderTopLeftRadius: 8,
+              borderTopRightRadius: 8,
+              maxHeight: '85%',
+              animation: 'bottom-sheet-up 300ms ease-out',
+            }}
+          >
+            {/* Hero image */}
+            <div className="relative flex-shrink-0" style={{ height: 240 }}>
+              <Image src={addonDetail.image} alt={addonDetail.name} fill className="object-cover" />
+              <button
+                onClick={() => setAddonDetail(null)}
+                className="absolute top-4 right-4 flex items-center justify-center rounded"
+                style={{ width: 36, height: 36, backgroundColor: 'rgba(0,0,0,0.4)' }}
+              >
+                <Icon path={mdiClose} size={0.8} color="#fff" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto" style={{ padding: '24px 24px 32px' }}>
+              <h2 style={{ fontSize: 24, fontWeight: 600, lineHeight: '36px', color: theme.fontColor }}>
+                {addonDetail.name}
+              </h2>
+              <p style={{ fontSize: 24, fontWeight: 600, lineHeight: '36px', color: theme.fontColor, marginTop: 8 }}>
+                {addonDetail.isFree ? 'Complimentary' : `$${addonDetail.price}${addonDetail.priceUnit || ''}`}
+              </p>
+              {addonDetail.tag && (
+                <div className="inline-flex items-center gap-1 mt-2 px-1.5 py-[3px] rounded-sm" style={{ backgroundColor: '#000' }}>
+                  <span style={{ fontSize: 10, fontWeight: 500, color: '#fff', textTransform: 'uppercase' }}>{addonDetail.tag}</span>
+                </div>
+              )}
+              {addonDetail.description && (
+                <p style={{ fontSize: 18, lineHeight: '28px', color: '#000', marginTop: 24, paddingBottom: 32 }}>
+                  {addonDetail.description}
+                </p>
+              )}
+            </div>
+
+            {/* Sticky Add button */}
+            <div style={{ padding: 16, backgroundColor: '#fcf9f4', boxShadow: '0 0 32px rgba(0,0,0,0.12)' }}>
+              <button
+                onClick={() => {
+                  const current = addonQuantities[addonDetail.id] || 0;
+                  setAddonQuantities((prev) => ({ ...prev, [addonDetail.id]: current === 0 ? 1 : 0 }));
+                  setAddonDetail(null);
+                }}
+                className="w-full h-[48px] flex items-center justify-center rounded text-[18px] font-medium text-white"
+                style={{ backgroundColor: theme.primaryColor }}
+              >
+                {(addonQuantities[addonDetail.id] || 0) > 0 ? 'Remove' : 'Add'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
