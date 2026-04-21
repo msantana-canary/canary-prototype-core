@@ -501,7 +501,7 @@ export default function WorkflowVisualizer({
                                 marginBottom: 0,
                               }}
                             >
-                              {cond.condition} \u2192 {cond.action}
+                              {cond.condition} → {cond.action}
                             </li>
                           ))}
                         </ul>
