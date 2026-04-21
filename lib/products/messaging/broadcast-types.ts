@@ -13,12 +13,14 @@ export type LoyaltyTier = 'non-member' | 'club-member' | 'silver-elite' | 'gold-
 
 export type LengthOfStay = 'one-night' | 'multiple-nights';
 export type GuestRecurrence = 'first-time' | 'recurring';
+export type RoomType = 'standard-king' | 'standard-double' | 'deluxe-king' | 'deluxe-double' | 'junior-suite' | 'executive-suite' | 'penthouse';
 
 export interface BroadcastFilterCriteria {
   loyaltyTiers: LoyaltyTier[];
   rateCodes: string[];
   groupCodes: string[];
   roomNumbers: string[];
+  roomTypes: RoomType[];
   lengthOfStay: LengthOfStay | null;
   guestRecurrence: GuestRecurrence | null;
 }
@@ -56,6 +58,7 @@ export interface BroadcastGuestEntry {
   rateCode?: string;
   groupCode?: string;
   room?: string;
+  roomType?: RoomType;
   stayNights?: number;
   isReturningGuest?: boolean;
 }

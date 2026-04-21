@@ -68,7 +68,7 @@ export function BroadcastView() {
         onCreate={createGroup}
       />
 
-      {/* Filter Guests Modal */}
+            {/* Filter Guests Modal */}
       <FilterGuestsModal
         isOpen={isFilterModalOpen}
         onClose={closeFilterModal}

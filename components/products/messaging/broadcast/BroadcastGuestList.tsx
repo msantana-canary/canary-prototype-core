@@ -285,7 +285,7 @@ export function BroadcastGuestList() {
 
   return (
     <div className="h-full flex flex-col border-r border-gray-200 broadcast-guest-list" style={{ backgroundColor: '#f0f0f0' }}>
-      {/* Filter Row (top of column, only for built-in groups) */}
+            {/* Filter Row (top of column, only for built-in groups) */}
       {isBuiltIn && (
         <CanaryListItem
           icon={<Icon path={mdiFilterOutline} size={1} color="#2858c4" />}

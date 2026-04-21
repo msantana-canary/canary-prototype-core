@@ -28,6 +28,7 @@ export const emptyFilterCriteria: BroadcastFilterCriteria = {
   rateCodes: [],
   groupCodes: [],
   roomNumbers: [],
+  roomTypes: [],
   lengthOfStay: null,
   guestRecurrence: null,
 };
@@ -38,6 +39,7 @@ export function isFilterEmpty(filters: BroadcastFilterCriteria): boolean {
     filters.rateCodes.length === 0 &&
     filters.groupCodes.length === 0 &&
     filters.roomNumbers.length === 0 &&
+    filters.roomTypes.length === 0 &&
     filters.lengthOfStay === null &&
     filters.guestRecurrence === null
   );
@@ -49,6 +51,7 @@ export function getActiveFilterCount(filters: BroadcastFilterCriteria): number {
   if (filters.rateCodes.length > 0) count++;
   if (filters.groupCodes.length > 0) count++;
   if (filters.roomNumbers.length > 0) count++;
+  if (filters.roomTypes.length > 0) count++;
   if (filters.lengthOfStay !== null) count++;
   if (filters.guestRecurrence !== null) count++;
   return count;
@@ -75,6 +78,9 @@ export function getFilteredGuestEntries(
     }
     if (filters.roomNumbers.length > 0) {
       if (!entry.room || !filters.roomNumbers.includes(entry.room)) return false;
+    }
+    if (filters.roomTypes.length > 0) {
+      if (!entry.roomType || !filters.roomTypes.includes(entry.roomType)) return false;
     }
     if (filters.lengthOfStay !== null) {
       if (entry.stayNights == null) return false;

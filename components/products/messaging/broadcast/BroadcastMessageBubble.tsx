@@ -9,7 +9,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { BroadcastMessage, BroadcastMessageFilterSnapshot, LoyaltyTier } from '@/lib/products/messaging/broadcast-types';
+import { BroadcastMessage, BroadcastMessageFilterSnapshot, LoyaltyTier, RoomType } from '@/lib/products/messaging/broadcast-types';
 import { format } from 'date-fns';
 import Icon from '@mdi/react';
 import { mdiVideoInputAntenna, mdiAccountMultipleOutline, mdiFilterOutline } from '@mdi/js';
@@ -49,6 +49,18 @@ function FiltersAppliedModal({
   }
   if (snapshot.criteria.roomNumbers.length > 0) {
     rows.push({ label: 'Room Number', value: snapshot.criteria.roomNumbers.join(', ') });
+  }
+  if (snapshot.criteria.roomTypes && snapshot.criteria.roomTypes.length > 0) {
+    const rtLabels: Record<RoomType, string> = {
+      'standard-king': 'Standard King',
+      'standard-double': 'Standard Double',
+      'deluxe-king': 'Deluxe King',
+      'deluxe-double': 'Deluxe Double',
+      'junior-suite': 'Junior Suite',
+      'executive-suite': 'Executive Suite',
+      'penthouse': 'Penthouse',
+    };
+    rows.push({ label: 'Room Type', value: snapshot.criteria.roomTypes.map(rt => rtLabels[rt]).join(', ') });
   }
   if (snapshot.criteria.lengthOfStay) {
     rows.push({ label: 'Length of Stay', value: snapshot.criteria.lengthOfStay === 'one-night' ? 'One night' : 'Multiple nights' });

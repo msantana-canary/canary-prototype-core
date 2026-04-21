@@ -27,6 +27,7 @@ import {
 import {
   BroadcastFilterCriteria,
   LoyaltyTier,
+  RoomType,
   LengthOfStay,
   GuestRecurrence,
   SavedFilter,
@@ -51,6 +52,16 @@ const LOYALTY_TIERS: { value: LoyaltyTier; label: string }[] = [
   { value: 'gold-elite', label: 'Gold Elite' },
   { value: 'platinum-elite', label: 'Platinum Elite' },
   { value: 'diamond-elite', label: 'Diamond Elite' },
+];
+
+const ROOM_TYPES: { value: RoomType; label: string }[] = [
+  { value: 'standard-king', label: 'Standard King' },
+  { value: 'standard-double', label: 'Standard Double' },
+  { value: 'deluxe-king', label: 'Deluxe King' },
+  { value: 'deluxe-double', label: 'Deluxe Double' },
+  { value: 'junior-suite', label: 'Junior Suite' },
+  { value: 'executive-suite', label: 'Executive Suite' },
+  { value: 'penthouse', label: 'Penthouse' },
 ];
 
 // --- Sub-components ---
@@ -237,7 +248,7 @@ function BinaryRadioRow({
 
 /** Resolve a segment's rules to a BroadcastFilterCriteria for filtering */
 function segmentToCriteria(segment: Segment): BroadcastFilterCriteria {
-  const criteria: BroadcastFilterCriteria = { ...emptyFilterCriteria };
+  const criteria: BroadcastFilterCriteria = { ...emptyFilterCriteria, roomTypes: [] };
 
   for (const rule of segment.rules) {
     switch (rule.guestProperty) {
@@ -376,6 +387,16 @@ export function FilterGuestsModal({
       loyaltyTiers: prev.loyaltyTiers.includes(tier)
         ? prev.loyaltyTiers.filter(t => t !== tier)
         : [...prev.loyaltyTiers, tier],
+    }));
+  }, []);
+
+  // Toggle room type
+  const toggleRoomType = useCallback((rt: RoomType) => {
+    setPendingCriteria(prev => ({
+      ...prev,
+      roomTypes: prev.roomTypes.includes(rt)
+        ? prev.roomTypes.filter(t => t !== rt)
+        : [...prev.roomTypes, rt],
     }));
   }, []);
 
@@ -641,6 +662,26 @@ export function FilterGuestsModal({
                 </div>
               )}
 
+              {/* Room Type */}
+              <div className="bg-white p-4 border-b border-[#e5e5e5]">
+                <p
+                  className="font-['Roboto',sans-serif] text-[14px] font-medium leading-[22px] mb-3"
+                  style={{ color: '#000000' }}
+                >
+                  Room Type
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {ROOM_TYPES.map(rt => (
+                    <LoyaltyChip
+                      key={rt.value}
+                      label={rt.label}
+                      isSelected={pendingCriteria.roomTypes.includes(rt.value)}
+                      onClick={() => toggleRoomType(rt.value)}
+                    />
+                  ))}
+                </div>
+              </div>
+
               {/* Length of Stay */}
               <BinaryRadioRow
                 label="Length of Stay"
@@ -756,6 +797,25 @@ function criteriaToSegmentRules(criteria: BroadcastFilterCriteria): SegmentRule[
       guestProperty: 'Room Number',
       condition: 'includes',
       values: [...criteria.roomNumbers],
+      dropdownValue: '',
+      ...(rules.length > 0 ? { operator: 'And' } : {}),
+    });
+  }
+  if (criteria.roomTypes.length > 0) {
+    const rtLabelMap: Record<RoomType, string> = {
+      'standard-king': 'Standard King',
+      'standard-double': 'Standard Double',
+      'deluxe-king': 'Deluxe King',
+      'deluxe-double': 'Deluxe Double',
+      'junior-suite': 'Junior Suite',
+      'executive-suite': 'Executive Suite',
+      'penthouse': 'Penthouse',
+    };
+    rules.push({
+      id: `rule-${Date.now()}-roomtype`,
+      guestProperty: 'Room Type',
+      condition: 'includes',
+      values: criteria.roomTypes.map(rt => rtLabelMap[rt]),
       dropdownValue: '',
       ...(rules.length > 0 ? { operator: 'And' } : {}),
     });
