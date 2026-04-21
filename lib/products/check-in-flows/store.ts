@@ -12,6 +12,7 @@
  * (this is a prototype); the structure is production-shaped.
  */
 
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import type {
   FlowDefinition,
@@ -24,8 +25,8 @@ import type {
   Condition,
   Brand,
 } from './types';
-import { PROPERTIES, getProperty } from './properties';
-import { INITIAL_FLOWS, buildInitialFlows } from './mock-data';
+import { PROPERTIES } from './properties';
+import { INITIAL_FLOWS } from './mock-data';
 import { generateDefaultFlowsForProperty } from './default-flow-generator';
 
 // ── Navigation state ─────────────────────────────────────
@@ -62,12 +63,6 @@ interface CheckInFlowsState {
 
   // Role
   role: UserRole;
-
-  // ── Getters (derive from state) ─────────────────────────
-  getCurrentProperty: () => Property;
-  getFlowsForCurrentProperty: () => FlowDefinition[];
-  getFlowById: (flowId: string) => FlowDefinition | undefined;
-  getStepById: (flowId: string, stepId: string) => StepInstance | undefined;
 
   // ── Property / brand ────────────────────────────────────
   setCurrentProperty: (propertyId: string) => void;
@@ -136,35 +131,6 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
   previewLanguage: 'en',
 
   role: 'cs',
-
-  // ── Getters ────────────────────────────────────────────
-  getCurrentProperty: () => {
-    const { currentPropertyId, properties, brandOverride } = get();
-    const base = properties.find((p) => p.id === currentPropertyId)!;
-    const brand = brandOverride[currentPropertyId] ?? base.brand;
-    // When brand is overridden, flip brand-dependent features (ENCODE ID for Wyndham)
-    if (brand !== base.brand) {
-      const hasEncode = brand === 'wyndham';
-      return {
-        ...base,
-        brand,
-        features: { ...base.features, hasIdEncodeIntegration: hasEncode },
-      };
-    }
-    return base;
-  },
-
-  getFlowsForCurrentProperty: () => {
-    const { currentPropertyId, flows } = get();
-    return flows.filter((f) => f.propertyId === currentPropertyId);
-  },
-
-  getFlowById: (flowId) => get().flows.find((f) => f.id === flowId),
-
-  getStepById: (flowId, stepId) => {
-    const flow = get().flows.find((f) => f.id === flowId);
-    return flow?.steps.find((s) => s.id === stepId);
-  },
 
   // ── Property / brand ───────────────────────────────────
   setCurrentProperty: (propertyId) => {
@@ -351,3 +317,68 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
   // ── Role ───────────────────────────────────────────────
   setRole: (role) => set({ role }),
 }));
+
+// ── Derived hooks ─────────────────────────────────────────
+// These select raw state and derive in useMemo — avoids the
+// "getServerSnapshot should be cached" Zustand+React 19 trap.
+
+/** The current property, with brand override applied. */
+export function useCurrentProperty(): Property {
+  const currentPropertyId = useCheckInFlowsStore((s) => s.currentPropertyId);
+  const properties = useCheckInFlowsStore((s) => s.properties);
+  const brandOverride = useCheckInFlowsStore((s) => s.brandOverride);
+  return useMemo(() => {
+    const base = properties.find((p) => p.id === currentPropertyId) ?? properties[0];
+    const brand = brandOverride[currentPropertyId] ?? base.brand;
+    if (brand !== base.brand) {
+      return {
+        ...base,
+        brand,
+        features: { ...base.features, hasIdEncodeIntegration: brand === 'wyndham' },
+      };
+    }
+    return base;
+  }, [properties, currentPropertyId, brandOverride]);
+}
+
+/** All flows belonging to the current property. */
+export function useFlowsForCurrentProperty(): FlowDefinition[] {
+  const currentPropertyId = useCheckInFlowsStore((s) => s.currentPropertyId);
+  const flows = useCheckInFlowsStore((s) => s.flows);
+  return useMemo(() => flows.filter((f) => f.propertyId === currentPropertyId), [flows, currentPropertyId]);
+}
+
+/** A single flow by ID (stable reference via useMemo). */
+export function useFlowById(flowId: string | null): FlowDefinition | undefined {
+  const flows = useCheckInFlowsStore((s) => s.flows);
+  return useMemo(() => (flowId ? flows.find((f) => f.id === flowId) : undefined), [flows, flowId]);
+}
+
+/** A single step from a flow (stable reference via useMemo). */
+export function useStepById(flowId: string | null, stepId: string | null): StepInstance | undefined {
+  const flow = useFlowById(flowId);
+  return useMemo(() => (stepId ? flow?.steps.find((s) => s.id === stepId) : undefined), [flow, stepId]);
+}
+
+// ── Imperative getters (for use outside render, e.g. in actions) ──
+
+export const getCurrentPropertyImperative = (): Property => {
+  const state = useCheckInFlowsStore.getState();
+  const base = state.properties.find((p) => p.id === state.currentPropertyId) ?? state.properties[0];
+  const brand = state.brandOverride[state.currentPropertyId] ?? base.brand;
+  if (brand !== base.brand) {
+    return {
+      ...base,
+      brand,
+      features: { ...base.features, hasIdEncodeIntegration: brand === 'wyndham' },
+    };
+  }
+  return base;
+};
+
+export const getFlowByIdImperative = (flowId: string): FlowDefinition | undefined =>
+  useCheckInFlowsStore.getState().flows.find((f) => f.id === flowId);
+
+export const getStepByIdImperative = (flowId: string, stepId: string): StepInstance | undefined =>
+  useCheckInFlowsStore.getState().flows.find((f) => f.id === flowId)?.steps.find((s) => s.id === stepId);
+

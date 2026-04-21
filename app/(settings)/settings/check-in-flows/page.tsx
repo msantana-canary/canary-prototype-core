@@ -8,12 +8,16 @@
  * Future phases will build: landing → flow view → step editor → live preview.
  */
 
-import { useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
+import {
+  useCheckInFlowsStore,
+  useCurrentProperty,
+  useFlowsForCurrentProperty,
+} from '@/lib/products/check-in-flows/store';
 import { SURFACE_LABELS } from '@/lib/products/check-in-flows/types';
 
 export default function CheckInFlowsPage() {
-  const property = useCheckInFlowsStore((s) => s.getCurrentProperty());
-  const flows = useCheckInFlowsStore((s) => s.getFlowsForCurrentProperty());
+  const property = useCurrentProperty();
+  const flows = useFlowsForCurrentProperty();
   const setCurrentProperty = useCheckInFlowsStore((s) => s.setCurrentProperty);
   const properties = useCheckInFlowsStore((s) => s.properties);
   const currentPropertyId = useCheckInFlowsStore((s) => s.currentPropertyId);
