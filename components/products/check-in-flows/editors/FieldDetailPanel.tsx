@@ -56,7 +56,9 @@ import type {
   StepInstance,
   ElementTag,
   LocalizedText,
+  Condition,
 } from '@/lib/products/check-in-flows/types';
+import { ConditionRuleEditor } from './ConditionRuleEditor';
 import { resolveText } from '@/lib/products/check-in-flows/types';
 import { getFieldTypeMeta } from '@/lib/products/check-in-flows/field-types';
 import { ELEMENT_TAGS_BY_CATEGORY, getElementTagMeta, type TagCategory } from '@/lib/products/check-in-flows/element-tags';
@@ -235,28 +237,17 @@ export function FieldDetailPanel({ field, flow, step, isReadOnly, onClose }: Pro
             </Section>
           )}
 
-          {/* Conditions — Phase 7 stub */}
+          {/* Field-level conditions */}
           {!typeMeta.isStatic && (
             <Section title="Field-Level Conditions">
-              <div
-                className="flex items-start gap-2 px-3 py-2.5 rounded-md border"
-                style={{ borderColor: colors.colorBlueDark4, backgroundColor: colors.colorBlueDark5 }}
-              >
-                <Icon path={mdiInformationOutline} size={0.65} color={colors.colorBlueDark1} className="mt-0.5 shrink-0" />
-                <p className="text-[11px]" style={{ color: colors.colorBlueDark1 }}>
-                  Per-field conditions (show/hide based on guest nationality, loyalty, etc.) will
-                  be editable here in Phase 7.
-                </p>
-              </div>
-              {field.conditions && field.conditions.length > 0 && (
-                <ul className="mt-2 space-y-1 text-[11px] text-[#555]">
-                  {field.conditions.map((c) => (
-                    <li key={c.id} className="px-2 py-1 bg-[#FAFAFA] rounded border border-[#EEE] font-mono">
-                      {c.parameter} {c.operator} {String(c.value)} → {c.action}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <ConditionRuleEditor
+                conditions={field.conditions ?? []}
+                onChange={(next) => patch({ conditions: next.length > 0 ? next : undefined })}
+                scope="field"
+                disabled={isReadOnly}
+                emptyLabel="Always visible"
+                emptyHint="Add a condition to show, hide, or require this field based on guest context."
+              />
             </Section>
           )}
         </div>
