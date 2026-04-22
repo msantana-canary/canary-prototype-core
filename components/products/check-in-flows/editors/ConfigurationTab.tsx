@@ -10,6 +10,8 @@
 
 import React from 'react';
 import type { StepInstance, FlowDefinition } from '@/lib/products/check-in-flows/types';
+import { useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
+import { effectiveReadOnly } from '@/lib/products/check-in-flows/permissions';
 import { SchemaFormEditor } from './SchemaFormEditor';
 import { IdConsentEditor } from './IdConsentEditor';
 import { IdCaptureEditor } from './IdCaptureEditor';
@@ -23,24 +25,34 @@ interface ConfigurationTabProps {
 }
 
 export function ConfigurationTab({ step, flow, isReadOnly }: ConfigurationTabProps) {
+  const role = useCheckInFlowsStore((s) => s.role);
   const cfg = step.config;
 
+  // Content-editable templates override read-only for the editor body.
+  // Structural edits (field CRUD, conditions) remain CS-only.
+  const contentReadOnly = effectiveReadOnly({ role, templateId: step.templateId, scope: 'content' });
+  const structureReadOnly = isReadOnly || role === 'hotel';
+
   if (cfg.kind === 'schema-form') {
-    return <SchemaFormEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
+    // Schema-form is always structural — never hotel-editable
+    return <SchemaFormEditor step={step} flow={flow} isReadOnly={structureReadOnly} />;
   }
 
   if (cfg.kind === 'nested-flow') {
-    return <NestedFlowEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
+    return <NestedFlowEditor step={step} flow={flow} isReadOnly={structureReadOnly} />;
   }
 
   if (cfg.kind === 'preset') {
     switch (cfg.presetType) {
       case 'id-consent':
-        return <IdConsentEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
+        // Hotels may edit consent language; CS has full access
+        return <IdConsentEditor step={step} flow={flow} isReadOnly={contentReadOnly} />;
       case 'id-capture':
-        return <IdCaptureEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
+        // Options + conditions — structure-level. CS only.
+        return <IdCaptureEditor step={step} flow={flow} isReadOnly={structureReadOnly} />;
       default:
-        return <GenericPresetEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
+        // Generic preset: content-only edits; hotel may edit if the template allows
+        return <GenericPresetEditor step={step} flow={flow} isReadOnly={contentReadOnly} />;
     }
   }
 
