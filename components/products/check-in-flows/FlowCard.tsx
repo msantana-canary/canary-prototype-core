@@ -119,29 +119,55 @@ function MainFlowCard({ flow, onClick }: { flow: FlowDefinition; onClick?: () =>
 }
 
 function NestedFlowCard({ flow, onClick }: { flow: FlowDefinition; onClick?: () => void }) {
+  // Use the flow.name to derive an icon — map to the nested template equivalent
+  const iconMap: Record<string, string> = {
+    'Upsells': 'tag-outline',
+    'Mobile Key': 'key-outline',
+    'Accompanying Guest': 'account-multiple-outline',
+    'Guest Profile': 'account-check-outline',
+  };
+  // Fall back to first step's template icon
   const firstStep = flow.steps[0];
   const template = firstStep ? getStepTemplateMeta(firstStep.templateId) : null;
 
   return (
     <button
       onClick={onClick}
-      className="group text-left bg-white rounded-lg border border-[#E5E5E5] hover:border-[#999] transition-all px-4 py-3 flex items-center gap-3"
+      className="group text-left bg-white rounded-lg border border-[#E5E5E5] hover:border-[#999] hover:shadow-sm transition-all overflow-hidden"
     >
-      {template && (
-        <div
-          className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
-          style={{ backgroundColor: '#F4F4F5' }}
-        >
-          <Icon path={template.icon} size={0.75} color="#666" />
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <h4 className="text-[13px] font-semibold text-[#2B2B2B] truncate">{flow.name}</h4>
-        {flow.description && (
-          <p className="text-[11px] text-[#888] truncate">{flow.description}</p>
+      <div className="px-4 py-3 flex items-start gap-3">
+        {template && (
+          <div
+            className="w-9 h-9 rounded-md flex items-center justify-center shrink-0"
+            style={{ backgroundColor: '#F4F4F5' }}
+          >
+            <Icon path={template.icon} size={0.85} color="#666" />
+          </div>
         )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h4 className="text-[13px] font-semibold text-[#2B2B2B] truncate">{flow.name}</h4>
+            <span
+              className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-semibold shrink-0"
+              style={{ backgroundColor: colors.colorBlueDark5, color: colors.colorBlueDark1 }}
+            >
+              Nested
+            </span>
+          </div>
+          {flow.description && (
+            <p className="text-[11px] text-[#888] mt-0.5 line-clamp-2">{flow.description}</p>
+          )}
+          <p className="text-[10px] text-[#AAA] mt-1">
+            {flow.steps.length} step{flow.steps.length === 1 ? '' : 's'}
+          </p>
+        </div>
+        <Icon
+          path={mdiArrowRight}
+          size={0.6}
+          color="#BBB"
+          className="group-hover:text-[#666] transition-colors mt-1"
+        />
       </div>
-      <Icon path={mdiArrowRight} size={0.6} color="#BBB" className="group-hover:text-[#666] transition-colors" />
     </button>
   );
 }
