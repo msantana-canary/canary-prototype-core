@@ -22,6 +22,13 @@ import {
   useStepById,
 } from '@/lib/products/check-in-flows/store';
 
+/** ISO country code → unicode flag emoji. */
+function countryFlag(code: string): string {
+  if (!code || code.length !== 2) return '🏳️';
+  const base = 127397; // regional indicator offset
+  return String.fromCodePoint(...code.toUpperCase().split('').map((c) => c.charCodeAt(0) + base));
+}
+
 export function TopBar() {
   const nav = useCheckInFlowsStore((s) => s.nav);
   const properties = useCheckInFlowsStore((s) => s.properties);
@@ -102,17 +109,17 @@ export function TopBar() {
             <button
               key={p.id}
               onClick={() => setCurrentProperty(p.id)}
-              className={`shrink-0 h-8 px-3 rounded-full text-[12px] font-semibold transition-all border ${
+              className={`shrink-0 h-8 px-3 rounded-full text-[12px] font-semibold transition-all border flex items-center gap-1.5 ${
                 isActive
-                  ? 'bg-[#2B2B2B] text-white border-[#2B2B2B]'
+                  ? 'text-white'
                   : 'bg-white text-[#555] border-[#E5E5E5] hover:border-[#999]'
               }`}
               style={isActive ? { backgroundColor: colors.colorBlueDark1, borderColor: colors.colorBlueDark1 } : undefined}
             >
-              {p.name}
-              <span className={`ml-1.5 text-[10px] ${isActive ? 'opacity-80' : 'opacity-60'}`}>
-                {p.countryCode}
+              <span className="text-[13px] leading-none" aria-hidden>
+                {countryFlag(p.countryCode)}
               </span>
+              <span>{p.name}</span>
             </button>
           );
         })}

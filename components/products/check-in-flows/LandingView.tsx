@@ -15,6 +15,7 @@ import { useFlowsForCurrentProperty, useCheckInFlowsStore } from '@/lib/products
 import { PropertyContext } from './PropertyContext';
 import { FlowCard } from './FlowCard';
 import { RegionalInsights } from './RegionalInsights';
+import { WelcomeHint } from './WelcomeHint';
 
 export function LandingView() {
   const flows = useFlowsForCurrentProperty();
@@ -26,6 +27,9 @@ export function LandingView() {
   return (
     <div className="flex-1 overflow-auto" style={{ backgroundColor: '#FAFAFA' }}>
       <div className="max-w-[1400px] mx-auto px-8 py-6">
+        {/* One-time orientation */}
+        <WelcomeHint />
+
         {/* Property + flags */}
         <PropertyContext />
 
