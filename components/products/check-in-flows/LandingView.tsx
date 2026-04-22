@@ -14,6 +14,7 @@ import React from 'react';
 import { useFlowsForCurrentProperty, useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
 import { PropertyContext } from './PropertyContext';
 import { FlowCard } from './FlowCard';
+import { RegionalInsights } from './RegionalInsights';
 
 export function LandingView() {
   const flows = useFlowsForCurrentProperty();
@@ -27,6 +28,11 @@ export function LandingView() {
       <div className="max-w-[1400px] mx-auto px-8 py-6">
         {/* Property + flags */}
         <PropertyContext />
+
+        {/* Regional & brand insights */}
+        <div className="mt-5">
+          <RegionalInsights />
+        </div>
 
         {/* Main flows */}
         <div className="mt-8">
