@@ -55,9 +55,7 @@ export function StepEditorView() {
   const goToLanding = useCheckInFlowsStore((s) => s.goToLanding);
   const removeStep = useCheckInFlowsStore((s) => s.removeStep);
   const updateStep = useCheckInFlowsStore((s) => s.updateStep);
-  const role = useCheckInFlowsStore((s) => s.role);
-
-  const isReadOnly = role === 'hotel';
+  const isReadOnly = false;
   const [isEditingName, setIsEditingName] = useState(false);
   const [draftName, setDraftName] = useState(step?.name ?? '');
 

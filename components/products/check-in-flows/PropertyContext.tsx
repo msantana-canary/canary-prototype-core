@@ -82,9 +82,7 @@ export function PropertyContext() {
   const property = useCurrentProperty();
   const togglePropertyFeature = useCheckInFlowsStore((s) => s.togglePropertyFeature);
   const setBrandOverride = useCheckInFlowsStore((s) => s.setBrandOverride);
-  const role = useCheckInFlowsStore((s) => s.role);
-
-  const isReadOnly = role === 'hotel';
+  const isReadOnly = false;
   const currencyIcon = CURRENCY_ICON[property.currency] ?? mdiCash;
 
   return (

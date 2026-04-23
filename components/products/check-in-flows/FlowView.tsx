@@ -64,13 +64,12 @@ export function FlowView() {
   const flow = useFlowById(flowId);
   const property = useCurrentProperty();
   const reorderSteps = useCheckInFlowsStore((s) => s.reorderSteps);
-  const role = useCheckInFlowsStore((s) => s.role);
   const regenerateFlowsForProperty = useCheckInFlowsStore((s) => s.regenerateFlowsForProperty);
   const goToLanding = useCheckInFlowsStore((s) => s.goToLanding);
 
   const [isAddStepOpen, setIsAddStepOpen] = useState(false);
 
-  const isReadOnly = role === 'hotel';
+  const isReadOnly = false;
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -170,19 +169,6 @@ export function FlowView() {
               </div>
             )}
           </div>
-
-          {/* Hotel role notice */}
-          {isReadOnly && (
-            <div
-              className="mb-4 flex items-start gap-2 px-4 py-3 rounded-md border"
-              style={{ borderColor: colors.colorBlueDark4, backgroundColor: colors.colorBlueDark5 }}
-            >
-              <Icon path={mdiInformationOutline} size={0.7} color={colors.colorBlueDark1} className="mt-0.5 shrink-0" />
-              <p className="text-[12px]" style={{ color: colors.colorBlueDark1 }}>
-                You're viewing this flow as a hotel user. To change the configuration, contact Canary Support.
-              </p>
-            </div>
-          )}
 
           {/* Steps */}
           {flow.steps.length === 0 ? (

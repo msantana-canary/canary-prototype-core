@@ -18,7 +18,6 @@ import type {
   FlowDefinition,
   Property,
   PreviewContext,
-  UserRole,
   Surface,
   StepInstance,
   FieldDef,
@@ -61,9 +60,6 @@ interface CheckInFlowsState {
   previewSurface: Surface;
   previewLanguage: string;
 
-  // Role
-  role: UserRole;
-
   // ── Property / brand ────────────────────────────────────
   setCurrentProperty: (propertyId: string) => void;
   setBrandOverride: (propertyId: string, brand: Brand) => void;
@@ -97,9 +93,6 @@ interface CheckInFlowsState {
   setPreviewContext: (updates: Partial<PreviewContext>) => void;
   setPreviewSurface: (surface: Surface) => void;
   setPreviewLanguage: (lang: string) => void;
-
-  // ── Role ───────────────────────────────────────────────
-  setRole: (role: UserRole) => void;
 }
 
 // ── Default preview context ──────────────────────────────
@@ -129,8 +122,6 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
   previewContext: DEFAULT_PREVIEW,
   previewSurface: 'web',
   previewLanguage: 'en',
-
-  role: 'cs',
 
   // ── Property / brand ───────────────────────────────────
   setCurrentProperty: (propertyId) => {
@@ -313,9 +304,6 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
     previewContext: { ...state.previewContext, language: lang },
     previewLanguage: lang,
   })),
-
-  // ── Role ───────────────────────────────────────────────
-  setRole: (role) => set({ role }),
 }));
 
 // ── Derived hooks ─────────────────────────────────────────

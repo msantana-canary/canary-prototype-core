@@ -326,18 +326,6 @@ export interface PreviewContext {
   language: string;                // ISO 639-1
 }
 
-// ── View role (CS vs Hotel) ───────────────────────────────
-
-export type UserRole = 'cs' | 'hotel';
-
-export interface HotelPermissions {
-  canEditIdConsentLanguage: boolean;
-  canEditCompletionMessage: boolean;
-  canEditUpsells: boolean;
-  canEditLoyaltyWelcome: boolean;
-  // (Defaults: everything else is read-only to hotel)
-}
-
 // ── Helpers ───────────────────────────────────────────────
 
 export type LocalizedText = Record<string, string>;   // { 'en': '...', 'it': '...', ... }
