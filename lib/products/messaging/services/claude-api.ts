@@ -3,18 +3,45 @@
  *
  * Handles AI-powered guest response generation using Claude API.
  * Simulates realistic hotel guest conversations.
+ *
+ * Calls the server-side `/api/claude` route so the Anthropic API key is
+ * never exposed to the browser.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { Message } from '../types';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY,
-  dangerouslyAllowBrowser: true, // Required for client-side usage
-});
+type ClaudeMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+async function callClaude(
+  systemPrompt: string,
+  messages: ClaudeMessage[],
+  temperature: number,
+): Promise<string> {
+  const res = await fetch('/api/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ systemPrompt, messages, temperature }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Claude API route returned ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data.text ?? '';
+}
+
+function toClaudeMessages(conversationHistory: Message[]): ClaudeMessage[] {
+  return conversationHistory.slice(-10).map((msg) => ({
+    role: msg.sender === 'guest' ? ('user' as const) : ('assistant' as const),
+    content: msg.content,
+  }));
+}
 
 /**
  * Generate a guest response using Claude API
@@ -22,39 +49,15 @@ const anthropic = new Anthropic({
 export async function generateGuestResponse(
   guest: Guest,
   reservation: Reservation | undefined,
-  conversationHistory: Message[]
+  conversationHistory: Message[],
 ): Promise<string> {
   try {
-    // Build system prompt with guest context
     const systemPrompt = buildSystemPrompt(guest, reservation);
-
-    // Convert conversation history to Claude format
-    const claudeMessages = conversationHistory
-      .slice(-10) // Only use last 10 messages for context
-      .map((msg) => ({
-        role: msg.sender === 'guest' ? ('user' as const) : ('assistant' as const),
-        content: msg.content,
-      }));
-
-    // Call Claude API
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 500,
-      temperature: 0.8,
-      system: systemPrompt,
-      messages: claudeMessages.length > 0 ? claudeMessages : [
-        { role: 'user', content: 'Hello' }
-      ],
-    });
-
-    // Extract text from response
-    const textContent = response.content.find((block) => block.type === 'text');
-    return textContent && textContent.type === 'text'
-      ? textContent.text
-      : "Thank you for your message. I'll get back to you shortly.";
+    const claudeMessages = toClaudeMessages(conversationHistory);
+    const text = await callClaude(systemPrompt, claudeMessages, 0.8);
+    return text || "Thank you for your message. I'll get back to you shortly.";
   } catch (error) {
     console.error('Claude API error:', error);
-    // Fallback response on error
     return "Thank you for your message. I'll get back to you shortly.";
   }
 }
@@ -65,36 +68,13 @@ export async function generateGuestResponse(
 export async function generateStaffResponse(
   guest: Guest,
   reservation: Reservation | undefined,
-  conversationHistory: Message[]
+  conversationHistory: Message[],
 ): Promise<string> {
   try {
-    // Build system prompt for staff
     const systemPrompt = buildStaffSystemPrompt(guest, reservation);
-
-    // Convert conversation history to Claude format
-    const claudeMessages = conversationHistory
-      .slice(-10) // Only use last 10 messages for context
-      .map((msg) => ({
-        role: msg.sender === 'guest' ? ('user' as const) : ('assistant' as const),
-        content: msg.content,
-      }));
-
-    // Call Claude API
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 500,
-      temperature: 0.7,
-      system: systemPrompt,
-      messages: claudeMessages.length > 0 ? claudeMessages : [
-        { role: 'user', content: 'Hello' }
-      ],
-    });
-
-    // Extract text from response
-    const textContent = response.content.find((block) => block.type === 'text');
-    return textContent && textContent.type === 'text'
-      ? textContent.text
-      : "I'll help you with that right away!";
+    const claudeMessages = toClaudeMessages(conversationHistory);
+    const text = await callClaude(systemPrompt, claudeMessages, 0.7);
+    return text || "I'll help you with that right away!";
   } catch (error) {
     console.error('Claude API error (staff):', error);
     return "I'll help you with that right away!";
