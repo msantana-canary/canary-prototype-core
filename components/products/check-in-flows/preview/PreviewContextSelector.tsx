@@ -6,6 +6,10 @@
  * Inputs for simulating guest state on the Live Preview tab. Changing
  * these values drives condition evaluation → the preview updates in
  * real time.
+ *
+ * Scoped narrow for MVP: nationality + loyalty status. Engineering
+ * adds more parameters (age, rate code, length of stay, etc.) as CS
+ * needs them.
  */
 
 import React from 'react';
@@ -13,20 +17,13 @@ import Icon from '@mdi/react';
 import {
   mdiEarth,
   mdiStarOutline,
-  mdiRepeat,
-  mdiAccountCheckOutline,
-  mdiBriefcaseOutline,
-  mdiCalendarOutline,
   mdiTranslate,
 } from '@mdi/js';
-import { colors } from '@canary-ui/components';
 
 import { useCheckInFlowsStore, useCurrentProperty } from '@/lib/products/check-in-flows/store';
 import {
   COUNTRIES,
   LOYALTY_TIERS,
-  RATE_CODES,
-  RESERVATION_SOURCES,
 } from '@/lib/products/check-in-flows/condition-meta';
 
 export function PreviewContextSelector() {
@@ -46,22 +43,22 @@ export function PreviewContextSelector() {
         </p>
       </div>
 
-      {/* Language */}
-      <Row icon={mdiTranslate} label="Language">
-        <select
-          value={ctx.language}
-          onChange={(e) => setLang(e.target.value)}
-          className="w-full h-8 px-2 rounded-md border border-[#E5E5E5] bg-white text-[12px]"
-        >
-          {property.defaultLanguages.map((lang) => (
-            <option key={lang} value={lang}>
-              {lang.toUpperCase()}
-            </option>
-          ))}
-        </select>
-      </Row>
+      {property.defaultLanguages.length > 1 && (
+        <Row icon={mdiTranslate} label="Language">
+          <select
+            value={ctx.language}
+            onChange={(e) => setLang(e.target.value)}
+            className="w-full h-8 px-2 rounded-md border border-[#E5E5E5] bg-white text-[12px]"
+          >
+            {property.defaultLanguages.map((lang) => (
+              <option key={lang} value={lang}>
+                {lang.toUpperCase()}
+              </option>
+            ))}
+          </select>
+        </Row>
+      )}
 
-      {/* Nationality */}
       <Row icon={mdiEarth} label="Nationality">
         <select
           value={ctx.guestNationalityCode}
@@ -76,7 +73,6 @@ export function PreviewContextSelector() {
         </select>
       </Row>
 
-      {/* Loyalty tier */}
       <Row icon={mdiStarOutline} label="Loyalty">
         <select
           value={ctx.loyaltyTier}
@@ -91,75 +87,9 @@ export function PreviewContextSelector() {
         </select>
       </Row>
 
-      {/* Age */}
-      <Row icon={mdiAccountCheckOutline} label="Age">
-        <input
-          type="number"
-          value={ctx.guestAge}
-          onChange={(e) => setCtx({ guestAge: Number(e.target.value) || 0 })}
-          className="w-full h-8 px-2 rounded-md border border-[#E5E5E5] bg-white text-[12px]"
-        />
-      </Row>
-
-      {/* Returning guest */}
-      <Row icon={mdiRepeat} label="Returning">
-        <select
-          value={ctx.isReturningGuest ? 'yes' : 'no'}
-          onChange={(e) => setCtx({ isReturningGuest: e.target.value === 'yes' })}
-          className="w-full h-8 px-2 rounded-md border border-[#E5E5E5] bg-white text-[12px]"
-        >
-          <option value="no">First-time guest</option>
-          <option value="yes">Returning guest</option>
-        </select>
-      </Row>
-
-      {/* Reservation source */}
-      <Row icon={mdiBriefcaseOutline} label="Source">
-        <select
-          value={ctx.reservationSource}
-          onChange={(e) => setCtx({ reservationSource: e.target.value as any })}
-          className="w-full h-8 px-2 rounded-md border border-[#E5E5E5] bg-white text-[12px]"
-        >
-          {RESERVATION_SOURCES.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-      </Row>
-
-      {/* Rate code */}
-      <Row icon={mdiBriefcaseOutline} label="Rate code">
-        <select
-          value={ctx.rateCode}
-          onChange={(e) => setCtx({ rateCode: e.target.value })}
-          className="w-full h-8 px-2 rounded-md border border-[#E5E5E5] bg-white text-[12px]"
-        >
-          {RATE_CODES.map((r) => (
-            <option key={r.value} value={r.value}>
-              {r.label}
-            </option>
-          ))}
-        </select>
-      </Row>
-
-      {/* Length of stay */}
-      <Row icon={mdiCalendarOutline} label="Nights">
-        <input
-          type="number"
-          min={1}
-          value={ctx.lengthOfStay}
-          onChange={(e) => setCtx({ lengthOfStay: Math.max(1, Number(e.target.value) || 1) })}
-          className="w-full h-8 px-2 rounded-md border border-[#E5E5E5] bg-white text-[12px]"
-        />
-      </Row>
-
-      {/* Property quick-context readout */}
       <div className="pt-3 border-t border-[#F4F4F5]">
         <p className="text-[11px] text-[#888] leading-relaxed">
-          Rendering for <strong>{property.name}</strong> in{' '}
-          <strong>{property.country}</strong>. Preview content is localized to{' '}
-          <strong>{ctx.language.toUpperCase()}</strong>.
+          Rendering for <strong>{property.name}</strong>.
         </p>
       </div>
     </div>

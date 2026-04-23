@@ -28,8 +28,6 @@ import {
   LOYALTY_TIERS,
   OPERATOR_LABELS,
   PARAMETER_MAP,
-  RATE_CODES,
-  RESERVATION_SOURCES,
   getAllowedActions,
   type ParameterMeta,
 } from '@/lib/products/check-in-flows/condition-meta';
@@ -274,38 +272,6 @@ function ValueInput({
           options={LOYALTY_TIERS.map((t) => ({ value: t.value, label: t.label }))}
         />
       );
-    case 'reservation-source':
-      return isMultiValue ? (
-        <MultiSelect
-          value={(value as string[]) ?? []}
-          options={RESERVATION_SOURCES}
-          onChange={onChange}
-          disabled={disabled}
-        />
-      ) : (
-        <Select
-          value={String(value ?? 'direct')}
-          disabled={disabled}
-          onChange={onChange}
-          options={RESERVATION_SOURCES}
-        />
-      );
-    case 'rate-code':
-      return isMultiValue ? (
-        <MultiSelect
-          value={(value as string[]) ?? []}
-          options={RATE_CODES}
-          onChange={onChange}
-          disabled={disabled}
-        />
-      ) : (
-        <Select
-          value={String(value ?? 'BAR')}
-          disabled={disabled}
-          onChange={onChange}
-          options={RATE_CODES}
-        />
-      );
     case 'number':
       return (
         <input
@@ -333,8 +299,6 @@ function getDefaultValue(valueType: string): any {
   switch (valueType) {
     case 'country-code': return 'US';
     case 'loyalty-tier': return 'club-member';
-    case 'reservation-source': return 'direct';
-    case 'rate-code': return 'BAR';
     case 'number': return 0;
     case 'boolean': return undefined;
     default: return '';

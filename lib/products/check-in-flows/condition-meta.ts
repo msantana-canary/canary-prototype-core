@@ -30,20 +30,6 @@ export const CONDITION_PARAMETERS: ParameterMeta[] = [
     description: 'Guest\'s country of citizenship',
   },
   {
-    id: 'age',
-    displayName: 'Age',
-    valueType: 'number',
-    allowedOperators: ['equals', 'greater-than', 'less-than'],
-    description: 'Guest\'s age in years',
-  },
-  {
-    id: 'loyalty-tier',
-    displayName: 'Loyalty Tier',
-    valueType: 'loyalty-tier',
-    allowedOperators: ['equals', 'not-equals', 'in', 'not-in'],
-    description: 'Loyalty status (Club, Silver, Gold, Platinum, Diamond)',
-  },
-  {
     id: 'loyalty-member',
     displayName: 'Is Loyalty Member',
     valueType: 'boolean',
@@ -51,32 +37,11 @@ export const CONDITION_PARAMETERS: ParameterMeta[] = [
     description: 'True if guest is any loyalty-program member',
   },
   {
-    id: 'returning-guest',
-    displayName: 'Returning Guest',
-    valueType: 'boolean',
-    allowedOperators: ['is-true', 'is-false'],
-    description: 'True if guest has a prior reservation at this property',
-  },
-  {
-    id: 'reservation-source',
-    displayName: 'Reservation Source',
-    valueType: 'reservation-source',
-    allowedOperators: ['equals', 'not-equals', 'in'],
-    description: 'How the booking was made (direct, OTA, corporate, group)',
-  },
-  {
-    id: 'rate-code',
-    displayName: 'Rate Code',
-    valueType: 'rate-code',
-    allowedOperators: ['equals', 'not-equals', 'in'],
-    description: 'Rate plan on the reservation (BAR, CORP, AAA, etc.)',
-  },
-  {
-    id: 'length-of-stay',
-    displayName: 'Length of Stay',
-    valueType: 'number',
-    allowedOperators: ['equals', 'greater-than', 'less-than'],
-    description: 'Number of nights reserved',
+    id: 'loyalty-tier',
+    displayName: 'Loyalty Tier',
+    valueType: 'loyalty-tier',
+    allowedOperators: ['equals', 'not-equals', 'in', 'not-in'],
+    description: 'Loyalty status (Club, Silver, Gold, Platinum, Diamond)',
   },
 ];
 
@@ -188,20 +153,3 @@ export const LOYALTY_TIERS: { value: LoyaltyTier; label: string }[] = [
   { value: 'diamond-elite', label: 'Diamond Elite' },
 ];
 
-export const RATE_CODES: { value: string; label: string }[] = [
-  { value: 'BAR', label: 'BAR (Best Available)' },
-  { value: 'CORP', label: 'CORP (Corporate)' },
-  { value: 'AAA', label: 'AAA' },
-  { value: 'GOV', label: 'GOV (Government)' },
-  { value: 'LEISURE', label: 'LEISURE' },
-  { value: 'WEEKEND', label: 'WEEKEND' },
-  { value: 'PKG', label: 'PKG (Package)' },
-  { value: 'RACK', label: 'RACK' },
-];
-
-export const RESERVATION_SOURCES: { value: string; label: string }[] = [
-  { value: 'direct', label: 'Direct booking' },
-  { value: 'ota', label: 'OTA (Booking, Expedia, etc.)' },
-  { value: 'corporate', label: 'Corporate' },
-  { value: 'group', label: 'Group booking' },
-];
