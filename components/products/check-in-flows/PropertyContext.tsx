@@ -37,20 +37,10 @@ const FLAG_GROUPS: {
   flags: { key: keyof PropertyFeatureFlags; label: string; hint?: string }[];
 }[] = [
   {
-    title: 'Surfaces',
-    flags: [
-      { key: 'hasCheckIn', label: 'Web + Mobile Check-In' },
-      { key: 'hasTabletReg', label: 'Tablet Registration' },
-      { key: 'hasKiosk', label: 'Kiosk' },
-      { key: 'hasMobileApp', label: 'Mobile App' },
-    ],
-  },
-  {
     title: 'Identity & Verification',
     flags: [
       { key: 'hasIdVerification', label: 'ID Verification' },
       { key: 'hasOcr', label: 'OCR (ID scan)' },
-      { key: 'hasIdEncodeIntegration', label: 'ENCODE Provider', hint: 'Brand-specific perk' },
     ],
   },
   {
@@ -64,16 +54,7 @@ const FLAG_GROUPS: {
     flags: [
       { key: 'hasUpsells', label: 'Upsells' },
       { key: 'hasMobileKey', label: 'Mobile Key' },
-      { key: 'hasAccompanyingGuests', label: 'Accompanying Guests' },
-      { key: 'hasGuestProfile', label: 'Guest Profile' },
       { key: 'hasLoyaltyProgram', label: 'Loyalty Program' },
-    ],
-  },
-  {
-    title: 'Regional Compliance',
-    flags: [
-      { key: 'hasStbCompliance', label: 'Singapore Tourism Board (STB)' },
-      { key: 'hasAlloggiatiCompliance', label: 'Italian Alloggiati' },
     ],
   },
 ];

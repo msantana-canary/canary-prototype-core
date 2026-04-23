@@ -110,19 +110,6 @@ export function createBlankStepFromTemplate(
         },
       };
 
-    case 'id-verification':
-      return {
-        ...base,
-        config: {
-          kind: 'preset',
-          presetType: 'id-verification',
-          requireSelfie: true,
-          requireFront: true,
-          requireBack: true,
-          provider: property.features.hasIdEncodeIntegration ? 'encode' : 'canary',
-        },
-      };
-
     case 'credit-card':
       return {
         ...base,
@@ -161,22 +148,6 @@ export function createBlankStepFromTemplate(
         },
       };
 
-    case 'stb-compliance':
-    case 'alloggiati-compliance':
-      return {
-        ...base,
-        config: {
-          kind: 'preset',
-          presetType: templateId,
-          heading: localize(
-            templateId === 'stb-compliance' ? 'STB Disclosure' : 'Alloggiati Disclosure'
-          ),
-          body: localize('Regional compliance notice.'),
-          regulationRef:
-            templateId === 'stb-compliance' ? 'Singapore Tourism Board' : 'Italian Law 773/1931',
-        },
-      };
-
     case 'completion':
       return {
         ...base,
@@ -190,28 +161,12 @@ export function createBlankStepFromTemplate(
       };
 
     case 'upsells':
-    case 'mobile-key':
-    case 'accompanying-guest':
-    case 'guest-profile':
       return {
         ...base,
-        isSkippable: templateId === 'upsells' || templateId === 'mobile-key',
+        isSkippable: true,
         config: {
           kind: 'nested-flow',
-          nestedFlowId: `${property.id}-${templateId}`,
-          loopUntilComplete: templateId === 'accompanying-guest',
-        },
-      };
-
-    case 'group-assignment':
-      return {
-        ...base,
-        config: {
-          kind: 'preset',
-          presetType: 'completion',   // using completion shape as a placeholder
-          heading: localize('Group Assignment'),
-          body: localize('Assign reservations in your group booking.'),
-          ctaLabel: localize('Continue'),
+          nestedFlowId: `${property.id}-upsells`,
         },
       };
   }

@@ -141,60 +141,10 @@ function buildIdConsentStep(flowId: string): StepInstance {
   };
 }
 
-function buildIdCaptureStep(flowId: string, property: Property): StepInstance {
-  // Default ID type options — depend on country
-  const isItaly = property.countryCode === 'IT';
-
-  const idTypeOptions: StepInstance['config'] = {
-    kind: 'preset',
-    presetType: 'id-capture',
-    allowMultipleIds: false,
-    idTypeOptions: [
-      {
-        id: 'opt-passport',
-        value: 'passport',
-        label: localize('Passport', 'Passaporto', '护照'),
-        order: 1,
-      },
-      {
-        id: 'opt-drivers-license',
-        value: 'drivers-license',
-        label: localize('Driver\'s License', 'Patente di guida', '驾照'),
-        order: 2,
-        // Italian hotels: driver's license only accepted for Italian nationals (Alloggiati)
-        conditions: isItaly
-          ? [
-              {
-                id: 'cond-it-dl',
-                parameter: 'nationality',
-                operator: 'equals',
-                value: 'IT',
-                action: 'show-option',
-              },
-            ]
-          : undefined,
-      },
-      {
-        id: 'opt-national-id',
-        value: 'national-id',
-        label: localize('National ID', 'Carta d\'identità', '身份证'),
-        order: 3,
-        // Italian hotels: national ID only for EU nationals
-        conditions: isItaly
-          ? [
-              {
-                id: 'cond-it-nid',
-                parameter: 'nationality',
-                operator: 'in',
-                value: ['IT', 'FR', 'DE', 'ES', 'NL', 'BE', 'AT', 'PT', 'IE', 'FI', 'SE', 'DK', 'PL', 'CZ'],
-                action: 'show-option',
-              },
-            ]
-          : undefined,
-      },
-    ],
-  };
-
+function buildIdCaptureStep(flowId: string, _property: Property): StepInstance {
+  // Default ID type options. The Driver's License + National ID options
+  // ship with nationality conditions attached as demo examples of the
+  // per-option conditional gating. Passport is always visible.
   return {
     id: nextStepId(flowId),
     templateId: 'id-capture',
@@ -202,27 +152,48 @@ function buildIdCaptureStep(flowId: string, property: Property): StepInstance {
     kind: 'preset',
     isSkippable: false,
     order: 0,
-    config: idTypeOptions,
-  };
-}
-
-function buildIdVerificationStep(flowId: string, property: Property): StepInstance {
-  // Wyndham properties with ENCODE get the ENCODE provider
-  const provider = property.features.hasIdEncodeIntegration ? 'encode' : 'canary';
-  return {
-    id: nextStepId(flowId),
-    templateId: 'id-verification',
-    name: 'ID Verification',
-    kind: 'preset',
-    isSkippable: false,
-    order: 0,
     config: {
       kind: 'preset',
-      presetType: 'id-verification',
-      requireSelfie: true,
-      requireFront: true,
-      requireBack: true,
-      provider,
+      presetType: 'id-capture',
+      allowMultipleIds: false,
+      idTypeOptions: [
+        {
+          id: 'opt-passport',
+          value: 'passport',
+          label: localize('Passport'),
+          order: 0,
+        },
+        {
+          id: 'opt-drivers-license',
+          value: 'drivers-license',
+          label: localize('Driver\'s License'),
+          order: 1,
+          conditions: [
+            {
+              id: 'cond-it-dl',
+              parameter: 'nationality',
+              operator: 'equals',
+              value: 'IT',
+              action: 'show-option',
+            },
+          ],
+        },
+        {
+          id: 'opt-national-id',
+          value: 'national-id',
+          label: localize('National ID'),
+          order: 2,
+          conditions: [
+            {
+              id: 'cond-eu-nid',
+              parameter: 'nationality',
+              operator: 'in',
+              value: ['IT', 'FR', 'DE', 'ES', 'NL', 'BE', 'AT', 'PT', 'IE', 'FI', 'SE', 'DK', 'PL', 'CZ'],
+              action: 'show-option',
+            },
+          ],
+        },
+      ],
     },
   };
 }
@@ -298,62 +269,18 @@ function buildLoyaltyWelcomeStep(flowId: string, property: Property): StepInstan
   };
 }
 
-function buildComplianceStep(flowId: string, presetType: 'stb-compliance' | 'alloggiati-compliance'): StepInstance {
-  if (presetType === 'stb-compliance') {
-    return {
-      id: nextStepId(flowId),
-      templateId: 'stb-compliance',
-      name: 'STB Compliance',
-      kind: 'preset',
-      isSkippable: false,
-      order: 0,
-      config: {
-        kind: 'preset',
-        presetType: 'stb-compliance',
-        heading: localize('Singapore Tourism Board Disclosure'),
-        body: localize('Per Singapore Tourism Board regulations, your stay information will be submitted to the STB registry. Required by Singaporean law.'),
-        regulationRef: 'Singapore Tourism Board (STB)',
-      },
-    };
-  }
+function buildUpsellsNestedStep(flowId: string, nestedFlowId: string): StepInstance {
+  const template = getStepTemplateMeta('upsells');
   return {
     id: nextStepId(flowId),
-    templateId: 'alloggiati-compliance',
-    name: 'Alloggiati Compliance',
-    kind: 'preset',
-    isSkippable: false,
-    order: 0,
-    config: {
-      kind: 'preset',
-      presetType: 'alloggiati-compliance',
-      heading: localize('Alloggiati Web Disclosure', 'Dichiarazione Alloggiati Web'),
-      body: localize(
-        'Per Italian Law 773/1931, guest information must be reported to the Polizia di Stato via Alloggiati Web within 24 hours.',
-        'Ai sensi della Legge 773/1931, le informazioni dell\'ospite devono essere comunicate alla Polizia di Stato tramite Alloggiati Web entro 24 ore.'
-      ),
-      regulationRef: 'Italian Law 773/1931',
-    },
-  };
-}
-
-function buildNestedFlowStep(
-  flowId: string,
-  templateId: 'upsells' | 'mobile-key' | 'accompanying-guest' | 'guest-profile',
-  nestedFlowId: string
-): StepInstance {
-  const loopUntilComplete = templateId === 'accompanying-guest';
-  const template = getStepTemplateMeta(templateId);
-  return {
-    id: nextStepId(flowId),
-    templateId,
+    templateId: 'upsells',
     name: template.displayName,
     kind: 'nested-flow',
-    isSkippable: templateId === 'upsells' || templateId === 'mobile-key',
+    isSkippable: true,
     order: 0,
     config: {
       kind: 'nested-flow',
       nestedFlowId,
-      loopUntilComplete,
     },
   };
 }
@@ -385,7 +312,7 @@ export function generateDefaultFlow(
   flowName: string
 ): FlowDefinition {
   const steps: StepInstance[] = [];
-  const { features, countryCode } = property;
+  const { features } = property;
 
   // Reset counter so IDs are predictable per flow
   stepCounter = 0;
@@ -393,11 +320,6 @@ export function generateDefaultFlow(
   // Loyalty welcome (conditional — show only if member)
   if (features.hasLoyaltyProgram) {
     steps.push(buildLoyaltyWelcomeStep(flowId, property));
-  }
-
-  // Guest profile (nested flow — recognizes returning guests)
-  if (features.hasGuestProfile) {
-    steps.push(buildNestedFlowStep(flowId, 'guest-profile', `${property.id}-guest-profile`));
   }
 
   // Registration card (always)
@@ -408,24 +330,10 @@ export function generateDefaultFlow(
     steps.push(buildOcrStep(flowId));
   }
 
-  // ID verification sub-flow
+  // ID consent + capture
   if (features.hasIdVerification) {
     steps.push(buildIdConsentStep(flowId));
     steps.push(buildIdCaptureStep(flowId, property));
-    steps.push(buildIdVerificationStep(flowId, property));
-  }
-
-  // Regional compliance
-  if (features.hasStbCompliance && countryCode === 'SG') {
-    steps.push(buildComplianceStep(flowId, 'stb-compliance'));
-  }
-  if (features.hasAlloggiatiCompliance && countryCode === 'IT') {
-    steps.push(buildComplianceStep(flowId, 'alloggiati-compliance'));
-  }
-
-  // Accompanying guests (nested loop)
-  if (features.hasAccompanyingGuests) {
-    steps.push(buildNestedFlowStep(flowId, 'accompanying-guest', `${property.id}-accompanying-guest`));
   }
 
   // Credit card
@@ -438,12 +346,7 @@ export function generateDefaultFlow(
 
   // Upsells (nested)
   if (features.hasUpsells) {
-    steps.push(buildNestedFlowStep(flowId, 'upsells', `${property.id}-upsells`));
-  }
-
-  // Mobile key (nested)
-  if (features.hasMobileKey) {
-    steps.push(buildNestedFlowStep(flowId, 'mobile-key', `${property.id}-mobile-key`));
+    steps.push(buildUpsellsNestedStep(flowId, `${property.id}-upsells`));
   }
 
   // Completion

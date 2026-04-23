@@ -79,17 +79,10 @@ export type StepTemplateId =
   | 'ocr'
   | 'id-consent'
   | 'id-capture'
-  | 'id-verification'
   | 'credit-card'
   | 'deposit-collection'
   | 'loyalty-welcome'
-  | 'guest-profile'
   | 'upsells'
-  | 'mobile-key'
-  | 'accompanying-guest'
-  | 'group-assignment'
-  | 'stb-compliance'
-  | 'alloggiati-compliance'
   | 'completion';
 
 export type StepKind = 'schema-form' | 'preset' | 'nested-flow';
@@ -112,11 +105,9 @@ export type StepConfig =
   | SchemaFormConfig
   | IdConsentConfig
   | IdCaptureConfig
-  | IdVerificationConfig
   | CreditCardConfig
   | DepositCollectionConfig
   | LoyaltyWelcomeConfig
-  | ComplianceConfig
   | NestedFlowConfig
   | CompletionConfig;
 
@@ -149,15 +140,6 @@ export interface IdTypeOption {
   order: number;
 }
 
-export interface IdVerificationConfig {
-  kind: 'preset';
-  presetType: 'id-verification';
-  requireSelfie: boolean;
-  requireFront: boolean;
-  requireBack: boolean;
-  provider: 'canary' | 'encode' | 'persona';
-}
-
 export interface CreditCardConfig {
   kind: 'preset';
   presetType: 'credit-card';
@@ -181,14 +163,6 @@ export interface LoyaltyWelcomeConfig {
   heading: LocalizedText;
   body: LocalizedText;
   programName: string;
-}
-
-export interface ComplianceConfig {
-  kind: 'preset';
-  presetType: 'stb-compliance' | 'alloggiati-compliance';
-  heading: LocalizedText;
-  body: LocalizedText;
-  regulationRef: string;      // e.g., "Singapore Tourism Board", "Italian Law 773/1931"
 }
 
 export interface NestedFlowConfig {

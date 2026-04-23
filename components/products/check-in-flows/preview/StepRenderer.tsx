@@ -21,11 +21,8 @@ import {
   mdiSafeSquareOutline,
   mdiStarOutline,
   mdiCheckCircleOutline,
-  mdiScaleBalance,
   mdiLinkVariant,
   mdiAlertCircleOutline,
-  mdiFaceManOutline,
-  mdiCameraOutline,
 } from '@mdi/js';
 
 import type {
@@ -36,7 +33,6 @@ import type {
   CreditCardConfig,
   DepositCollectionConfig,
   LoyaltyWelcomeConfig,
-  ComplianceConfig,
   CompletionConfig,
   NestedFlowConfig,
   PreviewContext,
@@ -74,12 +70,9 @@ export function StepRenderer({ step, ctx }: Props) {
     switch (cfg.presetType) {
       case 'id-consent': return <IdConsentPreview cfg={cfg} ctx={ctx} />;
       case 'id-capture': return <IdCapturePreview cfg={cfg} ctx={ctx} />;
-      case 'id-verification': return <IdVerificationPreview step={step} ctx={ctx} />;
       case 'credit-card': return <CreditCardPreview cfg={cfg} ctx={ctx} />;
       case 'deposit-collection': return <DepositCollectionPreview cfg={cfg} ctx={ctx} />;
       case 'loyalty-welcome': return <LoyaltyWelcomePreview cfg={cfg} ctx={ctx} />;
-      case 'stb-compliance':
-      case 'alloggiati-compliance': return <CompliancePreview cfg={cfg as ComplianceConfig} ctx={ctx} />;
       case 'completion': return <CompletionPreview cfg={cfg} ctx={ctx} />;
     }
   }
@@ -389,40 +382,6 @@ function IdCapturePreview({ cfg, ctx }: { cfg: IdCaptureConfig; ctx: PreviewCont
   );
 }
 
-function IdVerificationPreview({ step, ctx }: { step: StepInstance; ctx: PreviewContext }) {
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto">
-        <PreviewHeader step={step} ctx={ctx} icon={mdiShieldCheckOutline} />
-        <div className="px-5 pb-4 space-y-3">
-          <div className="rounded-lg border border-[#DDD] bg-[#FAFAFA] p-4 flex items-center gap-3">
-            <Icon path={mdiFaceManOutline} size={1.4} color={STATLER_GOLD} />
-            <div>
-              <div className="text-[13px] font-semibold text-[#2B2B2B]">Take a selfie</div>
-              <div className="text-[11px] text-[#666]">So we can match your face to your ID</div>
-            </div>
-          </div>
-          <div className="rounded-lg border border-[#DDD] bg-[#FAFAFA] p-4 flex items-center gap-3">
-            <Icon path={mdiCameraOutline} size={1.4} color={STATLER_GOLD} />
-            <div>
-              <div className="text-[13px] font-semibold text-[#2B2B2B]">Capture front of ID</div>
-              <div className="text-[11px] text-[#666]">Photo of the side with your name</div>
-            </div>
-          </div>
-          <div className="rounded-lg border border-[#DDD] bg-[#FAFAFA] p-4 flex items-center gap-3">
-            <Icon path={mdiCameraOutline} size={1.4} color={STATLER_GOLD} />
-            <div>
-              <div className="text-[13px] font-semibold text-[#2B2B2B]">Capture back of ID</div>
-              <div className="text-[11px] text-[#666]">Photo of the reverse side</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <PrimaryCTA label="Start verification" />
-    </div>
-  );
-}
-
 function CreditCardPreview({ cfg, ctx }: { cfg: CreditCardConfig; ctx: PreviewContext }) {
   return (
     <div className="flex flex-col h-full">
@@ -525,31 +484,6 @@ function LoyaltyWelcomePreview({ cfg, ctx }: { cfg: LoyaltyWelcomeConfig; ctx: P
         </div>
       </div>
       <PrimaryCTA label="Continue" />
-    </div>
-  );
-}
-
-function CompliancePreview({ cfg, ctx }: { cfg: ComplianceConfig; ctx: PreviewContext }) {
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto px-5 pt-6 pb-4 flex flex-col gap-3">
-        <div
-          className="w-14 h-14 rounded-lg flex items-center justify-center"
-          style={{ backgroundColor: '#F4E9D8' }}
-        >
-          <Icon path={mdiScaleBalance} size={1.4} color={STATLER_GOLD} />
-        </div>
-        <h1 className="text-[22px] font-bold text-[#2B2B2B] leading-tight">
-          {resolveText(cfg.heading, ctx.language)}
-        </h1>
-        <p className="text-[13px] text-[#555] leading-snug whitespace-pre-wrap">
-          {resolveText(cfg.body, ctx.language)}
-        </p>
-        <div className="mt-auto text-[10px] uppercase tracking-wider text-[#888]">
-          Regulation: {cfg.regulationRef}
-        </div>
-      </div>
-      <PrimaryCTA label="I understand" />
     </div>
   );
 }

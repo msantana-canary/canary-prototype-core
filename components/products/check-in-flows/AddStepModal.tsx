@@ -39,10 +39,8 @@ interface AddStepModalProps {
 const CATEGORY_LABELS: Record<TemplateCategory, string> = {
   identity: 'Identity',
   payment: 'Payment',
-  preferences: 'Preferences',
   loyalty: 'Loyalty',
   nested: 'Nested Flows',
-  compliance: 'Compliance',
   other: 'Other',
 };
 

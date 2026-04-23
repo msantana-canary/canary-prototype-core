@@ -4,6 +4,10 @@
  * Engineering-provided step templates that CS assembles into flows.
  * Each template has metadata (icon, category, supported surfaces,
  * feature-flag dependency) used by the add-step picker and flow generator.
+ *
+ * Scoped intentionally narrow for MVP — compliance, id-verification,
+ * group-assignment, guest-profile, mobile-key, accompanying-guest are
+ * all known patterns we'll model later. Catalog is additive.
  */
 
 import {
@@ -11,22 +15,16 @@ import {
   mdiTextBoxSearchOutline,
   mdiFileCheckOutline,
   mdiCardAccountDetailsOutline,
-  mdiShieldCheckOutline,
   mdiCreditCardOutline,
   mdiSafeSquareOutline,
   mdiStarOutline,
-  mdiAccountCheckOutline,
   mdiTagOutline,
-  mdiKeyOutline,
-  mdiAccountMultipleOutline,
-  mdiAccountGroupOutline,
-  mdiScaleBalance,
   mdiCheckCircleOutline,
 } from '@mdi/js';
 
 import type { StepTemplateId, StepKind, Surface, PropertyFeatureFlags } from './types';
 
-export type TemplateCategory = 'identity' | 'payment' | 'preferences' | 'loyalty' | 'nested' | 'compliance' | 'other';
+export type TemplateCategory = 'identity' | 'payment' | 'loyalty' | 'nested' | 'other';
 
 export interface StepTemplateMeta {
   id: StepTemplateId;
@@ -38,8 +36,6 @@ export interface StepTemplateMeta {
   supportedSurfaces: Surface[];
   /** If set, the property must have this feature flag enabled. */
   featureFlag?: keyof PropertyFeatureFlags;
-  /** If set, step only appears when this country code matches (e.g., Alloggiati for IT). */
-  countryGate?: string;
 }
 
 export const STEP_TEMPLATES: StepTemplateMeta[] = [
@@ -75,21 +71,11 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
   {
     id: 'id-capture',
     displayName: 'ID Capture',
-    description: 'Photo of government-issued ID',
+    description: 'Photo of government-issued ID with optional nationality-gated options',
     kind: 'preset',
     icon: mdiCardAccountDetailsOutline,
     category: 'identity',
     supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
-    featureFlag: 'hasIdVerification',
-  },
-  {
-    id: 'id-verification',
-    displayName: 'ID Verification',
-    description: 'Selfie + front/back for biometric match',
-    kind: 'preset',
-    icon: mdiShieldCheckOutline,
-    category: 'identity',
-    supportedSurfaces: ['web', 'mobile-web', 'mobile-app'],
     featureFlag: 'hasIdVerification',
   },
   {
@@ -122,16 +108,6 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     featureFlag: 'hasLoyaltyProgram',
   },
   {
-    id: 'guest-profile',
-    displayName: 'Guest Profile',
-    description: 'Show returning guest profile if recognized',
-    kind: 'nested-flow',
-    icon: mdiAccountCheckOutline,
-    category: 'loyalty',
-    supportedSurfaces: ['web', 'mobile-web', 'mobile-app'],
-    featureFlag: 'hasGuestProfile',
-  },
-  {
     id: 'upsells',
     displayName: 'Upsells',
     description: 'Offer room upgrades, add-ons, early check-in',
@@ -140,57 +116,6 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     category: 'nested',
     supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
     featureFlag: 'hasUpsells',
-  },
-  {
-    id: 'mobile-key',
-    displayName: 'Mobile Key',
-    description: 'Send mobile key link',
-    kind: 'nested-flow',
-    icon: mdiKeyOutline,
-    category: 'nested',
-    supportedSurfaces: ['web', 'mobile-web', 'mobile-app'],
-    featureFlag: 'hasMobileKey',
-  },
-  {
-    id: 'accompanying-guest',
-    displayName: 'Accompanying Guest',
-    description: 'Collect info for additional guests (loops per guest)',
-    kind: 'nested-flow',
-    icon: mdiAccountMultipleOutline,
-    category: 'nested',
-    supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
-    featureFlag: 'hasAccompanyingGuests',
-  },
-  {
-    id: 'group-assignment',
-    displayName: 'Group Assignment',
-    description: 'Assign individual reservations in a group booking',
-    kind: 'preset',
-    icon: mdiAccountGroupOutline,
-    category: 'nested',
-    supportedSurfaces: ['web', 'mobile-web'],
-  },
-  {
-    id: 'stb-compliance',
-    displayName: 'STB Compliance',
-    description: 'Singapore Tourism Board disclosures',
-    kind: 'preset',
-    icon: mdiScaleBalance,
-    category: 'compliance',
-    supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk'],
-    featureFlag: 'hasStbCompliance',
-    countryGate: 'SG',
-  },
-  {
-    id: 'alloggiati-compliance',
-    displayName: 'Alloggiati Compliance',
-    description: 'Italian law required ID collection by nationality',
-    kind: 'preset',
-    icon: mdiScaleBalance,
-    category: 'compliance',
-    supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk'],
-    featureFlag: 'hasAlloggiatiCompliance',
-    countryGate: 'IT',
   },
   {
     id: 'completion',
@@ -212,16 +137,15 @@ export function getStepTemplateMeta(id: StepTemplateId): StepTemplateMeta {
   return STEP_TEMPLATE_MAP[id];
 }
 
-/** Step templates applicable to a property given its features + country + surface. */
+/** Step templates applicable to a property given its features + surface. */
 export function getAvailableTemplates(
   features: PropertyFeatureFlags,
-  countryCode: string,
+  _countryCode: string,
   surface: Surface
 ): StepTemplateMeta[] {
   return STEP_TEMPLATES.filter((t) => {
     if (!t.supportedSurfaces.includes(surface)) return false;
     if (t.featureFlag && !features[t.featureFlag]) return false;
-    if (t.countryGate && t.countryGate !== countryCode) return false;
     return true;
   });
 }

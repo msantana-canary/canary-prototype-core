@@ -51,14 +51,8 @@ export function GenericPresetEditor({ step }: Props) {
           {'refundable' in cfg && (
             <Row label="Refundable" value={cfg.refundable ? 'Yes' : 'No'} />
           )}
-          {'provider' in cfg && (
-            <Row label="Provider" value={cfg.provider} />
-          )}
           {'programName' in cfg && (
             <Row label="Program" value={cfg.programName} />
-          )}
-          {'regulationRef' in cfg && (
-            <Row label="Regulation" value={cfg.regulationRef} />
           )}
           {'requireBillingAddress' in cfg && (
             <Row label="Require billing address" value={cfg.requireBillingAddress ? 'Yes' : 'No'} />
@@ -68,15 +62,6 @@ export function GenericPresetEditor({ step }: Props) {
           )}
           {'linkedDeposit' in cfg && (
             <Row label="Linked to deposit" value={cfg.linkedDeposit ? 'Yes' : 'No'} />
-          )}
-          {'requireSelfie' in cfg && (
-            <Row label="Require selfie" value={cfg.requireSelfie ? 'Yes' : 'No'} />
-          )}
-          {'requireFront' in cfg && (
-            <Row label="Require front of ID" value={cfg.requireFront ? 'Yes' : 'No'} />
-          )}
-          {'requireBack' in cfg && (
-            <Row label="Require back of ID" value={cfg.requireBack ? 'Yes' : 'No'} />
           )}
         </dl>
         <p className="mt-6 text-[11px] text-[#AAA] italic">
