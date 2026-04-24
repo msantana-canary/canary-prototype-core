@@ -32,9 +32,9 @@ export function LandingView() {
         <div className="mt-8">
           <div className="flex items-baseline justify-between mb-3">
             <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[#888]">
-              Check-In Flows
+              Generated check-in flows
               <span className="ml-2 font-normal text-[#AAA] normal-case tracking-normal">
-                One flow per surface — click to configure
+                Canary generates one per surface from your requirements — click to view and customize copy
               </span>
             </h3>
           </div>

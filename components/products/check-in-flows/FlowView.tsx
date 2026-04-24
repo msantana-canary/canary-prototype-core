@@ -3,36 +3,34 @@
 /**
  * FlowView
  *
- * Main flow-detail page. Shows ordered step list with drag-drop reorder,
- * inline name edit, per-step actions (remove, duplicate), add-step modal,
- * and a "Reset to default" action for customized flows.
+ * Per-modality flow viewer. Shows the sequence of data-collection steps
+ * Canary generates for this surface, based on the property's requirements.
+ *
+ * CS can add, remove, rename, and configure steps — but NOT reorder them.
+ * Step ordering is Canary's responsibility (A/B testing, conversion
+ * optimization). The capability exists in the architecture but is not
+ * exposed here.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import Icon from '@mdi/react';
-import { mdiPlusCircleOutline, mdiRefresh, mdiInformationOutline } from '@mdi/js';
+import {
+  mdiPlusCircleOutline,
+  mdiRefresh,
+  mdiInformationOutline,
+  mdiWeb,
+  mdiCellphone,
+  mdiTabletCellphone,
+  mdiMonitor,
+  mdiApplicationOutline,
+} from '@mdi/js';
 import {
   CanaryButton,
   ButtonType,
-  ButtonColor,
   ButtonSize,
   IconPosition,
   colors,
 } from '@canary-ui/components';
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
 
 import {
   useCheckInFlowsStore,
@@ -40,16 +38,8 @@ import {
   useCurrentProperty,
 } from '@/lib/products/check-in-flows/store';
 import { SURFACE_LABELS } from '@/lib/products/check-in-flows/types';
-import { generateDefaultFlow } from '@/lib/products/check-in-flows/default-flow-generator';
 import { StepListItem } from './StepListItem';
 import { AddStepModal } from './AddStepModal';
-import {
-  mdiWeb,
-  mdiCellphone,
-  mdiTabletCellphone,
-  mdiMonitor,
-  mdiApplicationOutline,
-} from '@mdi/js';
 
 const SURFACE_ICON = {
   'web': mdiWeb,
@@ -63,19 +53,12 @@ export function FlowView() {
   const flowId = useCheckInFlowsStore((s) => s.nav.flowId);
   const flow = useFlowById(flowId);
   const property = useCurrentProperty();
-  const reorderSteps = useCheckInFlowsStore((s) => s.reorderSteps);
   const regenerateFlowsForProperty = useCheckInFlowsStore((s) => s.regenerateFlowsForProperty);
   const goToLanding = useCheckInFlowsStore((s) => s.goToLanding);
 
   const [isAddStepOpen, setIsAddStepOpen] = useState(false);
 
   const isReadOnly = false;
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const stepIds = useMemo(() => flow?.steps.map((s) => s.id) ?? [], [flow]);
 
   if (!flow) {
     return (
@@ -90,25 +73,10 @@ export function FlowView() {
     );
   }
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id || !flow) return;
-
-    const oldIndex = flow.steps.findIndex((s) => s.id === active.id);
-    const newIndex = flow.steps.findIndex((s) => s.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    const reordered = [...flow.steps];
-    const [moved] = reordered.splice(oldIndex, 1);
-    reordered.splice(newIndex, 0, moved);
-    reorderSteps(flow.id, reordered.map((s) => s.id));
-  };
-
   const handleResetToDefault = () => {
     if (!confirm('Reset this flow to the default for your property configuration? All customizations will be lost.')) return;
-    // Replace the flow in the store with a freshly-generated default
     regenerateFlowsForProperty(property.id);
-    goToLanding();  // Nav away since the flow ID may change
+    goToLanding();
   };
 
   const surfaceIcon = SURFACE_ICON[flow.surface];
@@ -118,7 +86,7 @@ export function FlowView() {
       <div className="flex-1 overflow-auto" style={{ backgroundColor: '#FAFAFA' }}>
         <div className="max-w-[1000px] mx-auto px-8 py-6">
           {/* Flow header */}
-          <div className="mb-6 flex items-start justify-between gap-4">
+          <div className="mb-5 flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
               <div
                 className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0"
@@ -128,7 +96,15 @@ export function FlowView() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-[24px] font-bold text-[#2B2B2B] leading-tight">{flow.name}</h1>
+                  <span className="text-[11px] uppercase tracking-wider text-[#888] font-semibold">
+                    Generated for
+                  </span>
+                  <span
+                    className="text-[11px] uppercase tracking-wider font-semibold"
+                    style={{ color: colors.colorBlueDark1 }}
+                  >
+                    {SURFACE_LABELS[flow.surface]}
+                  </span>
                   {flow.isCustomized && (
                     <span
                       className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded font-semibold"
@@ -138,8 +114,11 @@ export function FlowView() {
                     </span>
                   )}
                 </div>
-                <p className="text-[13px] text-[#666] mt-1">
-                  {SURFACE_LABELS[flow.surface]} · {flow.steps.length} steps · {flow.kind === 'nested' ? 'Nested flow' : 'Main flow'}
+                <h1 className="text-[24px] font-bold text-[#2B2B2B] leading-tight mt-1">
+                  {flow.name}
+                </h1>
+                <p className="text-[12px] text-[#666] mt-1">
+                  {flow.steps.length} steps · {flow.kind === 'nested' ? 'Nested flow' : 'Main flow'}
                 </p>
               </div>
             </div>
@@ -164,40 +143,49 @@ export function FlowView() {
                   iconPosition={IconPosition.LEFT}
                   onClick={() => setIsAddStepOpen(true)}
                 >
-                  Add step
+                  Add requirement
                 </CanaryButton>
               </div>
             )}
           </div>
 
+          {/* Framing notice: sequencing is Canary's job */}
+          <div
+            className="mb-4 flex items-start gap-2 px-4 py-2.5 rounded-md border"
+            style={{ borderColor: colors.colorBlueDark4, backgroundColor: colors.colorBlueDark5 }}
+          >
+            <Icon path={mdiInformationOutline} size={0.7} color={colors.colorBlueDark1} className="mt-0.5 shrink-0" />
+            <p className="text-[12px]" style={{ color: colors.colorBlueDark1 }}>
+              <strong>Canary sequences these steps for you.</strong> Ordering gets tuned per modality
+              for optimal conversion. Configure <em>what</em> to collect and under <em>what conditions</em>;
+              Canary handles <em>when</em> and <em>how</em>.
+            </p>
+          </div>
+
           {/* Steps */}
           {flow.steps.length === 0 ? (
             <div className="p-10 rounded-lg border border-dashed border-[#C5C5C5] bg-white text-center">
-              <p className="text-[14px] text-[#888] mb-3">This flow has no steps yet.</p>
+              <p className="text-[14px] text-[#888] mb-3">No requirements configured yet.</p>
               {!isReadOnly && (
                 <CanaryButton type={ButtonType.PRIMARY} size={ButtonSize.NORMAL} onClick={() => setIsAddStepOpen(true)}>
-                  Add first step
+                  Add first requirement
                 </CanaryButton>
               )}
             </div>
           ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={stepIds} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
-                  {flow.steps.map((step) => (
-                    <StepListItem
-                      key={step.id}
-                      flow={flow}
-                      step={step}
-                      isReadOnly={isReadOnly}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
+            <div className="space-y-2">
+              {flow.steps.map((step) => (
+                <StepListItem
+                  key={step.id}
+                  flow={flow}
+                  step={step}
+                  isReadOnly={isReadOnly}
+                />
+              ))}
+            </div>
           )}
 
-          {/* Bottom add-step action */}
+          {/* Bottom add action */}
           {!isReadOnly && flow.steps.length > 0 && (
             <div className="mt-4">
               <button
@@ -205,7 +193,7 @@ export function FlowView() {
                 className="w-full py-3 rounded-lg border border-dashed border-[#C5C5C5] text-[13px] font-semibold text-[#888] hover:border-[#2858C4] hover:text-[#2858C4] transition-colors flex items-center justify-center gap-2"
               >
                 <Icon path={mdiPlusCircleOutline} size={0.7} />
-                Add another step
+                Add another requirement
               </button>
             </div>
           )}

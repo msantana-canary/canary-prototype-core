@@ -70,7 +70,7 @@ export function AddStepModal({ isOpen, onClose, flow, property }: AddStepModalPr
     <CanaryModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Add a step"
+      title="Add a requirement"
       size="large"
       showCloseButton
     >

@@ -103,10 +103,10 @@ export function PropertyContext() {
       <div className="px-6 py-5">
         <div className="flex items-center gap-2 mb-4">
           <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[#888]">
-            Property Configuration
+            What this property collects
           </h3>
           <span className="text-[11px] text-[#AAA]">
-            Feature flags drive default flows — toggle to see them regenerate live
+            Product requirements drive the generated check-in flows — toggle to watch them regenerate
           </span>
         </div>
 

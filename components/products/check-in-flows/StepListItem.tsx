@@ -3,8 +3,9 @@
 /**
  * StepListItem
  *
- * Single step row in the flow's ordered step list. Handles:
- * - Sortable drag handle (dnd-kit)
+ * Single step row in the flow's list. Order is determined by Canary
+ * (for A/B testing / conversion optimization), not CS — no drag-handle.
+ * Handles:
  * - Inline name edit
  * - Condition count indicator
  * - Skippable toggle
@@ -16,7 +17,6 @@
 import React, { useState } from 'react';
 import Icon from '@mdi/react';
 import {
-  mdiDrag,
   mdiArrowRight,
   mdiDelete,
   mdiContentCopy,
@@ -26,8 +26,6 @@ import {
   mdiClose,
   mdiLinkVariant,
 } from '@mdi/js';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import {
   colors,
   CanaryButton,
@@ -61,22 +59,6 @@ export function StepListItem({ flow, step, isReadOnly }: StepListItemProps) {
   const [draftName, setDraftName] = useState(step.name);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: step.id, disabled: isReadOnly });
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 10 : undefined,
-    opacity: isDragging ? 0.7 : 1,
-  };
-
   const conditionCount = step.conditions?.length ?? 0;
   const isNestedFlow = step.kind === 'nested-flow';
 
@@ -100,23 +82,9 @@ export function StepListItem({ flow, step, isReadOnly }: StepListItemProps) {
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
       className="group bg-white rounded-lg border border-[#E5E5E5] hover:border-[#BBB] transition-colors"
     >
       <div className="flex items-stretch">
-        {/* Drag handle */}
-        <button
-          className={`w-10 flex-shrink-0 flex items-center justify-center ${
-            isReadOnly ? 'cursor-not-allowed text-[#CCC]' : 'cursor-grab active:cursor-grabbing text-[#BBB] hover:text-[#666]'
-          }`}
-          {...attributes}
-          {...listeners}
-          tabIndex={isReadOnly ? -1 : 0}
-          aria-label="Drag to reorder"
-        >
-          <Icon path={mdiDrag} size={0.85} />
-        </button>
 
         {/* Order number */}
         <div className="flex-shrink-0 w-10 flex items-center justify-center">
