@@ -4,12 +4,10 @@
  * StepRenderer
  *
  * Dispatches to the appropriate per-step-type preview renderer, reading
- * step.config + PreviewContext from the store. Each sub-renderer is a
- * small, focused component mocking what the guest would see on mobile.
- *
- * These are prototype-quality mocks — not 1:1 replicas of the real
- * guest-facing Canary UI. They're calibrated to show CONFIGURATION
- * results (which fields, which options, which language, conditions).
+ * step.config + PreviewContext from the store. All step types render
+ * inside GuestPreviewShell (gold header + iOS status bar + progress bar
+ * + Submit button), so the preview matches the production guest-facing
+ * check-in look.
  */
 
 import React from 'react';
@@ -17,13 +15,19 @@ import Icon from '@mdi/react';
 import {
   mdiShieldCheckOutline,
   mdiCardAccountDetailsOutline,
-  mdiCreditCardOutline,
+  mdiCameraOutline,
+  mdiCheckCircleOutline,
   mdiSafeSquareOutline,
   mdiStarOutline,
-  mdiCheckCircleOutline,
   mdiLinkVariant,
   mdiAlertCircleOutline,
 } from '@mdi/js';
+import {
+  CanaryInputUnderline,
+  CanaryInputCreditCardUnderline,
+  CanarySelectUnderline,
+  InputSize,
+} from '@canary-ui/components';
 
 import type {
   StepInstance,
@@ -45,6 +49,8 @@ import { shouldShow } from '@/lib/products/check-in-flows/condition-evaluator';
 import { GuestPreviewShell } from './GuestPreviewShell';
 import { RegistrationCardPreview } from './RegistrationCardPreview';
 
+const GOLD = '#926e27';
+
 interface Props {
   step: StepInstance;
   ctx: PreviewContext;
@@ -52,27 +58,56 @@ interface Props {
 }
 
 export function StepRenderer({ step, ctx, flow }: Props) {
-  // Don't render anything if the step itself is hidden by conditions
   if (!shouldShow(step.conditions, ctx)) {
     return <HiddenByConditions step={step} ctx={ctx} />;
   }
 
   const cfg = step.config;
+  const stepIndex = flow?.steps.findIndex((s) => s.id === step.id) ?? 0;
+  const total = flow?.steps.length ?? 1;
 
   if (cfg.kind === 'schema-form') {
-    return <SchemaFormPreview step={step} cfg={cfg} ctx={ctx} flow={flow} />;
+    return (
+      <SchemaFormPreview
+        step={step}
+        cfg={cfg}
+        ctx={ctx}
+        stepIndex={stepIndex}
+        total={total}
+      />
+    );
   }
   if (cfg.kind === 'nested-flow') {
-    return <NestedFlowPreview cfg={cfg} ctx={ctx} />;
+    return (
+      <NestedFlowPreview
+        step={step}
+        cfg={cfg}
+        ctx={ctx}
+        stepIndex={stepIndex}
+        total={total}
+      />
+    );
   }
   if (cfg.kind === 'preset') {
+    const shellProps = {
+      step,
+      ctx,
+      stepIndex,
+      total,
+    };
     switch (cfg.presetType) {
-      case 'id-consent': return <IdConsentPreview cfg={cfg} ctx={ctx} />;
-      case 'id-capture': return <IdCapturePreview cfg={cfg} ctx={ctx} />;
-      case 'credit-card': return <CreditCardPreview cfg={cfg} ctx={ctx} />;
-      case 'deposit-collection': return <DepositCollectionPreview cfg={cfg} ctx={ctx} />;
-      case 'loyalty-welcome': return <LoyaltyWelcomePreview cfg={cfg} ctx={ctx} />;
-      case 'completion': return <CompletionPreview cfg={cfg} ctx={ctx} />;
+      case 'id-consent':
+        return <IdConsentPreview cfg={cfg} {...shellProps} />;
+      case 'id-capture':
+        return <IdCapturePreview cfg={cfg} {...shellProps} />;
+      case 'credit-card':
+        return <CreditCardPreview cfg={cfg} {...shellProps} />;
+      case 'deposit-collection':
+        return <DepositCollectionPreview cfg={cfg} {...shellProps} />;
+      case 'loyalty-welcome':
+        return <LoyaltyWelcomePreview cfg={cfg} {...shellProps} />;
+      case 'completion':
+        return <CompletionPreview cfg={cfg} {...shellProps} />;
     }
   }
 
@@ -81,6 +116,13 @@ export function StepRenderer({ step, ctx, flow }: Props) {
       No preview for this step type.
     </div>
   );
+}
+
+interface ShellProps {
+  step: StepInstance;
+  ctx: PreviewContext;
+  stepIndex: number;
+  total: number;
 }
 
 // ── Hidden-by-conditions helper ──────────────────────────
@@ -106,56 +148,16 @@ function HiddenByConditions({ step, ctx }: { step: StepInstance; ctx: PreviewCon
   );
 }
 
-// ── Shared primitives ────────────────────────────────────
-
-const STATLER_GOLD = '#8B6914';
-
-function PreviewHeader({ step, ctx, icon }: { step: StepInstance; ctx: PreviewContext; icon?: string }) {
-  return (
-    <div className="px-5 pt-6 pb-4">
-      {icon && (
-        <div
-          className="w-12 h-12 rounded-lg flex items-center justify-center mb-3"
-          style={{ backgroundColor: '#F4E9D8' }}
-        >
-          <Icon path={icon} size={1.3} color={STATLER_GOLD} />
-        </div>
-      )}
-      <h1 className="text-[20px] font-bold text-[#2B2B2B] leading-tight">{step.name}</h1>
-    </div>
-  );
-}
-
-function PrimaryCTA({ label }: { label: string }) {
-  return (
-    <div className="px-5 pb-6 pt-3 mt-auto">
-      <button
-        className="w-full h-11 rounded-md font-semibold text-white text-[14px]"
-        style={{ backgroundColor: STATLER_GOLD }}
-        disabled
-      >
-        {label}
-      </button>
-    </div>
-  );
-}
-
-// ── Schema form preview (production-faithful via GuestPreviewShell) ──
+// ── Schema form preview (production-faithful via RegistrationCardPreview) ──
 
 function SchemaFormPreview({
   step,
   cfg,
   ctx,
-  flow,
-}: {
-  step: StepInstance;
-  cfg: SchemaFormConfig;
-  ctx: PreviewContext;
-  flow?: FlowDefinition;
-}) {
+  stepIndex,
+  total,
+}: ShellProps & { cfg: SchemaFormConfig }) {
   const visibleFields = cfg.fields.filter((f) => shouldShow(f.conditions, ctx));
-  const stepIndex = flow?.steps.findIndex((s) => s.id === step.id) ?? 0;
-  const total = flow?.steps.length ?? 1;
   const isRegCard = step.templateId === 'reg-card';
 
   return (
@@ -181,233 +183,431 @@ function SchemaFormPreview({
   );
 }
 
-// ── Preset previews ──────────────────────────────────────
+// ── ID Consent ───────────────────────────────────────────
 
-function IdConsentPreview({ cfg, ctx }: { cfg: IdConsentConfig; ctx: PreviewContext }) {
+function IdConsentPreview({
+  step,
+  cfg,
+  ctx,
+  stepIndex,
+  total,
+}: ShellProps & { cfg: IdConsentConfig }) {
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto px-5 pt-6 pb-4 flex flex-col gap-3">
-        <div
-          className="w-14 h-14 rounded-lg flex items-center justify-center"
-          style={{ backgroundColor: '#F4E9D8' }}
-        >
-          <Icon path={mdiShieldCheckOutline} size={1.4} color={STATLER_GOLD} />
-        </div>
-        <h1 className="text-[22px] font-bold text-[#2B2B2B] leading-tight">
-          {resolveText(cfg.heading, ctx.language)}
-        </h1>
-        <p className="text-[13px] text-[#555] leading-snug whitespace-pre-wrap">
-          {resolveText(cfg.body, ctx.language)}
-        </p>
-
-        <div className="mt-2 flex items-start gap-2.5 py-3 px-3 rounded bg-[#FAFAFA] border border-[#EEE]">
-          <div className="w-4 h-4 rounded border-2 border-[#AAA] mt-0.5 shrink-0" />
-          <p className="text-[11px] text-[#555] leading-snug">
-            {resolveText(cfg.acknowledgment, ctx.language)}
+    <GuestPreviewShell
+      title={step.name}
+      totalSegments={total}
+      completedSegments={stepIndex + 1}
+      ctaLabel={resolveText(cfg.ctaLabel, ctx.language) || 'Continue'}
+    >
+      <div className="flex flex-col gap-6" style={{ padding: '32px 24px 24px' }}>
+        <div className="flex flex-col items-center gap-4 text-center">
+          <Icon path={mdiShieldCheckOutline} size={2} color={GOLD} />
+          <h2
+            style={{
+              fontSize: 24,
+              fontWeight: 600,
+              lineHeight: '36px',
+              color: '#000',
+              margin: 0,
+            }}
+          >
+            {resolveText(cfg.heading, ctx.language) || 'Identity verification'}
+          </h2>
+          <p
+            style={{
+              fontSize: 18,
+              lineHeight: '28px',
+              color: '#000',
+              whiteSpace: 'pre-wrap',
+            }}
+          >
+            {resolveText(cfg.body, ctx.language)}
           </p>
         </div>
+        <p style={{ fontSize: 14, lineHeight: '22px', color: '#666' }}>
+          {resolveText(cfg.acknowledgment, ctx.language)}
+        </p>
       </div>
-      <PrimaryCTA label={resolveText(cfg.ctaLabel, ctx.language) || 'Continue'} />
-    </div>
+    </GuestPreviewShell>
   );
 }
 
-function IdCapturePreview({ cfg, ctx }: { cfg: IdCaptureConfig; ctx: PreviewContext }) {
-  const visible = cfg.idTypeOptions.filter((o) => shouldShow(o.conditions, ctx));
+// ── ID Capture ───────────────────────────────────────────
+
+function IdCapturePreview({
+  step,
+  cfg,
+  ctx,
+  stepIndex,
+  total,
+}: ShellProps & { cfg: IdCaptureConfig }) {
+  const visibleOptions = cfg.idTypeOptions.filter((o) => shouldShow(o.conditions, ctx));
   const country = COUNTRY_MAP[ctx.guestNationalityCode]?.name ?? ctx.guestNationalityCode;
 
+  const typeOptions = visibleOptions.map((o) => ({
+    value: o.value,
+    label: resolveText(o.label, ctx.language),
+  }));
+
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto px-5 pt-6 pb-4">
-        <div
-          className="w-12 h-12 rounded-lg flex items-center justify-center mb-3"
-          style={{ backgroundColor: '#F4E9D8' }}
-        >
-          <Icon path={mdiCardAccountDetailsOutline} size={1.3} color={STATLER_GOLD} />
-        </div>
-        <h1 className="text-[20px] font-bold text-[#2B2B2B] leading-tight mb-1">
-          What ID will you use?
-        </h1>
-        <p className="text-[12px] text-[#888] mb-4">
-          We accept the following IDs for guests from {country}.
+    <GuestPreviewShell
+      title={step.name}
+      totalSegments={total}
+      completedSegments={stepIndex + 1}
+      ctaLabel="Continue"
+    >
+      <div className="flex flex-col" style={{ padding: '32px 24px 24px', gap: 24 }}>
+        <p style={{ fontSize: 18, lineHeight: '28px', color: '#000' }}>
+          Please take a photo of your government-issued ID. We accept the
+          following IDs for guests from {country}.
         </p>
 
-        <div className="space-y-2">
-          {visible.map((opt) => (
-            <button
-              key={opt.id}
-              className="w-full text-left px-3 py-3 rounded-md border border-[#DDD] bg-white hover:border-[#999] flex items-center gap-2 text-[13px] text-[#2B2B2B]"
-              disabled
-            >
-              <Icon path={mdiCardAccountDetailsOutline} size={0.75} color="#666" />
-              {resolveText(opt.label, ctx.language)}
-            </button>
-          ))}
-          {visible.length === 0 && (
-            <p className="text-[12px] text-[#D00] italic">
-              No ID types available for this nationality. Configure at least one unconditional option.
-            </p>
-          )}
-        </div>
+        {typeOptions.length > 0 ? (
+          <CanarySelectUnderline
+            label="ID type"
+            options={typeOptions}
+            size={InputSize.LARGE}
+          />
+        ) : (
+          <p style={{ fontSize: 14, color: '#D00', fontStyle: 'italic' }}>
+            No ID types available for this nationality. Configure at least one
+            unconditional option.
+          </p>
+        )}
+
+        <CaptureBox label="Take photo of your ID" />
+        {cfg.requireBackPhoto && <CaptureBox label="Take photo of ID back" />}
       </div>
-      <PrimaryCTA label="Continue" />
+    </GuestPreviewShell>
+  );
+}
+
+function CaptureBox({ label }: { label: string }) {
+  return (
+    <div
+      className="w-full rounded-lg flex flex-col items-center justify-center gap-8"
+      style={{
+        aspectRatio: '382/248',
+        backgroundColor: `${GOLD}1A`,
+        border: `1px solid ${GOLD}1A`,
+      }}
+    >
+      <Icon path={mdiCameraOutline} size={1.2} color={GOLD} />
+      <span style={{ fontSize: 18, fontWeight: 500, color: GOLD }}>{label}</span>
     </div>
   );
 }
 
-function CreditCardPreview({ cfg, ctx }: { cfg: CreditCardConfig; ctx: PreviewContext }) {
+// ── Credit Card ──────────────────────────────────────────
+
+function CreditCardPreview({
+  step,
+  cfg,
+  ctx,
+  stepIndex,
+  total,
+}: ShellProps & { cfg: CreditCardConfig }) {
+  const intro = cfg.linkedDeposit
+    ? 'We need your credit card to authorize a deposit hold for your stay.'
+    : 'We need your credit card to authorize hotel charges and incidentals.';
+
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto px-5 pt-6 pb-4">
-        <div
-          className="w-12 h-12 rounded-lg flex items-center justify-center mb-3"
-          style={{ backgroundColor: '#F4E9D8' }}
-        >
-          <Icon path={mdiCreditCardOutline} size={1.3} color={STATLER_GOLD} />
-        </div>
-        <h1 className="text-[20px] font-bold text-[#2B2B2B] leading-tight mb-4">Payment card</h1>
-        <div className="space-y-3">
-          <div>
-            <label className="text-[11px] font-semibold text-[#555]">Card number</label>
-            <input type="text" className="mt-1 w-full h-9 px-2.5 rounded-md border border-[#DDD] bg-white text-[12px]" placeholder="1234 1234 1234 1234" disabled />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[11px] font-semibold text-[#555]">Expiry</label>
-              <input type="text" className="mt-1 w-full h-9 px-2.5 rounded-md border border-[#DDD] bg-white text-[12px]" placeholder="MM / YY" disabled />
+    <GuestPreviewShell
+      title={step.name}
+      totalSegments={total}
+      completedSegments={stepIndex + 1}
+      ctaLabel="Add payment"
+    >
+      <div className="flex flex-col" style={{ padding: '32px 24px 24px', gap: 24 }}>
+        <p style={{ fontSize: 18, lineHeight: '28px', color: '#000' }}>{intro}</p>
+
+        <div className="flex flex-col" style={{ gap: 16 }}>
+          <CanaryInputUnderline label="Name on card" size={InputSize.LARGE} />
+          <CanaryInputCreditCardUnderline
+            label="Credit card number"
+            size={InputSize.LARGE}
+          />
+          <div className="flex" style={{ gap: 24 }}>
+            <div className="flex-1">
+              <CanaryInputUnderline
+                label="Expiration date"
+                size={InputSize.LARGE}
+              />
             </div>
             {cfg.requireCvc && (
-              <div>
-                <label className="text-[11px] font-semibold text-[#555]">CVC</label>
-                <input type="text" className="mt-1 w-full h-9 px-2.5 rounded-md border border-[#DDD] bg-white text-[12px]" placeholder="123" disabled />
+              <div className="flex-1">
+                <CanaryInputUnderline label="CVV" size={InputSize.LARGE} />
               </div>
             )}
           </div>
+
           {cfg.requireBillingAddress && (
-            <div className="space-y-2 pt-2 border-t border-[#EEE]">
-              <p className="text-[11px] font-semibold text-[#555] uppercase tracking-wider">Billing address</p>
-              <input type="text" className="w-full h-9 px-2.5 rounded-md border border-[#DDD] bg-white text-[12px]" placeholder="Address line 1" disabled />
-              <div className="grid grid-cols-2 gap-2">
-                <input type="text" className="h-9 px-2.5 rounded-md border border-[#DDD] bg-white text-[12px]" placeholder="City" disabled />
-                <input type="text" className="h-9 px-2.5 rounded-md border border-[#DDD] bg-white text-[12px]" placeholder="Postal code" disabled />
+            <>
+              <CanaryInputUnderline
+                label="Billing address"
+                size={InputSize.LARGE}
+              />
+              <div className="flex" style={{ gap: 24 }}>
+                <div className="flex-1">
+                  <CanaryInputUnderline label="City" size={InputSize.LARGE} />
+                </div>
+                <div className="flex-1">
+                  <CanaryInputUnderline
+                    label="Postal code"
+                    size={InputSize.LARGE}
+                  />
+                </div>
               </div>
-            </div>
-          )}
-          {cfg.linkedDeposit && (
-            <div className="text-[11px] text-[#666] bg-[#FAFAFA] border border-[#EEE] rounded p-2">
-              A deposit authorization will be placed on this card at the next step.
-            </div>
+            </>
           )}
         </div>
+
+        <p style={{ fontSize: 18, lineHeight: '28px', color: '#000' }}>
+          We are{' '}
+          <span style={{ fontWeight: 500, textDecoration: 'underline' }}>
+            PCI-DSS Level-1 compliant
+          </span>
+          . Your information is safe and secure.
+        </p>
+
+        {cfg.linkedDeposit && (
+          <p style={{ fontSize: 14, color: '#666', lineHeight: '22px' }}>
+            A deposit authorization will be placed on this card at the next step.
+          </p>
+        )}
       </div>
-      <PrimaryCTA label="Add payment" />
-    </div>
+    </GuestPreviewShell>
   );
 }
 
-function DepositCollectionPreview({ cfg, ctx }: { cfg: DepositCollectionConfig; ctx: PreviewContext }) {
+// ── Deposit Collection ───────────────────────────────────
+
+function DepositCollectionPreview({
+  step,
+  cfg,
+  ctx,
+  stepIndex,
+  total,
+}: ShellProps & { cfg: DepositCollectionConfig }) {
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto px-5 pt-6 pb-4 flex flex-col gap-3">
-        <div
-          className="w-14 h-14 rounded-lg flex items-center justify-center"
-          style={{ backgroundColor: '#F4E9D8' }}
-        >
-          <Icon path={mdiSafeSquareOutline} size={1.4} color={STATLER_GOLD} />
+    <GuestPreviewShell
+      title={step.name}
+      totalSegments={total}
+      completedSegments={stepIndex + 1}
+      ctaLabel="Authorize hold"
+    >
+      <div className="flex flex-col" style={{ padding: '32px 24px 24px', gap: 24 }}>
+        <div className="flex justify-center">
+          <Icon path={mdiSafeSquareOutline} size={2} color={GOLD} />
         </div>
-        <h1 className="text-[22px] font-bold text-[#2B2B2B] leading-tight">Deposit authorization</h1>
-        <div className="rounded-lg border border-[#DDD] bg-[#FAFAFA] p-4">
-          <p className="text-[11px] uppercase tracking-wider text-[#888] font-semibold">
+        <h2
+          style={{
+            fontSize: 24,
+            fontWeight: 600,
+            lineHeight: '36px',
+            color: '#000',
+            textAlign: 'center',
+            margin: 0,
+          }}
+        >
+          Deposit authorization
+        </h2>
+        <div
+          style={{
+            border: `1px solid ${GOLD}33`,
+            borderRadius: 8,
+            padding: '20px 16px',
+            backgroundColor: `${GOLD}0A`,
+            textAlign: 'center',
+          }}
+        >
+          <p
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              color: '#666',
+              margin: 0,
+            }}
+          >
             Hold amount
           </p>
-          <p className="text-[28px] font-bold text-[#2B2B2B] mt-1">
+          <p
+            style={{
+              fontSize: 32,
+              fontWeight: 600,
+              color: '#000',
+              margin: '4px 0 0',
+            }}
+          >
             {cfg.currency} {cfg.amount.toFixed(2)}
           </p>
-          <p className="text-[11px] text-[#666] mt-1">
+          <p
+            style={{
+              fontSize: 14,
+              color: '#666',
+              margin: '4px 0 0',
+            }}
+          >
             {cfg.refundable ? 'Refundable at checkout' : 'Non-refundable'}
           </p>
         </div>
-        <p className="text-[12px] text-[#555] leading-snug">
+        <p style={{ fontSize: 18, lineHeight: '28px', color: '#000' }}>
           {resolveText(cfg.description, ctx.language)}
         </p>
       </div>
-      <PrimaryCTA label="Authorize hold" />
-    </div>
+    </GuestPreviewShell>
   );
 }
 
-function LoyaltyWelcomePreview({ cfg, ctx }: { cfg: LoyaltyWelcomeConfig; ctx: PreviewContext }) {
+// ── Loyalty Welcome ──────────────────────────────────────
+
+function LoyaltyWelcomePreview({
+  step,
+  cfg,
+  ctx,
+  stepIndex,
+  total,
+}: ShellProps & { cfg: LoyaltyWelcomeConfig }) {
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto px-5 pt-6 pb-4 flex flex-col gap-3">
-        <div
-          className="w-14 h-14 rounded-lg flex items-center justify-center"
-          style={{ backgroundColor: '#F4E9D8' }}
-        >
-          <Icon path={mdiStarOutline} size={1.4} color={STATLER_GOLD} />
+    <GuestPreviewShell
+      title={step.name}
+      totalSegments={total}
+      completedSegments={stepIndex + 1}
+      ctaLabel="Continue"
+    >
+      <div className="flex flex-col" style={{ padding: '32px 24px 24px', gap: 24 }}>
+        <div className="flex flex-col items-center gap-4 text-center">
+          <Icon path={mdiStarOutline} size={2} color={GOLD} />
+          <h2
+            style={{
+              fontSize: 24,
+              fontWeight: 600,
+              lineHeight: '36px',
+              color: '#000',
+              margin: 0,
+            }}
+          >
+            {resolveText(cfg.heading, ctx.language)}
+          </h2>
+          <p style={{ fontSize: 18, lineHeight: '28px', color: '#000' }}>
+            {resolveText(cfg.body, ctx.language)}
+          </p>
         </div>
-        <h1 className="text-[22px] font-bold text-[#2B2B2B] leading-tight">
-          {resolveText(cfg.heading, ctx.language)}
-        </h1>
-        <p className="text-[13px] text-[#555] leading-snug">
-          {resolveText(cfg.body, ctx.language)}
-        </p>
-        <div className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-[#888]">
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            color: GOLD,
+            textAlign: 'center',
+          }}
+        >
           {cfg.programName}
         </div>
       </div>
-      <PrimaryCTA label="Continue" />
-    </div>
+    </GuestPreviewShell>
   );
 }
 
-function CompletionPreview({ cfg, ctx }: { cfg: CompletionConfig; ctx: PreviewContext }) {
+// ── Completion ───────────────────────────────────────────
+
+function CompletionPreview({
+  step,
+  cfg,
+  ctx,
+  stepIndex,
+  total,
+}: ShellProps & { cfg: CompletionConfig }) {
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto px-5 pt-8 pb-4 flex flex-col items-center text-center gap-3">
-        <div
-          className="w-20 h-20 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: '#F4E9D8' }}
+    <GuestPreviewShell
+      title={step.name}
+      totalSegments={total}
+      completedSegments={total}
+      ctaLabel={resolveText(cfg.ctaLabel, ctx.language) || 'Done'}
+    >
+      <div
+        className="flex flex-col items-center justify-center text-center"
+        style={{ padding: '48px 24px 24px', gap: 16, minHeight: '60%' }}
+      >
+        <Icon path={mdiCheckCircleOutline} size={3} color={GOLD} />
+        <h2
+          style={{
+            fontSize: 28,
+            fontWeight: 600,
+            lineHeight: '36px',
+            color: GOLD,
+            margin: 0,
+          }}
         >
-          <Icon path={mdiCheckCircleOutline} size={2.2} color={STATLER_GOLD} />
-        </div>
-        <h1 className="text-[24px] font-bold text-[#2B2B2B] leading-tight">
           {resolveText(cfg.heading, ctx.language)}
-        </h1>
-        <p className="text-[13px] text-[#555] leading-snug max-w-[280px]">
+        </h2>
+        <p
+          style={{
+            fontSize: 18,
+            lineHeight: '28px',
+            color: '#000',
+            maxWidth: 320,
+          }}
+        >
           {resolveText(cfg.body, ctx.language)}
         </p>
       </div>
-      <PrimaryCTA label={resolveText(cfg.ctaLabel, ctx.language) || 'Done'} />
-    </div>
+    </GuestPreviewShell>
   );
 }
 
-function NestedFlowPreview({ cfg, ctx }: { cfg: NestedFlowConfig; ctx: PreviewContext }) {
+// ── Nested Flow ──────────────────────────────────────────
+
+function NestedFlowPreview({
+  step,
+  cfg,
+  ctx,
+  stepIndex,
+  total,
+}: ShellProps & { cfg: NestedFlowConfig }) {
   const nested = useFlowById(cfg.nestedFlowId);
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto px-5 pt-6 pb-4 flex flex-col items-center text-center gap-3">
+    <GuestPreviewShell
+      title={step.name}
+      totalSegments={total}
+      completedSegments={stepIndex + 1}
+      ctaLabel="Enter sub-flow"
+    >
+      <div
+        className="flex flex-col items-center justify-center text-center"
+        style={{ padding: '48px 24px 24px', gap: 16, minHeight: '60%' }}
+      >
         <div
-          className="w-14 h-14 rounded-lg flex items-center justify-center"
+          className="w-16 h-16 rounded-full flex items-center justify-center"
           style={{ backgroundColor: '#F4F4F5' }}
         >
-          <Icon path={mdiLinkVariant} size={1.4} color="#666" />
+          <Icon path={mdiLinkVariant} size={1.5} color="#666" />
         </div>
-        <h1 className="text-[18px] font-bold text-[#2B2B2B]">
-          Nested flow entry point
-        </h1>
-        <p className="text-[12px] text-[#666] max-w-[280px]">
-          At this point in the flow, the guest enters{' '}
-          <strong>{nested?.name ?? cfg.nestedFlowId}</strong>. When finished, they return here.
+        <h2
+          style={{
+            fontSize: 22,
+            fontWeight: 600,
+            lineHeight: '32px',
+            color: '#000',
+            margin: 0,
+          }}
+        >
+          Sub-flow entry
+        </h2>
+        <p style={{ fontSize: 16, lineHeight: '24px', color: '#666', maxWidth: 320 }}>
+          The guest enters{' '}
+          <strong>{nested?.name ?? cfg.nestedFlowId}</strong> here. When finished,
+          they return to this flow.
         </p>
         {cfg.loopUntilComplete && (
-          <p className="text-[11px] text-[#888] italic">
+          <p style={{ fontSize: 14, fontStyle: 'italic', color: '#888' }}>
             Loops until all items are processed.
           </p>
         )}
       </div>
-      <PrimaryCTA label="Enter sub-flow" />
-    </div>
+    </GuestPreviewShell>
   );
 }
