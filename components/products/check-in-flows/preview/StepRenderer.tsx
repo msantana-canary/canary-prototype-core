@@ -276,7 +276,6 @@ function IdCapturePreview({
         )}
 
         <CaptureBox label="Take photo of your ID" />
-        {cfg.requireBackPhoto && <CaptureBox label="Take photo of ID back" />}
       </div>
     </GuestPreviewShell>
   );
