@@ -38,6 +38,7 @@ import { CSS } from '@dnd-kit/utilities';
 import {
   CanaryInput,
   CanaryTextArea,
+  CanarySelect,
   CanarySwitch,
   InputSize,
   colors,
@@ -303,25 +304,28 @@ function SemanticTagSelect({
   onChange: (tag: ElementTag | undefined) => void;
   disabled: boolean;
 }) {
+  const options: { value: string; label: string; disabled?: boolean }[] = [
+    { value: '', label: 'No semantic tag' },
+  ];
+  (Object.keys(ELEMENT_TAGS_BY_CATEGORY) as TagCategory[]).forEach((cat) => {
+    options.push({
+      value: `__sep_${cat}`,
+      label: `── ${TAG_CATEGORY_LABELS[cat]} ──`,
+      disabled: true,
+    });
+    ELEMENT_TAGS_BY_CATEGORY[cat].forEach((t) => {
+      options.push({ value: t.id, label: t.displayName });
+    });
+  });
+
   return (
-    <select
+    <CanarySelect
+      size={InputSize.NORMAL}
       value={value ?? ''}
-      disabled={disabled}
+      isDisabled={disabled}
       onChange={(e) => onChange((e.target.value as ElementTag) || undefined)}
-      className="w-full h-10 px-3 rounded-md border bg-white text-[13px] disabled:opacity-60"
-      style={{ borderColor: colors.colorBlack7, color: colors.colorBlack2 }}
-    >
-      <option value="">No semantic tag</option>
-      {(Object.keys(ELEMENT_TAGS_BY_CATEGORY) as TagCategory[]).map((cat) => (
-        <optgroup key={cat} label={TAG_CATEGORY_LABELS[cat]}>
-          {ELEMENT_TAGS_BY_CATEGORY[cat].map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.displayName}
-            </option>
-          ))}
-        </optgroup>
-      ))}
-    </select>
+      options={options}
+    />
   );
 }
 
@@ -449,23 +453,19 @@ function SortableOptionRow({
         <Icon path={mdiDrag} size={0.6} />
       </button>
       <div className="flex-1 py-1.5 pr-2 grid grid-cols-[1fr_140px] gap-2">
-        <input
-          type="text"
+        <CanaryInput
+          size={InputSize.NORMAL}
           value={option.label?.['en'] ?? ''}
           onChange={(e) => onChange({ label: { ...(option.label ?? {}), en: e.target.value } })}
-          disabled={disabled}
+          isDisabled={disabled}
           placeholder="Label"
-          className="text-[12px] bg-white border rounded px-2 py-1 outline-none disabled:opacity-60"
-          style={{ borderColor: colors.colorBlack7, color: colors.colorBlack2 }}
         />
-        <input
-          type="text"
+        <CanaryInput
+          size={InputSize.NORMAL}
           value={option.value}
           onChange={(e) => onChange({ value: e.target.value })}
-          disabled={disabled}
+          isDisabled={disabled}
           placeholder="value"
-          className="text-[12px] font-mono border rounded px-2 py-1 outline-none disabled:opacity-60"
-          style={{ borderColor: colors.colorBlack7, color: colors.colorBlack2, backgroundColor: colors.colorBlack8 }}
         />
       </div>
       {hasConditions && (

@@ -30,6 +30,7 @@ import {
   CanaryCard,
   CanarySelect,
   CanaryInput,
+  CanaryCheckbox,
   CanarySwitch,
   CanaryTag,
   CanaryAlert,
@@ -264,17 +265,12 @@ function CheckboxGroup({
   return (
     <div className="flex flex-wrap gap-x-5 gap-y-2">
       {options.map((opt) => (
-        <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={selected.includes(opt.value)}
-            onChange={() => onChange(toggleArrayItem(selected, opt.value))}
-            className="w-4 h-4 rounded border-gray-300 accent-[#2858C4]"
-          />
-          <span className="text-[13px]" style={{ color: colors.colorBlack2 }}>
-            {opt.label}
-          </span>
-        </label>
+        <CanaryCheckbox
+          key={opt.value}
+          label={opt.label}
+          checked={selected.includes(opt.value)}
+          onChange={() => onChange(toggleArrayItem(selected, opt.value))}
+        />
       ))}
     </div>
   );
