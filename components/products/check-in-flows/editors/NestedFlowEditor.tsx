@@ -30,7 +30,7 @@ interface Props {
 }
 
 export function NestedFlowEditor({ step }: Props) {
-  const goToFlow = useCheckInFlowsStore((s) => s.goToFlow);
+  const selectFlow = useCheckInFlowsStore((s) => s.selectFlow);
   const nestedId = step.config.kind === 'nested-flow' ? step.config.nestedFlowId : null;
   const nested = useFlowById(nestedId);
 
@@ -77,7 +77,7 @@ export function NestedFlowEditor({ step }: Props) {
                 size={ButtonSize.NORMAL}
                 icon={<Icon path={mdiArrowRight} size={0.7} />}
                 iconPosition={IconPosition.RIGHT}
-                onClick={() => goToFlow(nested.id)}
+                onClick={() => selectFlow(nested.id)}
               >
                 Go to flow
               </CanaryButton>

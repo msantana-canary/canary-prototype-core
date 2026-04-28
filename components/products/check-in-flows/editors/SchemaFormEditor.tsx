@@ -15,10 +15,7 @@ import {
   mdiDrag,
   mdiDelete,
   mdiPencilOutline,
-  mdiInformationOutline,
   mdiTagOutline,
-  mdiAsteriskCircleOutline,
-  mdiSkipNextOutline,
 } from '@mdi/js';
 import {
   DndContext,
@@ -139,93 +136,73 @@ export function SchemaFormEditor({ step, flow, isReadOnly }: Props) {
     setSelectedFieldId(field.id);
   };
 
+  if (selectedField) {
+    return (
+      <FieldDetailPanel
+        key={selectedField.id}
+        field={selectedField}
+        flow={flow}
+        step={step}
+        isReadOnly={isReadOnly}
+        onClose={() => setSelectedFieldId(null)}
+      />
+    );
+  }
+
   return (
-    <>
-      <div className="h-full overflow-auto">
-        <div className="max-w-[1000px] mx-auto px-8 py-6">
-          {/* Header info */}
-          <div className="mb-5 flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-[14px] font-bold text-[#2B2B2B] mb-1">Fields</h2>
-              <p className="text-[12px] text-[#666]">
-                Drag to reorder. Click a field to edit its label, validation, and
-                options.
-              </p>
-            </div>
-            {!isReadOnly && <AddFieldButton onPick={handleAddField} isOpen={isAddMenuOpen} setOpen={setIsAddMenuOpen} />}
-          </div>
-
-          {/* Field list */}
-          {fields.length === 0 ? (
-            <div className="p-10 rounded-lg border border-dashed border-[#C5C5C5] bg-white text-center">
-              <p className="text-[14px] text-[#888] mb-3">No fields yet.</p>
-              {!isReadOnly && (
-                <CanaryButton
-                  type={ButtonType.PRIMARY}
-                  size={ButtonSize.NORMAL}
-                  icon={<Icon path={mdiPlus} size={0.7} />}
-                  iconPosition={IconPosition.LEFT}
-                  onClick={() => setIsAddMenuOpen(true)}
-                >
-                  Add first field
-                </CanaryButton>
-              )}
-            </div>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={fieldIds} strategy={verticalListSortingStrategy}>
-                <div className="space-y-1.5">
-                  {fields.map((field) => (
-                    <SortableFieldRow
-                      key={field.id}
-                      field={field}
-                      isSelected={field.id === selectedFieldId}
-                      isReadOnly={isReadOnly}
-                      onSelect={() => setSelectedFieldId(field.id)}
-                      onRemove={() => {
-                        removeField(flow.id, step.id, field.id);
-                        if (selectedFieldId === field.id) setSelectedFieldId(null);
-                      }}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          )}
-
-          {/* Info banner about PMS mapping */}
-          {fields.length > 0 && !isReadOnly && (
-            <div
-              className="mt-5 flex items-start gap-2 px-4 py-3 rounded-md border"
-              style={{ borderColor: colors.colorBlueDark4, backgroundColor: colors.colorBlueDark5 }}
-            >
-              <Icon path={mdiInformationOutline} size={0.7} color={colors.colorBlueDark1} className="mt-0.5 shrink-0" />
-              <p className="text-[12px]" style={{ color: colors.colorBlueDark1 }}>
-                Attach a <strong>semantic tag</strong> to each field to map it to a PMS
-                property (e.g. <code>guest.email</code>). Tagged fields auto-skip on
-                subsequent flows if already collected.
-              </p>
-            </div>
-          )}
+    <div>
+      <div className="px-6 pb-6 pt-4">
+        {/* Header */}
+        <div className="mb-3 flex items-center justify-between gap-4">
+          <h3 className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: colors.colorBlack5 }}>
+            Fields
+          </h3>
+          {!isReadOnly && <AddFieldButton onPick={handleAddField} isOpen={isAddMenuOpen} setOpen={setIsAddMenuOpen} />}
         </div>
-      </div>
 
-      {/* Right side panel for field detail */}
-      {selectedField && (
-        <FieldDetailPanel
-          key={selectedField.id}
-          field={selectedField}
-          flow={flow}
-          step={step}
-          isReadOnly={isReadOnly}
-          onClose={() => setSelectedFieldId(null)}
-        />
-      )}
-    </>
+        {/* Field list */}
+        {fields.length === 0 ? (
+          <div className="p-10 rounded-lg border border-dashed bg-white text-center" style={{ borderColor: colors.colorBlack6 }}>
+            <p className="text-[14px] mb-3" style={{ color: colors.colorBlack5 }}>No fields yet.</p>
+            {!isReadOnly && (
+              <CanaryButton
+                type={ButtonType.PRIMARY}
+                size={ButtonSize.NORMAL}
+                icon={<Icon path={mdiPlus} size={0.7} />}
+                iconPosition={IconPosition.LEFT}
+                onClick={() => setIsAddMenuOpen(true)}
+              >
+                Add first field
+              </CanaryButton>
+            )}
+          </div>
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={fieldIds} strategy={verticalListSortingStrategy}>
+              <div className="space-y-1.5">
+                {fields.map((field) => (
+                  <SortableFieldRow
+                    key={field.id}
+                    field={field}
+                    isSelected={field.id === selectedFieldId}
+                    isReadOnly={isReadOnly}
+                    onSelect={() => setSelectedFieldId(field.id)}
+                    onRemove={() => {
+                      removeField(flow.id, step.id, field.id);
+                      if (selectedFieldId === field.id) setSelectedFieldId(null);
+                    }}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -261,12 +238,11 @@ function SortableFieldRow({
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      className={`group bg-white rounded-md border transition-colors ${
-        isSelected
-          ? 'border-[#2858C4] shadow-sm'
-          : 'border-[#E5E5E5] hover:border-[#BBB]'
-      }`}
+      style={{
+        ...style,
+        borderColor: isSelected ? colors.colorBlueDark1 : colors.colorBlack7,
+      }}
+      className="group bg-white rounded-md border transition-colors shadow-sm"
     >
       <div className="flex items-center">
         <button
@@ -287,42 +263,31 @@ function SortableFieldRow({
           <div
             className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
             style={{ backgroundColor: '#F4F4F5' }}
+            title={typeMeta.displayName}
           >
             <Icon path={typeMeta.icon} size={0.75} color="#555" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[13px] font-semibold text-[#2B2B2B] truncate">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[13px] font-semibold truncate" style={{ color: colors.colorBlack2 }}>
                 {resolveText(field.label) || typeMeta.displayName}
-              </span>
-              <span className="text-[10px] uppercase tracking-wide text-[#888]">
-                {typeMeta.displayName}
               </span>
               {field.required && (
                 <span
-                  className="inline-flex items-center gap-0.5 text-[10px] font-semibold"
+                  className="text-[12px] font-bold leading-none"
                   title="Required"
                   style={{ color: colors.danger }}
                 >
-                  <Icon path={mdiAsteriskCircleOutline} size={0.45} />
-                  Required
-                </span>
-              )}
-              {field.autoSkipIfFilled && (
-                <span
-                  className="inline-flex items-center gap-0.5 text-[10px] text-[#666]"
-                  title="Auto-skips if already collected in a prior flow"
-                >
-                  <Icon path={mdiSkipNextOutline} size={0.5} />
-                  Auto-skip
+                  *
                 </span>
               )}
               {hasConditions && (
                 <span
                   className="text-[10px] px-1.5 py-0.5 rounded"
                   style={{ backgroundColor: colors.colorBlueDark5, color: colors.colorBlueDark1 }}
+                  title={`${field.conditions!.length} visibility condition${field.conditions!.length === 1 ? '' : 's'}`}
                 >
-                  {field.conditions!.length} condition{field.conditions!.length === 1 ? '' : 's'}
+                  {field.conditions!.length} cond
                 </span>
               )}
             </div>

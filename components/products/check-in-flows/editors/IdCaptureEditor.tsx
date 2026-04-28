@@ -37,6 +37,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import {
   CanarySwitch,
+  CanarySelect,
+  InputSize,
   colors,
 } from '@canary-ui/components';
 
@@ -128,17 +130,17 @@ export function IdCaptureEditor({ step, flow, isReadOnly }: Props) {
   };
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="max-w-[1100px] mx-auto px-8 py-6 space-y-5">
+    <div>
+      <div className="px-6 py-6 space-y-5">
         {/* Top settings */}
-        <section className="bg-white rounded-lg border border-[#E5E5E5] p-5">
-          <h3 className="text-[12px] font-semibold uppercase tracking-wider text-[#888] mb-3">
+        <section className="bg-white rounded-lg border p-5" style={{ borderColor: colors.colorBlack7 }}>
+          <h3 className="text-[12px] font-semibold uppercase tracking-wider mb-3" style={{ color: colors.colorBlack5 }}>
             ID Capture Settings
           </h3>
           <label className="flex items-start justify-between gap-4">
             <div>
-              <div className="text-[13px] font-medium text-[#2B2B2B]">Allow multiple IDs</div>
-              <div className="text-[11px] text-[#666]">
+              <div className="text-[13px] font-medium" style={{ color: colors.colorBlack2 }}>Allow multiple IDs</div>
+              <div className="text-[11px]" style={{ color: colors.colorBlack4 }}>
                 Let guests upload more than one ID document in this step (e.g., for
                 Alloggiati family bookings).
               </div>
@@ -152,18 +154,18 @@ export function IdCaptureEditor({ step, flow, isReadOnly }: Props) {
         </section>
 
         {/* ID type options */}
-        <section className="bg-white rounded-lg border border-[#E5E5E5] p-5">
+        <section className="bg-white rounded-lg border p-5" style={{ borderColor: colors.colorBlack7 }}>
           <div className="flex items-baseline justify-between mb-3">
-            <h3 className="text-[12px] font-semibold uppercase tracking-wider text-[#888]">
+            <h3 className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: colors.colorBlack5 }}>
               Accepted ID Types
             </h3>
-            <span className="text-[11px] text-[#AAA]">
+            <span className="text-[11px]" style={{ color: colors.colorBlack6 }}>
               Attach conditions to gate options by guest nationality or loyalty
             </span>
           </div>
 
           {cfg.idTypeOptions.length === 0 ? (
-            <div className="p-8 rounded-md border border-dashed border-[#C5C5C5] bg-[#FAFAFA] text-center text-[13px] text-[#888]">
+            <div className="p-8 rounded-md border border-dashed text-center text-[13px]" style={{ borderColor: colors.colorBlack6, backgroundColor: colors.colorBlack8, color: colors.colorBlack5 }}>
               No ID types configured. Add at least one.
             </div>
           ) : (
@@ -195,7 +197,16 @@ export function IdCaptureEditor({ step, flow, isReadOnly }: Props) {
           {!isReadOnly && cfg.idTypeOptions.length < ID_TYPE_VALUES.length && (
             <button
               onClick={addOption}
-              className="mt-3 w-full py-2 rounded-md border border-dashed border-[#C5C5C5] text-[12px] font-semibold text-[#888] hover:border-[#2858C4] hover:text-[#2858C4] transition-colors flex items-center justify-center gap-1.5"
+              className="mt-3 w-full py-2 rounded-md border border-dashed text-[12px] font-semibold transition-colors flex items-center justify-center gap-1.5"
+              style={{ borderColor: colors.colorBlack6, color: colors.colorBlack5 }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = colors.colorBlueDark1;
+                e.currentTarget.style.color = colors.colorBlueDark1;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = colors.colorBlack6;
+                e.currentTarget.style.color = colors.colorBlack5;
+              }}
             >
               <Icon path={mdiPlus} size={0.6} />
               Add ID type
@@ -275,7 +286,7 @@ function SortableIdTypeRow({
           <Icon path={mdiDrag} size={0.75} />
         </button>
 
-        <div className="flex-1 py-3 pr-3 min-w-0 grid grid-cols-[auto,1fr,auto] gap-3 items-center">
+        <div className="flex-1 py-3 pr-3 min-w-0 grid grid-cols-[auto_1fr_auto] gap-3 items-center">
           <div
             className="w-9 h-9 rounded-md flex items-center justify-center shrink-0"
             style={{ backgroundColor: colors.colorBlueDark5 }}
@@ -284,18 +295,13 @@ function SortableIdTypeRow({
           </div>
 
           <div className="min-w-0">
-            <select
+            <CanarySelect
+              size={InputSize.NORMAL}
               value={option.value}
               disabled={disabled}
               onChange={(e) => onChange({ value: e.target.value as IdTypeOption['value'] })}
-              className="w-full h-8 px-2 text-[13px] font-semibold text-[#2B2B2B] bg-transparent border border-transparent hover:border-[#E5E5E5] focus:border-[#2858C4] focus:bg-white rounded outline-none disabled:opacity-60"
-            >
-              {ID_TYPE_VALUES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
+              options={ID_TYPE_VALUES.map((t) => ({ value: t.value, label: t.label }))}
+            />
             <div className="text-[11px] text-[#888] px-2">
               {hasConditions ? (
                 <span style={{ color: colors.colorBlueDark1 }}>

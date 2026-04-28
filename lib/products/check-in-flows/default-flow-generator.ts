@@ -313,24 +313,23 @@ export function generateDefaultFlow(
 ): FlowDefinition {
   const steps: StepInstance[] = [];
   const { features } = property;
+  const isMobile = surface === 'mobile-web' || surface === 'mobile-app';
 
   // Reset counter so IDs are predictable per flow
   stepCounter = 0;
 
-  // Loyalty welcome (conditional — show only if member)
+  // Registration card always comes first — collect guest identity
+  steps.push(buildRegCardStep(flowId, property, surface));
+
+  // Loyalty welcome (conditional — only for recognized members, after we know who they are)
   if (features.hasLoyaltyProgram) {
     steps.push(buildLoyaltyWelcomeStep(flowId, property));
   }
 
-  // Registration card (always)
-  steps.push(buildRegCardStep(flowId, property, surface));
-
-  // OCR before ID capture if enabled
+  // ID verification block
   if (features.hasOcr && features.hasIdVerification) {
     steps.push(buildOcrStep(flowId));
   }
-
-  // ID consent + capture
   if (features.hasIdVerification) {
     steps.push(buildIdConsentStep(flowId));
     steps.push(buildIdCaptureStep(flowId, property));

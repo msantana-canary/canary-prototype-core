@@ -4,16 +4,27 @@
  * ConditionRuleEditor
  *
  * Reusable editor for Condition[] used at step-level, field-level, and
- * option-level. Each condition is rendered as a rule card: parameter,
- * operator, value, action. UI adjusts to the parameter's valueType —
- * country picker for nationality, tier dropdown for loyalty, boolean
- * for is-member, etc.
+ * option-level. Visual shape mirrors a standard rule builder:
+ *   "Matches ALL of the conditions below"
+ *   [Parameter] [Operator] [Value]   [×]
+ *   [Parameter] [Operator] [Value]   [×]
+ *   + Add condition
+ *
+ * The action ('show' / 'show-option') is implicit per scope — when all
+ * conditions match, the gated thing shows. To express "hide for X",
+ * flip the operator (e.g., "Nationality is not US").
  */
 
 import React from 'react';
 import Icon from '@mdi/react';
 import { mdiPlus, mdiDelete } from '@mdi/js';
-import { colors } from '@canary-ui/components';
+import {
+  CanarySelect,
+  CanaryInput,
+  InputSize,
+  InputType,
+  colors,
+} from '@canary-ui/components';
 
 import type {
   Condition,
@@ -26,9 +37,9 @@ import {
   CONDITION_PARAMETERS,
   COUNTRIES,
   LOYALTY_TIERS,
+  RATE_CODES,
   OPERATOR_LABELS,
   PARAMETER_MAP,
-  getAllowedActions,
   type ParameterMeta,
 } from '@/lib/products/check-in-flows/condition-meta';
 
@@ -37,9 +48,7 @@ interface Props {
   onChange: (next: Condition[]) => void;
   scope: 'step' | 'field' | 'option';
   disabled?: boolean;
-  /** Optional label override for the empty state. */
   emptyLabel?: string;
-  /** Helpful hint string shown when there are no conditions. */
   emptyHint?: string;
 }
 
@@ -48,14 +57,13 @@ function newConditionId(): string {
   return `cond-${Date.now()}-${++condIdCounter}`;
 }
 
-function defaultConditionFor(scope: 'step' | 'field' | 'option'): Condition {
-  const action: ConditionAction =
-    scope === 'option' ? 'show-option' : 'show';
+function emptyCondition(scope: 'step' | 'field' | 'option'): Condition {
+  const action: ConditionAction = scope === 'option' ? 'show-option' : 'show';
   return {
     id: newConditionId(),
-    parameter: 'nationality',
-    operator: 'equals',
-    value: 'IT',
+    parameter: undefined,
+    operator: undefined,
+    value: undefined,
     action,
   };
 }
@@ -65,11 +73,9 @@ export function ConditionRuleEditor({
   onChange,
   scope,
   disabled = false,
-  emptyLabel = 'No conditions',
-  emptyHint = 'This always shows by default.',
+  emptyLabel = 'Always visible',
+  emptyHint = 'Add a condition to gate visibility on guest context.',
 }: Props) {
-  const allowedActions = getAllowedActions(scope);
-
   const updateCondition = (id: string, patch: Partial<Condition>) => {
     onChange(conditions.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   };
@@ -79,35 +85,66 @@ export function ConditionRuleEditor({
   };
 
   const addCondition = () => {
-    onChange([...conditions, defaultConditionFor(scope)]);
+    onChange([...conditions, emptyCondition(scope)]);
   };
 
   return (
     <div>
       {conditions.length === 0 ? (
-        <div className="text-center py-5 rounded-md border border-dashed border-[#E5E5E5] bg-[#FAFAFA]">
-          <p className="text-[13px] text-[#666] font-medium">{emptyLabel}</p>
-          <p className="text-[11px] text-[#888] mt-1">{emptyHint}</p>
+        <div
+          className="px-4 py-3 rounded-md"
+          style={{ backgroundColor: colors.colorBlack8, border: `1px solid ${colors.colorBlack7}` }}
+        >
+          <p className="text-[12px] font-medium" style={{ color: colors.colorBlack3 }}>
+            {emptyLabel}
+          </p>
+          <p className="text-[11px] mt-0.5" style={{ color: colors.colorBlack5 }}>
+            {emptyHint}
+          </p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {conditions.map((cond) => (
-            <ConditionCard
-              key={cond.id}
-              condition={cond}
-              allowedActions={allowedActions}
-              disabled={disabled}
-              onUpdate={(patch) => updateCondition(cond.id, patch)}
-              onRemove={() => removeCondition(cond.id)}
-            />
-          ))}
+        <div
+          className="rounded-md p-3"
+          style={{ border: `1px solid ${colors.colorBlack7}`, backgroundColor: '#FFF' }}
+        >
+          {/* Match header */}
+          <div className="flex items-center gap-1.5 text-[12px] mb-2.5">
+            <span style={{ color: colors.colorBlack4 }}>Matches</span>
+            <span
+              className="px-2 py-0.5 rounded text-[11px] font-bold"
+              style={{ backgroundColor: colors.colorBlueDark5, color: colors.colorBlueDark1 }}
+              title="Multiple conditions are joined with AND"
+            >
+              ALL
+            </span>
+            <span style={{ color: colors.colorBlack4 }}>of the conditions below</span>
+          </div>
+
+          <div className="space-y-1.5">
+            {conditions.map((cond) => (
+              <ConditionRow
+                key={cond.id}
+                condition={cond}
+                disabled={disabled}
+                onUpdate={(patch) => updateCondition(cond.id, patch)}
+                onRemove={() => removeCondition(cond.id)}
+              />
+            ))}
+          </div>
         </div>
       )}
 
       {!disabled && (
         <button
           onClick={addCondition}
-          className="mt-3 w-full py-2 rounded-md border border-dashed border-[#C5C5C5] text-[12px] font-semibold text-[#888] hover:border-[#2858C4] hover:text-[#2858C4] transition-colors flex items-center justify-center gap-1.5"
+          className="mt-2 inline-flex items-center gap-1.5 px-3 h-8 rounded-md text-[12px] font-semibold transition-colors"
+          style={{ color: colors.colorBlueDark1 }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = colors.colorBlueDark5;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
         >
           <Icon path={mdiPlus} size={0.6} />
           Add condition
@@ -117,34 +154,41 @@ export function ConditionRuleEditor({
   );
 }
 
-// ── Single condition card ─────────────────────────────────
+// ── Single condition row ─────────────────────────────────
 
-function ConditionCard({
+function ConditionRow({
   condition,
-  allowedActions,
   disabled,
   onUpdate,
   onRemove,
 }: {
   condition: Condition;
-  allowedActions: { id: ConditionAction; label: string; description: string }[];
   disabled: boolean;
   onUpdate: (patch: Partial<Condition>) => void;
   onRemove: () => void;
 }) {
-  const paramMeta = PARAMETER_MAP[condition.parameter];
-  const allowedOperators = paramMeta.allowedOperators;
-  const isMultiValue = condition.operator === 'in' || condition.operator === 'not-in';
+  const paramMeta: ParameterMeta | null = condition.parameter
+    ? PARAMETER_MAP[condition.parameter]
+    : null;
 
-  const handleParameterChange = (param: ConditionParameter) => {
+  const isParamSet = !!paramMeta;
+  const isMultiValue = condition.operator === 'in' || condition.operator === 'not-in';
+  const operatorLabels = paramMeta?.allowedOperators ?? [];
+
+  const handleParameterChange = (raw: string) => {
+    if (!raw) {
+      onUpdate({ parameter: undefined, operator: undefined, value: undefined });
+      return;
+    }
+    const param = raw as ConditionParameter;
     const meta = PARAMETER_MAP[param];
     const firstOp = meta.allowedOperators[0];
-    // Reset value based on new param's valueType
     const defaultValue = getDefaultValue(meta.valueType);
     onUpdate({ parameter: param, operator: firstOp, value: defaultValue });
   };
 
   const handleOperatorChange = (op: ConditionOperator) => {
+    if (!paramMeta) return;
     const goingMulti = op === 'in' || op === 'not-in';
     const wasMulti = condition.operator === 'in' || condition.operator === 'not-in';
     let value = condition.value;
@@ -155,63 +199,72 @@ function ConditionCard({
   };
 
   return (
-    <div
-      className="rounded-md border p-3"
-      style={{ backgroundColor: colors.colorBlueDark5, borderColor: colors.colorBlueDark4 }}
-    >
-      <div className="grid grid-cols-[minmax(150px,1fr),minmax(130px,auto),2fr,auto] gap-2 items-start">
-        {/* Parameter */}
-        <Select
-          value={condition.parameter}
-          disabled={disabled}
-          onChange={(v) => handleParameterChange(v as ConditionParameter)}
-          options={CONDITION_PARAMETERS.map((p) => ({ value: p.id, label: p.displayName }))}
-        />
+    <div className="grid grid-cols-[minmax(160px,1.2fr)_minmax(110px,auto)_2fr_auto] gap-2 items-start">
+      {/* Parameter */}
+      <CanarySelect
+        size={InputSize.NORMAL}
+        value={condition.parameter ?? ''}
+        disabled={disabled}
+        onChange={(e) => handleParameterChange(e.target.value)}
+        options={[
+          { value: '', label: 'Choose parameter…' },
+          ...CONDITION_PARAMETERS.map((p) => ({ value: p.id, label: p.displayName })),
+        ]}
+      />
 
-        {/* Operator */}
-        <Select
-          value={condition.operator}
-          disabled={disabled}
-          onChange={(v) => handleOperatorChange(v as ConditionOperator)}
-          options={allowedOperators.map((op) => ({ value: op, label: OPERATOR_LABELS[op] }))}
-        />
+      {/* Operator */}
+      <CanarySelect
+        size={InputSize.NORMAL}
+        value={condition.operator ?? ''}
+        disabled={disabled || !isParamSet}
+        onChange={(e) => handleOperatorChange(e.target.value as ConditionOperator)}
+        options={
+          isParamSet
+            ? operatorLabels.map((op) => ({ value: op, label: OPERATOR_LABELS[op] }))
+            : [{ value: '', label: '—' }]
+        }
+      />
 
-        {/* Value input */}
+      {/* Value */}
+      {isParamSet ? (
         <ValueInput
-          paramMeta={paramMeta}
-          operator={condition.operator}
+          paramMeta={paramMeta!}
+          operator={condition.operator!}
           value={condition.value}
           onChange={(v) => onUpdate({ value: v })}
           isMultiValue={isMultiValue}
           disabled={disabled}
         />
+      ) : (
+        <div
+          className="h-9 rounded-md flex items-center px-3 text-[12px]"
+          style={{ border: `1px solid ${colors.colorBlack7}`, color: colors.colorBlack6, backgroundColor: colors.colorBlack8 }}
+        >
+          —
+        </div>
+      )}
 
-        {/* Remove */}
-        {!disabled && (
-          <button
-            onClick={onRemove}
-            className="w-8 h-8 rounded hover:bg-white/60 flex items-center justify-center text-[#888] hover:text-[#D00]"
-            aria-label="Remove condition"
-          >
-            <Icon path={mdiDelete} size={0.65} />
-          </button>
-        )}
-      </div>
-
-      {/* Action */}
-      <div className="mt-2 flex items-center gap-1.5 text-[12px]">
-        <span className="text-[#666]">Then</span>
-        <Select
-          value={condition.action}
-          disabled={disabled}
-          onChange={(v) => onUpdate({ action: v as ConditionAction })}
-          options={allowedActions.map((a) => ({ value: a.id, label: a.label.toLowerCase() }))}
-          size="small"
-        />
-        <span className="text-[#888] italic">
-          {allowedActions.find((a) => a.id === condition.action)?.description}
-        </span>
-      </div>
+      {/* Remove */}
+      {!disabled ? (
+        <button
+          onClick={onRemove}
+          className="w-9 h-9 rounded flex items-center justify-center transition-colors"
+          style={{ color: colors.colorBlack5 }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = colors.colorBlack8;
+            e.currentTarget.style.color = colors.danger;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = colors.colorBlack5;
+          }}
+          aria-label="Remove condition"
+        >
+          <Icon path={mdiDelete} size={0.65} />
+        </button>
+      ) : (
+        <div className="w-9 h-9" />
+      )}
     </div>
   );
 }
@@ -234,7 +287,14 @@ function ValueInput({
   disabled: boolean;
 }) {
   if (operator === 'is-true' || operator === 'is-false') {
-    return <span className="text-[12px] text-[#888] italic py-1.5">no value needed</span>;
+    return (
+      <div
+        className="h-9 rounded-md flex items-center px-3 text-[12px] italic"
+        style={{ border: `1px solid ${colors.colorBlack7}`, color: colors.colorBlack5, backgroundColor: colors.colorBlack8 }}
+      >
+        no value needed
+      </div>
+    );
   }
 
   switch (paramMeta.valueType) {
@@ -248,10 +308,11 @@ function ValueInput({
           placeholder="Select countries…"
         />
       ) : (
-        <Select
+        <CanarySelect
+          size={InputSize.NORMAL}
           value={String(value ?? 'US')}
           disabled={disabled}
-          onChange={onChange}
+          onChange={(e) => onChange(e.target.value)}
           options={COUNTRIES.map((c) => ({ value: c.code, label: `${c.name} (${c.code})` }))}
         />
       );
@@ -265,31 +326,50 @@ function ValueInput({
           placeholder="Select tiers…"
         />
       ) : (
-        <Select
+        <CanarySelect
+          size={InputSize.NORMAL}
           value={String(value ?? 'club-member') as LoyaltyTier}
           disabled={disabled}
-          onChange={onChange}
+          onChange={(e) => onChange(e.target.value)}
           options={LOYALTY_TIERS.map((t) => ({ value: t.value, label: t.label }))}
+        />
+      );
+    case 'rate-code':
+      return isMultiValue ? (
+        <MultiSelect
+          value={(value as string[]) ?? []}
+          options={RATE_CODES.map((r) => ({ value: r.value, label: r.label }))}
+          onChange={onChange}
+          disabled={disabled}
+          placeholder="Select rate codes…"
+        />
+      ) : (
+        <CanarySelect
+          size={InputSize.NORMAL}
+          value={String(value ?? 'CORP')}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.value)}
+          options={RATE_CODES.map((r) => ({ value: r.value, label: r.label }))}
         />
       );
     case 'number':
       return (
-        <input
-          type="number"
-          value={value == null ? '' : Number(value)}
+        <CanaryInput
+          type={InputType.NUMBER}
+          size={InputSize.NORMAL}
+          value={value == null ? '' : String(Number(value))}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
-          className="h-8 px-2 rounded-md border border-[#E5E5E5] bg-white text-[13px] text-[#2B2B2B] outline-none focus:border-[#2858C4] disabled:opacity-60"
         />
       );
     default:
       return (
-        <input
-          type="text"
+        <CanaryInput
+          type={InputType.TEXT}
+          size={InputSize.NORMAL}
           value={String(value ?? '')}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
-          className="h-8 px-2 rounded-md border border-[#E5E5E5] bg-white text-[13px] text-[#2B2B2B] outline-none focus:border-[#2858C4] disabled:opacity-60"
         />
       );
   }
@@ -299,43 +379,11 @@ function getDefaultValue(valueType: string): any {
   switch (valueType) {
     case 'country-code': return 'US';
     case 'loyalty-tier': return 'club-member';
+    case 'rate-code': return 'CORP';
     case 'number': return 0;
     case 'boolean': return undefined;
     default: return '';
   }
-}
-
-// ── Reusable form primitives ──────────────────────────────
-
-function Select({
-  value,
-  onChange,
-  options,
-  disabled,
-  size = 'normal',
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-  disabled?: boolean;
-  size?: 'normal' | 'small';
-}) {
-  return (
-    <select
-      value={value}
-      disabled={disabled}
-      onChange={(e) => onChange(e.target.value)}
-      className={`rounded-md border border-[#E5E5E5] bg-white text-[#2B2B2B] outline-none focus:border-[#2858C4] disabled:opacity-60 ${
-        size === 'small' ? 'h-7 px-1.5 text-[11px]' : 'h-8 px-2 text-[13px]'
-      }`}
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
-  );
 }
 
 function MultiSelect({
@@ -363,24 +411,26 @@ function MultiSelect({
       <button
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
-        className="w-full min-h-[32px] px-2 py-1 rounded-md border border-[#E5E5E5] bg-white text-[13px] text-left hover:border-[#999] disabled:opacity-60 flex flex-wrap items-center gap-1"
+        className="w-full min-h-[36px] px-2.5 py-1 rounded-md border bg-white text-[13px] text-left disabled:opacity-60 flex flex-wrap items-center gap-1"
+        style={{ borderColor: colors.colorBlack6 }}
       >
         {value.length === 0 ? (
-          <span className="text-[#888]">{placeholder}</span>
+          <span style={{ color: colors.colorBlack5 }}>{placeholder}</span>
         ) : value.length <= 3 ? (
           value.map((v) => {
             const opt = options.find((o) => o.value === v);
             return (
               <span
                 key={v}
-                className="text-[11px] px-1.5 py-0.5 rounded bg-[#F4F4F5] text-[#555]"
+                className="text-[11px] px-1.5 py-0.5 rounded"
+                style={{ backgroundColor: colors.colorBlueDark5, color: colors.colorBlueDark1 }}
               >
                 {opt?.label ?? v}
               </span>
             );
           })
         ) : (
-          <span className="text-[12px] text-[#2B2B2B] font-semibold">
+          <span className="text-[12px] font-semibold" style={{ color: colors.colorBlack2 }}>
             {value.length} selected
           </span>
         )}
@@ -388,18 +438,26 @@ function MultiSelect({
       {isOpen && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setIsOpen(false)} />
-          <div className="absolute left-0 top-full mt-1 w-[260px] max-h-[300px] overflow-auto bg-white rounded-md border border-[#E5E5E5] shadow-md z-40 py-1">
+          <div
+            className="absolute left-0 top-full mt-1 w-[260px] max-h-[300px] overflow-auto bg-white rounded-md border shadow-md z-40 py-1"
+            style={{ borderColor: colors.colorBlack6 }}
+          >
             {options.map((opt) => {
               const selected = value.includes(opt.value);
               return (
                 <button
                   key={opt.value}
                   onClick={() => toggle(opt.value)}
-                  className={`w-full text-left px-3 py-1.5 text-[12px] flex items-center gap-2 hover:bg-[#F4F4F5] ${
-                    selected ? 'bg-[#F4F4F5]' : ''
-                  }`}
+                  className="w-full text-left px-3 py-1.5 text-[12px] flex items-center gap-2 hover:bg-[#F4F4F5]"
+                  style={selected ? { backgroundColor: colors.colorBlueDark5 } : undefined}
                 >
-                  <span className={`w-4 h-4 rounded-sm border flex items-center justify-center ${selected ? 'bg-[#2858C4] border-[#2858C4]' : 'border-[#CCC]'}`}>
+                  <span
+                    className="w-4 h-4 rounded-sm border flex items-center justify-center"
+                    style={selected
+                      ? { backgroundColor: colors.colorBlueDark1, borderColor: colors.colorBlueDark1 }
+                      : { borderColor: colors.colorBlack6 }
+                    }
+                  >
                     {selected && <span className="text-white text-[10px]">✓</span>}
                   </span>
                   {opt.label}

@@ -1,101 +1,184 @@
-/**
- * Check-In Flow Configuration Store (Zustand)
- *
- * Global state for the configurator:
- * - Which property (and brand variant) is being configured
- * - The flows for that property
- * - Navigation state (drill-down: landing → flow → step → field)
- * - Preview context (simulated guest nationality, loyalty, etc.)
- * - Current role (CS vs Hotel)
- *
- * Edits persist in Zustand for the session. Saving to backend is theater
- * (this is a prototype); the structure is production-shaped.
- */
-
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import type {
   FlowDefinition,
   Property,
   PreviewContext,
-  Surface,
   StepInstance,
   FieldDef,
   Condition,
-  Brand,
+  CheckInConfig,
+  LocalizedText,
 } from './types';
-import { PROPERTIES } from './properties';
-import { INITIAL_FLOWS } from './mock-data';
 import { generateDefaultFlowsForProperty } from './default-flow-generator';
 
-// ── Navigation state ─────────────────────────────────────
+// ── Default config (Statler New York) ───────────────────
 
-export type NavLevel = 'landing' | 'flow' | 'step';
+export const DEFAULT_CONFIG: CheckInConfig = {
+  idStepWithOcr: 'REQUIRED_WITH_OCR',
+  requireIdCardBack: false,
+  idOptions: ['passport', 'drivers-license', 'national-id'],
+  showIdConsent: true,
+  idConsentText: 'I consent to identity verification and the collection of my ID document.',
+  idRetentionDays: 181,
+  ocrFields: {
+    gender: 'OPTIONAL',
+    firstName: 'REQUIRED',
+    lastName: 'REQUIRED',
+    secondLastName: 'HIDDEN',
+    dateOfBirth: 'REQUIRED',
+    nationality: 'REQUIRED',
+    country: 'OPTIONAL',
+    documentNumber: 'REQUIRED',
+    personalNumber: 'HIDDEN',
+    countryOfIssue: 'OPTIONAL',
+    dateOfIssue: 'OPTIONAL',
+    dateOfExpiry: 'REQUIRED',
+  },
+  creditCardStep: 'REQUIRED',
+  creditCardUploadPolicy: 'NEVER',
+  requireCreditCardPostalCode: false,
+  blockedCardTypes: [],
+  blockedCardNetworks: [],
+  disableViewFullCardInfo: false,
+  depositStrategy: 'AUTHORIZE',
+  isCanaryProcessingDeposits: true,
+  showDepositSurchargeDetail: false,
+  shouldSkipDepositIfRoutingRulesExist: false,
+  surchargeCredit: 0,
+  surchargeDebit: 0,
+  surchargePrepaid: 0,
+  surchargeUnknown: 0,
+  additionalGuestsStep: 'DISABLED',
+  additionalGuestsFields: {
+    fullName: 'REQUIRED',
+    firstName: 'REQUIRED',
+    lastName: 'REQUIRED',
+    dob: 'OPTIONAL',
+    gender: 'HIDDEN',
+    email: 'OPTIONAL',
+    phone: 'OPTIONAL',
+    nationality: 'REQUIRED',
+    id: 'OPTIONAL',
+    idNumber: 'OPTIONAL',
+    address: 'HIDDEN',
+    postalCode: 'HIDDEN',
+  },
+  hasSequentialSubmissionStamp: true,
+  sequentialSubmissionStampPrefix: '#C-',
+  autoCheckInEnabled: false,
+  autoCheckInTime: '15:00',
+  autoCheckInWindow: 12,
+  autoCheckInRequirePreReg: true,
+  autoCheckInRequireIdVerification: true,
+  autoCheckInRequireIdNameMatch: true,
+  hasAppleWallet: false,
+  hasGoogleWallet: false,
+  hasCheckInMobile: true,
+  hasTabletReg: true,
+  hasKiosk: true,
+  checkInCutOffHour: 3,
+  checkInCutoffDay: 'NEXT_DAY',
+  notificationEmails: 'frontdesk@thestatler.com',
+  messageAfterSuccessfulCheckIn: 'Please come to the front desk to pick up your room key.',
+};
+
+// ── Config → Property derivation ────────────────────────
+
+export function configToProperty(config: CheckInConfig): Property {
+  const hasId = config.idStepWithOcr !== 'DISABLED';
+  const hasOcr = config.idStepWithOcr === 'REQUIRED_WITH_OCR' || config.idStepWithOcr === 'OPTIONAL_WITH_OCR';
+  return {
+    id: 'statler-nyc',
+    name: 'Statler New York',
+    brand: 'independent',
+    country: 'United States',
+    countryCode: 'US',
+    region: 'North America',
+    currency: 'USD',
+    address: '151 West 54th St, New York, NY 10019',
+    defaultLanguages: ['en'],
+    features: {
+      hasCheckIn: true,
+      hasTabletReg: config.hasTabletReg,
+      hasKiosk: config.hasKiosk,
+      hasMobileApp: false,
+      hasIdVerification: hasId,
+      hasOcr,
+      hasIdEncodeIntegration: false,
+      hasDepositCollection: config.isCanaryProcessingDeposits,
+      hasUpsells: true,
+      hasMobileKey: false,
+      hasAccompanyingGuests: config.additionalGuestsStep !== 'DISABLED',
+      hasGuestProfile: false,
+      hasLoyaltyProgram: true,
+      hasStbCompliance: false,
+      hasAlloggiatiCompliance: false,
+    },
+  };
+}
+
+// ── Upsells nested flow builder ─────────────────────────
+
+let nestedIdCounter = 0;
+function nestedStepId(flowId: string): string {
+  return `${flowId}-step-${++nestedIdCounter}`;
+}
+function loc(en: string): LocalizedText { return { en }; }
+
+function buildUpsellsFlow(property: Property): FlowDefinition {
+  const flowId = `${property.id}-upsells`;
+  nestedIdCounter = 0;
+  return {
+    id: flowId,
+    propertyId: property.id,
+    name: 'Upsells',
+    description: 'Upgrade offers, add-ons, and early check-in.',
+    surface: 'web',
+    kind: 'nested',
+    steps: [
+      { id: nestedStepId(flowId), templateId: 'completion', name: 'Upgrade Your Stay', kind: 'preset', isSkippable: true, order: 0,
+        config: { kind: 'preset', presetType: 'completion', heading: loc('Enhance your stay'), body: loc('Explore room upgrades, amenities, and early check-in options.'), ctaLabel: loc('Browse offers') } },
+      { id: nestedStepId(flowId), templateId: 'completion', name: 'Add-Ons Browse', kind: 'preset', isSkippable: true, order: 1,
+        config: { kind: 'preset', presetType: 'completion', heading: loc('Available upgrades'), body: loc('Tap any item to add it to your reservation.'), ctaLabel: loc('Add to stay') } },
+      { id: nestedStepId(flowId), templateId: 'completion', name: 'Review Cart', kind: 'preset', isSkippable: false, order: 2,
+        config: { kind: 'preset', presetType: 'completion', heading: loc('Review your additions'), body: loc('These charges will be added to your folio at checkout.'), ctaLabel: loc('Confirm') } },
+    ],
+    isDefault: true,
+    isCustomized: false,
+    updatedAt: new Date('2026-04-23'),
+  };
+}
+
+// ── Build initial flows from config ─────────────────────
+
+function buildFlowsFromConfig(config: CheckInConfig): FlowDefinition[] {
+  const property = configToProperty(config);
+  const mainFlows = generateDefaultFlowsForProperty(property);
+  const nested: FlowDefinition[] = [];
+  if (property.features.hasUpsells) nested.push(buildUpsellsFlow(property));
+  return [...mainFlows, ...nested];
+}
+
+// ── Navigation state ────────────────────────────────────
 
 export interface NavState {
-  level: NavLevel;
+  tab: 'configuration' | 'flows';
   flowId: string | null;
   stepId: string | null;
-  editorTab: 'configuration' | 'conditions' | 'preview';
+  isEditingStep: boolean;
+  fieldId: string | null;
 }
 
-// ── Store shape ───────────────────────────────────────────
+const DEFAULT_NAV: NavState = {
+  tab: 'configuration',
+  flowId: null,
+  stepId: null,
+  isEditingStep: false,
+  fieldId: null,
+};
 
-interface CheckInFlowsState {
-  // Data
-  properties: Property[];
-  flows: FlowDefinition[];
-
-  // Current selection
-  currentPropertyId: string;
-
-  // Brand override (Statler can toggle between Wyndham and Best Western)
-  brandOverride: Partial<Record<string, Brand>>;  // { propertyId: brand }
-
-  // Navigation
-  nav: NavState;
-
-  // Preview context (simulated guest)
-  previewContext: PreviewContext;
-  previewSurface: Surface;
-  previewLanguage: string;
-
-  // ── Property / brand ────────────────────────────────────
-  setCurrentProperty: (propertyId: string) => void;
-  setBrandOverride: (propertyId: string, brand: Brand) => void;
-  resetBrandOverride: (propertyId: string) => void;
-  togglePropertyFeature: (propertyId: string, feature: keyof Property['features']) => void;
-
-  // ── Navigation ──────────────────────────────────────────
-  goToLanding: () => void;
-  goToFlow: (flowId: string) => void;
-  goToStep: (flowId: string, stepId: string) => void;
-  setEditorTab: (tab: NavState['editorTab']) => void;
-
-  // ── Flow CRUD ───────────────────────────────────────────
-  regenerateFlowsForProperty: (propertyId: string) => void;
-
-  // ── Step CRUD ───────────────────────────────────────────
-  addStep: (flowId: string, step: StepInstance) => void;
-  removeStep: (flowId: string, stepId: string) => void;
-  reorderSteps: (flowId: string, orderedIds: string[]) => void;
-  updateStep: (flowId: string, stepId: string, updates: Partial<StepInstance>) => void;
-  updateStepConfig: (flowId: string, stepId: string, updater: (cfg: StepInstance['config']) => StepInstance['config']) => void;
-  updateStepConditions: (flowId: string, stepId: string, conditions: Condition[]) => void;
-
-  // ── Field CRUD (schema-form steps) ──────────────────────
-  addField: (flowId: string, stepId: string, field: FieldDef) => void;
-  removeField: (flowId: string, stepId: string, fieldId: string) => void;
-  reorderFields: (flowId: string, stepId: string, orderedIds: string[]) => void;
-  updateField: (flowId: string, stepId: string, fieldId: string, updates: Partial<FieldDef>) => void;
-
-  // ── Preview ────────────────────────────────────────────
-  setPreviewContext: (updates: Partial<PreviewContext>) => void;
-  setPreviewSurface: (surface: Surface) => void;
-  setPreviewLanguage: (lang: string) => void;
-}
-
-// ── Default preview context ──────────────────────────────
+// ── Preview context ─────────────────────────────────────
 
 const DEFAULT_PREVIEW: PreviewContext = {
   guestNationalityCode: 'US',
@@ -108,94 +191,138 @@ const DEFAULT_PREVIEW: PreviewContext = {
   language: 'en',
 };
 
-// ── Store ─────────────────────────────────────────────────
+// ── Store shape ─────────────────────────────────────────
+
+interface CheckInFlowsState {
+  config: CheckInConfig;
+  expandedSections: string[];
+  flows: FlowDefinition[];
+  nav: NavState;
+  previewContext: PreviewContext;
+  previewSurface: 'web' | 'mobile-web';
+
+  // Config
+  updateConfig: <K extends keyof CheckInConfig>(key: K, value: CheckInConfig[K]) => void;
+  toggleSection: (sectionId: string) => void;
+
+  // Navigation
+  setTab: (tab: NavState['tab']) => void;
+  selectFlow: (flowId: string) => void;
+  deselectFlow: () => void;
+  selectStep: (stepId: string) => void;
+  deselectStep: () => void;
+  editStep: (stepId: string) => void;
+  stopEditingStep: () => void;
+  selectField: (fieldId: string) => void;
+  deselectField: () => void;
+
+  // Step CRUD
+  addStep: (flowId: string, step: StepInstance) => void;
+  removeStep: (flowId: string, stepId: string) => void;
+  reorderSteps: (flowId: string, orderedIds: string[]) => void;
+  updateStep: (flowId: string, stepId: string, updates: Partial<StepInstance>) => void;
+  updateStepConfig: (flowId: string, stepId: string, updater: (cfg: StepInstance['config']) => StepInstance['config']) => void;
+  updateStepConditions: (flowId: string, stepId: string, conditions: Condition[]) => void;
+
+  // Field CRUD
+  addField: (flowId: string, stepId: string, field: FieldDef) => void;
+  removeField: (flowId: string, stepId: string, fieldId: string) => void;
+  reorderFields: (flowId: string, stepId: string, orderedIds: string[]) => void;
+  updateField: (flowId: string, stepId: string, fieldId: string, updates: Partial<FieldDef>) => void;
+
+  // Preview
+  setPreviewContext: (updates: Partial<PreviewContext>) => void;
+  setPreviewSurface: (surface: 'web' | 'mobile-web') => void;
+
+  // Flow regeneration
+  regenerateFlowsForProperty: (propertyId: string) => void;
+}
+
+// ── Store ───────────────────────────────────────────────
 
 export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
-  properties: PROPERTIES,
-  flows: INITIAL_FLOWS,
-
-  currentPropertyId: 'statler-nyc',
-  brandOverride: {},
-
-  nav: { level: 'landing', flowId: null, stepId: null, editorTab: 'configuration' },
-
+  config: DEFAULT_CONFIG,
+  expandedSections: ['identity'],
+  flows: buildFlowsFromConfig(DEFAULT_CONFIG),
+  nav: DEFAULT_NAV,
   previewContext: DEFAULT_PREVIEW,
-  previewSurface: 'web',
-  previewLanguage: 'en',
+  previewSurface: 'mobile-web' as const,
 
-  // ── Property / brand ───────────────────────────────────
-  setCurrentProperty: (propertyId) => {
-    set({
-      currentPropertyId: propertyId,
-      nav: { level: 'landing', flowId: null, stepId: null, editorTab: 'configuration' },
-    });
-  },
-
-  setBrandOverride: (propertyId, brand) => {
-    set((state) => ({
-      brandOverride: { ...state.brandOverride, [propertyId]: brand },
-    }));
-    // Regenerate flows for this property so ENCODE provider updates
-    get().regenerateFlowsForProperty(propertyId);
-  },
-
-  resetBrandOverride: (propertyId) => {
+  // ── Config ────────────────────────────────────────────
+  updateConfig: (key, value) => {
     set((state) => {
-      const next = { ...state.brandOverride };
-      delete next[propertyId];
-      return { brandOverride: next };
+      const newConfig = { ...state.config, [key]: value };
+      const newFlows = buildFlowsFromConfig(newConfig);
+      return {
+        config: newConfig,
+        flows: newFlows,
+        nav: { ...state.nav, stepId: null, isEditingStep: false, fieldId: null },
+      };
     });
-    get().regenerateFlowsForProperty(propertyId);
   },
 
-  togglePropertyFeature: (propertyId, feature) => {
+  toggleSection: (sectionId) => {
     set((state) => ({
-      properties: state.properties.map((p) =>
-        p.id === propertyId
-          ? { ...p, features: { ...p.features, [feature]: !p.features[feature] } }
-          : p
-      ),
+      expandedSections: state.expandedSections.includes(sectionId)
+        ? state.expandedSections.filter((s) => s !== sectionId)
+        : [...state.expandedSections, sectionId],
     }));
-    // Regenerate flows so the toggle affects the default flow
-    get().regenerateFlowsForProperty(propertyId);
   },
 
-  // ── Navigation ─────────────────────────────────────────
-  goToLanding: () => set({ nav: { level: 'landing', flowId: null, stepId: null, editorTab: 'configuration' } }),
-  goToFlow: (flowId) => set({ nav: { level: 'flow', flowId, stepId: null, editorTab: 'configuration' } }),
-  goToStep: (flowId, stepId) => set({ nav: { level: 'step', flowId, stepId, editorTab: 'configuration' } }),
-  setEditorTab: (tab) => set((state) => ({ nav: { ...state.nav, editorTab: tab } })),
+  // ── Navigation ────────────────────────────────────────
+  setTab: (tab) => set((state) => ({
+    nav: { ...state.nav, tab, flowId: null, stepId: null, isEditingStep: false, fieldId: null },
+  })),
 
-  // ── Flow CRUD ──────────────────────────────────────────
-  regenerateFlowsForProperty: (propertyId) => {
-    set((state) => {
-      const property = state.properties.find((p) => p.id === propertyId);
-      if (!property) return state;
-      // Use the getCurrentProperty logic (with brand override) only when this is the current property
-      const brand = state.brandOverride[propertyId] ?? property.brand;
-      const propWithBrand: Property =
-        brand === property.brand
-          ? property
-          : { ...property, brand, features: { ...property.features, hasIdEncodeIntegration: brand === 'wyndham' } };
+  selectFlow: (flowId) => set((state) => {
+    const flow = state.flows.find((f) => f.id === flowId);
+    const firstStepId = flow?.steps[0]?.id ?? null;
+    return {
+      nav: { ...state.nav, flowId, stepId: firstStepId, isEditingStep: false, fieldId: null },
+    };
+  }),
 
-      // Keep flows from other properties, regenerate this one's
-      const otherFlows = state.flows.filter((f) => f.propertyId !== propertyId);
-      const newFlows = generateDefaultFlowsForProperty(propWithBrand);
-      return { flows: [...otherFlows, ...newFlows] };
-    });
+  deselectFlow: () => set((state) => ({
+    nav: { ...state.nav, flowId: null, stepId: null, isEditingStep: false, fieldId: null },
+  })),
+
+  selectStep: (stepId) => set((state) => ({
+    nav: { ...state.nav, stepId, isEditingStep: false, fieldId: null },
+  })),
+
+  deselectStep: () => set((state) => ({
+    nav: { ...state.nav, stepId: null, isEditingStep: false, fieldId: null },
+  })),
+
+  editStep: (stepId) => set((state) => ({
+    nav: { ...state.nav, stepId, isEditingStep: true, fieldId: null },
+  })),
+
+  stopEditingStep: () => set((state) => ({
+    nav: { ...state.nav, isEditingStep: false, fieldId: null },
+  })),
+
+  selectField: (fieldId) => set((state) => ({
+    nav: { ...state.nav, fieldId },
+  })),
+
+  deselectField: () => set((state) => ({
+    nav: { ...state.nav, fieldId: null },
+  })),
+
+  // ── Flow regeneration ─────────────────────────────────
+  regenerateFlowsForProperty: () => {
+    set((state) => ({
+      flows: buildFlowsFromConfig(state.config),
+    }));
   },
 
-  // ── Step CRUD ──────────────────────────────────────────
+  // ── Step CRUD ─────────────────────────────────────────
   addStep: (flowId, step) => {
     set((state) => ({
       flows: state.flows.map((f) =>
         f.id === flowId
-          ? {
-              ...f,
-              steps: [...f.steps, { ...step, order: f.steps.length }],
-              isCustomized: true,
-              updatedAt: new Date(),
-            }
+          ? { ...f, steps: [...f.steps, { ...step, order: f.steps.length }], isCustomized: true, updatedAt: new Date() }
           : f
       ),
     }));
@@ -205,12 +332,7 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
     set((state) => ({
       flows: state.flows.map((f) =>
         f.id === flowId
-          ? {
-              ...f,
-              steps: f.steps.filter((s) => s.id !== stepId).map((s, idx) => ({ ...s, order: idx })),
-              isCustomized: true,
-              updatedAt: new Date(),
-            }
+          ? { ...f, steps: f.steps.filter((s) => s.id !== stepId).map((s, idx) => ({ ...s, order: idx })), isCustomized: true, updatedAt: new Date() }
           : f
       ),
     }));
@@ -231,12 +353,7 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
     set((state) => ({
       flows: state.flows.map((f) =>
         f.id === flowId
-          ? {
-              ...f,
-              steps: f.steps.map((s) => (s.id === stepId ? { ...s, ...updates } : s)),
-              isCustomized: true,
-              updatedAt: new Date(),
-            }
+          ? { ...f, steps: f.steps.map((s) => (s.id === stepId ? { ...s, ...updates } : s)), isCustomized: true, updatedAt: new Date() }
           : f
       ),
     }));
@@ -246,12 +363,7 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
     set((state) => ({
       flows: state.flows.map((f) =>
         f.id === flowId
-          ? {
-              ...f,
-              steps: f.steps.map((s) => (s.id === stepId ? { ...s, config: updater(s.config) } : s)),
-              isCustomized: true,
-              updatedAt: new Date(),
-            }
+          ? { ...f, steps: f.steps.map((s) => (s.id === stepId ? { ...s, config: updater(s.config) } : s)), isCustomized: true, updatedAt: new Date() }
           : f
       ),
     }));
@@ -261,7 +373,7 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
     get().updateStep(flowId, stepId, { conditions });
   },
 
-  // ── Field CRUD (schema-form steps) ─────────────────────
+  // ── Field CRUD ────────────────────────────────────────
   addField: (flowId, stepId, field) => {
     get().updateStepConfig(flowId, stepId, (cfg) => {
       if (cfg.kind !== 'schema-form') return cfg;
@@ -272,10 +384,7 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
   removeField: (flowId, stepId, fieldId) => {
     get().updateStepConfig(flowId, stepId, (cfg) => {
       if (cfg.kind !== 'schema-form') return cfg;
-      return {
-        ...cfg,
-        fields: cfg.fields.filter((f) => f.id !== fieldId).map((f, idx) => ({ ...f, order: idx })),
-      };
+      return { ...cfg, fields: cfg.fields.filter((f) => f.id !== fieldId).map((f, idx) => ({ ...f, order: idx })) };
     });
   },
 
@@ -290,78 +399,48 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
   updateField: (flowId, stepId, fieldId, updates) => {
     get().updateStepConfig(flowId, stepId, (cfg) => {
       if (cfg.kind !== 'schema-form') return cfg;
-      return {
-        ...cfg,
-        fields: cfg.fields.map((f) => (f.id === fieldId ? { ...f, ...updates } : f)),
-      };
+      return { ...cfg, fields: cfg.fields.map((f) => (f.id === fieldId ? { ...f, ...updates } : f)) };
     });
   },
 
-  // ── Preview ────────────────────────────────────────────
-  setPreviewContext: (updates) => set((state) => ({ previewContext: { ...state.previewContext, ...updates } })),
-  setPreviewSurface: (surface) => set({ previewSurface: surface }),
-  setPreviewLanguage: (lang) => set((state) => ({
-    previewContext: { ...state.previewContext, language: lang },
-    previewLanguage: lang,
+  // ── Preview ───────────────────────────────────────────
+  setPreviewContext: (updates) => set((state) => ({
+    previewContext: { ...state.previewContext, ...updates },
   })),
+  setPreviewSurface: (surface) => set({ previewSurface: surface }),
 }));
 
-// ── Derived hooks ─────────────────────────────────────────
-// These select raw state and derive in useMemo — avoids the
-// "getServerSnapshot should be cached" Zustand+React 19 trap.
+// ── Derived hooks ───────────────────────────────────────
 
-/** The current property, with brand override applied. */
 export function useCurrentProperty(): Property {
-  const currentPropertyId = useCheckInFlowsStore((s) => s.currentPropertyId);
-  const properties = useCheckInFlowsStore((s) => s.properties);
-  const brandOverride = useCheckInFlowsStore((s) => s.brandOverride);
-  return useMemo(() => {
-    const base = properties.find((p) => p.id === currentPropertyId) ?? properties[0];
-    const brand = brandOverride[currentPropertyId] ?? base.brand;
-    if (brand !== base.brand) {
-      return {
-        ...base,
-        brand,
-        features: { ...base.features, hasIdEncodeIntegration: brand === 'wyndham' },
-      };
-    }
-    return base;
-  }, [properties, currentPropertyId, brandOverride]);
+  const config = useCheckInFlowsStore((s) => s.config);
+  return useMemo(() => configToProperty(config), [config]);
 }
 
-/** All flows belonging to the current property. */
 export function useFlowsForCurrentProperty(): FlowDefinition[] {
-  const currentPropertyId = useCheckInFlowsStore((s) => s.currentPropertyId);
   const flows = useCheckInFlowsStore((s) => s.flows);
-  return useMemo(() => flows.filter((f) => f.propertyId === currentPropertyId), [flows, currentPropertyId]);
+  return useMemo(() => flows, [flows]);
 }
 
-/** A single flow by ID (stable reference via useMemo). */
 export function useFlowById(flowId: string | null): FlowDefinition | undefined {
   const flows = useCheckInFlowsStore((s) => s.flows);
   return useMemo(() => (flowId ? flows.find((f) => f.id === flowId) : undefined), [flows, flowId]);
 }
 
-/** A single step from a flow (stable reference via useMemo). */
 export function useStepById(flowId: string | null, stepId: string | null): StepInstance | undefined {
   const flow = useFlowById(flowId);
   return useMemo(() => (stepId ? flow?.steps.find((s) => s.id === stepId) : undefined), [flow, stepId]);
 }
 
-// ── Imperative getters (for use outside render, e.g. in actions) ──
+export function useGeneratedFlows(): FlowDefinition[] {
+  const flows = useFlowsForCurrentProperty();
+  return useMemo(() => flows.filter((f) => f.kind === 'main'), [flows]);
+}
+
+export const useConfigStore = useCheckInFlowsStore;
 
 export const getCurrentPropertyImperative = (): Property => {
-  const state = useCheckInFlowsStore.getState();
-  const base = state.properties.find((p) => p.id === state.currentPropertyId) ?? state.properties[0];
-  const brand = state.brandOverride[state.currentPropertyId] ?? base.brand;
-  if (brand !== base.brand) {
-    return {
-      ...base,
-      brand,
-      features: { ...base.features, hasIdEncodeIntegration: brand === 'wyndham' },
-    };
-  }
-  return base;
+  return configToProperty(useCheckInFlowsStore.getState().config);
 };
 
 export const getFlowByIdImperative = (flowId: string): FlowDefinition | undefined =>
@@ -369,4 +448,3 @@ export const getFlowByIdImperative = (flowId: string): FlowDefinition | undefine
 
 export const getStepByIdImperative = (flowId: string, stepId: string): StepInstance | undefined =>
   useCheckInFlowsStore.getState().flows.find((f) => f.id === flowId)?.steps.find((s) => s.id === stepId);
-

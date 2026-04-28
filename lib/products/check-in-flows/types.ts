@@ -279,8 +279,8 @@ export type ConditionAction = 'show' | 'hide' | 'require' | 'show-option' | 'hid
 
 export interface Condition {
   id: string;
-  parameter: ConditionParameter;
-  operator: ConditionOperator;
+  parameter?: ConditionParameter;
+  operator?: ConditionOperator;
   value?: string | string[] | number | boolean;
   action: ConditionAction;
 }
@@ -308,4 +308,65 @@ export type LocalizedText = Record<string, string>;   // { 'en': '...', 'it': '.
 export function resolveText(text: LocalizedText | undefined, lang: string = 'en'): string {
   if (!text) return '';
   return text[lang] ?? text['en'] ?? Object.values(text)[0] ?? '';
+}
+
+// ── Check-In Configuration (mirrors Django check_in.Configuration) ──
+
+export type IdStepMode = 'REQUIRED' | 'REQUIRED_WITH_OCR' | 'OPTIONAL' | 'OPTIONAL_WITH_OCR' | 'DISABLED';
+export type CreditCardStepMode = 'REQUIRED' | 'OPTIONAL' | 'DISABLED';
+export type CreditCardUploadPolicy = 'ALWAYS' | 'OPTIONAL' | 'NEVER' | 'HIGH_RISK';
+export type DepositStrategy = 'AUTHORIZE' | 'CHARGE';
+export type GuestStepMode = 'REQUIRED' | 'OPTIONAL' | 'DISABLED';
+export type FieldVisibility = 'REQUIRED' | 'OPTIONAL' | 'READONLY' | 'HIDDEN';
+export type CutoffDay = 'SAME_DAY' | 'NEXT_DAY';
+
+export interface CheckInConfig {
+  idStepWithOcr: IdStepMode;
+  requireIdCardBack: boolean;
+  idOptions: string[];
+  showIdConsent: boolean;
+  idConsentText: string;
+  idRetentionDays: number;
+  ocrFields: Record<string, FieldVisibility>;
+
+  creditCardStep: CreditCardStepMode;
+  creditCardUploadPolicy: CreditCardUploadPolicy;
+  requireCreditCardPostalCode: boolean;
+  blockedCardTypes: string[];
+  blockedCardNetworks: string[];
+  disableViewFullCardInfo: boolean;
+
+  depositStrategy: DepositStrategy;
+  isCanaryProcessingDeposits: boolean;
+  showDepositSurchargeDetail: boolean;
+  shouldSkipDepositIfRoutingRulesExist: boolean;
+  surchargeCredit: number;
+  surchargeDebit: number;
+  surchargePrepaid: number;
+  surchargeUnknown: number;
+
+  additionalGuestsStep: GuestStepMode;
+  additionalGuestsFields: Record<string, FieldVisibility>;
+
+  hasSequentialSubmissionStamp: boolean;
+  sequentialSubmissionStampPrefix: string;
+
+  autoCheckInEnabled: boolean;
+  autoCheckInTime: string;
+  autoCheckInWindow: number;
+  autoCheckInRequirePreReg: boolean;
+  autoCheckInRequireIdVerification: boolean;
+  autoCheckInRequireIdNameMatch: boolean;
+
+  hasAppleWallet: boolean;
+  hasGoogleWallet: boolean;
+
+  hasCheckInMobile: boolean;
+  hasTabletReg: boolean;
+  hasKiosk: boolean;
+  checkInCutOffHour: number;
+  checkInCutoffDay: CutoffDay;
+
+  notificationEmails: string;
+  messageAfterSuccessfulCheckIn: string;
 }

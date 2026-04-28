@@ -27,6 +27,10 @@ export function evaluateCondition(
   condition: Condition,
   ctx: PreviewContext
 ): boolean {
+  // Incomplete conditions (no parameter or operator chosen yet) are
+  // treated as no-ops so they don't block visibility while the user
+  // is still building the rule.
+  if (!condition.parameter || !condition.operator) return true;
   const actual = resolveParameter(condition.parameter, ctx);
   return evaluateOperator(actual, condition.operator, condition.value);
 }

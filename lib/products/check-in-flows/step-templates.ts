@@ -137,6 +137,40 @@ export function getStepTemplateMeta(id: StepTemplateId): StepTemplateMeta {
   return STEP_TEMPLATE_MAP[id];
 }
 
+const FLAG_LABELS: Partial<Record<keyof PropertyFeatureFlags, string>> = {
+  hasIdVerification: 'ID Verification',
+  hasOcr: 'OCR',
+  hasDepositCollection: 'Deposit Collection',
+  hasUpsells: 'Upsells',
+  hasLoyaltyProgram: 'Loyalty Program',
+};
+
+export type AttributionCategory = 'core' | 'identity' | 'payment' | 'experience';
+
+export interface AttributionInfo {
+  label: string;
+  category: AttributionCategory;
+  featureFlag?: keyof PropertyFeatureFlags;
+}
+
+const CATEGORY_TO_ATTRIBUTION: Record<TemplateCategory, AttributionCategory> = {
+  identity: 'identity',
+  payment: 'payment',
+  loyalty: 'experience',
+  nested: 'experience',
+  other: 'core',
+};
+
+export function getAttributionInfo(templateId: StepTemplateId): AttributionInfo {
+  const template = getStepTemplateMeta(templateId);
+  if (!template.featureFlag) return { label: 'Core', category: 'core' };
+  return {
+    label: FLAG_LABELS[template.featureFlag] ?? template.featureFlag,
+    category: CATEGORY_TO_ATTRIBUTION[template.category],
+    featureFlag: template.featureFlag,
+  };
+}
+
 /** Step templates applicable to a property given its features + surface. */
 export function getAvailableTemplates(
   features: PropertyFeatureFlags,

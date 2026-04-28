@@ -30,6 +30,13 @@ export const CONDITION_PARAMETERS: ParameterMeta[] = [
     description: 'Guest\'s country of citizenship',
   },
   {
+    id: 'age',
+    displayName: 'Age',
+    valueType: 'number',
+    allowedOperators: ['greater-than', 'less-than', 'equals', 'not-equals'],
+    description: 'Guest\'s age in years',
+  },
+  {
     id: 'loyalty-member',
     displayName: 'Is Loyalty Member',
     valueType: 'boolean',
@@ -43,6 +50,24 @@ export const CONDITION_PARAMETERS: ParameterMeta[] = [
     allowedOperators: ['equals', 'not-equals', 'in', 'not-in'],
     description: 'Loyalty status (Club, Silver, Gold, Platinum, Diamond)',
   },
+  {
+    id: 'rate-code',
+    displayName: 'Rate Code',
+    valueType: 'rate-code',
+    allowedOperators: ['equals', 'not-equals', 'in', 'not-in'],
+    description: 'Booking rate code (CORP, BAR, AAA, RACK, GOV, …)',
+  },
+];
+
+export const RATE_CODES: { value: string; label: string }[] = [
+  { value: 'CORP', label: 'Corporate (CORP)' },
+  { value: 'BAR', label: 'Best Available Rate (BAR)' },
+  { value: 'AAA', label: 'AAA / CAA (AAA)' },
+  { value: 'RACK', label: 'Rack (RACK)' },
+  { value: 'GOV', label: 'Government (GOV)' },
+  { value: 'LEISURE', label: 'Leisure (LEISURE)' },
+  { value: 'WEEKEND', label: 'Weekend (WEEKEND)' },
+  { value: 'PKG', label: 'Package (PKG)' },
 ];
 
 export const PARAMETER_MAP: Record<ConditionParameter, ParameterMeta> = CONDITION_PARAMETERS.reduce(

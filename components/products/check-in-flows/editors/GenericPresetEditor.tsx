@@ -14,6 +14,7 @@
  */
 
 import React from 'react';
+import { colors } from '@canary-ui/components';
 import type { StepInstance, FlowDefinition } from '@/lib/products/check-in-flows/types';
 import { resolveText } from '@/lib/products/check-in-flows/types';
 
@@ -26,13 +27,13 @@ interface Props {
 export function GenericPresetEditor({ step }: Props) {
   const cfg = step.config;
   if (cfg.kind !== 'preset') {
-    return <div className="p-8 text-center text-[#888]">Not a preset step.</div>;
+    return <div className="p-8 text-center" style={{ color: colors.colorBlack5 }}>Not a preset step.</div>;
   }
 
   return (
     <div className="p-8 max-w-[800px] mx-auto">
-      <div className="bg-white rounded-lg border border-[#E5E5E5] p-6">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[#888] mb-3">
+      <div className="bg-white rounded-lg border p-6" style={{ borderColor: colors.colorBlack7 }}>
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: colors.colorBlack5 }}>
           Preset Configuration
         </h3>
         <dl className="space-y-3">
@@ -64,7 +65,7 @@ export function GenericPresetEditor({ step }: Props) {
             <Row label="Linked to deposit" value={cfg.linkedDeposit ? 'Yes' : 'No'} />
           )}
         </dl>
-        <p className="mt-6 text-[11px] text-[#AAA] italic">
+        <p className="mt-6 text-[11px] italic" style={{ color: colors.colorBlack6 }}>
           This preset&apos;s editor will expand in a future phase. For now, configuration is read-only
           on these fields.
         </p>
@@ -75,9 +76,9 @@ export function GenericPresetEditor({ step }: Props) {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2 border-b border-[#F4F4F5] last:border-b-0">
-      <dt className="text-[12px] font-semibold text-[#666] shrink-0 w-44">{label}</dt>
-      <dd className="text-[13px] text-[#2B2B2B] text-right">{value}</dd>
+    <div className="flex items-start justify-between gap-4 py-2 last:border-b-0" style={{ borderBottom: `1px solid ${colors.colorBlack8}` }}>
+      <dt className="text-[12px] font-semibold shrink-0 w-44" style={{ color: colors.colorBlack4 }}>{label}</dt>
+      <dd className="text-[13px] text-right" style={{ color: colors.colorBlack2 }}>{value}</dd>
     </div>
   );
 }

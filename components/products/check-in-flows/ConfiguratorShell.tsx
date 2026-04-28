@@ -1,32 +1,592 @@
 'use client';
 
-/**
- * ConfiguratorShell
- *
- * Top-level container for the check-in flow configurator. Wraps the
- * TopBar (breadcrumb + property header) and swaps the body based on
- * nav.level (landing / flow / step).
- *
- * Routing is client-side (Zustand-driven) rather than Next.js
- * routes so drill-down feels instant and preserves nav state.
- */
+import React, { useState, useEffect } from 'react';
+import Icon from '@mdi/react';
+import {
+  mdiChevronRight,
+  mdiArrowLeft,
+  mdiWeb,
+  mdiCellphone,
+  mdiTabletCellphone,
+  mdiMonitor,
+  mdiApplicationOutline,
+  mdiPencilOutline,
+  mdiPlus,
+  mdiDelete,
+  mdiCheck,
+  mdiClose,
+} from '@mdi/js';
+import {
+  colors,
+  CanaryTabs,
+  CanaryCard,
+  CanarySwitch,
+} from '@canary-ui/components';
 
-import React from 'react';
-import { useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
-import { TopBar } from './TopBar';
-import { LandingView } from './LandingView';
-import { FlowView } from './FlowView';
-import { StepEditorView } from './StepEditorView';
+import {
+  useCheckInFlowsStore,
+  useFlowById,
+  useStepById,
+  useGeneratedFlows,
+} from '@/lib/products/check-in-flows/store';
+import type { FlowDefinition, StepInstance, Condition } from '@/lib/products/check-in-flows/types';
+import { getStepTemplateMeta } from '@/lib/products/check-in-flows/step-templates';
+import { CheckInConfigPage } from './CheckInConfigPage';
+import { PhoneFrame } from '@/components/core/PhoneFrame';
+import { StepRenderer } from './preview/StepRenderer';
+import { ConditionRuleEditor } from './editors/ConditionRuleEditor';
+import { SchemaFormEditor } from './editors/SchemaFormEditor';
+import { IdConsentEditor } from './editors/IdConsentEditor';
+import { IdCaptureEditor } from './editors/IdCaptureEditor';
+import { GenericPresetEditor } from './editors/GenericPresetEditor';
+import { NestedFlowEditor } from './editors/NestedFlowEditor';
+
+const SURFACE_ICON: Record<string, string> = {
+  'web': mdiWeb,
+  'mobile-web': mdiCellphone,
+  'tablet-reg': mdiTabletCellphone,
+  'kiosk': mdiMonitor,
+  'mobile-app': mdiApplicationOutline,
+};
+
+const SHELL_TABS = [
+  { id: 'configuration', label: 'Configuration', content: <></> },
+  { id: 'flows', label: 'Flows', content: <></> },
+];
+
+// ── Shell ───────────────────────────────────────────────
 
 export function ConfiguratorShell() {
-  const navLevel = useCheckInFlowsStore((s) => s.nav.level);
+  const nav = useCheckInFlowsStore((s) => s.nav);
+  const setTab = useCheckInFlowsStore((s) => s.setTab);
+  const deselectFlow = useCheckInFlowsStore((s) => s.deselectFlow);
+  const stopEditingStep = useCheckInFlowsStore((s) => s.stopEditingStep);
+  const flow = useFlowById(nav.flowId);
+  const step = useStepById(nav.flowId, nav.stepId);
 
   return (
-    <div className="h-full flex flex-col" style={{ backgroundColor: '#FAFAFA' }}>
-      <TopBar />
-      {navLevel === 'landing' && <LandingView />}
-      {navLevel === 'flow' && <FlowView />}
-      {navLevel === 'step' && <StepEditorView />}
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="bg-white shrink-0">
+        <div
+          className="flex items-center justify-between"
+          style={{ padding: '16px 24px 16px 32px', borderBottom: `1px solid ${colors.colorBlack7}` }}
+        >
+          <h1 style={{ fontSize: 18, fontWeight: 500, color: colors.colorBlack1, margin: 0 }}>
+            Check-In Flows
+          </h1>
+        </div>
+
+        <div style={{ padding: '0 24px' }}>
+          <CanaryTabs
+            tabs={SHELL_TABS}
+            variant="text"
+            defaultTab={nav.tab}
+            onChange={(tabId) => setTab(tabId as 'configuration' | 'flows')}
+          />
+        </div>
+
+        {nav.tab === 'flows' && flow && (
+          <div className="px-6 py-2" style={{ borderTop: `1px solid ${colors.colorBlack7}`, backgroundColor: colors.colorBlack8 }}>
+            <nav className="flex items-center gap-1.5 text-[13px]">
+              <button
+                className="transition-colors"
+                style={{ color: colors.colorBlack5 }}
+                onClick={deselectFlow}
+              >
+                Flows
+              </button>
+              <Icon path={mdiChevronRight} size={0.55} color={colors.colorBlack6} />
+              {nav.isEditingStep && step ? (
+                <>
+                  <button
+                    className="transition-colors"
+                    style={{ color: colors.colorBlack5 }}
+                    onClick={stopEditingStep}
+                  >
+                    {flow.name}
+                  </button>
+                  <Icon path={mdiChevronRight} size={0.55} color={colors.colorBlack6} />
+                  <span className="font-semibold" style={{ color: colors.colorBlack2 }}>
+                    {step.name}
+                  </span>
+                </>
+              ) : (
+                <span className="font-semibold" style={{ color: colors.colorBlack2 }}>
+                  {flow.name}
+                </span>
+              )}
+            </nav>
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {nav.tab === 'configuration' ? (
+          <div className="flex-1 overflow-auto">
+            <CheckInConfigPage />
+          </div>
+        ) : (
+          <FlowsContent />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Flows content routing ───────────────────────────────
+
+function FlowsContent() {
+  const nav = useCheckInFlowsStore((s) => s.nav);
+  if (nav.flowId) return <FlowEditorView />;
+  return <FlowBrowseView />;
+}
+
+// ── Flow browse view (Compendium-style list + preview) ─
+
+function FlowBrowseView() {
+  const flows = useGeneratedFlows();
+  const selectFlow = useCheckInFlowsStore((s) => s.selectFlow);
+  const ctx = useCheckInFlowsStore((s) => s.previewContext);
+  const [previewFlowId, setPreviewFlowId] = useState<string>(flows[0]?.id ?? '');
+
+  const previewFlow = flows.find((f) => f.id === previewFlowId);
+  const firstStep = previewFlow?.steps[0];
+
+  return (
+    <div className="flex-1 flex overflow-hidden" style={{ backgroundColor: colors.colorBlack8 }}>
+      <div className="shrink-0 overflow-y-auto" style={{ width: '50%', padding: 24 }}>
+        <CanaryCard padding="none" hasBorder>
+          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${colors.colorBlack7}` }}>
+            <h3 className="text-[16px] font-medium" style={{ color: colors.colorBlack1 }}>
+              Flows
+            </h3>
+          </div>
+
+          <div>
+            {flows.map((flow, idx) => {
+              const icon = SURFACE_ICON[flow.surface] ?? mdiWeb;
+              const isActive = flow.id === previewFlowId;
+              return (
+                <div
+                  key={flow.id}
+                  onClick={() => setPreviewFlowId(flow.id)}
+                  className="flex items-center gap-3 px-5 py-3 cursor-pointer transition-colors"
+                  style={{
+                    backgroundColor: isActive ? colors.colorBlueDark5 : undefined,
+                    borderBottom: idx < flows.length - 1 ? `1px solid ${colors.colorBlack7}` : undefined,
+                  }}
+                >
+                  <Icon path={icon} size={0.65} color={isActive ? colors.colorBlueDark1 : colors.colorBlack4} />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[14px] font-medium block" style={{ color: colors.colorBlack2 }}>
+                      {flow.name}
+                    </span>
+                    <span className="text-[12px]" style={{ color: colors.colorBlack5 }}>
+                      {flow.steps.length} steps
+                    </span>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); selectFlow(flow.id); }}
+                    className="w-8 h-8 rounded flex items-center justify-center shrink-0"
+                    style={{ color: colors.colorBlack4 }}
+                    title="Edit flow"
+                  >
+                    <Icon path={mdiPencilOutline} size={0.6} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </CanaryCard>
+      </div>
+
+      <div
+        className="flex-1 flex items-center justify-center overflow-hidden"
+        style={{ backgroundColor: colors.colorBlack7, borderLeft: `1px solid ${colors.colorBlack7}` }}
+      >
+        {firstStep ? (
+          <PhoneFrame showUrlBar={false}>
+            <div className="w-full h-full flex flex-col bg-white">
+              <StepRenderer step={firstStep} ctx={ctx} />
+            </div>
+          </PhoneFrame>
+        ) : (
+          <p className="text-[14px]" style={{ color: colors.colorBlack5 }}>Select a flow to preview</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Flow editor view: left pane swaps (list ↔ editor), right pane is always live ──
+
+function FlowEditorView() {
+  const nav = useCheckInFlowsStore((s) => s.nav);
+  const flow = useFlowById(nav.flowId);
+  const step = useStepById(nav.flowId, nav.stepId);
+  const ctx = useCheckInFlowsStore((s) => s.previewContext);
+  const selectStep = useCheckInFlowsStore((s) => s.selectStep);
+  const editStep = useCheckInFlowsStore((s) => s.editStep);
+
+  if (!flow) return null;
+
+  const isEditing = nav.isEditingStep && !!step;
+
+  return (
+    <div className="flex-1 flex overflow-hidden" style={{ backgroundColor: colors.colorBlack8 }}>
+      <div className="shrink-0 overflow-y-auto bg-white" style={{ width: '50%' }}>
+        {isEditing ? (
+          <StepEditorPane flow={flow} step={step!} />
+        ) : (
+          <div style={{ padding: 24 }}>
+            <StepListPanel
+              flow={flow}
+              activeStepId={nav.stepId}
+              onSelectStep={selectStep}
+              onEditStep={editStep}
+            />
+          </div>
+        )}
+      </div>
+
+      <div
+        className="flex-1 flex items-center justify-center overflow-hidden"
+        style={{ backgroundColor: colors.colorBlack7, borderLeft: `1px solid ${colors.colorBlack7}` }}
+      >
+        {step ? (
+          <PhoneFrame showUrlBar={false}>
+            <div className="w-full h-full flex flex-col bg-white">
+              <StepRenderer step={step} ctx={ctx} />
+            </div>
+          </PhoneFrame>
+        ) : (
+          <p className="text-[14px]" style={{ color: colors.colorBlack5 }}>Select a step to preview</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Step list panel (left pane content when not editing) ─────────────
+
+function StepListPanel({
+  flow,
+  activeStepId,
+  onSelectStep,
+  onEditStep,
+}: {
+  flow: FlowDefinition;
+  activeStepId: string | null;
+  onSelectStep: (stepId: string) => void;
+  onEditStep: (stepId: string) => void;
+}) {
+  return (
+    <div>
+      <div className="mb-4">
+        <h3 className="text-[16px] font-medium" style={{ color: colors.colorBlack1 }}>
+          {flow.name}
+        </h3>
+        <p className="text-[13px] mt-0.5" style={{ color: colors.colorBlack4 }}>
+          {flow.steps.length} steps · Click to preview, edit to configure
+        </p>
+      </div>
+
+      <CanaryCard padding="none" hasBorder>
+        {flow.steps.map((step, idx) => (
+          <StepRow
+            key={step.id}
+            step={step}
+            index={idx}
+            isLast={idx === flow.steps.length - 1}
+            isActive={step.id === activeStepId}
+            onSelect={() => onSelectStep(step.id)}
+            onEdit={() => onEditStep(step.id)}
+          />
+        ))}
+      </CanaryCard>
+    </div>
+  );
+}
+
+function StepRow({
+  step,
+  index,
+  isLast,
+  isActive,
+  onSelect,
+  onEdit,
+}: {
+  step: StepInstance;
+  index: number;
+  isLast: boolean;
+  isActive: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
+}) {
+  const template = getStepTemplateMeta(step.templateId);
+
+  return (
+    <div
+      onClick={onSelect}
+      className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors"
+      style={{
+        backgroundColor: isActive ? colors.colorBlueDark5 : undefined,
+        borderBottom: !isLast ? `1px solid ${colors.colorBlack7}` : undefined,
+      }}
+    >
+      <span
+        className="text-[12px] font-bold w-5 text-center shrink-0"
+        style={{ color: isActive ? colors.colorBlueDark1 : colors.colorBlack5 }}
+      >
+        {index + 1}
+      </span>
+
+      <Icon path={template.icon} size={0.65} color={isActive ? colors.colorBlueDark1 : colors.colorBlack4} />
+
+      <div className="flex-1 min-w-0">
+        <span className="text-[14px] font-medium block truncate" style={{ color: colors.colorBlack2 }}>
+          {step.name}
+        </span>
+      </div>
+
+      <button
+        onClick={(e) => { e.stopPropagation(); onEdit(); }}
+        className="w-8 h-8 rounded flex items-center justify-center shrink-0"
+        style={{ color: colors.colorBlack4 }}
+        title="Edit step"
+      >
+        <Icon path={mdiPencilOutline} size={0.6} />
+      </button>
+    </div>
+  );
+}
+
+// ── Step editor pane (left pane content when editing) ──
+
+function StepEditorPane({ flow, step }: { flow: FlowDefinition; step: StepInstance }) {
+  const stopEditingStep = useCheckInFlowsStore((s) => s.stopEditingStep);
+  const removeStep = useCheckInFlowsStore((s) => s.removeStep);
+  const updateStep = useCheckInFlowsStore((s) => s.updateStep);
+  const updateStepConditions = useCheckInFlowsStore((s) => s.updateStepConditions);
+  const isReadOnly = false;
+
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [draftName, setDraftName] = useState(step.name);
+
+  const template = getStepTemplateMeta(step.templateId);
+  const conditionCount = step.conditions?.length ?? 0;
+  const showTemplateSubtitle = step.name.trim() !== template.displayName;
+
+  // Reset draft when step changes
+  useEffect(() => {
+    setDraftName(step.name);
+    setIsEditingName(false);
+  }, [step.id]);
+
+  const saveName = () => {
+    const trimmed = draftName.trim();
+    if (trimmed && trimmed !== step.name) updateStep(flow.id, step.id, { name: trimmed });
+    else setDraftName(step.name);
+    setIsEditingName(false);
+  };
+
+  const handleDelete = () => {
+    if (confirm(`Remove "${step.name}" from this flow?`)) {
+      removeStep(flow.id, step.id);
+      stopEditingStep();
+    }
+  };
+
+  const handleConditionsChange = (next: Condition[]) => {
+    if (isReadOnly) return;
+    updateStepConditions(flow.id, step.id, next);
+  };
+
+  const handleAddFirstCondition = () => {
+    if (isReadOnly) return;
+    const seed: Condition = {
+      id: `cond-${Date.now()}-init`,
+      parameter: undefined,
+      operator: undefined,
+      value: undefined,
+      action: 'show',
+    };
+    updateStepConditions(flow.id, step.id, [seed]);
+  };
+
+  return (
+    <div className="flex flex-col">
+      {/* Header */}
+      <div className="px-6 pt-4 pb-4" style={{ borderBottom: `1px solid ${colors.colorBlack7}` }}>
+        <button
+          onClick={() => stopEditingStep()}
+          className="text-[12px] font-medium flex items-center gap-1 mb-3"
+          style={{ color: colors.colorBlack4 }}
+        >
+          <Icon path={mdiArrowLeft} size={0.55} />
+          Back to steps
+        </button>
+
+        <div className="flex items-start gap-3 min-w-0">
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+            style={{ backgroundColor: colors.colorBlueDark5 }}
+          >
+            <Icon path={template.icon} size={0.95} color={colors.colorBlueDark1} />
+          </div>
+
+          <div className="min-w-0 flex-1 group">
+            <div className="flex items-center gap-2">
+              {isEditingName ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    autoFocus
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveName();
+                      if (e.key === 'Escape') { setDraftName(step.name); setIsEditingName(false); }
+                    }}
+                    className="text-[18px] font-bold bg-white border-b-2 px-1 py-0 outline-none"
+                    style={{ color: colors.colorBlack1, borderBottomColor: colors.colorBlueDark1 }}
+                  />
+                  <button onClick={saveName} className="p-1 rounded" style={{ color: colors.colorBlack2 }}>
+                    <Icon path={mdiCheck} size={0.65} />
+                  </button>
+                  <button
+                    onClick={() => { setDraftName(step.name); setIsEditingName(false); }}
+                    className="p-1 rounded"
+                    style={{ color: colors.colorBlack5 }}
+                  >
+                    <Icon path={mdiClose} size={0.65} />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-[18px] font-bold leading-tight" style={{ color: colors.colorBlack1 }}>
+                    {step.name}
+                  </h2>
+                  {!isReadOnly && (
+                    <button
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: colors.colorBlack5 }}
+                      onClick={() => setIsEditingName(true)}
+                      title="Rename"
+                    >
+                      <Icon path={mdiPencilOutline} size={0.6} />
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+            {showTemplateSubtitle && (
+              <p className="mt-1 text-[12px]" style={{ color: colors.colorBlack4 }}>
+                {template.displayName} template
+              </p>
+            )}
+          </div>
+
+          {!isReadOnly && (
+            <div className="flex items-center gap-3 shrink-0">
+              <label
+                className="flex items-center gap-1.5 text-[12px]"
+                style={{ color: colors.colorBlack4 }}
+              >
+                <CanarySwitch
+                  checked={step.isSkippable}
+                  onChange={(val) => updateStep(flow.id, step.id, { isSkippable: val })}
+                />
+                Skippable
+              </label>
+              <button
+                onClick={handleDelete}
+                className="text-[12px] font-medium inline-flex items-center gap-1 transition-colors"
+                style={{ color: colors.colorBlack5 }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = colors.danger; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = colors.colorBlack5; }}
+                title="Remove step"
+              >
+                <Icon path={mdiDelete} size={0.6} />
+                Remove
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Step Visibility */}
+      {conditionCount > 0 ? (
+        <div className="px-6 pt-5 pb-1">
+          <h3 className="text-[12px] font-semibold uppercase tracking-wider mb-2" style={{ color: colors.colorBlack5 }}>
+            Step Visibility
+          </h3>
+          <ConditionRuleEditor
+            conditions={step.conditions ?? []}
+            onChange={handleConditionsChange}
+            scope="step"
+            disabled={isReadOnly}
+            emptyLabel="Always visible"
+            emptyHint="Add a condition to hide or show this step based on guest context."
+          />
+        </div>
+      ) : (
+        !isReadOnly && (
+          <div className="px-6 pt-3 pb-1">
+            <button
+              onClick={handleAddFirstCondition}
+              className="inline-flex items-center gap-1.5 px-2 h-7 rounded text-[12px] font-semibold transition-colors"
+              style={{ color: colors.colorBlueDark1 }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.colorBlueDark5; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+            >
+              <Icon path={mdiPlus} size={0.55} />
+              Add visibility rule
+            </button>
+          </div>
+        )
+      )}
+
+      {/* Type-specific editor */}
+      <div>
+        <StepConfigEditor step={step} flow={flow} isReadOnly={isReadOnly} />
+      </div>
+    </div>
+  );
+}
+
+// ── Step config editor dispatcher ──────────────────────
+
+function StepConfigEditor({
+  step,
+  flow,
+  isReadOnly,
+}: {
+  step: StepInstance;
+  flow: FlowDefinition;
+  isReadOnly: boolean;
+}) {
+  const cfg = step.config;
+
+  if (cfg.kind === 'schema-form') {
+    return <SchemaFormEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
+  }
+  if (cfg.kind === 'nested-flow') {
+    return <NestedFlowEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
+  }
+  if (cfg.kind === 'preset') {
+    switch (cfg.presetType) {
+      case 'id-consent':
+        return <IdConsentEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
+      case 'id-capture':
+        return <IdCaptureEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
+      default:
+        return <GenericPresetEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
+    }
+  }
+
+  return (
+    <div className="p-10 text-center text-[14px]" style={{ color: colors.colorBlack5 }}>
+      No editor available for this step type.
     </div>
   );
 }
