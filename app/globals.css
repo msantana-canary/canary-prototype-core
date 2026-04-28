@@ -25,3 +25,43 @@
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Guest bottom sheet slide-up */
+@keyframes bottom-sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Guest theme: fix underline input label jank (label always in DOM, opacity-driven) */
+.guest-theme .w-full:has(> .relative) {
+  padding-top: 25px;
+  position: relative;
+}
+.guest-theme .w-full > label {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* Guest theme: transparent input backgrounds */
+.guest-theme input,
+.guest-theme select {
+  background-color: transparent !important;
+}
+
+/* Guest theme overrides — themed colors instead of library blue */
+.guest-theme input:focus,
+.guest-theme select:focus {
+  border-color: var(--canaryThemeHeaderColor, #926e27) !important;
+}
+.guest-theme svg[style*="color: rgb(40, 88, 196)"],
+.guest-theme svg[style*="color: #2858c4"],
+.guest-theme label svg {
+  color: var(--canaryThemeButtonColor, #926e27) !important;
+}
+.guest-theme span[style*="color: rgb(40, 88, 196)"] {
+  color: var(--canaryThemeButtonColor, #926e27) !important;
+}
+.guest-theme div[style*="background-color: rgb(40, 88, 196)"] {
+  background-color: var(--canaryThemeButtonColor, #926e27) !important;
+}

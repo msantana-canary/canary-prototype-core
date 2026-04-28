@@ -27,7 +27,7 @@ import {
 
 import type {
   StepInstance,
-  FieldDef,
+  FlowDefinition,
   IdCaptureConfig,
   IdConsentConfig,
   CreditCardConfig,
@@ -39,20 +39,19 @@ import type {
   SchemaFormConfig,
 } from '@/lib/products/check-in-flows/types';
 import { resolveText } from '@/lib/products/check-in-flows/types';
-import { getFieldTypeMeta } from '@/lib/products/check-in-flows/field-types';
 import { useFlowById } from '@/lib/products/check-in-flows/store';
 import { COUNTRY_MAP } from '@/lib/products/check-in-flows/condition-meta';
-import {
-  shouldShow,
-  isRequiredBecauseOfConditions,
-} from '@/lib/products/check-in-flows/condition-evaluator';
+import { shouldShow } from '@/lib/products/check-in-flows/condition-evaluator';
+import { GuestPreviewShell } from './GuestPreviewShell';
+import { RegistrationCardPreview } from './RegistrationCardPreview';
 
 interface Props {
   step: StepInstance;
   ctx: PreviewContext;
+  flow?: FlowDefinition;
 }
 
-export function StepRenderer({ step, ctx }: Props) {
+export function StepRenderer({ step, ctx, flow }: Props) {
   // Don't render anything if the step itself is hidden by conditions
   if (!shouldShow(step.conditions, ctx)) {
     return <HiddenByConditions step={step} ctx={ctx} />;
@@ -61,7 +60,7 @@ export function StepRenderer({ step, ctx }: Props) {
   const cfg = step.config;
 
   if (cfg.kind === 'schema-form') {
-    return <SchemaFormPreview step={step} cfg={cfg} ctx={ctx} />;
+    return <SchemaFormPreview step={step} cfg={cfg} ctx={ctx} flow={flow} />;
   }
   if (cfg.kind === 'nested-flow') {
     return <NestedFlowPreview cfg={cfg} ctx={ctx} />;
@@ -141,171 +140,45 @@ function PrimaryCTA({ label }: { label: string }) {
   );
 }
 
-// ── Schema form preview (reg-card / OCR) ─────────────────
+// ── Schema form preview (production-faithful via GuestPreviewShell) ──
 
 function SchemaFormPreview({
   step,
   cfg,
   ctx,
+  flow,
 }: {
   step: StepInstance;
   cfg: SchemaFormConfig;
   ctx: PreviewContext;
+  flow?: FlowDefinition;
 }) {
   const visibleFields = cfg.fields.filter((f) => shouldShow(f.conditions, ctx));
+  const stepIndex = flow?.steps.findIndex((s) => s.id === step.id) ?? 0;
+  const total = flow?.steps.length ?? 1;
+  const isRegCard = step.templateId === 'reg-card';
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-auto">
-        <PreviewHeader step={step} ctx={ctx} icon={mdiCardAccountDetailsOutline} />
-        <div className="px-5 pb-4 space-y-3">
-          {visibleFields.length === 0 && (
-            <p className="text-[12px] text-[#888] italic">
-              All fields hidden by conditions for this guest.
-            </p>
-          )}
-          {visibleFields.map((field) => (
-            <FieldPreview key={field.id} field={field} ctx={ctx} />
-          ))}
-        </div>
-      </div>
-      <PrimaryCTA label="Continue" />
-    </div>
-  );
-}
-
-function FieldPreview({ field, ctx }: { field: FieldDef; ctx: PreviewContext }) {
-  const meta = getFieldTypeMeta(field.type);
-  const label = resolveText(field.label, ctx.language);
-  const placeholder = resolveText(field.placeholder, ctx.language);
-  const helper = resolveText(field.helperText, ctx.language);
-  const required = field.required || isRequiredBecauseOfConditions(field.conditions, ctx);
-  const staticContent = resolveText(field.staticContent, ctx.language);
-
-  // Static content
-  if (meta.isStatic) {
-    if (field.type === 'header') {
-      return <h3 className="text-[14px] font-bold text-[#2B2B2B] mt-2">{staticContent}</h3>;
-    }
-    if (field.type === 'list') {
-      const items = staticContent.split('\n').filter(Boolean);
-      return (
-        <ul className="list-disc ml-5 text-[12px] text-[#555] space-y-0.5">
-          {items.map((item, i) => (
-            <li key={i}>{item}</li>
-          ))}
-        </ul>
-      );
-    }
-    return <p className="text-[12px] text-[#555]">{staticContent}</p>;
-  }
-
-  // Field wrapper
-  return (
-    <div>
-      <label className="text-[11px] font-semibold text-[#555]">
-        {label}
-        {required && <span className="ml-0.5 text-[#D00]">*</span>}
-      </label>
-      <FieldInput field={field} placeholder={placeholder || label} lang={ctx.language} />
-      {helper && <p className="text-[10px] text-[#888] mt-0.5">{helper}</p>}
-    </div>
-  );
-}
-
-function FieldInput({ field, placeholder, lang }: { field: FieldDef; placeholder: string; lang: string }) {
-  const baseCls = 'mt-1 w-full h-9 px-2.5 rounded-md border border-[#DDD] bg-white text-[12px] text-[#2B2B2B] outline-none';
-
-  switch (field.type) {
-    case 'text-input':
-    case 'email':
-    case 'phone':
-    case 'number':
-      return (
-        <input
-          type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : 'text'}
-          placeholder={placeholder}
-          className={baseCls}
-          disabled
+    <GuestPreviewShell
+      title={step.name}
+      totalSegments={total}
+      completedSegments={stepIndex + 1}
+      ctaLabel="Submit"
+    >
+      {visibleFields.length === 0 ? (
+        <p className="text-[12px] italic" style={{ padding: 24, color: '#888' }}>
+          All fields hidden by conditions for this guest.
+        </p>
+      ) : (
+        <RegistrationCardPreview
+          fields={visibleFields}
+          language={ctx.language}
+          showReservationInfo={isRegCard}
+          showHotelPolicies={isRegCard}
         />
-      );
-    case 'text-area':
-      return <textarea placeholder={placeholder} className={`${baseCls} h-20 py-2 resize-none`} disabled />;
-    case 'date':
-    case 'time-select':
-      return (
-        <input
-          type={field.type === 'date' ? 'date' : 'time'}
-          className={baseCls}
-          disabled
-        />
-      );
-    case 'signature':
-      return (
-        <div className="mt-1 h-20 rounded-md border border-dashed border-[#CCC] bg-[#FAFAFA] flex items-center justify-center text-[11px] text-[#888]">
-          Tap to sign
-        </div>
-      );
-    case 'country':
-      return (
-        <select className={baseCls} disabled defaultValue="US">
-          <option>Select country…</option>
-        </select>
-      );
-    case 'credit-card':
-      return (
-        <input type="text" placeholder="1234 1234 1234 1234" className={baseCls} disabled />
-      );
-    case 'boolean-radio':
-      return (
-        <div className="mt-1 flex items-center gap-3">
-          <label className="flex items-center gap-1.5 text-[12px] text-[#555]">
-            <input type="radio" name={field.id} disabled /> Yes
-          </label>
-          <label className="flex items-center gap-1.5 text-[12px] text-[#555]">
-            <input type="radio" name={field.id} disabled /> No
-          </label>
-        </div>
-      );
-    case 'dropdown': {
-      return (
-        <select className={baseCls} disabled>
-          <option>{placeholder}</option>
-          {field.options?.map((o) => (
-            <option key={o.id} value={o.value}>{resolveText(o.label, lang)}</option>
-          ))}
-        </select>
-      );
-    }
-    case 'string-radio':
-      return (
-        <div className="mt-1 space-y-1.5">
-          {field.options?.map((o) => (
-            <label key={o.id} className="flex items-center gap-1.5 text-[12px] text-[#555]">
-              <input type="radio" name={field.id} disabled /> {resolveText(o.label, lang)}
-            </label>
-          ))}
-        </div>
-      );
-    case 'checkbox':
-      return (
-        <label className="flex items-center gap-2 mt-1 text-[12px] text-[#555]">
-          <input type="checkbox" disabled /> {placeholder}
-        </label>
-      );
-    case 'checkbox-group':
-      return (
-        <div className="mt-1 space-y-1.5">
-          {field.options?.map((o) => (
-            <label key={o.id} className="flex items-center gap-1.5 text-[12px] text-[#555]">
-              <input type="checkbox" disabled /> {resolveText(o.label, lang)}
-            </label>
-          ))}
-        </div>
-      );
-    default:
-      return null;
-  }
+      )}
+    </GuestPreviewShell>
+  );
 }
 
 // ── Preset previews ──────────────────────────────────────

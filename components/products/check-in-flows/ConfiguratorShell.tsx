@@ -207,7 +207,7 @@ function FlowBrowseView() {
         {firstStep ? (
           <PhoneFrame showUrlBar={false}>
             <div className="w-full h-full flex flex-col bg-white">
-              <StepRenderer step={firstStep} ctx={ctx} />
+              <StepRenderer step={firstStep} ctx={ctx} flow={previewFlow} />
             </div>
           </PhoneFrame>
         ) : (
@@ -256,7 +256,7 @@ function FlowEditorView() {
         {step ? (
           <PhoneFrame showUrlBar={false}>
             <div className="w-full h-full flex flex-col bg-white">
-              <StepRenderer step={step} ctx={ctx} />
+              <StepRenderer step={step} ctx={ctx} flow={flow} />
             </div>
           </PhoneFrame>
         ) : (
