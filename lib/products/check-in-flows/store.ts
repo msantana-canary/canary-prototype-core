@@ -232,11 +232,16 @@ interface CheckInFlowsState {
   updateStepConfig: (flowId: string, stepId: string, updater: (cfg: StepInstance['config']) => StepInstance['config']) => void;
   updateStepConditions: (flowId: string, stepId: string, conditions: Condition[]) => void;
 
-  // Field CRUD
+  // Field CRUD (legacy — Phase 5 deprecates in favor of atom slots)
   addField: (flowId: string, stepId: string, field: FieldDef) => void;
   removeField: (flowId: string, stepId: string, fieldId: string) => void;
   reorderFields: (flowId: string, stepId: string, orderedIds: string[]) => void;
   updateField: (flowId: string, stepId: string, fieldId: string, updates: Partial<FieldDef>) => void;
+
+  // Atom slot management (Phase 5d — atomIds in step refs Global atoms)
+  addAtomToStep: (flowId: string, stepId: string, atomId: string) => void;
+  removeAtomFromStep: (flowId: string, stepId: string, atomId: string) => void;
+  reorderStepAtoms: (flowId: string, stepId: string, orderedAtomIds: string[]) => void;
 
   // Preview
   setPreviewContext: (updates: Partial<PreviewContext>) => void;
@@ -419,6 +424,55 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
       if (cfg.kind !== 'schema-form') return cfg;
       return { ...cfg, fields: cfg.fields.map((f) => (f.id === fieldId ? { ...f, ...updates } : f)) };
     });
+  },
+
+  // ── Atom slot management (Phase 5d) ───────────────────
+  addAtomToStep: (flowId, stepId, atomId) => {
+    set((state) => ({
+      flows: state.flows.map((flow) => {
+        if (flow.id !== flowId) return flow;
+        return {
+          ...flow,
+          steps: flow.steps.map((step) => {
+            if (step.id !== stepId) return step;
+            const current = step.atomIds ?? [];
+            if (current.includes(atomId)) return step;
+            return { ...step, atomIds: [...current, atomId] };
+          }),
+        };
+      }),
+    }));
+  },
+
+  removeAtomFromStep: (flowId, stepId, atomId) => {
+    set((state) => ({
+      flows: state.flows.map((flow) => {
+        if (flow.id !== flowId) return flow;
+        return {
+          ...flow,
+          steps: flow.steps.map((step) => {
+            if (step.id !== stepId) return step;
+            const current = step.atomIds ?? [];
+            return { ...step, atomIds: current.filter((id) => id !== atomId) };
+          }),
+        };
+      }),
+    }));
+  },
+
+  reorderStepAtoms: (flowId, stepId, orderedAtomIds) => {
+    set((state) => ({
+      flows: state.flows.map((flow) => {
+        if (flow.id !== flowId) return flow;
+        return {
+          ...flow,
+          steps: flow.steps.map((step) => {
+            if (step.id !== stepId) return step;
+            return { ...step, atomIds: orderedAtomIds };
+          }),
+        };
+      }),
+    }));
   },
 
   // ── Preview ───────────────────────────────────────────
