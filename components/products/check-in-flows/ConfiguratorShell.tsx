@@ -526,37 +526,20 @@ function StepEditorPane({ flow, step }: { flow: FlowDefinition; step: StepInstan
         </div>
       </div>
 
-      {/* Step Visibility */}
-      {conditionCount > 0 ? (
-        <div className="px-6 pt-5 pb-1">
-          <h3 className="text-[12px] font-semibold uppercase tracking-wider mb-2" style={{ color: colors.colorBlack5 }}>
-            Step Visibility
-          </h3>
-          <ConditionRuleEditor
-            conditions={step.conditions ?? []}
-            onChange={handleConditionsChange}
-            scope="step"
-            disabled={isReadOnly}
-            emptyLabel="Always visible"
-            emptyHint="Add a condition to hide or show this step based on guest context."
-          />
-        </div>
-      ) : (
-        !isReadOnly && (
-          <div className="px-6 pt-3 pb-1">
-            <button
-              onClick={handleAddFirstCondition}
-              className="inline-flex items-center gap-1.5 px-2 h-7 rounded text-[12px] font-semibold transition-colors"
-              style={{ color: colors.colorBlueDark1 }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = colors.colorBlueDark5; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-            >
-              <Icon path={mdiPlus} size={0.55} />
-              Add visibility rule
-            </button>
-          </div>
-        )
-      )}
+      {/* Step visibility — informational only.
+          Per architecture: steps don't have their own conditions. Atoms have
+          conditions, and the step disappears at runtime when all its atoms
+          are filtered out. Visibility logic lives in Global, not Flow. */}
+      <div className="px-6 pt-3 pb-1">
+        <p
+          className="text-[11px] italic"
+          style={{ color: colors.colorBlack5 }}
+        >
+          Step visibility is derived from its atoms — when all atoms inside
+          this step are filtered out by Global conditions, the step
+          auto-skips. Edit conditions per-atom in the Configuration tab.
+        </p>
+      </div>
 
       {/* Type-specific editor */}
       <div>
