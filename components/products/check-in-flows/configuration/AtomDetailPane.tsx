@@ -43,6 +43,7 @@ import {
 import { ConditionRuleEditor } from '../editors/ConditionRuleEditor';
 import { SettingsHandledElsewhere } from './SettingsHandledElsewhere';
 import { describeAtom } from './AtomRow';
+import { OptionsEditor } from './OptionsEditor';
 
 export function AtomDetailPane() {
   const selectedAtomId = useCheckInFlowsStore((s) => s.selectedAtomId);
@@ -124,6 +125,19 @@ export function AtomDetailPane() {
           )}
           {atom.kind === 'preset' && <PresetAtomDetailsNotice />}
         </Section>
+
+        {/* Options (only for selection-type InputAtoms) */}
+        {atom.kind === 'input' &&
+          getFieldTypeMeta(atom.fieldType).supportsOptions && (
+            <Section title="Options">
+              <OptionsEditor
+                options={atom.options ?? []}
+                onChange={(next) =>
+                  onUpdate({ options: next } as Partial<Atom>)
+                }
+              />
+            </Section>
+          )}
 
         {/* Visibility */}
         <Section title="Visibility">
