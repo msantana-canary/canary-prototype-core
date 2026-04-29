@@ -58,8 +58,8 @@ export function DomainSection({ domain, description, defaultExpanded = true }: P
             {title}
           </h3>
           <CanaryTag
-            label={`${count} atom${count === 1 ? '' : 's'}`}
-            color={count > 0 ? TagColor.INFO : TagColor.DEFAULT}
+            label={`${count} component${count === 1 ? '' : 's'}`}
+            color={TagColor.DEFAULT}
             size={TagSize.COMPACT}
           />
         </div>
@@ -90,7 +90,7 @@ export function DomainSection({ domain, description, defaultExpanded = true }: P
               style={{ borderColor: colors.colorBlack6 }}
             >
               <p className="text-[13px]" style={{ color: colors.colorBlack5 }}>
-                No atoms in this domain yet.
+                No components in this domain yet.
               </p>
             </div>
           ) : (

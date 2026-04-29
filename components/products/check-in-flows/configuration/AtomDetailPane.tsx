@@ -54,7 +54,7 @@ export function AtomDetailPane() {
       <div className="p-6">
         <div className="mb-4">
           <p className="text-[12px]" style={{ color: colors.colorBlack5 }}>
-            Select an atom from the left to edit its details and visibility.
+            Select a component from the left to edit its details and visibility.
           </p>
         </div>
         <SettingsHandledElsewhere />
@@ -88,7 +88,7 @@ export function AtomDetailPane() {
             {display.title}
           </h3>
           <p className="text-[11px]" style={{ color: colors.colorBlack5 }}>
-            Editing atom — changes propagate live to all flows that reference it.
+            Editing component — changes propagate live to all flows that reference it.
           </p>
         </div>
         <button

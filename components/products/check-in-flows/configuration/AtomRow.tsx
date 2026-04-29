@@ -205,7 +205,7 @@ export function AtomRow({ atom, onUpdate, onRemove }: Props) {
                 e.currentTarget.style.color = colors.colorBlack5;
                 e.currentTarget.style.backgroundColor = 'transparent';
               }}
-              title="Remove atom"
+              title="Remove component"
             >
               <Icon path={mdiDelete} size={0.6} />
             </button>
