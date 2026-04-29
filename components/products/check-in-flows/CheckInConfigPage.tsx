@@ -38,7 +38,7 @@ import {
 
 import { useGeneratedFlows } from '@/lib/products/check-in-flows/store';
 import { DomainSection } from './configuration/DomainSection';
-import { SettingsHandledElsewhere } from './configuration/SettingsHandledElsewhere';
+import { AtomDetailPane } from './configuration/AtomDetailPane';
 
 const SURFACE_ICON: Record<string, string> = {
   'web': mdiWeb,
@@ -50,43 +50,61 @@ const SURFACE_ICON: Record<string, string> = {
 
 export function CheckInConfigPage() {
   return (
-    <div className="space-y-4 p-6 max-w-[1100px]">
-      <PageIntro />
-      <FlowsActive />
+    <div className="flex flex-col h-full">
+      {/* Top: full-width banner */}
+      <div className="px-6 pt-6 pb-4 shrink-0">
+        <PageIntro />
+        <div className="mt-3">
+          <FlowsActive />
+        </div>
+      </div>
 
-      <DomainSection
-        domain="guest-info"
-        description="Guest profile data — name, contact, address, stay preferences."
-      />
-      <DomainSection
-        domain="id-documents"
-        description="ID consent, ID type, ID photo capture, OCR-extracted field editability."
-      />
-      <DomainSection
-        domain="payment"
-        description="Credit card, deposit, surcharge configuration (CS-tunable subset only)."
-      />
-      <DomainSection
-        domain="additional-guests"
-        description="Multi-guest check-in field requirements."
-      />
-      <DomainSection
-        domain="auto-check-in"
-        description="Auto check-in enablement and pre-conditions."
-        defaultExpanded={false}
-      />
-      <DomainSection
-        domain="copy-blocks"
-        description="Compliance and policy text — hotel policies, marketing consent, waivers."
-      />
-      <DomainSection
-        domain="custom"
-        description="Hotel-defined custom inputs (UDFs)."
-        defaultExpanded={false}
-      />
+      {/* Split pane: domain sections (left) + AtomDetailPane (right) */}
+      <div
+        className="flex-1 flex overflow-hidden"
+        style={{ borderTop: `1px solid ${colors.colorBlack7}` }}
+      >
+        {/* Left: scrollable atom list */}
+        <div
+          className="overflow-y-auto px-6 py-5 space-y-4"
+          style={{ width: '50%', borderRight: `1px solid ${colors.colorBlack7}` }}
+        >
+          <DomainSection
+            domain="guest-info"
+            description="Guest profile data — name, contact, address, stay preferences."
+          />
+          <DomainSection
+            domain="id-documents"
+            description="ID consent, ID type, ID photo capture, OCR-extracted field editability."
+          />
+          <DomainSection
+            domain="payment"
+            description="Credit card, deposit, surcharge configuration (CS-tunable subset only)."
+          />
+          <DomainSection
+            domain="additional-guests"
+            description="Multi-guest check-in field requirements."
+          />
+          <DomainSection
+            domain="auto-check-in"
+            description="Auto check-in enablement and pre-conditions."
+            defaultExpanded={false}
+          />
+          <DomainSection
+            domain="copy-blocks"
+            description="Compliance and policy text — hotel policies, marketing consent, waivers."
+          />
+          <DomainSection
+            domain="custom"
+            description="Hotel-defined custom inputs (UDFs)."
+            defaultExpanded={false}
+          />
+        </div>
 
-      <div className="pt-4">
-        <SettingsHandledElsewhere />
+        {/* Right: atom detail editor (or empty state) */}
+        <div className="flex-1 overflow-hidden bg-white">
+          <AtomDetailPane />
+        </div>
       </div>
     </div>
   );
