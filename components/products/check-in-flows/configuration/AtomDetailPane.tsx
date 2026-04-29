@@ -28,9 +28,14 @@ import type {
   CopyBlockAtom,
   Condition,
   ElementTag,
+  FieldType,
 } from '@/lib/products/check-in-flows/types';
 import { useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
-import { getFieldTypeMeta } from '@/lib/products/check-in-flows/field-types';
+import {
+  getFieldTypeMeta,
+  FIELD_TYPES_BY_CATEGORY,
+  type FieldTypeCategory,
+} from '@/lib/products/check-in-flows/field-types';
 import {
   ELEMENT_TAGS_BY_CATEGORY,
   type TagCategory,
@@ -163,6 +168,13 @@ const TAG_CATEGORY_LABELS: Record<TagCategory, string> = {
   'other': 'Other',
 };
 
+const FIELD_TYPE_CATEGORY_LABELS: Record<FieldTypeCategory, string> = {
+  input: 'Inputs',
+  selection: 'Selection',
+  specialized: 'Specialized',
+  static: 'Static content',
+};
+
 function InputAtomDetails({
   atom,
   onUpdate,
@@ -170,7 +182,21 @@ function InputAtomDetails({
   atom: InputAtom;
   onUpdate: (updates: Partial<Atom>) => void;
 }) {
-  const supportsAutoSkip = !getFieldTypeMeta(atom.fieldType).isStatic;
+  const meta = getFieldTypeMeta(atom.fieldType);
+  const isStatic = meta.isStatic;
+  const supportsAutoSkip = !isStatic;
+
+  const fieldTypeOptions: { value: string; label: string; disabled?: boolean }[] = [];
+  (Object.keys(FIELD_TYPES_BY_CATEGORY) as FieldTypeCategory[]).forEach((cat) => {
+    fieldTypeOptions.push({
+      value: `__sep_${cat}`,
+      label: `── ${FIELD_TYPE_CATEGORY_LABELS[cat]} ──`,
+      disabled: true,
+    });
+    FIELD_TYPES_BY_CATEGORY[cat].forEach((m) => {
+      fieldTypeOptions.push({ value: m.id, label: m.displayName });
+    });
+  });
 
   const tagOptions: { value: string; label: string; disabled?: boolean }[] = [
     { value: '', label: 'No semantic tag' },
@@ -188,6 +214,26 @@ function InputAtomDetails({
 
   return (
     <>
+      <div>
+        <label
+          className="text-[11px] font-semibold uppercase tracking-wider mb-1 block"
+          style={{ color: colors.colorBlack5 }}
+        >
+          Field Type
+        </label>
+        <CanarySelect
+          size={InputSize.NORMAL}
+          value={atom.fieldType}
+          onChange={(e) =>
+            onUpdate({ fieldType: e.target.value as FieldType } as Partial<Atom>)
+          }
+          options={fieldTypeOptions}
+        />
+        <p className="text-[11px] mt-1" style={{ color: colors.colorBlack5 }}>
+          {meta.description}
+        </p>
+      </div>
+
       <CanaryInput
         size={InputSize.NORMAL}
         label="Label (EN)"
@@ -197,47 +243,51 @@ function InputAtomDetails({
           onUpdate({ label: { ...atom.label, en: e.target.value } } as Partial<Atom>)
         }
       />
-      <CanaryInput
-        size={InputSize.NORMAL}
-        label="Helper text (EN)"
-        placeholder="Optional hint shown under the field"
-        value={atom.helperText?.['en'] ?? ''}
-        onChange={(e) =>
-          onUpdate({
-            helperText: { ...(atom.helperText ?? {}), en: e.target.value },
-          } as Partial<Atom>)
-        }
-      />
-      <CanaryInput
-        size={InputSize.NORMAL}
-        label="Placeholder (EN)"
-        placeholder="Optional placeholder text"
-        value={atom.placeholder?.['en'] ?? ''}
-        onChange={(e) =>
-          onUpdate({
-            placeholder: { ...(atom.placeholder ?? {}), en: e.target.value },
-          } as Partial<Atom>)
-        }
-      />
+      {!isStatic && (
+        <>
+          <CanaryInput
+            size={InputSize.NORMAL}
+            label="Helper text (EN)"
+            placeholder="Optional hint shown under the field"
+            value={atom.helperText?.['en'] ?? ''}
+            onChange={(e) =>
+              onUpdate({
+                helperText: { ...(atom.helperText ?? {}), en: e.target.value },
+              } as Partial<Atom>)
+            }
+          />
+          <CanaryInput
+            size={InputSize.NORMAL}
+            label="Placeholder (EN)"
+            placeholder="Optional placeholder text"
+            value={atom.placeholder?.['en'] ?? ''}
+            onChange={(e) =>
+              onUpdate({
+                placeholder: { ...(atom.placeholder ?? {}), en: e.target.value },
+              } as Partial<Atom>)
+            }
+          />
 
-      <div>
-        <label
-          className="text-[11px] font-semibold uppercase tracking-wider mb-1 block"
-          style={{ color: colors.colorBlack5 }}
-        >
-          PMS Mapping
-        </label>
-        <CanarySelect
-          size={InputSize.NORMAL}
-          value={atom.pmsTag ?? ''}
-          onChange={(e) =>
-            onUpdate({
-              pmsTag: (e.target.value as ElementTag) || undefined,
-            } as Partial<Atom>)
-          }
-          options={tagOptions}
-        />
-      </div>
+          <div>
+            <label
+              className="text-[11px] font-semibold uppercase tracking-wider mb-1 block"
+              style={{ color: colors.colorBlack5 }}
+            >
+              PMS Mapping
+            </label>
+            <CanarySelect
+              size={InputSize.NORMAL}
+              value={atom.pmsTag ?? ''}
+              onChange={(e) =>
+                onUpdate({
+                  pmsTag: (e.target.value as ElementTag) || undefined,
+                } as Partial<Atom>)
+              }
+              options={tagOptions}
+            />
+          </div>
+        </>
+      )}
 
       {supportsAutoSkip && (
         <label
