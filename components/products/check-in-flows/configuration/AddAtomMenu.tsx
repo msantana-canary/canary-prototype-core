@@ -86,7 +86,7 @@ export function AddAtomMenu({ domain }: Props) {
         iconPosition={IconPosition.LEFT}
         onClick={() => setOpen(!open)}
       >
-        Add atom
+        Add component
       </CanaryButton>
 
       {open && (

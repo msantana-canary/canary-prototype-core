@@ -127,7 +127,7 @@ export function AtomDetailPane() {
             onChange={onConditionsChange}
             scope="field"
             emptyLabel="No visibility conditions"
-            emptyHint="Add a condition to gate this atom on guest attributes (nationality, age, loyalty, rate code)."
+            emptyHint="Add a condition to gate this component on guest attributes (nationality, age, loyalty, rate code)."
           />
         </Section>
       </div>
