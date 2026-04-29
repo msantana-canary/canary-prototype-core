@@ -134,7 +134,7 @@ export function ConfiguratorShell() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {nav.tab === 'configuration' ? (
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-hidden">
             <CheckInConfigPage />
           </div>
         ) : (
