@@ -20,6 +20,8 @@ import {
   mdiPlus,
   mdiDelete,
   mdiTagOutline,
+  mdiTuneVariant,
+  mdiOpenInNew,
 } from '@mdi/js';
 import {
   DndContext,
@@ -53,7 +55,6 @@ import type {
   LocalizedText,
   Condition,
 } from '@/lib/products/check-in-flows/types';
-import { ConditionRuleEditor } from './ConditionRuleEditor';
 import { resolveText } from '@/lib/products/check-in-flows/types';
 import { getFieldTypeMeta } from '@/lib/products/check-in-flows/field-types';
 import { ELEMENT_TAGS_BY_CATEGORY, getElementTagMeta, type TagCategory } from '@/lib/products/check-in-flows/element-tags';
@@ -233,13 +234,8 @@ export function FieldDetailPanel({ field, flow, step, isReadOnly, onClose }: Pro
           {/* Field-level conditions */}
           {!typeMeta.isStatic && (
             <Section title="Visibility">
-              <ConditionRuleEditor
-                conditions={field.conditions ?? []}
-                onChange={(next) => patch({ conditions: next.length > 0 ? next : undefined })}
-                scope="field"
-                disabled={isReadOnly}
-                emptyLabel="Always visible"
-                emptyHint="Add a condition to show, hide, or require this field based on guest context."
+              <GlobalConditionsIndicator
+                count={field.conditions?.length ?? 0}
               />
             </Section>
           )}
@@ -258,6 +254,41 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       </h3>
       <div className="space-y-3">{children}</div>
     </section>
+  );
+}
+
+/**
+ * Read-only conditions indicator for Flow context.
+ *
+ * Per architecture: conditions live in Global Config only. Flow shows
+ * the resolved state but cannot edit. Click navigates to the atom in
+ * Configuration tab (Phase 2 wires the navigation; for now it's a
+ * static indicator).
+ */
+function GlobalConditionsIndicator({ count }: { count: number }) {
+  return (
+    <div
+      className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-md"
+      style={{
+        backgroundColor: colors.colorBlack8,
+        border: `1px solid ${colors.colorBlack7}`,
+      }}
+    >
+      <div className="flex items-center gap-2 min-w-0">
+        <Icon path={mdiTuneVariant} size={0.6} color={colors.colorBlack4} />
+        <div className="min-w-0">
+          <p className="text-[12px] font-medium" style={{ color: colors.colorBlack3 }}>
+            {count === 0
+              ? 'Always visible'
+              : `${count} visibility condition${count === 1 ? '' : 's'} defined`}
+          </p>
+          <p className="text-[11px]" style={{ color: colors.colorBlack5 }}>
+            Edit in Configuration tab → this atom in Global Config
+          </p>
+        </div>
+      </div>
+      <Icon path={mdiOpenInNew} size={0.55} color={colors.colorBlack5} />
+    </div>
   );
 }
 

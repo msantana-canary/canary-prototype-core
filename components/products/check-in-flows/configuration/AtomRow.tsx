@@ -15,7 +15,7 @@
  * via props. Used by DomainSection (Phase 1c).
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import Icon from '@mdi/react';
 import {
   mdiWeb,
@@ -52,26 +52,71 @@ import type {
   PresetAtomType,
   DeviceVisibility,
   Surface,
+  Condition,
 } from '@/lib/products/check-in-flows/types';
 import { resolveText } from '@/lib/products/check-in-flows/types';
 import { getFieldTypeMeta } from '@/lib/products/check-in-flows/field-types';
 import { ELEMENT_TAGS } from '@/lib/products/check-in-flows/element-tags';
+import { ConditionRuleEditor } from '../editors/ConditionRuleEditor';
 
 interface Props {
   atom: Atom;
   onUpdate: (updates: Partial<Atom>) => void;
-  onEditConditions?: () => void;
   onRemove?: () => void;
 }
 
-export function AtomRow({ atom, onUpdate, onEditConditions, onRemove }: Props) {
+/**
+ * Atom-level condition editor scope.
+ *
+ * Conditions on an atom are guest-attribute-based gates (nationality, age, loyalty,
+ * etc.) — NOT device. Per-device visibility is handled by the 4-toggle row above.
+ *
+ * The action defaults to 'show' since atom-level conditions are gating *whether
+ * this atom collects data for this guest*. The runtime evaluates the conditions
+ * and renders the atom only when they all match.
+ */
+
+export function AtomRow({ atom, onUpdate, onRemove }: Props) {
+  const [conditionsExpanded, setConditionsExpanded] = useState(false);
+
+  const handleConditionsChange = (next: Condition[]) => {
+    onUpdate({ conditions: next.length > 0 ? next : undefined } as Partial<Atom>);
+  };
+
+  const handleEditConditions = () => setConditionsExpanded((v) => !v);
+
+  let header: React.ReactNode;
   if (atom.kind === 'input') {
-    return <InputAtomRow atom={atom} onUpdate={onUpdate} onEditConditions={onEditConditions} onRemove={onRemove} />;
+    header = <InputAtomRow atom={atom} onUpdate={onUpdate} onEditConditions={handleEditConditions} onRemove={onRemove} />;
+  } else if (atom.kind === 'preset') {
+    header = <PresetAtomRow atom={atom} onUpdate={onUpdate} onEditConditions={handleEditConditions} onRemove={onRemove} />;
+  } else {
+    header = <CopyBlockAtomRow atom={atom} onUpdate={onUpdate} onEditConditions={handleEditConditions} onRemove={onRemove} />;
   }
-  if (atom.kind === 'preset') {
-    return <PresetAtomRow atom={atom} onUpdate={onUpdate} onEditConditions={onEditConditions} onRemove={onRemove} />;
-  }
-  return <CopyBlockAtomRow atom={atom} onUpdate={onUpdate} onEditConditions={onEditConditions} onRemove={onRemove} />;
+
+  return (
+    <div>
+      {header}
+      {conditionsExpanded && (
+        <div
+          className="rounded-b-md px-3 py-3 -mt-1"
+          style={{
+            border: `1px solid ${colors.colorBlack7}`,
+            borderTop: 'none',
+            backgroundColor: colors.colorBlack8,
+          }}
+        >
+          <ConditionRuleEditor
+            conditions={atom.conditions ?? []}
+            onChange={handleConditionsChange}
+            scope="field"
+            emptyLabel="No visibility conditions"
+            emptyHint="Add a condition to gate this atom on guest attributes (nationality, age, loyalty, rate code)."
+          />
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Input variant ─────────────────────────────────────
