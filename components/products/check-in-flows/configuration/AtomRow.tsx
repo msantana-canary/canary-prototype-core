@@ -41,6 +41,10 @@ import {
   CanaryTag,
   TagSize,
   TagColor,
+  CanaryInput,
+  CanarySelect,
+  CanaryTextArea,
+  InputSize,
   colors,
 } from '@canary-ui/components';
 
@@ -53,10 +57,15 @@ import type {
   DeviceVisibility,
   Surface,
   Condition,
+  ElementTag,
 } from '@/lib/products/check-in-flows/types';
 import { resolveText } from '@/lib/products/check-in-flows/types';
 import { getFieldTypeMeta } from '@/lib/products/check-in-flows/field-types';
-import { ELEMENT_TAGS } from '@/lib/products/check-in-flows/element-tags';
+import {
+  ELEMENT_TAGS,
+  ELEMENT_TAGS_BY_CATEGORY,
+  type TagCategory,
+} from '@/lib/products/check-in-flows/element-tags';
 import { ConditionRuleEditor } from '../editors/ConditionRuleEditor';
 
 interface Props {
@@ -78,25 +87,47 @@ interface Props {
 
 export function AtomRow({ atom, onUpdate, onRemove }: Props) {
   const [conditionsExpanded, setConditionsExpanded] = useState(false);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
 
   const handleConditionsChange = (next: Condition[]) => {
     onUpdate({ conditions: next.length > 0 ? next : undefined } as Partial<Atom>);
   };
 
   const handleEditConditions = () => setConditionsExpanded((v) => !v);
+  const handleEditDetails = () => setDetailsExpanded((v) => !v);
+
+  const headerProps = {
+    onUpdate,
+    onEditConditions: handleEditConditions,
+    onEditDetails: handleEditDetails,
+    detailsOpen: detailsExpanded,
+    onRemove,
+  };
 
   let header: React.ReactNode;
   if (atom.kind === 'input') {
-    header = <InputAtomRow atom={atom} onUpdate={onUpdate} onEditConditions={handleEditConditions} onRemove={onRemove} />;
+    header = <InputAtomRow atom={atom} {...headerProps} />;
   } else if (atom.kind === 'preset') {
-    header = <PresetAtomRow atom={atom} onUpdate={onUpdate} onEditConditions={handleEditConditions} onRemove={onRemove} />;
+    header = <PresetAtomRow atom={atom} {...headerProps} />;
   } else {
-    header = <CopyBlockAtomRow atom={atom} onUpdate={onUpdate} onEditConditions={handleEditConditions} onRemove={onRemove} />;
+    header = <CopyBlockAtomRow atom={atom} {...headerProps} />;
   }
 
   return (
     <div>
       {header}
+      {detailsExpanded && (
+        <div
+          className="rounded-b-md px-3 py-3 -mt-1"
+          style={{
+            border: `1px solid ${colors.colorBlack7}`,
+            borderTop: 'none',
+            backgroundColor: '#FAFAFA',
+          }}
+        >
+          <AtomDetailsEditor atom={atom} onUpdate={onUpdate} />
+        </div>
+      )}
       {conditionsExpanded && (
         <div
           className="rounded-b-md px-3 py-3 -mt-1"
@@ -125,11 +156,15 @@ function InputAtomRow({
   atom,
   onUpdate,
   onEditConditions,
+  onEditDetails,
+  detailsOpen,
   onRemove,
 }: {
   atom: InputAtom;
   onUpdate: (updates: Partial<Atom>) => void;
   onEditConditions?: () => void;
+  onEditDetails?: () => void;
+  detailsOpen?: boolean;
   onRemove?: () => void;
 }) {
   const typeMeta = getFieldTypeMeta(atom.fieldType);
@@ -149,6 +184,8 @@ function InputAtomRow({
             />
           ) : null
         }
+        onEditDetails={onEditDetails}
+        detailsOpen={detailsOpen}
         onRemove={onRemove}
       />
       <RowControls
@@ -180,11 +217,15 @@ function PresetAtomRow({
   atom,
   onUpdate,
   onEditConditions,
+  onEditDetails,
+  detailsOpen,
   onRemove,
 }: {
   atom: PresetAtom;
   onUpdate: (updates: Partial<Atom>) => void;
   onEditConditions?: () => void;
+  onEditDetails?: () => void;
+  detailsOpen?: boolean;
   onRemove?: () => void;
 }) {
   const conditionCount = atom.conditions?.length ?? 0;
@@ -195,6 +236,8 @@ function PresetAtomRow({
         icon={getPresetIcon(atom.presetType)}
         title={resolveText(atom.label)}
         rightSlot={<TagChip label="PRESET" />}
+        onEditDetails={onEditDetails}
+        detailsOpen={detailsOpen}
         onRemove={onRemove}
       />
       <RowControls
@@ -220,11 +263,15 @@ function CopyBlockAtomRow({
   atom,
   onUpdate,
   onEditConditions,
+  onEditDetails,
+  detailsOpen,
   onRemove,
 }: {
   atom: CopyBlockAtom;
   onUpdate: (updates: Partial<Atom>) => void;
   onEditConditions?: () => void;
+  onEditDetails?: () => void;
+  detailsOpen?: boolean;
   onRemove?: () => void;
 }) {
   const conditionCount = atom.conditions?.length ?? 0;
@@ -237,6 +284,8 @@ function CopyBlockAtomRow({
         icon={mdiTextBoxOutline}
         title={atom.name}
         rightSlot={<TagChip label="COPY" />}
+        onEditDetails={onEditDetails}
+        detailsOpen={detailsOpen}
         onRemove={onRemove}
       />
       {preview && (
@@ -281,11 +330,15 @@ function RowHeader({
   icon,
   title,
   rightSlot,
+  onEditDetails,
+  detailsOpen,
   onRemove,
 }: {
   icon: string;
   title: string;
   rightSlot?: React.ReactNode;
+  onEditDetails?: () => void;
+  detailsOpen?: boolean;
   onRemove?: () => void;
 }) {
   return (
@@ -306,6 +359,25 @@ function RowHeader({
         {title}
       </span>
       {rightSlot}
+      {onEditDetails && (
+        <button
+          onClick={onEditDetails}
+          className="w-7 h-7 rounded flex items-center justify-center transition-colors"
+          style={{
+            color: detailsOpen ? colors.colorBlueDark1 : colors.colorBlack5,
+            backgroundColor: detailsOpen ? colors.colorBlueDark5 : 'transparent',
+          }}
+          onMouseEnter={(e) => {
+            if (!detailsOpen) e.currentTarget.style.backgroundColor = colors.colorBlack8;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = detailsOpen ? colors.colorBlueDark5 : 'transparent';
+          }}
+          title={detailsOpen ? 'Close details' : 'Edit details'}
+        >
+          <Icon path={mdiPencilOutline} size={0.6} />
+        </button>
+      )}
       {onRemove && (
         <button
           onClick={onRemove}
@@ -489,4 +561,181 @@ function getPresetIcon(presetType: PresetAtomType): string {
     case 'completion': return mdiCheckCircleOutline;
     default: return mdiPuzzleOutline;
   }
+}
+
+// ── Details editor (Phase 2a) ─────────────────────────
+
+const TAG_CATEGORY_LABELS: Record<TagCategory, string> = {
+  'guest-info': 'Guest Info',
+  'contact': 'Contact',
+  'address': 'Address',
+  'stay': 'Stay',
+  'identification': 'Identification',
+  'loyalty': 'Loyalty',
+  'other': 'Other',
+};
+
+function AtomDetailsEditor({
+  atom,
+  onUpdate,
+}: {
+  atom: Atom;
+  onUpdate: (updates: Partial<Atom>) => void;
+}) {
+  if (atom.kind === 'input') {
+    return <InputAtomDetailsEditor atom={atom} onUpdate={onUpdate} />;
+  }
+  if (atom.kind === 'copy-block') {
+    return <CopyBlockAtomDetailsEditor atom={atom} onUpdate={onUpdate} />;
+  }
+  return <PresetAtomDetailsNotice />;
+}
+
+function InputAtomDetailsEditor({
+  atom,
+  onUpdate,
+}: {
+  atom: InputAtom;
+  onUpdate: (updates: Partial<Atom>) => void;
+}) {
+  const supportsAutoSkip = !getFieldTypeMeta(atom.fieldType).isStatic;
+
+  // Build PMS tag options with disabled separator rows by category
+  const tagOptions: { value: string; label: string; disabled?: boolean }[] = [
+    { value: '', label: 'No semantic tag' },
+  ];
+  (Object.keys(ELEMENT_TAGS_BY_CATEGORY) as TagCategory[]).forEach((cat) => {
+    tagOptions.push({
+      value: `__sep_${cat}`,
+      label: `── ${TAG_CATEGORY_LABELS[cat]} ──`,
+      disabled: true,
+    });
+    ELEMENT_TAGS_BY_CATEGORY[cat].forEach((t) => {
+      tagOptions.push({ value: t.id, label: t.displayName });
+    });
+  });
+
+  return (
+    <div className="space-y-3">
+      <CanaryInput
+        size={InputSize.NORMAL}
+        label="Label (EN)"
+        placeholder="Field label shown to guest"
+        value={atom.label?.['en'] ?? ''}
+        onChange={(e) =>
+          onUpdate({ label: { ...atom.label, en: e.target.value } } as Partial<Atom>)
+        }
+      />
+      <CanaryInput
+        size={InputSize.NORMAL}
+        label="Helper text (EN)"
+        placeholder="Optional hint shown under the field"
+        value={atom.helperText?.['en'] ?? ''}
+        onChange={(e) =>
+          onUpdate({
+            helperText: { ...(atom.helperText ?? {}), en: e.target.value },
+          } as Partial<Atom>)
+        }
+      />
+      <CanaryInput
+        size={InputSize.NORMAL}
+        label="Placeholder (EN)"
+        placeholder="Optional placeholder text"
+        value={atom.placeholder?.['en'] ?? ''}
+        onChange={(e) =>
+          onUpdate({
+            placeholder: { ...(atom.placeholder ?? {}), en: e.target.value },
+          } as Partial<Atom>)
+        }
+      />
+
+      <div>
+        <label
+          className="text-[11px] font-semibold uppercase tracking-wider mb-1 block"
+          style={{ color: colors.colorBlack5 }}
+        >
+          PMS Mapping
+        </label>
+        <CanarySelect
+          size={InputSize.NORMAL}
+          value={atom.pmsTag ?? ''}
+          onChange={(e) =>
+            onUpdate({
+              pmsTag: (e.target.value as ElementTag) || undefined,
+            } as Partial<Atom>)
+          }
+          options={tagOptions}
+        />
+      </div>
+
+      {supportsAutoSkip && (
+        <label
+          className="flex items-center gap-2 text-[12px]"
+          style={{ color: colors.colorBlack3 }}
+        >
+          <CanarySwitch
+            checked={atom.autoSkipIfFilled ?? false}
+            onChange={(v) =>
+              onUpdate({ autoSkipIfFilled: v } as Partial<Atom>)
+            }
+          />
+          Auto-skip if already filled
+          <span className="text-[11px]" style={{ color: colors.colorBlack5 }}>
+            (skips on subsequent flows when prior surface captured the data)
+          </span>
+        </label>
+      )}
+    </div>
+  );
+}
+
+function CopyBlockAtomDetailsEditor({
+  atom,
+  onUpdate,
+}: {
+  atom: CopyBlockAtom;
+  onUpdate: (updates: Partial<Atom>) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <CanaryInput
+        size={InputSize.NORMAL}
+        label="Name"
+        placeholder="CS-facing identifier (e.g., Hotel Policies)"
+        value={atom.name}
+        onChange={(e) =>
+          onUpdate({ name: e.target.value } as Partial<Atom>)
+        }
+      />
+      <CanaryTextArea
+        size={InputSize.NORMAL}
+        label="Content (EN)"
+        placeholder="Compliance / policy text shown to guest"
+        value={atom.content?.['en'] ?? ''}
+        rows={6}
+        onChange={(e) =>
+          onUpdate({
+            content: { ...atom.content, en: e.target.value },
+          } as Partial<Atom>)
+        }
+      />
+    </div>
+  );
+}
+
+function PresetAtomDetailsNotice() {
+  return (
+    <div
+      className="px-3 py-3 rounded text-[12px]"
+      style={{
+        backgroundColor: '#FFFBEB',
+        border: `1px solid #FCD34D`,
+        color: '#92400E',
+      }}
+    >
+      <strong>Preset configuration is currently fixed in code.</strong> Phase 3
+      will decompose multi-stage presets and expose their per-stage
+      configuration here. For now, edit conditions and device visibility above.
+    </div>
+  );
 }
