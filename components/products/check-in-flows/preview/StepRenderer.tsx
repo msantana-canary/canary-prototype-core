@@ -41,9 +41,11 @@ import type {
   NestedFlowConfig,
   PreviewContext,
   SchemaFormConfig,
+  InputAtom,
+  FieldDef,
 } from '@/lib/products/check-in-flows/types';
-import { resolveText } from '@/lib/products/check-in-flows/types';
-import { useFlowById } from '@/lib/products/check-in-flows/store';
+import { resolveText, resolveStepAtoms } from '@/lib/products/check-in-flows/types';
+import { useFlowById, useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
 import { COUNTRY_MAP } from '@/lib/products/check-in-flows/condition-meta';
 import { shouldShow } from '@/lib/products/check-in-flows/condition-evaluator';
 import { GuestPreviewShell } from './GuestPreviewShell';
@@ -74,6 +76,7 @@ export function StepRenderer({ step, ctx, flow }: Props) {
         ctx={ctx}
         stepIndex={stepIndex}
         total={total}
+        flow={flow}
       />
     );
   }
@@ -156,8 +159,28 @@ function SchemaFormPreview({
   ctx,
   stepIndex,
   total,
-}: ShellProps & { cfg: SchemaFormConfig }) {
-  const visibleFields = cfg.fields.filter((f) => shouldShow(f.conditions, ctx));
+  flow,
+}: ShellProps & { cfg: SchemaFormConfig; flow?: FlowDefinition }) {
+  // Phase 5c: prefer atom resolution from Global Config over legacy cfg.fields.
+  // Edits to atoms in Configuration tab now propagate live to the Flow preview.
+  const allAtoms = useCheckInFlowsStore((s) => s.atoms);
+  const surface = flow?.surface;
+
+  const fieldsFromAtoms: FieldDef[] = (() => {
+    if (!step.atomIds || step.atomIds.length === 0) return [];
+    const atoms = resolveStepAtoms(step, allAtoms, surface);
+    // Convert input atoms to FieldDef shape so existing RegistrationCardPreview can consume.
+    return atoms
+      .filter((a): a is InputAtom => a.kind === 'input')
+      .map((a, idx) => atomToFieldDef(a, idx))
+      .filter((f) => shouldShow(f.conditions, ctx));
+  })();
+
+  // Fallback to legacy fields if atomIds not populated (some steps still use inline FieldDef).
+  const visibleFields = fieldsFromAtoms.length > 0
+    ? fieldsFromAtoms
+    : cfg.fields.filter((f) => shouldShow(f.conditions, ctx));
+
   const isRegCard = step.templateId === 'reg-card';
 
   return (
@@ -609,4 +632,23 @@ function NestedFlowPreview({
       </div>
     </GuestPreviewShell>
   );
+}
+
+// ── Phase 5c helper: convert InputAtom to FieldDef shape ──
+
+function atomToFieldDef(atom: InputAtom, order: number): FieldDef {
+  return {
+    id: atom.id,
+    type: atom.fieldType,
+    semanticTag: atom.pmsTag,
+    label: atom.label,
+    placeholder: atom.placeholder,
+    helperText: atom.helperText,
+    required: atom.required,
+    autoSkipIfFilled: atom.autoSkipIfFilled ?? false,
+    options: atom.options,
+    conditions: atom.conditions,
+    order,
+    staticContent: atom.staticContent,
+  };
 }
