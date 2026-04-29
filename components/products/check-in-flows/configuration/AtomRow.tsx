@@ -28,6 +28,7 @@ import {
   mdiTuneVariant,
   mdiPencilOutline,
   mdiDelete,
+  mdiAlertOutline,
   mdiShieldCheckOutline,
   mdiCardAccountDetailsOutline,
   mdiCameraOutline,
@@ -113,9 +114,31 @@ export function AtomRow({ atom, onUpdate, onRemove }: Props) {
     header = <CopyBlockAtomRow atom={atom} {...headerProps} />;
   }
 
+  // Phase 4: warn if required input atom isn't visible on any surface —
+  // misconfiguration that prevents the requirement from ever being satisfied.
+  const hiddenRequired =
+    atom.kind === 'input' &&
+    atom.required &&
+    !Object.values(atom.deviceVisibility).some((v) => v);
+
   return (
     <div>
       {header}
+      {hiddenRequired && (
+        <div
+          className="px-3 py-1.5 -mt-1 flex items-center gap-2 rounded-b-md text-[11px]"
+          style={{
+            backgroundColor: '#FEF3C7',
+            border: `1px solid #FCD34D`,
+            borderTop: 'none',
+            color: '#92400E',
+          }}
+        >
+          <Icon path={mdiAlertOutline} size={0.55} color="#92400E" />
+          Required, but hidden on all surfaces — guests can't satisfy this.
+          Either un-require it or enable on at least one surface.
+        </div>
+      )}
       {detailsExpanded && (
         <div
           className="rounded-b-md px-3 py-3 -mt-1"
