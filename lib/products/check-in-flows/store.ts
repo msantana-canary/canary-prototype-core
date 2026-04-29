@@ -200,6 +200,7 @@ interface CheckInFlowsState {
   expandedSections: string[];
   flows: FlowDefinition[];
   atoms: Atom[];                                            // Phase 1: Global Config atoms
+  selectedAtomId: string | null;                            // Phase 6: split-pane selection
   nav: NavState;
   previewContext: PreviewContext;
   previewSurface: 'web' | 'mobile-web';
@@ -237,6 +238,10 @@ interface CheckInFlowsState {
   removeAtomFromStep: (flowId: string, stepId: string, atomId: string) => void;
   reorderStepAtoms: (flowId: string, stepId: string, orderedAtomIds: string[]) => void;
 
+  // Atom selection (Phase 6 — split-pane Configuration tab)
+  selectAtom: (atomId: string) => void;
+  deselectAtom: () => void;
+
   // Preview
   setPreviewContext: (updates: Partial<PreviewContext>) => void;
   setPreviewSurface: (surface: 'web' | 'mobile-web') => void;
@@ -252,6 +257,7 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
   expandedSections: ['identity'],
   flows: buildFlowsFromConfig(DEFAULT_CONFIG),
   atoms: DEFAULT_ATOMS,
+  selectedAtomId: null,
   nav: DEFAULT_NAV,
   previewContext: DEFAULT_PREVIEW,
   previewSurface: 'mobile-web' as const,
@@ -263,7 +269,12 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
   })),
   removeAtom: (atomId) => set((state) => ({
     atoms: state.atoms.filter((a) => a.id !== atomId),
+    selectedAtomId: state.selectedAtomId === atomId ? null : state.selectedAtomId,
   })),
+
+  // Atom selection (Phase 6)
+  selectAtom: (atomId) => set({ selectedAtomId: atomId }),
+  deselectAtom: () => set({ selectedAtomId: null }),
 
   // ── Config ────────────────────────────────────────────
   updateConfig: (key, value) => {
