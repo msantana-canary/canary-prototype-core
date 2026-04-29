@@ -166,20 +166,13 @@ function SchemaFormPreview({
   const allAtoms = useCheckInFlowsStore((s) => s.atoms);
   const surface = flow?.surface;
 
-  const fieldsFromAtoms: FieldDef[] = (() => {
-    if (!step.atomIds || step.atomIds.length === 0) return [];
-    const atoms = resolveStepAtoms(step, allAtoms, surface);
-    // Convert input atoms to FieldDef shape so existing RegistrationCardPreview can consume.
-    return atoms
-      .filter((a): a is InputAtom => a.kind === 'input')
-      .map((a, idx) => atomToFieldDef(a, idx))
-      .filter((f) => shouldShow(f.conditions, ctx));
-  })();
-
-  // Fallback to legacy fields if atomIds not populated (some steps still use inline FieldDef).
-  const visibleFields = fieldsFromAtoms.length > 0
-    ? fieldsFromAtoms
-    : cfg.fields.filter((f) => shouldShow(f.conditions, ctx));
+  // Phase 5e: atom-only path. Resolve atoms from Global, filter by surface
+  // visibility + guest-attribute conditions, convert to FieldDef shape for
+  // RegistrationCardPreview. Legacy cfg.fields path fully retired.
+  const visibleFields: FieldDef[] = resolveStepAtoms(step, allAtoms, surface)
+    .filter((a): a is InputAtom => a.kind === 'input')
+    .map((a, idx) => atomToFieldDef(a, idx))
+    .filter((f) => shouldShow(f.conditions, ctx));
 
   const isRegCard = step.templateId === 'reg-card';
 

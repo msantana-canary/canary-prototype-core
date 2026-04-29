@@ -274,6 +274,7 @@ function buildLoyaltyWelcomeStep(flowId: string, property: Property): StepInstan
     kind: 'preset',
     isSkippable: true,
     order: 0,
+    atomIds: [],
     conditions: [
       {
         id: 'cond-loyalty',
@@ -301,6 +302,7 @@ function buildUpsellsNestedStep(flowId: string, nestedFlowId: string): StepInsta
     kind: 'nested-flow',
     isSkippable: true,
     order: 0,
+    atomIds: [],
     config: {
       kind: 'nested-flow',
       nestedFlowId,
@@ -316,6 +318,7 @@ function buildCompletionStep(flowId: string): StepInstance {
     kind: 'preset',
     isSkippable: false,
     order: 0,
+    atomIds: [],
     config: {
       kind: 'preset',
       presetType: 'completion',

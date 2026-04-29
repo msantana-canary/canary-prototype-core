@@ -106,11 +106,12 @@ export interface StepInstance {
   conditions?: Condition[];      // step-level show/hide (Phase 2c stripped UI; data kept)
 
   /** Phase 5: atom references — ordered list of atom IDs from Global Config.
-   *  Optional during 5a/5b migration; will become required in 5e cleanup. */
-  atomIds?: string[];
+   *  Source of truth for what this step renders. */
+  atomIds: string[];
 
-  /** Legacy (pre-Phase-5): inline config. Schema-form steps derive from atomIds
-   *  when populated; falls back to legacy config rendering otherwise. */
+  /** Legacy preset / nested-flow inline config. Schema-form steps derive
+   *  rendering from atomIds; preset and nested-flow steps still use this
+   *  for type-specific configuration (Phase 3 will decompose presets). */
   config: StepConfig;
 }
 
@@ -577,7 +578,7 @@ export function resolveStepAtoms(
   allAtoms: Atom[],
   surface?: Surface
 ): Atom[] {
-  const atoms = resolveAtoms(step.atomIds ?? [], allAtoms);
+  const atoms = resolveAtoms(step.atomIds, allAtoms);
   if (!surface) return atoms;
   return atoms.filter((a) => a.deviceVisibility[surface]);
 }

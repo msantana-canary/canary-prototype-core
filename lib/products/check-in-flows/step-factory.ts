@@ -42,6 +42,7 @@ export function createBlankStepFromTemplate(
     kind: template.kind,
     isSkippable: false,
     order: 0,
+    atomIds: [] as string[],
   };
 
   switch (templateId) {

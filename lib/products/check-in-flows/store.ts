@@ -139,11 +139,11 @@ function buildUpsellsFlow(property: Property): FlowDefinition {
     surface: 'web',
     kind: 'nested',
     steps: [
-      { id: nestedStepId(flowId), templateId: 'completion', name: 'Upgrade Your Stay', kind: 'preset', isSkippable: true, order: 0,
+      { id: nestedStepId(flowId), templateId: 'completion', name: 'Upgrade Your Stay', kind: 'preset', isSkippable: true, order: 0, atomIds: [],
         config: { kind: 'preset', presetType: 'completion', heading: loc('Enhance your stay'), body: loc('Explore room upgrades, amenities, and early check-in options.'), ctaLabel: loc('Browse offers') } },
-      { id: nestedStepId(flowId), templateId: 'completion', name: 'Add-Ons Browse', kind: 'preset', isSkippable: true, order: 1,
+      { id: nestedStepId(flowId), templateId: 'completion', name: 'Add-Ons Browse', kind: 'preset', isSkippable: true, order: 1, atomIds: [],
         config: { kind: 'preset', presetType: 'completion', heading: loc('Available upgrades'), body: loc('Tap any item to add it to your reservation.'), ctaLabel: loc('Add to stay') } },
-      { id: nestedStepId(flowId), templateId: 'completion', name: 'Review Cart', kind: 'preset', isSkippable: false, order: 2,
+      { id: nestedStepId(flowId), templateId: 'completion', name: 'Review Cart', kind: 'preset', isSkippable: false, order: 2, atomIds: [],
         config: { kind: 'preset', presetType: 'completion', heading: loc('Review your additions'), body: loc('These charges will be added to your folio at checkout.'), ctaLabel: loc('Confirm') } },
     ],
     isDefault: true,
@@ -231,12 +231,6 @@ interface CheckInFlowsState {
   updateStep: (flowId: string, stepId: string, updates: Partial<StepInstance>) => void;
   updateStepConfig: (flowId: string, stepId: string, updater: (cfg: StepInstance['config']) => StepInstance['config']) => void;
   updateStepConditions: (flowId: string, stepId: string, conditions: Condition[]) => void;
-
-  // Field CRUD (legacy — Phase 5 deprecates in favor of atom slots)
-  addField: (flowId: string, stepId: string, field: FieldDef) => void;
-  removeField: (flowId: string, stepId: string, fieldId: string) => void;
-  reorderFields: (flowId: string, stepId: string, orderedIds: string[]) => void;
-  updateField: (flowId: string, stepId: string, fieldId: string, updates: Partial<FieldDef>) => void;
 
   // Atom slot management (Phase 5d — atomIds in step refs Global atoms)
   addAtomToStep: (flowId: string, stepId: string, atomId: string) => void;
@@ -397,35 +391,6 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
   },
 
   // ── Field CRUD ────────────────────────────────────────
-  addField: (flowId, stepId, field) => {
-    get().updateStepConfig(flowId, stepId, (cfg) => {
-      if (cfg.kind !== 'schema-form') return cfg;
-      return { ...cfg, fields: [...cfg.fields, { ...field, order: cfg.fields.length }] };
-    });
-  },
-
-  removeField: (flowId, stepId, fieldId) => {
-    get().updateStepConfig(flowId, stepId, (cfg) => {
-      if (cfg.kind !== 'schema-form') return cfg;
-      return { ...cfg, fields: cfg.fields.filter((f) => f.id !== fieldId).map((f, idx) => ({ ...f, order: idx })) };
-    });
-  },
-
-  reorderFields: (flowId, stepId, orderedIds) => {
-    get().updateStepConfig(flowId, stepId, (cfg) => {
-      if (cfg.kind !== 'schema-form') return cfg;
-      const byId = Object.fromEntries(cfg.fields.map((f) => [f.id, f]));
-      return { ...cfg, fields: orderedIds.map((id, idx) => ({ ...byId[id], order: idx })) };
-    });
-  },
-
-  updateField: (flowId, stepId, fieldId, updates) => {
-    get().updateStepConfig(flowId, stepId, (cfg) => {
-      if (cfg.kind !== 'schema-form') return cfg;
-      return { ...cfg, fields: cfg.fields.map((f) => (f.id === fieldId ? { ...f, ...updates } : f)) };
-    });
-  },
-
   // ── Atom slot management (Phase 5d) ───────────────────
   addAtomToStep: (flowId, stepId, atomId) => {
     set((state) => ({

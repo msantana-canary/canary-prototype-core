@@ -37,6 +37,7 @@ function buildUpsellsFlow(property: Property): FlowDefinition {
       kind: 'preset',
       isSkippable: true,
       order: 0,
+      atomIds: [],
       config: {
         kind: 'preset',
         presetType: 'completion',
@@ -54,6 +55,7 @@ function buildUpsellsFlow(property: Property): FlowDefinition {
       kind: 'preset',
       isSkippable: true,
       order: 1,
+      atomIds: [],
       config: {
         kind: 'preset',
         presetType: 'completion',
@@ -69,6 +71,7 @@ function buildUpsellsFlow(property: Property): FlowDefinition {
       kind: 'preset',
       isSkippable: false,
       order: 2,
+      atomIds: [],
       config: {
         kind: 'preset',
         presetType: 'completion',
