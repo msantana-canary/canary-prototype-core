@@ -92,6 +92,18 @@ function buildRegCardStep(flowId: string, property: Property, surface: Surface):
     kind: 'schema-form',
     isSkippable: false,
     order: 0,
+    atomIds: [
+      'atom-first-name',
+      'atom-last-name',
+      'atom-email',
+      'atom-phone',
+      'atom-address',
+      'atom-city',
+      'atom-country',
+      'atom-estimated-arrival',
+      'atom-special-requests',
+      'atom-signature',
+    ],
     config: { kind: 'schema-form', fields },
   };
 }
@@ -112,6 +124,13 @@ function buildOcrStep(flowId: string): StepInstance {
     kind: 'schema-form',
     isSkippable: true,
     order: 0,
+    atomIds: [
+      'atom-id-doc-first-name',
+      'atom-id-doc-last-name',
+      'atom-id-doc-date-of-birth',
+      'atom-id-doc-nationality',
+      'atom-id-doc-document-number',
+    ],
     config: { kind: 'schema-form', fields },
   };
 }
@@ -124,6 +143,7 @@ function buildIdConsentStep(flowId: string): StepInstance {
     kind: 'preset',
     isSkippable: false,
     order: 0,
+    atomIds: ['atom-id-consent'],
     config: {
       kind: 'preset',
       presetType: 'id-consent',
@@ -152,6 +172,7 @@ function buildIdCaptureStep(flowId: string, _property: Property): StepInstance {
     kind: 'preset',
     isSkippable: false,
     order: 0,
+    atomIds: ['atom-id-type-select', 'atom-id-photo-front'],
     config: {
       kind: 'preset',
       presetType: 'id-capture',
@@ -206,6 +227,7 @@ function buildCreditCardStep(flowId: string, property: Property): StepInstance {
     kind: 'preset',
     isSkippable: false,
     order: 0,
+    atomIds: ['atom-credit-card'],
     config: {
       kind: 'preset',
       presetType: 'credit-card',
@@ -224,6 +246,7 @@ function buildDepositStep(flowId: string, property: Property): StepInstance {
     kind: 'preset',
     isSkippable: false,
     order: 0,
+    atomIds: ['atom-deposit'],
     config: {
       kind: 'preset',
       presetType: 'deposit-collection',
