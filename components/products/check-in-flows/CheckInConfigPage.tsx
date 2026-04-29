@@ -38,6 +38,7 @@ import {
 
 import { useGeneratedFlows } from '@/lib/products/check-in-flows/store';
 import { DomainSection } from './configuration/DomainSection';
+import { SettingsHandledElsewhere } from './configuration/SettingsHandledElsewhere';
 
 const SURFACE_ICON: Record<string, string> = {
   'web': mdiWeb,
@@ -84,7 +85,9 @@ export function CheckInConfigPage() {
         defaultExpanded={false}
       />
 
-      {/* Phase 1e — Settings handled outside Manage app collapsible goes here */}
+      <div className="pt-4">
+        <SettingsHandledElsewhere />
+      </div>
     </div>
   );
 }
