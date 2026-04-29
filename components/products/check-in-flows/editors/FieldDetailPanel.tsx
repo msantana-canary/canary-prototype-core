@@ -112,133 +112,115 @@ export function FieldDetailPanel({ field, flow, step, isReadOnly, onClose }: Pro
         </div>
       </div>
 
-      {/* Body sections */}
-      <div className="px-6 py-5 space-y-6">
-          {/* Localized labels */}
-          <Section title="Label">
-            {languages.map((lang) => (
-              <CanaryInput
-                key={lang}
-                size={InputSize.NORMAL}
-                label={`Label (${lang.toUpperCase()})`}
-                placeholder={`Label in ${lang.toUpperCase()}`}
-                value={field.label?.[lang] ?? ''}
-                onChange={(e) => patch({ label: { ...field.label, [lang]: e.target.value } })}
-                isDisabled={isReadOnly}
-              />
-            ))}
-          </Section>
+      {/* Read-only body — atom data lives in Global Config */}
+      <div className="px-6 py-5 space-y-5">
+        <EditInGlobalCTA />
 
-          {/* Placeholder + helper */}
-          {!typeMeta.isStatic && (
-            <Section title="Helper Text">
-              <CanaryInput
-                size={InputSize.NORMAL}
-                label="Placeholder"
-                placeholder="e.g. Enter your email"
-                value={field.placeholder?.['en'] ?? ''}
-                onChange={(e) =>
-                  patch({ placeholder: { ...(field.placeholder ?? {}), en: e.target.value } })
-                }
-                isDisabled={isReadOnly}
-              />
-              <CanaryInput
-                size={InputSize.NORMAL}
-                label="Helper text"
-                placeholder="Optional hint displayed under the field"
-                value={field.helperText?.['en'] ?? ''}
-                onChange={(e) =>
-                  patch({ helperText: { ...(field.helperText ?? {}), en: e.target.value } })
-                }
-                isDisabled={isReadOnly}
-              />
-            </Section>
-          )}
+        <ReadOnlySection title="Label">
+          {languages.map((lang) => (
+            <ReadOnlyValue
+              key={lang}
+              label={`Label (${lang.toUpperCase()})`}
+              value={field.label?.[lang] ?? '—'}
+            />
+          ))}
+        </ReadOnlySection>
 
-          {/* Static content for paragraph/header/list */}
-          {typeMeta.isStatic && (
-            <Section title="Content">
-              {field.type === 'list' ? (
-                <CanaryTextArea
-                  label="Bullet list (one per line)"
-                  placeholder="Item one&#10;Item two&#10;Item three"
-                  value={field.staticContent?.['en'] ?? ''}
-                  onChange={(e) =>
-                    patch({ staticContent: { ...(field.staticContent ?? {}), en: e.target.value } })
-                  }
-                  isDisabled={isReadOnly}
-                  rows={5}
-                />
-              ) : (
-                <CanaryTextArea
-                  label={field.type === 'header' ? 'Heading text' : 'Paragraph text'}
-                  value={field.staticContent?.['en'] ?? ''}
-                  onChange={(e) =>
-                    patch({ staticContent: { ...(field.staticContent ?? {}), en: e.target.value } })
-                  }
-                  isDisabled={isReadOnly}
-                  rows={field.type === 'paragraph' ? 4 : 2}
-                />
-              )}
-            </Section>
-          )}
+        {!typeMeta.isStatic && (
+          <ReadOnlySection title="Hints">
+            <ReadOnlyValue
+              label="Placeholder"
+              value={field.placeholder?.['en'] || '—'}
+            />
+            <ReadOnlyValue
+              label="Helper text"
+              value={field.helperText?.['en'] || '—'}
+            />
+          </ReadOnlySection>
+        )}
 
-          {/* Validation toggles */}
-          {!typeMeta.isStatic && (
-            <Section title="Validation">
-              <ToggleRow
-                label="Required"
-                hint="Guest must complete this field before continuing"
-                checked={field.required}
-                onChange={(v) => patch({ required: v })}
-                disabled={isReadOnly}
-              />
-              <ToggleRow
-                label="Auto-skip if already filled"
-                hint="Skip this field if it's been collected in a prior flow (e.g. mobile web → kiosk)"
-                checked={field.autoSkipIfFilled}
-                onChange={(v) => patch({ autoSkipIfFilled: v })}
-                disabled={isReadOnly}
-              />
-            </Section>
-          )}
+        {typeMeta.isStatic && (
+          <ReadOnlySection title="Content">
+            <ReadOnlyValue
+              label={field.type === 'header' ? 'Heading text' : field.type === 'list' ? 'Bullet list' : 'Paragraph text'}
+              value={field.staticContent?.['en'] || '—'}
+              multiline
+            />
+          </ReadOnlySection>
+        )}
 
-          {/* Semantic tag */}
-          {!typeMeta.isStatic && (
-            <Section title="PMS Mapping">
-              <SemanticTagSelect
-                value={field.semanticTag}
-                onChange={(tag) => patch({ semanticTag: tag })}
-                disabled={isReadOnly}
-              />
-              {tagMeta && (
-                <div className="mt-2 flex items-center gap-1 text-[11px]" style={{ color: colors.colorBlack5 }}>
-                  <Icon path={mdiTagOutline} size={0.5} color={colors.colorBlack5} />
-                  maps to <code className="font-mono">{tagMeta.pmsField}</code>
-                </div>
-              )}
-            </Section>
-          )}
+        {!typeMeta.isStatic && (
+          <ReadOnlySection title="Validation">
+            <ReadOnlyBadge label="Required" enabled={field.required} />
+            <ReadOnlyBadge label="Auto-skip if already filled" enabled={field.autoSkipIfFilled} />
+          </ReadOnlySection>
+        )}
 
-          {/* Options (for selection fields) */}
-          {typeMeta.supportsOptions && (
-            <Section title="Options">
-              <OptionsEditor
-                options={field.options ?? []}
-                onChange={(options) => patch({ options })}
-                disabled={isReadOnly}
-              />
-            </Section>
-          )}
+        {!typeMeta.isStatic && (
+          <ReadOnlySection title="PMS Mapping">
+            {tagMeta ? (
+              <div className="flex items-center gap-2 text-[12px]" style={{ color: colors.colorBlack3 }}>
+                <Icon path={mdiTagOutline} size={0.55} color={colors.colorBlack4} />
+                <span>{tagMeta.displayName}</span>
+                <code
+                  className="font-mono text-[11px] px-1.5 py-0.5 rounded"
+                  style={{
+                    backgroundColor: colors.colorBlack8,
+                    color: colors.colorBlack4,
+                    border: `1px solid ${colors.colorBlack7}`,
+                  }}
+                >
+                  {tagMeta.pmsField}
+                </code>
+              </div>
+            ) : (
+              <p className="text-[12px] italic" style={{ color: colors.colorBlack5 }}>
+                Not mapped to a PMS field.
+              </p>
+            )}
+          </ReadOnlySection>
+        )}
 
-          {/* Field-level conditions */}
-          {!typeMeta.isStatic && (
-            <Section title="Visibility">
-              <GlobalConditionsIndicator
-                count={field.conditions?.length ?? 0}
-              />
-            </Section>
-          )}
+        {typeMeta.supportsOptions && (
+          <ReadOnlySection title="Options">
+            {(field.options ?? []).length === 0 ? (
+              <p className="text-[12px] italic" style={{ color: colors.colorBlack5 }}>
+                No options defined.
+              </p>
+            ) : (
+              <ul className="space-y-1">
+                {field.options!.map((opt) => (
+                  <li
+                    key={opt.id}
+                    className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded text-[12px]"
+                    style={{
+                      backgroundColor: '#FFF',
+                      border: `1px solid ${colors.colorBlack7}`,
+                    }}
+                  >
+                    <span style={{ color: colors.colorBlack3 }}>
+                      {resolveText(opt.label) || '—'}
+                    </span>
+                    <code
+                      className="font-mono text-[11px]"
+                      style={{ color: colors.colorBlack5 }}
+                    >
+                      {opt.value}
+                    </code>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </ReadOnlySection>
+        )}
+
+        {!typeMeta.isStatic && (
+          <ReadOnlySection title="Visibility">
+            <GlobalConditionsIndicator
+              count={field.conditions?.length ?? 0}
+            />
+          </ReadOnlySection>
+        )}
       </div>
     </div>
   );
@@ -265,6 +247,109 @@ function Section({ title, children }: { title: string; children: React.ReactNode
  * Configuration tab (Phase 2 wires the navigation; for now it's a
  * static indicator).
  */
+/**
+ * Read-only section title (matches old Section visually).
+ */
+function ReadOnlySection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <h3 className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: colors.colorBlack5 }}>
+        {title}
+      </h3>
+      <div className="space-y-2">{children}</div>
+    </section>
+  );
+}
+
+/**
+ * Top-of-panel CTA explaining that atom-level config is owned by Global.
+ */
+function EditInGlobalCTA() {
+  return (
+    <div
+      className="flex items-start gap-2 px-3 py-2.5 rounded-md"
+      style={{
+        backgroundColor: colors.colorBlueDark5,
+        border: `1px solid ${colors.colorBlueDark4}`,
+      }}
+    >
+      <Icon path={mdiOpenInNew} size={0.6} color={colors.colorBlueDark1} className="mt-0.5 shrink-0" />
+      <div className="min-w-0">
+        <p className="text-[12px] font-semibold" style={{ color: colors.colorBlueDark1 }}>
+          Field properties are managed in Global Config
+        </p>
+        <p className="text-[11px]" style={{ color: colors.colorBlueDark1, opacity: 0.8 }}>
+          Open the Configuration tab to edit this atom's label, validation, PMS mapping, options, and conditions. Flow tab is for step composition only.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Read-only single-line value (label + value).
+ */
+function ReadOnlyValue({
+  label,
+  value,
+  multiline,
+}: {
+  label: string;
+  value: string;
+  multiline?: boolean;
+}) {
+  return (
+    <div>
+      <div
+        className="text-[11px] font-medium mb-0.5"
+        style={{ color: colors.colorBlack5 }}
+      >
+        {label}
+      </div>
+      <div
+        className={`px-2.5 py-1.5 rounded text-[12px] ${multiline ? 'whitespace-pre-wrap' : ''}`}
+        style={{
+          backgroundColor: '#FFF',
+          border: `1px solid ${colors.colorBlack7}`,
+          color: colors.colorBlack3,
+          minHeight: multiline ? '4rem' : undefined,
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Read-only boolean indicator.
+ */
+function ReadOnlyBadge({
+  label,
+  enabled,
+}: {
+  label: string;
+  enabled: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-[12px]" style={{ color: colors.colorBlack3 }}>
+      <span
+        className="inline-flex items-center justify-center w-4 h-4 rounded"
+        style={{
+          backgroundColor: enabled ? colors.colorBlueDark5 : colors.colorBlack8,
+          border: `1px solid ${enabled ? colors.colorBlueDark4 : colors.colorBlack7}`,
+          color: enabled ? colors.colorBlueDark1 : colors.colorBlack5,
+          fontSize: 10,
+          fontWeight: 700,
+        }}
+      >
+        {enabled ? '✓' : ''}
+      </span>
+      {label}
+    </div>
+  );
+}
+
 function GlobalConditionsIndicator({ count }: { count: number }) {
   return (
     <div
