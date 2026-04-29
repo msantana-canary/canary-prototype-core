@@ -74,6 +74,18 @@ export function ConfiguratorShell() {
           <h1 style={{ fontSize: 18, fontWeight: 500, color: colors.colorBlack1, margin: 0 }}>
             Check-In Flows
           </h1>
+          <a
+            href="/check-in-configurator-spec.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[12px] font-medium transition-colors"
+            style={{ color: colors.colorBlack4 }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = colors.colorBlueDark1; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = colors.colorBlack4; }}
+            title="Open architecture spec in new tab"
+          >
+            Architecture spec ↗
+          </a>
         </div>
 
         <div style={{ padding: '0 24px' }}>
