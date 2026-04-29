@@ -88,6 +88,14 @@ export type StepTemplateId =
 export type StepKind = 'schema-form' | 'preset' | 'nested-flow';
 
 // A step instance within a flow
+//
+// Phase 5: `atomIds` is the new source of truth — references atoms in
+// Global Config. Edits to those atoms propagate live to the Flow preview.
+//
+// `config` is the LEGACY inline data shape (FieldDef[] for schema-form,
+// preset configs for preset steps). Kept during Phase 5 migration so the
+// old code paths don't break; will be phased out as preview / editor are
+// migrated to consume `atomIds` exclusively.
 export interface StepInstance {
   id: string;
   templateId: StepTemplateId;
@@ -95,7 +103,14 @@ export interface StepInstance {
   kind: StepKind;
   isSkippable: boolean;
   order: number;
-  conditions?: Condition[];      // step-level show/hide
+  conditions?: Condition[];      // step-level show/hide (Phase 2c stripped UI; data kept)
+
+  /** Phase 5: atom references — ordered list of atom IDs from Global Config.
+   *  Optional during 5a/5b migration; will become required in 5e cleanup. */
+  atomIds?: string[];
+
+  /** Legacy (pre-Phase-5): inline config. Schema-form steps derive from atomIds
+   *  when populated; falls back to legacy config rendering otherwise. */
   config: StepConfig;
 }
 
@@ -535,3 +550,34 @@ export interface CopyBlockAtom extends AtomBase {
 
 /** Discriminated union — Global Config holds Atom[]. */
 export type Atom = InputAtom | PresetAtom | CopyBlockAtom;
+
+// ── Resolver helpers ──────────────────────────────────────
+
+/**
+ * Resolve atom IDs against Global Config to get the full Atom objects, in order.
+ * Skips IDs that don't match any atom (e.g., after an atom is removed from Global).
+ */
+export function resolveAtoms(atomIds: string[], allAtoms: Atom[]): Atom[] {
+  const byId = new Map<string, Atom>(allAtoms.map((a) => [a.id, a]));
+  const out: Atom[] = [];
+  for (const id of atomIds) {
+    const atom = byId.get(id);
+    if (atom) out.push(atom);
+  }
+  return out;
+}
+
+/**
+ * Resolve atoms for a step + filter by surface visibility.
+ * Atom-level conditions (guest-attribute rules) are evaluated separately
+ * at render time via condition-evaluator.
+ */
+export function resolveStepAtoms(
+  step: StepInstance,
+  allAtoms: Atom[],
+  surface?: Surface
+): Atom[] {
+  const atoms = resolveAtoms(step.atomIds ?? [], allAtoms);
+  if (!surface) return atoms;
+  return atoms.filter((a) => a.deviceVisibility[surface]);
+}
