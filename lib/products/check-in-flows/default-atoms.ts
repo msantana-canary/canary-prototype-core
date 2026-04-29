@@ -194,6 +194,30 @@ const idDocuments: Atom[] = [
       instructionText: { en: 'Take a photo of the front of your ID' },
     },
   },
+  {
+    id: 'atom-id-photo-back',
+    kind: 'preset',
+    domain: 'id-documents',
+    presetType: 'id-photo-back',
+    label: { en: 'ID Photo (back)' },
+    deviceVisibility: visibleAll,
+    config: {
+      presetType: 'id-photo-back',
+      instructionText: { en: 'Take a photo of the back of your ID' },
+    },
+  },
+  {
+    id: 'atom-id-selfie',
+    kind: 'preset',
+    domain: 'id-documents',
+    presetType: 'id-selfie',
+    label: { en: 'ID Selfie' },
+    deviceVisibility: visibleAll,
+    config: {
+      presetType: 'id-selfie',
+      instructionText: { en: 'Take a selfie to verify your ID' },
+    },
+  },
   // ID-extracted field editability — InputAtoms tagged from id-documents domain
   {
     id: 'atom-id-doc-first-name',

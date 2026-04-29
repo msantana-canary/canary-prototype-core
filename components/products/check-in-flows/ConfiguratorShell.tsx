@@ -562,9 +562,15 @@ function StepConfigEditor({
 }) {
   const cfg = step.config;
 
-  if (cfg.kind === 'schema-form') {
+  // Phase 3 / 5: any step with atomIds populated edits via the unified
+  // SchemaFormEditor (atom-slot composition). Legacy preset-specific editors
+  // only fire for steps without atomIds (a transitional fallback).
+  const hasAtomSlots = (step.atomIds?.length ?? 0) > 0;
+
+  if (hasAtomSlots) {
     return <SchemaFormEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
   }
+
   if (cfg.kind === 'nested-flow') {
     return <NestedFlowEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
   }

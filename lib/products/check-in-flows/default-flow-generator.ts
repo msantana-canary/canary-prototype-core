@@ -172,7 +172,12 @@ function buildIdCaptureStep(flowId: string, _property: Property): StepInstance {
     kind: 'preset',
     isSkippable: false,
     order: 0,
-    atomIds: ['atom-id-type-select', 'atom-id-photo-front'],
+    atomIds: [
+      'atom-id-type-select',
+      'atom-id-photo-front',
+      'atom-id-photo-back',
+      'atom-id-selfie',
+    ],
     config: {
       kind: 'preset',
       presetType: 'id-capture',
