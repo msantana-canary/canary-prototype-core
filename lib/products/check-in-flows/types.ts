@@ -370,3 +370,168 @@ export interface CheckInConfig {
   notificationEmails: string;
   messageAfterSuccessfulCheckIn: string;
 }
+
+// ═══════════════════════════════════════════════════════════
+// PHASE 1 — Atomic data model for Global Config
+//
+// New architecture (resolved 2026-04-28): Global Config holds
+// ATOMS only. Flows compose atoms into steps. See:
+// - docs/CHECK_IN_CONFIGURATOR_ARCHITECTURE.md (long-form spec)
+// - docs/CHECK_IN_CONFIGURATOR_PHASE1_PLAN.md (build plan)
+//
+// ⚠️ DO NOT introduce a "Custom Forms registry" here. Bundling
+// is Flow-only. This was tried and rejected.
+// ⚠️ DO NOT add `device` as a condition parameter. Per-device
+// visibility lives in DeviceVisibility (4 toggles) per atom.
+// ═══════════════════════════════════════════════════════════
+
+export type AtomDomain =
+  | 'guest-info'         // name, contact, address, stay preferences
+  | 'id-documents'       // ID consent, ID type, ID photo capture, OCR field config
+  | 'payment'            // CC config, deposits, surcharge (CS-tunable subset only)
+  | 'additional-guests'  // multi-guest fields
+  | 'auto-check-in'      // auto-checkin config
+  | 'copy-blocks'        // legal/policy text (hotel policies, marketing consent, etc.)
+  | 'custom';            // hotel-defined UDF inputs
+
+export const ATOM_DOMAIN_LABELS: Record<AtomDomain, string> = {
+  'guest-info': 'Guest Info',
+  'id-documents': 'ID Documents',
+  'payment': 'Payment',
+  'additional-guests': 'Additional Guests',
+  'auto-check-in': 'Auto Check-In',
+  'copy-blocks': 'Copy Blocks',
+  'custom': 'Custom Inputs',
+};
+
+export interface DeviceVisibility {
+  'web': boolean;
+  'mobile-web': boolean;
+  'tablet-reg': boolean;
+  'kiosk': boolean;
+  'mobile-app': boolean;
+}
+
+export const DEFAULT_VISIBLE_ALL: DeviceVisibility = {
+  'web': true,
+  'mobile-web': true,
+  'tablet-reg': true,
+  'kiosk': true,
+  'mobile-app': true,
+};
+
+export type AtomKind = 'input' | 'preset' | 'copy-block';
+
+interface AtomBase {
+  id: string;
+  domain: AtomDomain;
+  deviceVisibility: DeviceVisibility;
+  conditions?: Condition[];   // guest-attribute rules only — NOT device
+}
+
+/** Atomic input — a single data point collected from the guest. */
+export interface InputAtom extends AtomBase {
+  kind: 'input';
+  fieldType: FieldType;
+  label: LocalizedText;
+  placeholder?: LocalizedText;
+  helperText?: LocalizedText;
+  pmsTag?: ElementTag;
+  required: boolean;
+  autoSkipIfFilled?: boolean;
+  options?: FieldOption[];          // for dropdown / radio / checkbox-group
+  staticContent?: LocalizedText;    // for header / paragraph / list field types
+}
+
+/** Atomic preset — a single-purpose feature unit (one stage). */
+export type PresetAtomType =
+  | 'id-consent'
+  | 'id-type-select'
+  | 'id-photo-front'
+  | 'id-photo-back'
+  | 'id-selfie'
+  | 'credit-card-form'
+  | 'deposit-collection'
+  | 'loyalty-welcome'
+  | 'completion';
+
+export interface PresetAtom extends AtomBase {
+  kind: 'preset';
+  presetType: PresetAtomType;
+  label: LocalizedText;             // CS-facing display label, e.g. "ID Consent"
+  config: PresetAtomConfig;
+}
+
+/** Discriminated union for preset-specific config. */
+export type PresetAtomConfig =
+  | IdConsentAtomConfig
+  | IdTypeSelectAtomConfig
+  | IdPhotoAtomConfig
+  | IdSelfieAtomConfig
+  | CreditCardAtomConfig
+  | DepositCollectionAtomConfig
+  | LoyaltyWelcomeAtomConfig
+  | CompletionAtomConfig;
+
+export interface IdConsentAtomConfig {
+  presetType: 'id-consent';
+  heading: LocalizedText;
+  body: LocalizedText;
+  acknowledgment: LocalizedText;
+  ctaLabel: LocalizedText;
+}
+
+export interface IdTypeSelectAtomConfig {
+  presetType: 'id-type-select';
+  options: IdTypeOption[];
+  allowMultipleIds: boolean;
+}
+
+export interface IdPhotoAtomConfig {
+  presetType: 'id-photo-front' | 'id-photo-back';
+  instructionText?: LocalizedText;
+}
+
+export interface IdSelfieAtomConfig {
+  presetType: 'id-selfie';
+  instructionText?: LocalizedText;
+}
+
+export interface CreditCardAtomConfig {
+  presetType: 'credit-card-form';
+  requireBillingAddress: boolean;
+  requireCvc: boolean;
+  linkedDeposit: boolean;
+}
+
+export interface DepositCollectionAtomConfig {
+  presetType: 'deposit-collection';
+  amount: number;
+  currency: string;
+  refundable: boolean;
+  description: LocalizedText;
+}
+
+export interface LoyaltyWelcomeAtomConfig {
+  presetType: 'loyalty-welcome';
+  heading: LocalizedText;
+  body: LocalizedText;
+  programName: string;
+}
+
+export interface CompletionAtomConfig {
+  presetType: 'completion';
+  heading: LocalizedText;
+  body: LocalizedText;
+  ctaLabel: LocalizedText;
+}
+
+/** Atomic copy block — compliance/legal/policy text not tied to a single input. */
+export interface CopyBlockAtom extends AtomBase {
+  kind: 'copy-block';
+  name: string;             // CS-facing identifier, e.g. "Hotel Policies"
+  content: LocalizedText;   // the actual text body (rich text via markdown allowed)
+}
+
+/** Discriminated union — Global Config holds Atom[]. */
+export type Atom = InputAtom | PresetAtom | CopyBlockAtom;

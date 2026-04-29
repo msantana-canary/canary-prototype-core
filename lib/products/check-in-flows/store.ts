@@ -9,8 +9,10 @@ import type {
   Condition,
   CheckInConfig,
   LocalizedText,
+  Atom,
 } from './types';
 import { generateDefaultFlowsForProperty } from './default-flow-generator';
+import { DEFAULT_ATOMS } from './default-atoms';
 
 // ── Default config (Statler New York) ───────────────────
 
@@ -197,6 +199,7 @@ interface CheckInFlowsState {
   config: CheckInConfig;
   expandedSections: string[];
   flows: FlowDefinition[];
+  atoms: Atom[];                                            // Phase 1: Global Config atoms
   nav: NavState;
   previewContext: PreviewContext;
   previewSurface: 'web' | 'mobile-web';
@@ -204,6 +207,11 @@ interface CheckInFlowsState {
   // Config
   updateConfig: <K extends keyof CheckInConfig>(key: K, value: CheckInConfig[K]) => void;
   toggleSection: (sectionId: string) => void;
+
+  // Atom CRUD (Phase 1 — Global Config)
+  addAtom: (atom: Atom) => void;
+  updateAtom: (atomId: string, updates: Partial<Atom>) => void;
+  removeAtom: (atomId: string) => void;
 
   // Navigation
   setTab: (tab: NavState['tab']) => void;
@@ -244,9 +252,19 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
   config: DEFAULT_CONFIG,
   expandedSections: ['identity'],
   flows: buildFlowsFromConfig(DEFAULT_CONFIG),
+  atoms: DEFAULT_ATOMS,
   nav: DEFAULT_NAV,
   previewContext: DEFAULT_PREVIEW,
   previewSurface: 'mobile-web' as const,
+
+  // ── Atom CRUD (Phase 1 — Global Config) ───────────────
+  addAtom: (atom) => set((state) => ({ atoms: [...state.atoms, atom] })),
+  updateAtom: (atomId, updates) => set((state) => ({
+    atoms: state.atoms.map((a) => (a.id === atomId ? ({ ...a, ...updates } as Atom) : a)),
+  })),
+  removeAtom: (atomId) => set((state) => ({
+    atoms: state.atoms.filter((a) => a.id !== atomId),
+  })),
 
   // ── Config ────────────────────────────────────────────
   updateConfig: (key, value) => {
