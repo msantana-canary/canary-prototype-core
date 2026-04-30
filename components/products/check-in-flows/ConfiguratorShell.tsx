@@ -170,8 +170,11 @@ function FlowBrowseView() {
   const firstStep = previewFlow?.steps[0];
 
   return (
-    <div className="flex-1 flex overflow-hidden" style={{ backgroundColor: colors.colorBlack8 }}>
-      <div className="shrink-0 overflow-y-auto" style={{ width: '50%', padding: 24 }}>
+    <div className="flex-1 relative overflow-hidden" style={{ backgroundColor: colors.colorBlack8 }}>
+      <div
+        className="absolute left-0 top-0 bottom-0 overflow-y-auto"
+        style={{ width: '50%', padding: 24 }}
+      >
         <CanaryCard padding="none" hasBorder>
           <div className="px-5 py-4" style={{ borderBottom: `1px solid ${colors.colorBlack7}` }}>
             <h3 className="text-[16px] font-medium" style={{ color: colors.colorBlack1 }}>
@@ -218,8 +221,12 @@ function FlowBrowseView() {
       </div>
 
       <div
-        className="flex-1 flex items-center justify-center overflow-hidden"
-        style={{ backgroundColor: colors.colorBlack7, borderLeft: `1px solid ${colors.colorBlack7}` }}
+        className="absolute right-0 top-0 bottom-0 flex items-center justify-center overflow-hidden"
+        style={{
+          width: '50%',
+          backgroundColor: colors.colorBlack7,
+          borderLeft: `1px solid ${colors.colorBlack7}`,
+        }}
       >
         {firstStep ? (
           <PhoneFrame showUrlBar={false}>
@@ -250,8 +257,11 @@ function FlowEditorView() {
   const isEditing = nav.isEditingStep && !!step;
 
   return (
-    <div className="flex-1 flex overflow-hidden" style={{ backgroundColor: colors.colorBlack8 }}>
-      <div className="shrink-0 overflow-y-auto bg-white" style={{ width: '50%' }}>
+    <div className="flex-1 relative overflow-hidden" style={{ backgroundColor: colors.colorBlack8 }}>
+      <div
+        className="absolute left-0 top-0 bottom-0 overflow-y-auto bg-white"
+        style={{ width: '50%' }}
+      >
         {isEditing ? (
           <StepEditorPane flow={flow} step={step!} />
         ) : (
@@ -267,8 +277,12 @@ function FlowEditorView() {
       </div>
 
       <div
-        className="flex-1 flex items-center justify-center overflow-hidden"
-        style={{ backgroundColor: colors.colorBlack7, borderLeft: `1px solid ${colors.colorBlack7}` }}
+        className="absolute right-0 top-0 bottom-0 flex items-center justify-center overflow-hidden"
+        style={{
+          width: '50%',
+          backgroundColor: colors.colorBlack7,
+          borderLeft: `1px solid ${colors.colorBlack7}`,
+        }}
       >
         {step ? (
           <PhoneFrame showUrlBar={false}>
