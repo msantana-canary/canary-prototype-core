@@ -32,6 +32,12 @@ import type {
   FieldOption,
   IdTypeOption,
   IdTypeSelectAtomConfig,
+  IdConsentAtomConfig,
+  IdPhotoAtomConfig,
+  IdSelfieAtomConfig,
+  LoyaltyWelcomeAtomConfig,
+  CompletionAtomConfig,
+  LocalizedText,
 } from '@/lib/products/check-in-flows/types';
 import { useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
 import {
@@ -399,10 +405,94 @@ function PresetAtomEditor({
   switch (atom.presetType) {
     case 'id-type-select':
       return <IdTypeSelectEditor atom={atom} onUpdate={onUpdate} />;
+    case 'id-consent':
+      return <IdConsentEditor atom={atom} onUpdate={onUpdate} />;
+    case 'id-photo-front':
+    case 'id-photo-back':
+      return <IdPhotoEditor atom={atom} onUpdate={onUpdate} />;
+    case 'id-selfie':
+      return <IdSelfieEditor atom={atom} onUpdate={onUpdate} />;
+    case 'loyalty-welcome':
+      return <LoyaltyWelcomeEditor atom={atom} onUpdate={onUpdate} />;
+    case 'completion':
+      return <CompletionEditor atom={atom} onUpdate={onUpdate} />;
     default:
       return <PresetAtomDetailsNotice />;
   }
 }
+
+// ── Shared helpers ───────────────────────────────────────
+
+function AtomLabelField({
+  atom,
+  onUpdate,
+  helper,
+}: {
+  atom: PresetAtom;
+  onUpdate: (updates: Partial<Atom>) => void;
+  helper?: string;
+}) {
+  return (
+    <div>
+      <CanaryInput
+        size={InputSize.NORMAL}
+        label="Display label (EN)"
+        placeholder="Internal name shown in editor"
+        value={atom.label?.['en'] ?? ''}
+        onChange={(e) =>
+          onUpdate({ label: { ...atom.label, en: e.target.value } } as Partial<Atom>)
+        }
+      />
+      {helper && (
+        <p className="text-[11px] mt-1" style={{ color: colors.colorBlack5 }}>
+          {helper}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function LocalizedField({
+  label,
+  placeholder,
+  value,
+  multiline,
+  rows,
+  onChange,
+}: {
+  label: string;
+  placeholder?: string;
+  value: LocalizedText | undefined;
+  multiline?: boolean;
+  rows?: number;
+  onChange: (next: LocalizedText) => void;
+}) {
+  const en = value?.['en'] ?? '';
+  const handle = (raw: string) => onChange({ ...(value ?? {}), en: raw });
+  if (multiline) {
+    return (
+      <CanaryTextArea
+        size={InputSize.NORMAL}
+        label={label}
+        placeholder={placeholder}
+        rows={rows ?? 4}
+        value={en}
+        onChange={(e) => handle(e.target.value)}
+      />
+    );
+  }
+  return (
+    <CanaryInput
+      size={InputSize.NORMAL}
+      label={label}
+      placeholder={placeholder}
+      value={en}
+      onChange={(e) => handle(e.target.value)}
+    />
+  );
+}
+
+// ── Per-preset editors ───────────────────────────────────
 
 function IdTypeSelectEditor({
   atom,
@@ -415,15 +505,7 @@ function IdTypeSelectEditor({
 
   return (
     <>
-      <CanaryInput
-        size={InputSize.NORMAL}
-        label="Display label (EN)"
-        placeholder="ID Type"
-        value={atom.label?.['en'] ?? ''}
-        onChange={(e) =>
-          onUpdate({ label: { ...atom.label, en: e.target.value } } as Partial<Atom>)
-        }
-      />
+      <AtomLabelField atom={atom} onUpdate={onUpdate} />
 
       <label
         className="flex items-center gap-2 text-[12px]"
@@ -442,6 +524,182 @@ function IdTypeSelectEditor({
           (guest can submit more than one ID document)
         </span>
       </label>
+    </>
+  );
+}
+
+function IdConsentEditor({
+  atom,
+  onUpdate,
+}: {
+  atom: PresetAtom;
+  onUpdate: (updates: Partial<Atom>) => void;
+}) {
+  const cfg = atom.config as IdConsentAtomConfig;
+  const update = (patch: Partial<IdConsentAtomConfig>) =>
+    onUpdate({ config: { ...cfg, ...patch } } as Partial<Atom>);
+
+  return (
+    <>
+      <AtomLabelField atom={atom} onUpdate={onUpdate} />
+      <LocalizedField
+        label="Heading (EN)"
+        placeholder="Identity verification"
+        value={cfg.heading}
+        onChange={(v) => update({ heading: v })}
+      />
+      <LocalizedField
+        label="Body (EN)"
+        placeholder="Explain why you collect ID and how it's handled"
+        multiline
+        rows={4}
+        value={cfg.body}
+        onChange={(v) => update({ body: v })}
+      />
+      <LocalizedField
+        label="Acknowledgment (EN)"
+        placeholder="What the guest is consenting to"
+        multiline
+        rows={2}
+        value={cfg.acknowledgment}
+        onChange={(v) => update({ acknowledgment: v })}
+      />
+      <LocalizedField
+        label="CTA label (EN)"
+        placeholder="Continue"
+        value={cfg.ctaLabel}
+        onChange={(v) => update({ ctaLabel: v })}
+      />
+    </>
+  );
+}
+
+function IdPhotoEditor({
+  atom,
+  onUpdate,
+}: {
+  atom: PresetAtom;
+  onUpdate: (updates: Partial<Atom>) => void;
+}) {
+  const cfg = atom.config as IdPhotoAtomConfig;
+  const isBack = cfg.presetType === 'id-photo-back';
+
+  return (
+    <>
+      <AtomLabelField atom={atom} onUpdate={onUpdate} />
+      <LocalizedField
+        label="Instruction text (EN)"
+        placeholder={isBack ? 'Take a photo of the back of your ID' : 'Take a photo of the front of your ID'}
+        multiline
+        rows={3}
+        value={cfg.instructionText}
+        onChange={(v) =>
+          onUpdate({ config: { ...cfg, instructionText: v } } as Partial<Atom>)
+        }
+      />
+    </>
+  );
+}
+
+function IdSelfieEditor({
+  atom,
+  onUpdate,
+}: {
+  atom: PresetAtom;
+  onUpdate: (updates: Partial<Atom>) => void;
+}) {
+  const cfg = atom.config as IdSelfieAtomConfig;
+
+  return (
+    <>
+      <AtomLabelField atom={atom} onUpdate={onUpdate} />
+      <LocalizedField
+        label="Instruction text (EN)"
+        placeholder="Take a selfie to verify your ID"
+        multiline
+        rows={3}
+        value={cfg.instructionText}
+        onChange={(v) =>
+          onUpdate({ config: { ...cfg, instructionText: v } } as Partial<Atom>)
+        }
+      />
+    </>
+  );
+}
+
+function LoyaltyWelcomeEditor({
+  atom,
+  onUpdate,
+}: {
+  atom: PresetAtom;
+  onUpdate: (updates: Partial<Atom>) => void;
+}) {
+  const cfg = atom.config as LoyaltyWelcomeAtomConfig;
+  const update = (patch: Partial<LoyaltyWelcomeAtomConfig>) =>
+    onUpdate({ config: { ...cfg, ...patch } } as Partial<Atom>);
+
+  return (
+    <>
+      <AtomLabelField atom={atom} onUpdate={onUpdate} />
+      <CanaryInput
+        size={InputSize.NORMAL}
+        label="Program name"
+        placeholder="e.g., Statler Rewards"
+        value={cfg.programName}
+        onChange={(e) => update({ programName: e.target.value })}
+      />
+      <LocalizedField
+        label="Heading (EN)"
+        placeholder="Welcome back, [Name]"
+        value={cfg.heading}
+        onChange={(v) => update({ heading: v })}
+      />
+      <LocalizedField
+        label="Body (EN)"
+        placeholder="Recognition copy shown to loyalty members"
+        multiline
+        rows={4}
+        value={cfg.body}
+        onChange={(v) => update({ body: v })}
+      />
+    </>
+  );
+}
+
+function CompletionEditor({
+  atom,
+  onUpdate,
+}: {
+  atom: PresetAtom;
+  onUpdate: (updates: Partial<Atom>) => void;
+}) {
+  const cfg = atom.config as CompletionAtomConfig;
+  const update = (patch: Partial<CompletionAtomConfig>) =>
+    onUpdate({ config: { ...cfg, ...patch } } as Partial<Atom>);
+
+  return (
+    <>
+      <AtomLabelField atom={atom} onUpdate={onUpdate} />
+      <LocalizedField
+        label="Heading (EN)"
+        placeholder="You're all set"
+        value={cfg.heading}
+        onChange={(v) => update({ heading: v })}
+      />
+      <LocalizedField
+        label="Body (EN)"
+        placeholder="Confirmation copy shown after check-in completes"
+        multiline
+        rows={4}
+        value={cfg.body}
+        onChange={(v) => update({ body: v })}
+      />
+      <LocalizedField
+        label="CTA label (EN)"
+        placeholder="View room key"
+        value={cfg.ctaLabel}
+        onChange={(v) => update({ ctaLabel: v })}
+      />
     </>
   );
 }
