@@ -18,7 +18,6 @@ import Icon from '@mdi/react';
 import {
   mdiPlus,
   mdiDelete,
-  mdiDragVertical,
   mdiTuneVariant,
   mdiClose,
 } from '@mdi/js';

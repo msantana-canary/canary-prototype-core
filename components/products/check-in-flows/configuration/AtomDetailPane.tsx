@@ -11,7 +11,7 @@
 
 import React from 'react';
 import Icon from '@mdi/react';
-import { mdiClose, mdiPencilOutline } from '@mdi/js';
+import { mdiClose } from '@mdi/js';
 import {
   CanaryInput,
   CanarySelect,
@@ -29,6 +29,9 @@ import type {
   Condition,
   ElementTag,
   FieldType,
+  FieldOption,
+  IdTypeOption,
+  IdTypeSelectAtomConfig,
 } from '@/lib/products/check-in-flows/types';
 import { useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
 import {
@@ -123,10 +126,12 @@ export function AtomDetailPane() {
           {atom.kind === 'copy-block' && (
             <CopyBlockAtomDetails atom={atom} onUpdate={onUpdate} />
           )}
-          {atom.kind === 'preset' && <PresetAtomDetailsNotice />}
+          {atom.kind === 'preset' && (
+            <PresetAtomEditor atom={atom} onUpdate={onUpdate} />
+          )}
         </Section>
 
-        {/* Options (only for selection-type InputAtoms) */}
+        {/* Options (selection-type InputAtoms or id-type-select preset) */}
         {atom.kind === 'input' &&
           getFieldTypeMeta(atom.fieldType).supportsOptions && (
             <Section title="Options">
@@ -138,6 +143,31 @@ export function AtomDetailPane() {
               />
             </Section>
           )}
+
+        {atom.kind === 'preset' && atom.presetType === 'id-type-select' && (
+          <Section title="ID types offered">
+            <p
+              className="text-[12px] mb-3"
+              style={{ color: colors.colorBlack5 }}
+            >
+              ID types guests can choose from. Use per-option visibility to
+              surface specific options only to certain guest segments (e.g.,
+              show &ldquo;Carta d&rsquo;Identità&rdquo; only if nationality is Italy).
+            </p>
+            <OptionsEditor
+              options={(atom.config as IdTypeSelectAtomConfig).options as FieldOption[]}
+              onChange={(next) => {
+                const cfg = atom.config as IdTypeSelectAtomConfig;
+                onUpdate({
+                  config: {
+                    ...cfg,
+                    options: next as IdTypeOption[],
+                  },
+                } as Partial<Atom>);
+              }}
+            />
+          </Section>
+        )}
 
         {/* Visibility */}
         <Section title="Visibility">
@@ -357,6 +387,65 @@ function CopyBlockAtomDetails({
   );
 }
 
+// ── Preset atom editor ───────────────────────────────────
+
+function PresetAtomEditor({
+  atom,
+  onUpdate,
+}: {
+  atom: PresetAtom;
+  onUpdate: (updates: Partial<Atom>) => void;
+}) {
+  switch (atom.presetType) {
+    case 'id-type-select':
+      return <IdTypeSelectEditor atom={atom} onUpdate={onUpdate} />;
+    default:
+      return <PresetAtomDetailsNotice />;
+  }
+}
+
+function IdTypeSelectEditor({
+  atom,
+  onUpdate,
+}: {
+  atom: PresetAtom;
+  onUpdate: (updates: Partial<Atom>) => void;
+}) {
+  const cfg = atom.config as IdTypeSelectAtomConfig;
+
+  return (
+    <>
+      <CanaryInput
+        size={InputSize.NORMAL}
+        label="Display label (EN)"
+        placeholder="ID Type"
+        value={atom.label?.['en'] ?? ''}
+        onChange={(e) =>
+          onUpdate({ label: { ...atom.label, en: e.target.value } } as Partial<Atom>)
+        }
+      />
+
+      <label
+        className="flex items-center gap-2 text-[12px]"
+        style={{ color: colors.colorBlack3 }}
+      >
+        <CanarySwitch
+          checked={cfg.allowMultipleIds}
+          onChange={(v) =>
+            onUpdate({
+              config: { ...cfg, allowMultipleIds: v },
+            } as Partial<Atom>)
+          }
+        />
+        Allow multiple IDs
+        <span className="text-[11px]" style={{ color: colors.colorBlack5 }}>
+          (guest can submit more than one ID document)
+        </span>
+      </label>
+    </>
+  );
+}
+
 function PresetAtomDetailsNotice() {
   return (
     <div
@@ -367,9 +456,9 @@ function PresetAtomDetailsNotice() {
         color: '#92400E',
       }}
     >
-      <strong>Preset configuration is currently fixed in code.</strong> Phase
-      3+ decomposes multi-stage presets to expose their per-stage
-      configuration here. For now, edit visibility conditions below.
+      <strong>Preset configuration not yet wired.</strong> Type-specific
+      editor for this preset is coming next. For now, you can edit
+      visibility conditions below.
     </div>
   );
 }
