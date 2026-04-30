@@ -53,6 +53,7 @@ import { ConditionRuleEditor } from '../editors/ConditionRuleEditor';
 import { SettingsHandledElsewhere } from './SettingsHandledElsewhere';
 import { describeAtom } from './AtomRow';
 import { OptionsEditor } from './OptionsEditor';
+import { AtomPreview } from './AtomPreview';
 
 export function AtomDetailPane() {
   const selectedAtomId = useCheckInFlowsStore((s) => s.selectedAtomId);
@@ -124,6 +125,9 @@ export function AtomDetailPane() {
 
       {/* Body — owns the scroll within the bounded pane */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+        {/* Preview (InputAtom only — preset + copy block previews TBD) */}
+        {atom.kind === 'input' && <AtomPreview atom={atom} />}
+
         {/* Details */}
         <Section title="Details">
           {atom.kind === 'input' && (
