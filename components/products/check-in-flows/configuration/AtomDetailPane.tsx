@@ -37,6 +37,8 @@ import type {
   IdSelfieAtomConfig,
   LoyaltyWelcomeAtomConfig,
   CompletionAtomConfig,
+  CreditCardAtomConfig,
+  DepositCollectionAtomConfig,
   LocalizedText,
 } from '@/lib/products/check-in-flows/types';
 import { useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
@@ -412,6 +414,10 @@ function PresetAtomEditor({
       return <IdPhotoEditor atom={atom} onUpdate={onUpdate} />;
     case 'id-selfie':
       return <IdSelfieEditor atom={atom} onUpdate={onUpdate} />;
+    case 'credit-card-form':
+      return <CreditCardEditor atom={atom} onUpdate={onUpdate} />;
+    case 'deposit-collection':
+      return <DepositCollectionEditor atom={atom} onUpdate={onUpdate} />;
     case 'loyalty-welcome':
       return <LoyaltyWelcomeEditor atom={atom} onUpdate={onUpdate} />;
     case 'completion':
@@ -699,6 +705,144 @@ function CompletionEditor({
         placeholder="View room key"
         value={cfg.ctaLabel}
         onChange={(v) => update({ ctaLabel: v })}
+      />
+    </>
+  );
+}
+
+const CURRENCY_OPTIONS = [
+  { value: 'USD', label: 'USD — US Dollar' },
+  { value: 'EUR', label: 'EUR — Euro' },
+  { value: 'GBP', label: 'GBP — British Pound' },
+  { value: 'CAD', label: 'CAD — Canadian Dollar' },
+  { value: 'AUD', label: 'AUD — Australian Dollar' },
+  { value: 'JPY', label: 'JPY — Japanese Yen' },
+  { value: 'CHF', label: 'CHF — Swiss Franc' },
+];
+
+function CreditCardEditor({
+  atom,
+  onUpdate,
+}: {
+  atom: PresetAtom;
+  onUpdate: (updates: Partial<Atom>) => void;
+}) {
+  const cfg = atom.config as CreditCardAtomConfig;
+  const update = (patch: Partial<CreditCardAtomConfig>) =>
+    onUpdate({ config: { ...cfg, ...patch } } as Partial<Atom>);
+
+  return (
+    <>
+      <AtomLabelField atom={atom} onUpdate={onUpdate} />
+
+      <label
+        className="flex items-center gap-2 text-[12px]"
+        style={{ color: colors.colorBlack3 }}
+      >
+        <CanarySwitch
+          checked={cfg.requireBillingAddress}
+          onChange={(v) => update({ requireBillingAddress: v })}
+        />
+        Require billing address
+        <span className="text-[11px]" style={{ color: colors.colorBlack5 }}>
+          (collect address along with card)
+        </span>
+      </label>
+
+      <label
+        className="flex items-center gap-2 text-[12px]"
+        style={{ color: colors.colorBlack3 }}
+      >
+        <CanarySwitch
+          checked={cfg.requireCvc}
+          onChange={(v) => update({ requireCvc: v })}
+        />
+        Require CVC
+        <span className="text-[11px]" style={{ color: colors.colorBlack5 }}>
+          (security code on card back)
+        </span>
+      </label>
+
+      <label
+        className="flex items-center gap-2 text-[12px]"
+        style={{ color: colors.colorBlack3 }}
+      >
+        <CanarySwitch
+          checked={cfg.linkedDeposit}
+          onChange={(v) => update({ linkedDeposit: v })}
+        />
+        Use this card for deposit
+        <span className="text-[11px]" style={{ color: colors.colorBlack5 }}>
+          (skip a separate deposit step if a Deposit atom is in this flow)
+        </span>
+      </label>
+    </>
+  );
+}
+
+function DepositCollectionEditor({
+  atom,
+  onUpdate,
+}: {
+  atom: PresetAtom;
+  onUpdate: (updates: Partial<Atom>) => void;
+}) {
+  const cfg = atom.config as DepositCollectionAtomConfig;
+  const update = (patch: Partial<DepositCollectionAtomConfig>) =>
+    onUpdate({ config: { ...cfg, ...patch } } as Partial<Atom>);
+
+  return (
+    <>
+      <AtomLabelField atom={atom} onUpdate={onUpdate} />
+
+      <div className="grid grid-cols-2 gap-3">
+        <CanaryInput
+          size={InputSize.NORMAL}
+          label="Amount"
+          placeholder="0.00"
+          value={String(cfg.amount ?? 0)}
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            update({ amount: Number.isFinite(n) ? n : 0 });
+          }}
+        />
+        <div>
+          <label
+            className="text-[11px] font-semibold uppercase tracking-wider mb-1 block"
+            style={{ color: colors.colorBlack5 }}
+          >
+            Currency
+          </label>
+          <CanarySelect
+            size={InputSize.NORMAL}
+            value={cfg.currency || 'USD'}
+            onChange={(e) => update({ currency: e.target.value })}
+            options={CURRENCY_OPTIONS}
+          />
+        </div>
+      </div>
+
+      <label
+        className="flex items-center gap-2 text-[12px]"
+        style={{ color: colors.colorBlack3 }}
+      >
+        <CanarySwitch
+          checked={cfg.refundable}
+          onChange={(v) => update({ refundable: v })}
+        />
+        Refundable
+        <span className="text-[11px]" style={{ color: colors.colorBlack5 }}>
+          (released after stay if no incidentals)
+        </span>
+      </label>
+
+      <LocalizedField
+        label="Description (EN)"
+        placeholder="What this deposit covers (incidentals, security, etc.)"
+        multiline
+        rows={3}
+        value={cfg.description}
+        onChange={(v) => update({ description: v })}
       />
     </>
   );
