@@ -272,23 +272,23 @@ function InputAtomDetails({
       />
       <CanaryInput
         size={InputSize.NORMAL}
-        label="Helper text (EN)"
-        placeholder="Optional hint shown under the field"
-        value={atom.helperText?.['en'] ?? ''}
-        onChange={(e) =>
-          onUpdate({
-            helperText: { ...(atom.helperText ?? {}), en: e.target.value },
-          } as Partial<Atom>)
-        }
-      />
-      <CanaryInput
-        size={InputSize.NORMAL}
         label="Placeholder (EN)"
         placeholder="Optional placeholder text"
         value={atom.placeholder?.['en'] ?? ''}
         onChange={(e) =>
           onUpdate({
             placeholder: { ...(atom.placeholder ?? {}), en: e.target.value },
+          } as Partial<Atom>)
+        }
+      />
+      <CanaryInput
+        size={InputSize.NORMAL}
+        label="Helper text (EN)"
+        placeholder="Optional hint shown under the field"
+        value={atom.helperText?.['en'] ?? ''}
+        onChange={(e) =>
+          onUpdate({
+            helperText: { ...(atom.helperText ?? {}), en: e.target.value },
           } as Partial<Atom>)
         }
       />
