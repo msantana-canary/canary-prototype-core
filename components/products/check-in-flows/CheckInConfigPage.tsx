@@ -50,7 +50,7 @@ const SURFACE_ICON: Record<string, string> = {
 
 export function CheckInConfigPage() {
   return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Top: full-width banner */}
       <div className="px-6 pt-6 pb-4 shrink-0">
         <PageIntro />
@@ -61,12 +61,12 @@ export function CheckInConfigPage() {
 
       {/* Split pane: domain sections (left) + AtomDetailPane (right) */}
       <div
-        className="flex-1 flex overflow-hidden min-h-0"
+        className="flex-1 flex overflow-hidden"
         style={{ borderTop: `1px solid ${colors.colorBlack7}` }}
       >
         {/* Left: scrollable atom list */}
         <div
-          className="overflow-y-auto px-6 py-5 space-y-4 min-h-0"
+          className="overflow-y-auto px-6 py-5 space-y-4"
           style={{ width: '50%', borderRight: `1px solid ${colors.colorBlack7}` }}
         >
           <DomainSection
@@ -101,8 +101,8 @@ export function CheckInConfigPage() {
           />
         </div>
 
-        {/* Right: atom detail editor (or empty state) */}
-        <div className="flex-1 overflow-hidden bg-white min-h-0">
+        {/* Right: atom detail editor (or empty state) — pane owns the scroll */}
+        <div className="flex-1 overflow-y-auto bg-white">
           <AtomDetailPane />
         </div>
       </div>
