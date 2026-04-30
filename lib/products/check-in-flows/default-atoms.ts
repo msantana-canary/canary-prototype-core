@@ -167,20 +167,40 @@ const idDocuments: Atom[] = [
   },
   {
     id: 'atom-id-type-select',
-    kind: 'preset',
+    kind: 'input',
     domain: 'id-documents',
-    presetType: 'id-type-select',
-    label: { en: 'ID Type Select' },
+    fieldType: 'dropdown',
+    label: { en: 'ID Type' },
+    pmsTag: 'id-type',
+    required: true,
     deviceVisibility: visibleAll,
-    config: {
-      presetType: 'id-type-select',
-      options: [
-        { id: 'opt-passport', value: 'passport', label: { en: 'Passport' }, order: 0 },
-        { id: 'opt-dl', value: 'drivers-license', label: { en: "Driver's License" }, order: 1 },
-        { id: 'opt-national', value: 'national-id', label: { en: 'National ID' }, order: 2 },
-      ],
-      allowMultipleIds: false,
-    },
+    optionVariants: [
+      // Default — everyone except matched segment variants.
+      {
+        id: 'var-id-type-default',
+        options: [
+          { id: 'opt-passport', value: 'passport', label: { en: 'Passport' }, order: 0 },
+          { id: 'opt-dl', value: 'drivers-license', label: { en: "Driver's License" }, order: 1 },
+        ],
+      },
+      // Italian guests — show only National ID per local law.
+      {
+        id: 'var-id-type-italian',
+        name: 'Italian guests',
+        conditions: [
+          {
+            id: 'cond-id-type-italian',
+            parameter: 'nationality',
+            operator: 'equals',
+            value: 'IT',
+            action: 'show',
+          },
+        ],
+        options: [
+          { id: 'opt-national-it', value: 'national-id', label: { en: 'National ID' }, order: 0 },
+        ],
+      },
+    ],
   },
   {
     id: 'atom-id-photo-front',
@@ -343,9 +363,14 @@ const additionalGuests: InputAtom[] = [
     label: { en: 'ID type' },
     required: false,
     deviceVisibility: visibleAll,
-    options: [
-      { id: 'addl-id-passport', value: 'passport', label: { en: 'Passport' }, order: 0 },
-      { id: 'addl-id-national', value: 'national-id', label: { en: 'National ID' }, order: 1 },
+    optionVariants: [
+      {
+        id: 'var-addl-id-type-default',
+        options: [
+          { id: 'addl-id-passport', value: 'passport', label: { en: 'Passport' }, order: 0 },
+          { id: 'addl-id-national', value: 'national-id', label: { en: 'National ID' }, order: 1 },
+        ],
+      },
     ],
   },
 ];

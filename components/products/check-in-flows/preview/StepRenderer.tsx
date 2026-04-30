@@ -44,7 +44,11 @@ import type {
   InputAtom,
   FieldDef,
 } from '@/lib/products/check-in-flows/types';
-import { resolveText, resolveStepAtoms } from '@/lib/products/check-in-flows/types';
+import {
+  resolveText,
+  resolveStepAtoms,
+  resolveOptionsForGuest,
+} from '@/lib/products/check-in-flows/types';
 import { useFlowById, useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
 import { COUNTRY_MAP } from '@/lib/products/check-in-flows/condition-meta';
 import { shouldShow } from '@/lib/products/check-in-flows/condition-evaluator';
@@ -171,7 +175,7 @@ function SchemaFormPreview({
   // RegistrationCardPreview. Legacy cfg.fields path fully retired.
   const visibleFields: FieldDef[] = resolveStepAtoms(step, allAtoms, surface)
     .filter((a): a is InputAtom => a.kind === 'input')
-    .map((a, idx) => atomToFieldDef(a, idx))
+    .map((a, idx) => atomToFieldDef(a, ctx, idx))
     .filter((f) => shouldShow(f.conditions, ctx));
 
   const isRegCard = step.templateId === 'reg-card';
@@ -629,7 +633,13 @@ function NestedFlowPreview({
 
 // ── Phase 5c helper: convert InputAtom to FieldDef shape ──
 
-function atomToFieldDef(atom: InputAtom, order: number): FieldDef {
+function atomToFieldDef(atom: InputAtom, ctx: PreviewContext, order: number): FieldDef {
+  // Resolve the guest-active option variant. Variant model: first variant
+  // whose segment conditions match wins; otherwise the default variant.
+  const options = resolveOptionsForGuest(
+    atom.optionVariants,
+    (conditions) => shouldShow(conditions, ctx)
+  );
   return {
     id: atom.id,
     type: atom.fieldType,
@@ -639,7 +649,7 @@ function atomToFieldDef(atom: InputAtom, order: number): FieldDef {
     helperText: atom.helperText,
     required: atom.required,
     autoSkipIfFilled: atom.autoSkipIfFilled ?? false,
-    options: atom.options,
+    options: options.length > 0 ? options : undefined,
     conditions: atom.conditions,
     order,
     staticContent: atom.staticContent,

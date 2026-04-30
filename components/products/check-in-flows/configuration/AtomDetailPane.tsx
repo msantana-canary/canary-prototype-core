@@ -29,9 +29,7 @@ import type {
   Condition,
   ElementTag,
   FieldType,
-  FieldOption,
-  IdTypeOption,
-  IdTypeSelectAtomConfig,
+  OptionVariant,
   IdConsentAtomConfig,
   IdPhotoAtomConfig,
   IdSelfieAtomConfig,
@@ -139,43 +137,18 @@ export function AtomDetailPane() {
           )}
         </Section>
 
-        {/* Options (selection-type InputAtoms or id-type-select preset) */}
+        {/* Options (selection-type InputAtoms — variant model) */}
         {atom.kind === 'input' &&
           getFieldTypeMeta(atom.fieldType).supportsOptions && (
             <Section title="Options">
               <OptionsEditor
-                options={atom.options ?? []}
+                variants={atom.optionVariants ?? []}
                 onChange={(next) =>
-                  onUpdate({ options: next } as Partial<Atom>)
+                  onUpdate({ optionVariants: next } as Partial<Atom>)
                 }
               />
             </Section>
           )}
-
-        {atom.kind === 'preset' && atom.presetType === 'id-type-select' && (
-          <Section title="ID types offered">
-            <p
-              className="text-[12px] mb-3"
-              style={{ color: colors.colorBlack5 }}
-            >
-              ID types guests can choose from. Use per-option visibility to
-              surface specific options only to certain guest segments (e.g.,
-              show &ldquo;Carta d&rsquo;Identità&rdquo; only if nationality is Italy).
-            </p>
-            <OptionsEditor
-              options={(atom.config as IdTypeSelectAtomConfig).options as FieldOption[]}
-              onChange={(next) => {
-                const cfg = atom.config as IdTypeSelectAtomConfig;
-                onUpdate({
-                  config: {
-                    ...cfg,
-                    options: next as IdTypeOption[],
-                  },
-                } as Partial<Atom>);
-              }}
-            />
-          </Section>
-        )}
 
         {/* Visibility */}
         <Section title="Visibility">
@@ -406,8 +379,6 @@ function PresetAtomEditor({
   onUpdate: (updates: Partial<Atom>) => void;
 }) {
   switch (atom.presetType) {
-    case 'id-type-select':
-      return <IdTypeSelectEditor atom={atom} onUpdate={onUpdate} />;
     case 'id-consent':
       return <IdConsentEditor atom={atom} onUpdate={onUpdate} />;
     case 'id-photo-front':
@@ -500,40 +471,6 @@ function LocalizedField({
 }
 
 // ── Per-preset editors ───────────────────────────────────
-
-function IdTypeSelectEditor({
-  atom,
-  onUpdate,
-}: {
-  atom: PresetAtom;
-  onUpdate: (updates: Partial<Atom>) => void;
-}) {
-  const cfg = atom.config as IdTypeSelectAtomConfig;
-
-  return (
-    <>
-      <AtomLabelField atom={atom} onUpdate={onUpdate} />
-
-      <label
-        className="flex items-center gap-2 text-[12px]"
-        style={{ color: colors.colorBlack3 }}
-      >
-        <CanarySwitch
-          checked={cfg.allowMultipleIds}
-          onChange={(v) =>
-            onUpdate({
-              config: { ...cfg, allowMultipleIds: v },
-            } as Partial<Atom>)
-          }
-        />
-        Allow multiple IDs
-        <span className="text-[11px]" style={{ color: colors.colorBlack5 }}>
-          (guest can submit more than one ID document)
-        </span>
-      </label>
-    </>
-  );
-}
 
 function IdConsentEditor({
   atom,

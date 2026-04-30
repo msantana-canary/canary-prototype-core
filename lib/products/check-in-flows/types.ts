@@ -74,6 +74,28 @@ export interface FlowDefinition {
 
 // ── Step templates (engineering-provided catalog) ─────────
 
+// ── Option variants (segment-based dropdown options) ──────
+//
+// For selection-type InputAtoms (dropdown, string-radio, checkbox-group),
+// options are grouped into VARIANTS. Each variant has segment conditions;
+// the variant whose conditions match the guest is the active one. The
+// default variant has no conditions and is the fallback.
+//
+// This models the "Italian guests get different ID types" use case as
+// segment-based wholesale replacement of the option list, not per-option
+// additive show/hide.
+
+export interface OptionVariant {
+  id: string;
+  /** CS-facing label for the variant, e.g. "Italian guests". Optional —
+   *  the default variant typically has no name. */
+  name?: string;
+  /** Segment-matching rules. Omitted on the default variant; first variant
+   *  whose conditions match wins. */
+  conditions?: Condition[];
+  options: FieldOption[];
+}
+
 export type StepTemplateId =
   | 'reg-card'
   | 'ocr'
@@ -465,14 +487,19 @@ export interface InputAtom extends AtomBase {
   pmsTag?: ElementTag;
   required: boolean;
   autoSkipIfFilled?: boolean;
-  options?: FieldOption[];          // for dropdown / radio / checkbox-group
+  /** Segment-grouped options for selection field types (dropdown / radio /
+   *  checkbox-group). First variant is the default (no conditions); subsequent
+   *  variants are segment overrides. Resolved at render time via
+   *  resolveOptionsForGuest. */
+  optionVariants?: OptionVariant[];
   staticContent?: LocalizedText;    // for header / paragraph / list field types
 }
 
-/** Atomic preset — a single-purpose feature unit (one stage). */
+/** Atomic preset — a single-purpose feature unit with specialized non-generic
+ *  rendering (consent screens, camera capture, payment forms). Generic
+ *  inputs like dropdowns are InputAtoms, not presets. */
 export type PresetAtomType =
   | 'id-consent'
-  | 'id-type-select'
   | 'id-photo-front'
   | 'id-photo-back'
   | 'id-selfie'
@@ -491,7 +518,6 @@ export interface PresetAtom extends AtomBase {
 /** Discriminated union for preset-specific config. */
 export type PresetAtomConfig =
   | IdConsentAtomConfig
-  | IdTypeSelectAtomConfig
   | IdPhotoAtomConfig
   | IdSelfieAtomConfig
   | CreditCardAtomConfig
@@ -505,12 +531,6 @@ export interface IdConsentAtomConfig {
   body: LocalizedText;
   acknowledgment: LocalizedText;
   ctaLabel: LocalizedText;
-}
-
-export interface IdTypeSelectAtomConfig {
-  presetType: 'id-type-select';
-  options: IdTypeOption[];
-  allowMultipleIds: boolean;
 }
 
 export interface IdPhotoAtomConfig {
@@ -591,4 +611,29 @@ export function resolveStepAtoms(
   const atoms = resolveAtoms(step.atomIds, allAtoms);
   if (!surface) return atoms;
   return atoms.filter((a) => a.deviceVisibility[surface]);
+}
+
+/**
+ * Pick the active option variant for a guest. First variant whose conditions
+ * match wins; otherwise the default variant (no conditions) is the fallback.
+ * Returns the matching variant's options, or empty array if no variants exist.
+ *
+ * The condition-matching logic is provided by the caller via the matcher
+ * argument so this helper stays free of evaluator imports.
+ */
+export function resolveOptionsForGuest(
+  variants: OptionVariant[] | undefined,
+  matcher: (conditions: Condition[] | undefined) => boolean
+): FieldOption[] {
+  if (!variants || variants.length === 0) return [];
+  // Prefer the first variant with conditions that match the guest.
+  const matched = variants.find(
+    (v) => v.conditions && v.conditions.length > 0 && matcher(v.conditions)
+  );
+  if (matched) return matched.options;
+  // Fall back to the first variant without conditions (the default).
+  const defaultVariant = variants.find(
+    (v) => !v.conditions || v.conditions.length === 0
+  );
+  return defaultVariant?.options ?? [];
 }

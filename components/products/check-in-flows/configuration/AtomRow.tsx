@@ -273,7 +273,6 @@ export function describeAtom(atom: Atom): {
 function getPresetIcon(presetType: PresetAtomType): string {
   switch (presetType) {
     case 'id-consent': return mdiShieldCheckOutline;
-    case 'id-type-select': return mdiCardAccountDetailsOutline;
     case 'id-photo-front':
     case 'id-photo-back':
     case 'id-selfie':
