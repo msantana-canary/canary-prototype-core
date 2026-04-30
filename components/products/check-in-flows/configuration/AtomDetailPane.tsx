@@ -68,7 +68,7 @@ export function AtomDetailPane() {
 
   if (!atom) {
     return (
-      <div className="p-6">
+      <div className="h-full overflow-y-auto p-6 min-h-0">
         <div className="mb-4">
           <p className="text-[12px]" style={{ color: colors.colorBlack5 }}>
             Select a component from the left to edit its details and visibility.
@@ -85,7 +85,7 @@ export function AtomDetailPane() {
     onUpdate({ conditions: next.length > 0 ? next : undefined } as Partial<Atom>);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {/* Header */}
       <div
         className="flex items-center gap-3 px-5 py-3 shrink-0"
@@ -125,7 +125,7 @@ export function AtomDetailPane() {
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6 min-h-0">
         {/* Details */}
         <Section title="Details">
           {atom.kind === 'input' && (
