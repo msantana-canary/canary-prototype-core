@@ -11,7 +11,13 @@
 
 import React from 'react';
 import Icon from '@mdi/react';
-import { mdiClose } from '@mdi/js';
+import {
+  mdiClose,
+  mdiWeb,
+  mdiCellphone,
+  mdiTabletCellphone,
+  mdiMonitor,
+} from '@mdi/js';
 import {
   CanaryInput,
   CanarySelect,
@@ -29,6 +35,7 @@ import type {
   Condition,
   ElementTag,
   FieldType,
+  Surface,
   OptionVariant,
   IdConsentAtomConfig,
   IdPhotoAtomConfig,
@@ -141,6 +148,18 @@ export function AtomDetailPane() {
           )}
         </Section>
 
+        {/* Surface coverage — every atom kind has device visibility */}
+        <Section title="Surface coverage">
+          <p
+            className="text-[11px] mb-2"
+            style={{ color: colors.colorBlack5 }}
+          >
+            Which surfaces collect this. Toggle off to hide on a surface
+            without affecting the others.
+          </p>
+          <DeviceVisibilityEditor atom={atom} onUpdate={onUpdate} />
+        </Section>
+
         {/* Options (selection-type InputAtoms — variant model) */}
         {atom.kind === 'input' &&
           getFieldTypeMeta(atom.fieldType).supportsOptions && (
@@ -170,6 +189,55 @@ export function AtomDetailPane() {
 }
 
 // ── Section ──────────────────────────────────────────
+
+const SURFACE_TOGGLES: Array<{ key: Surface; label: string; icon: string }> = [
+  { key: 'web', label: 'Web', icon: mdiWeb },
+  { key: 'mobile-web', label: 'Mobile', icon: mdiCellphone },
+  { key: 'tablet-reg', label: 'Tablet registration', icon: mdiTabletCellphone },
+  { key: 'kiosk', label: 'Kiosk', icon: mdiMonitor },
+];
+
+function DeviceVisibilityEditor({
+  atom,
+  onUpdate,
+}: {
+  atom: Atom;
+  onUpdate: (updates: Partial<Atom>) => void;
+}) {
+  return (
+    <div className="space-y-1">
+      {SURFACE_TOGGLES.map(({ key, label, icon }) => {
+        const checked = atom.deviceVisibility[key] ?? false;
+        return (
+          <label
+            key={key}
+            className="flex items-center gap-3 py-1.5 cursor-pointer"
+          >
+            <Icon
+              path={icon}
+              size={0.65}
+              color={checked ? colors.colorBlueDark1 : colors.colorBlack5}
+            />
+            <span
+              className="flex-1 text-[12px]"
+              style={{ color: colors.colorBlack3 }}
+            >
+              {label}
+            </span>
+            <CanarySwitch
+              checked={checked}
+              onChange={(v) =>
+                onUpdate({
+                  deviceVisibility: { ...atom.deviceVisibility, [key]: v },
+                } as Partial<Atom>)
+              }
+            />
+          </label>
+        );
+      })}
+    </div>
+  );
+}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -311,6 +379,23 @@ function InputAtomDetails({
           options={tagOptions}
         />
       </div>
+
+      <label
+        className="flex items-center gap-2 text-[12px]"
+        style={{ color: colors.colorBlack3 }}
+      >
+        <CanarySwitch
+          checked={atom.required}
+          onChange={(v) => onUpdate({ required: v } as Partial<Atom>)}
+        />
+        Required
+        <span
+          className="text-[11px]"
+          style={{ color: colors.colorBlack5 }}
+        >
+          (guest must answer to continue)
+        </span>
+      </label>
 
       <label
         className="flex items-center gap-2 text-[12px]"
