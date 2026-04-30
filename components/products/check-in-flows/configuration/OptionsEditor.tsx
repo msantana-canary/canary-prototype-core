@@ -226,10 +226,10 @@ function VariantBlock({
                   color: colors.colorBlueDark1,
                   border: `1px solid ${colors.colorBlueDark4}`,
                 }}
-                title="Edit segment conditions"
+                title="Edit which guests get this option set"
               >
                 <Icon path={mdiTuneVariant} size={0.5} color={colors.colorBlueDark1} />
-                Visible to: {summary}
+                Shown to: {summary}
               </button>
             </div>
             {onRemove && (
@@ -455,10 +455,10 @@ function ConditionsPopover({
         >
           <div>
             <h4 className="text-[12px] font-bold" style={{ color: colors.colorBlack1 }}>
-              Segment conditions
+              Which guests get this option set
             </h4>
             <p className="text-[11px] mt-0.5" style={{ color: colors.colorBlack5 }}>
-              Show this variant&rsquo;s options when guest matches all of the following.
+              These options replace the default list when the guest matches all of the conditions below.
             </p>
           </div>
           <button

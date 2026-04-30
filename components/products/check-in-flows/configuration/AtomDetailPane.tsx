@@ -173,14 +173,24 @@ export function AtomDetailPane() {
             </Section>
           )}
 
-        {/* Visibility */}
-        <Section title="Visibility">
+        {/* Field visibility — gates the whole component (separate from
+            variant conditions inside Options, which switch the option set). */}
+        <Section title="Field visibility">
+          <p
+            className="text-[11px] mb-2"
+            style={{ color: colors.colorBlack5 }}
+          >
+            When the entire component shows. Use this to gate on guest
+            attributes (e.g., show only to Diamond members). Variant
+            conditions inside Options are separate — those switch which
+            option list applies, not whether the field appears.
+          </p>
           <ConditionRuleEditor
             conditions={atom.conditions ?? []}
             onChange={onConditionsChange}
             scope="field"
-            emptyLabel="No visibility conditions"
-            emptyHint="Add a condition to gate this component on guest attributes (nationality, age, loyalty, rate code)."
+            emptyLabel="Field is always shown"
+            emptyHint="Add a condition to show this field only to specific guests."
           />
         </Section>
       </div>
