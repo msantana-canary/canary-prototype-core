@@ -170,5 +170,12 @@ export function createBlankStepFromTemplate(
           nestedFlowId: `${property.id}-upsells`,
         },
       };
+
+    case 'custom':
+      return {
+        ...base,
+        name: 'New step',
+        config: { kind: 'schema-form', fields: [] },
+      };
   }
 }

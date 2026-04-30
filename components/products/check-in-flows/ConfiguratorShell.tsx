@@ -29,7 +29,12 @@ import {
   useStepById,
   useGeneratedFlows,
 } from '@/lib/products/check-in-flows/store';
-import type { FlowDefinition, StepInstance, Condition } from '@/lib/products/check-in-flows/types';
+import type {
+  FlowDefinition,
+  StepInstance,
+  Condition,
+  SchemaFormConfig,
+} from '@/lib/products/check-in-flows/types';
 import { getStepTemplateMeta } from '@/lib/products/check-in-flows/step-templates';
 import { CheckInConfigPage } from './CheckInConfigPage';
 import { PhoneFrame } from '@/components/core/PhoneFrame';
@@ -281,6 +286,11 @@ function FlowEditorView() {
 
 // ── Step list panel (left pane content when not editing) ─────────────
 
+let customStepCounter = 0;
+function newCustomStepId(): string {
+  return `step-custom-${Date.now()}-${++customStepCounter}`;
+}
+
 function StepListPanel({
   flow,
   activeStepId,
@@ -292,6 +302,23 @@ function StepListPanel({
   onSelectStep: (stepId: string) => void;
   onEditStep: (stepId: string) => void;
 }) {
+  const addStep = useCheckInFlowsStore((s) => s.addStep);
+
+  const handleAddCustomStep = () => {
+    const newStep: StepInstance = {
+      id: newCustomStepId(),
+      templateId: 'custom',
+      name: 'New step',
+      kind: 'schema-form',
+      isSkippable: false,
+      order: flow.steps.length,
+      atomIds: [],
+      config: { kind: 'schema-form', fields: [] } as SchemaFormConfig,
+    };
+    addStep(flow.id, newStep);
+    onEditStep(newStep.id);
+  };
+
   return (
     <div>
       <div className="mb-4">
@@ -316,6 +343,33 @@ function StepListPanel({
           />
         ))}
       </CanaryCard>
+
+      <button
+        onClick={handleAddCustomStep}
+        className="mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 h-10 rounded-md text-[13px] font-semibold transition-colors"
+        style={{
+          color: colors.colorBlueDark1,
+          border: `1px dashed ${colors.colorBlueDark4}`,
+          backgroundColor: '#FFF',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = colors.colorBlueDark5;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#FFF';
+        }}
+        title="Add a custom step composed from Global atoms"
+      >
+        <Icon path={mdiPlus} size={0.65} />
+        Add custom step
+      </button>
+      <p
+        className="text-[11px] mt-1.5 px-1"
+        style={{ color: colors.colorBlack5 }}
+      >
+        Custom steps host atoms you compose from Global Config — useful for
+        hotel-specific pages like Pet Policy or Marketing Consent.
+      </p>
     </div>
   );
 }

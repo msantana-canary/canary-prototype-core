@@ -83,7 +83,8 @@ export type StepTemplateId =
   | 'deposit-collection'
   | 'loyalty-welcome'
   | 'upsells'
-  | 'completion';
+  | 'completion'
+  | 'custom';
 
 export type StepKind = 'schema-form' | 'preset' | 'nested-flow';
 

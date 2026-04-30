@@ -20,6 +20,7 @@ import {
   mdiStarOutline,
   mdiTagOutline,
   mdiCheckCircleOutline,
+  mdiPuzzleOutline,
 } from '@mdi/js';
 
 import type { StepTemplateId, StepKind, Surface, PropertyFeatureFlags } from './types';
@@ -123,6 +124,15 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     description: 'Confirm and submit',
     kind: 'preset',
     icon: mdiCheckCircleOutline,
+    category: 'other',
+    supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
+  },
+  {
+    id: 'custom',
+    displayName: 'Custom Step',
+    description: 'Hotel-defined step composed of Global atoms (e.g., Pet Policy, Marketing Consent)',
+    kind: 'schema-form',
+    icon: mdiPuzzleOutline,
     category: 'other',
     supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
   },
