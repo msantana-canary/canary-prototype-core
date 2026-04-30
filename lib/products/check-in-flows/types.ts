@@ -430,14 +430,16 @@ export interface CheckInConfig {
 // visibility lives in DeviceVisibility (4 toggles) per atom.
 // ═══════════════════════════════════════════════════════════
 
+// Every input is fundamentally custom; presets are pre-labeled inputs that
+// live in their feature domain (id-documents / payment / etc.). No separate
+// "custom" bucket — fields belong to the domain that describes their data.
 export type AtomDomain =
   | 'guest-info'         // name, contact, address, stay preferences
   | 'id-documents'       // ID consent, ID type, ID photo capture, OCR field config
   | 'payment'            // CC config, deposits, surcharge (CS-tunable subset only)
   | 'additional-guests'  // multi-guest fields
   | 'auto-check-in'      // auto-checkin config
-  | 'copy-blocks'        // legal/policy text (hotel policies, marketing consent, etc.)
-  | 'custom';            // hotel-defined UDF inputs
+  | 'copy-blocks';       // legal/policy text (hotel policies, marketing consent, etc.)
 
 export const ATOM_DOMAIN_LABELS: Record<AtomDomain, string> = {
   'guest-info': 'Guest Info',
@@ -446,7 +448,6 @@ export const ATOM_DOMAIN_LABELS: Record<AtomDomain, string> = {
   'additional-guests': 'Additional Guests',
   'auto-check-in': 'Auto Check-In',
   'copy-blocks': 'Copy Blocks',
-  'custom': 'Custom Inputs',
 };
 
 export interface DeviceVisibility {

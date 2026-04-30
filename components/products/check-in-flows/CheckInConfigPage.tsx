@@ -96,11 +96,6 @@ export function CheckInConfigPage() {
             domain="copy-blocks"
             description="Compliance and policy text — hotel policies, marketing consent, waivers."
           />
-          <DomainSection
-            domain="custom"
-            description="Hotel-defined custom inputs (UDFs)."
-            defaultExpanded={false}
-          />
         </div>
 
         {/* Right: atom detail editor (or empty state). The pane provides
