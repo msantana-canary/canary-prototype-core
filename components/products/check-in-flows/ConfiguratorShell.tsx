@@ -303,6 +303,7 @@ function StepListPanel({
   onEditStep: (stepId: string) => void;
 }) {
   const addStep = useCheckInFlowsStore((s) => s.addStep);
+  const reorderSteps = useCheckInFlowsStore((s) => s.reorderSteps);
 
   const handleAddCustomStep = () => {
     const newStep: StepInstance = {
@@ -317,6 +318,14 @@ function StepListPanel({
     };
     addStep(flow.id, newStep);
     onEditStep(newStep.id);
+  };
+
+  const moveStep = (idx: number, dir: -1 | 1) => {
+    const target = idx + dir;
+    if (target < 0 || target >= flow.steps.length) return;
+    const orderedIds = flow.steps.map((s) => s.id);
+    [orderedIds[idx], orderedIds[target]] = [orderedIds[target], orderedIds[idx]];
+    reorderSteps(flow.id, orderedIds);
   };
 
   return (
@@ -337,9 +346,12 @@ function StepListPanel({
             step={step}
             index={idx}
             isLast={idx === flow.steps.length - 1}
+            isFirst={idx === 0}
             isActive={step.id === activeStepId}
             onSelect={() => onSelectStep(step.id)}
             onEdit={() => onEditStep(step.id)}
+            onMoveUp={() => moveStep(idx, -1)}
+            onMoveDown={() => moveStep(idx, 1)}
           />
         ))}
       </CanaryCard>
@@ -378,23 +390,30 @@ function StepRow({
   step,
   index,
   isLast,
+  isFirst,
   isActive,
   onSelect,
   onEdit,
+  onMoveUp,
+  onMoveDown,
 }: {
   step: StepInstance;
   index: number;
   isLast: boolean;
+  isFirst: boolean;
   isActive: boolean;
   onSelect: () => void;
   onEdit: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 }) {
   const template = getStepTemplateMeta(step.templateId);
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
 
   return (
     <div
       onClick={onSelect}
-      className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors"
+      className="flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors group"
       style={{
         backgroundColor: isActive ? colors.colorBlueDark5 : undefined,
         borderBottom: !isLast ? `1px solid ${colors.colorBlack7}` : undefined,
@@ -413,6 +432,30 @@ function StepRow({
         <span className="text-[14px] font-medium block truncate" style={{ color: colors.colorBlack2 }}>
           {step.name}
         </span>
+      </div>
+
+      {/* Reorder up/down — appear on hover or when row is active */}
+      <div
+        onClick={stop}
+        className="flex flex-col shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+        style={{ color: colors.colorBlack5 }}
+      >
+        <button
+          onClick={onMoveUp}
+          disabled={isFirst}
+          className="w-5 h-3 flex items-center justify-center disabled:opacity-30"
+          title="Move step up"
+        >
+          <span style={{ fontSize: 9, lineHeight: 1 }}>▲</span>
+        </button>
+        <button
+          onClick={onMoveDown}
+          disabled={isLast}
+          className="w-5 h-3 flex items-center justify-center disabled:opacity-30"
+          title="Move step down"
+        >
+          <span style={{ fontSize: 9, lineHeight: 1 }}>▼</span>
+        </button>
       </div>
 
       <button
