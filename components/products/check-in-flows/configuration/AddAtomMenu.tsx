@@ -14,7 +14,6 @@ import Icon from '@mdi/react';
 import {
   mdiPlus,
   mdiTextBoxOutline,
-  mdiPuzzleOutline,
   mdiFormTextbox,
 } from '@mdi/js';
 import {
@@ -113,12 +112,6 @@ export function AddAtomMenu({ domain }: Props) {
               label="Copy block"
               description="Compliance / policy text"
               onClick={createCopyBlock}
-            />
-            <MenuItem
-              icon={mdiPuzzleOutline}
-              label="Preset"
-              description="Coming in Phase 3"
-              disabled
             />
           </div>
         </>
