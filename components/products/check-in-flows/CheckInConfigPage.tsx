@@ -59,14 +59,16 @@ export function CheckInConfigPage() {
         </div>
       </div>
 
-      {/* Split pane: domain sections (left) + AtomDetailPane (right) */}
+      {/* Split pane: absolute positioning bypasses flex height quirks
+          (same pattern as TransferRulesSettings). Each pane fills its
+          half exactly via inset, owning its own overflow-y-auto. */}
       <div
-        className="flex-1 flex overflow-hidden"
+        className="flex-1 relative overflow-hidden"
         style={{ borderTop: `1px solid ${colors.colorBlack7}` }}
       >
         {/* Left: scrollable atom list */}
         <div
-          className="overflow-y-auto px-6 py-5 space-y-4"
+          className="absolute left-0 top-0 bottom-0 overflow-y-auto px-6 py-5 space-y-4"
           style={{ width: '50%', borderRight: `1px solid ${colors.colorBlack7}` }}
         >
           <DomainSection
@@ -102,7 +104,10 @@ export function CheckInConfigPage() {
         </div>
 
         {/* Right: atom detail editor (or empty state) — pane owns the scroll */}
-        <div className="flex-1 overflow-y-auto bg-white">
+        <div
+          className="absolute right-0 top-0 bottom-0 overflow-y-auto bg-white"
+          style={{ width: '50%' }}
+        >
           <AtomDetailPane />
         </div>
       </div>
