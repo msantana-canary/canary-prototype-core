@@ -39,7 +39,7 @@ export const ELEMENT_TAGS: ElementTagMeta[] = [
   { id: 'postal-code', displayName: 'Postal Code', pmsField: 'guest.address.postal_code', category: 'address', defaultFieldType: 'text-input' },
 
   // Stay
-  { id: 'estimated-arrival-time', displayName: 'Estimated Arrival Time', pmsField: 'reservation.estimated_arrival', category: 'stay', defaultFieldType: 'time-select' },
+  { id: 'estimated-arrival-time', displayName: 'Estimated Arrival Time', pmsField: 'reservation.estimated_arrival', category: 'stay', defaultFieldType: 'dropdown' },
   { id: 'special-requests', displayName: 'Special Requests', pmsField: 'reservation.special_requests', category: 'stay', defaultFieldType: 'text-area' },
 
   // Loyalty

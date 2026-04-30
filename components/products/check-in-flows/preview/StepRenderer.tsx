@@ -652,6 +652,5 @@ function atomToFieldDef(atom: InputAtom, ctx: PreviewContext, order: number): Fi
     options: options.length > 0 ? options : undefined,
     conditions: atom.conditions,
     order,
-    staticContent: atom.staticContent,
   };
 }

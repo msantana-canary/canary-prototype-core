@@ -116,12 +116,23 @@ const guestInfo: InputAtom[] = [
     id: 'atom-estimated-arrival',
     kind: 'input',
     domain: 'guest-info',
-    fieldType: 'time-select',
+    fieldType: 'dropdown',
     label: { en: 'Estimated arrival time' },
     pmsTag: 'estimated-arrival-time',
     required: true,
     autoSkipIfFilled: true,
     deviceVisibility: visibleExceptKiosk,
+    optionVariants: [
+      {
+        id: 'var-eta-default',
+        options: [
+          { id: 'opt-eta-noon',    value: 'before-noon', label: { en: 'Before noon' },     order: 0 },
+          { id: 'opt-eta-12-3',    value: '12-3pm',      label: { en: '12pm – 3pm' },      order: 1 },
+          { id: 'opt-eta-3-6',     value: '3-6pm',       label: { en: '3pm – 6pm' },       order: 2 },
+          { id: 'opt-eta-after-6', value: 'after-6pm',   label: { en: 'After 6pm' },       order: 3 },
+        ],
+      },
+    ],
   },
   {
     id: 'atom-special-requests',

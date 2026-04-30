@@ -198,7 +198,6 @@ const FIELD_TYPE_CATEGORY_LABELS: Record<FieldTypeCategory, string> = {
   input: 'Inputs',
   selection: 'Selection',
   specialized: 'Specialized',
-  static: 'Static content',
 };
 
 function InputAtomDetails({
@@ -209,8 +208,6 @@ function InputAtomDetails({
   onUpdate: (updates: Partial<Atom>) => void;
 }) {
   const meta = getFieldTypeMeta(atom.fieldType);
-  const isStatic = meta.isStatic;
-  const supportsAutoSkip = !isStatic;
 
   const fieldTypeOptions: { value: string; label: string; disabled?: boolean }[] = [];
   (Object.keys(FIELD_TYPES_BY_CATEGORY) as FieldTypeCategory[]).forEach((cat) => {
@@ -269,70 +266,64 @@ function InputAtomDetails({
           onUpdate({ label: { ...atom.label, en: e.target.value } } as Partial<Atom>)
         }
       />
-      {!isStatic && (
-        <>
-          <CanaryInput
-            size={InputSize.NORMAL}
-            label="Helper text (EN)"
-            placeholder="Optional hint shown under the field"
-            value={atom.helperText?.['en'] ?? ''}
-            onChange={(e) =>
-              onUpdate({
-                helperText: { ...(atom.helperText ?? {}), en: e.target.value },
-              } as Partial<Atom>)
-            }
-          />
-          <CanaryInput
-            size={InputSize.NORMAL}
-            label="Placeholder (EN)"
-            placeholder="Optional placeholder text"
-            value={atom.placeholder?.['en'] ?? ''}
-            onChange={(e) =>
-              onUpdate({
-                placeholder: { ...(atom.placeholder ?? {}), en: e.target.value },
-              } as Partial<Atom>)
-            }
-          />
+      <CanaryInput
+        size={InputSize.NORMAL}
+        label="Helper text (EN)"
+        placeholder="Optional hint shown under the field"
+        value={atom.helperText?.['en'] ?? ''}
+        onChange={(e) =>
+          onUpdate({
+            helperText: { ...(atom.helperText ?? {}), en: e.target.value },
+          } as Partial<Atom>)
+        }
+      />
+      <CanaryInput
+        size={InputSize.NORMAL}
+        label="Placeholder (EN)"
+        placeholder="Optional placeholder text"
+        value={atom.placeholder?.['en'] ?? ''}
+        onChange={(e) =>
+          onUpdate({
+            placeholder: { ...(atom.placeholder ?? {}), en: e.target.value },
+          } as Partial<Atom>)
+        }
+      />
 
-          <div>
-            <label
-              className="text-[11px] font-semibold uppercase tracking-wider mb-1 block"
-              style={{ color: colors.colorBlack5 }}
-            >
-              PMS Mapping
-            </label>
-            <CanarySelect
-              size={InputSize.NORMAL}
-              value={atom.pmsTag ?? ''}
-              onChange={(e) =>
-                onUpdate({
-                  pmsTag: (e.target.value as ElementTag) || undefined,
-                } as Partial<Atom>)
-              }
-              options={tagOptions}
-            />
-          </div>
-        </>
-      )}
-
-      {supportsAutoSkip && (
+      <div>
         <label
-          className="flex items-center gap-2 text-[12px]"
-          style={{ color: colors.colorBlack3 }}
+          className="text-[11px] font-semibold uppercase tracking-wider mb-1 block"
+          style={{ color: colors.colorBlack5 }}
         >
-          <CanarySwitch
-            checked={atom.autoSkipIfFilled ?? false}
-            onChange={(v) => onUpdate({ autoSkipIfFilled: v } as Partial<Atom>)}
-          />
-          Auto-skip if already filled
-          <span
-            className="text-[11px]"
-            style={{ color: colors.colorBlack5 }}
-          >
-            (skips on subsequent flows when prior surface captured the data)
-          </span>
+          PMS Mapping
         </label>
-      )}
+        <CanarySelect
+          size={InputSize.NORMAL}
+          value={atom.pmsTag ?? ''}
+          onChange={(e) =>
+            onUpdate({
+              pmsTag: (e.target.value as ElementTag) || undefined,
+            } as Partial<Atom>)
+          }
+          options={tagOptions}
+        />
+      </div>
+
+      <label
+        className="flex items-center gap-2 text-[12px]"
+        style={{ color: colors.colorBlack3 }}
+      >
+        <CanarySwitch
+          checked={atom.autoSkipIfFilled ?? false}
+          onChange={(v) => onUpdate({ autoSkipIfFilled: v } as Partial<Atom>)}
+        />
+        Auto-skip if already filled
+        <span
+          className="text-[11px]"
+          style={{ color: colors.colorBlack5 }}
+        >
+          (skips on subsequent flows when prior surface captured the data)
+        </span>
+      </label>
     </>
   );
 }

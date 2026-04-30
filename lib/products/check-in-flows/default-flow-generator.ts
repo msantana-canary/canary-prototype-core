@@ -79,7 +79,7 @@ function buildRegCardStep(flowId: string, property: Property, surface: Surface):
 
   // Estimated arrival — only on web/mobile (guest is remote), not tablet/kiosk
   if (!isTabletReg && !isKiosk) {
-    fields.push(makeField(8, 'time-select', 'estimated-arrival-time', localize('Estimated arrival time', 'Orario di arrivo previsto')));
+    fields.push(makeField(8, 'dropdown', 'estimated-arrival-time', localize('Estimated arrival time', 'Orario di arrivo previsto')));
   }
 
   fields.push(makeField(9, 'text-area', 'special-requests', localize('Special requests', 'Richieste speciali', '特别要求'), { required: false }));

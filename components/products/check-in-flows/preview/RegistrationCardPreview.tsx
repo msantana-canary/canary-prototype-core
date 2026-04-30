@@ -16,7 +16,6 @@ import {
   CanaryInputUnderline,
   CanaryInputDateUnderline,
   CanaryInputPhoneUnderline,
-  CanaryInputCreditCardUnderline,
   CanarySelectUnderline,
   CanaryTextAreaUnderline,
   InputSize,
@@ -31,7 +30,6 @@ import {
 
 import type { FieldDef } from '@/lib/products/check-in-flows/types';
 import { resolveText } from '@/lib/products/check-in-flows/types';
-import { getFieldTypeMeta } from '@/lib/products/check-in-flows/field-types';
 import { GuestSignaturePad } from '@/components/core/GuestSignaturePad';
 import { GuestBottomSheet } from '@/components/core/GuestBottomSheet';
 
@@ -195,34 +193,9 @@ function FieldRenderer({
   language: string;
   primaryColor: string;
 }) {
-  const meta = getFieldTypeMeta(field.type);
   const label = resolveText(field.label, language);
   const placeholder = resolveText(field.placeholder, language);
   const required = field.required;
-
-  if (meta.isStatic) {
-    const content = resolveText(field.staticContent, language);
-    if (field.type === 'header') {
-      return (
-        <h3 style={{ fontSize: 18, fontWeight: 500, lineHeight: '28px', color: '#000' }}>
-          {content}
-        </h3>
-      );
-    }
-    if (field.type === 'list') {
-      const items = content.split('\n').filter(Boolean);
-      return (
-        <ul style={{ paddingLeft: 20, fontSize: 16, lineHeight: '24px', color: '#000' }}>
-          {items.map((item, i) => (
-            <li key={i}>{item}</li>
-          ))}
-        </ul>
-      );
-    }
-    return (
-      <p style={{ fontSize: 16, lineHeight: '24px', color: '#000' }}>{content}</p>
-    );
-  }
 
   const labelText = required ? `${label} (required)` : label;
 
@@ -249,24 +222,6 @@ function FieldRenderer({
       );
     case 'date':
       return <CanaryInputDateUnderline label={labelText} size={InputSize.LARGE} />;
-    case 'time-select':
-      return (
-        <CanarySelectUnderline
-          label={labelText}
-          placeholder={placeholder || labelText}
-          options={[
-            { value: '12pm', label: '12:00 PM' },
-            { value: '1pm', label: '1:00 PM' },
-            { value: '2pm', label: '2:00 PM' },
-            { value: '3pm', label: '3:00 PM' },
-            { value: '4pm', label: '4:00 PM' },
-            { value: '5pm', label: '5:00 PM' },
-            { value: '6pm', label: '6:00 PM' },
-            { value: 'after7', label: 'After 7:00 PM' },
-          ]}
-          size={InputSize.LARGE}
-        />
-      );
     case 'text-area':
       return <CanaryTextAreaUnderline label={labelText} size={InputSize.LARGE} />;
     case 'dropdown':
@@ -302,10 +257,6 @@ function FieldRenderer({
           ]}
           size={InputSize.LARGE}
         />
-      );
-    case 'credit-card':
-      return (
-        <CanaryInputCreditCardUnderline label={labelText} size={InputSize.LARGE} />
       );
     case 'string-radio':
     case 'boolean-radio': {

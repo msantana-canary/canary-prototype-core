@@ -228,18 +228,17 @@ export type FieldType =
   | 'phone'
   | 'number'
   | 'date'
-  | 'time-select'
   | 'country'
   | 'dropdown'
   | 'boolean-radio'
   | 'string-radio'
   | 'checkbox'
   | 'checkbox-group'
-  | 'signature'
-  | 'credit-card'
-  | 'paragraph'    // static
-  | 'header'       // static
-  | 'list';        // static
+  | 'signature';
+// Static content (paragraphs, headers, lists) lives in CopyBlock atoms,
+// not as InputAtom field types. Time/date pickers consolidate to dropdowns
+// with hotel-provided answers (matches production). Credit card handling
+// is the credit-card-form preset, not a generic field type.
 
 export interface FieldDef {
   id: string;
@@ -253,8 +252,6 @@ export interface FieldDef {
   options?: FieldOption[];            // for dropdown, checkbox-group, string-radio
   conditions?: Condition[];           // field-level show/hide
   order: number;
-  // Static content (paragraph/header/list)
-  staticContent?: LocalizedText;
 }
 
 export interface FieldOption {
@@ -492,7 +489,6 @@ export interface InputAtom extends AtomBase {
    *  variants are segment overrides. Resolved at render time via
    *  resolveOptionsForGuest. */
   optionVariants?: OptionVariant[];
-  staticContent?: LocalizedText;    // for header / paragraph / list field types
 }
 
 /** Atomic preset — a single-purpose feature unit with specialized non-generic
