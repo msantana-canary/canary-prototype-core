@@ -66,7 +66,7 @@ export function AtomDetailPane() {
 
   if (!atom) {
     return (
-      <div className="p-6">
+      <div className="h-full overflow-y-auto p-6">
         <div className="mb-4">
           <p className="text-[12px]" style={{ color: colors.colorBlack5 }}>
             Select a component from the left to edit its details and visibility.
@@ -83,10 +83,10 @@ export function AtomDetailPane() {
     onUpdate({ conditions: next.length > 0 ? next : undefined } as Partial<Atom>);
 
   return (
-    <div>
-      {/* Header — sticky to the scrolling pane */}
+    <div className="flex flex-col h-full">
+      {/* Header — fixed at top of pane via flex layout (no sticky) */}
       <div
-        className="flex items-center gap-3 px-5 py-3 sticky top-0 z-10 bg-white"
+        className="flex items-center gap-3 px-5 py-3 shrink-0 bg-white"
         style={{ borderBottom: `1px solid ${colors.colorBlack7}` }}
       >
         <div
@@ -122,8 +122,8 @@ export function AtomDetailPane() {
         </button>
       </div>
 
-      {/* Body */}
-      <div className="px-5 py-4 space-y-6">
+      {/* Body — owns the scroll within the bounded pane */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
         {/* Details */}
         <Section title="Details">
           {atom.kind === 'input' && (

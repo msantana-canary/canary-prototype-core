@@ -103,9 +103,11 @@ export function CheckInConfigPage() {
           />
         </div>
 
-        {/* Right: atom detail editor (or empty state) — pane owns the scroll */}
+        {/* Right: atom detail editor (or empty state). The pane provides
+            bounded dimensions; AtomDetailPane handles its own header +
+            scrolling body internally so the header stays put. */}
         <div
-          className="absolute right-0 top-0 bottom-0 overflow-y-auto bg-white"
+          className="absolute right-0 top-0 bottom-0 bg-white"
           style={{ width: '50%' }}
         >
           <AtomDetailPane />
