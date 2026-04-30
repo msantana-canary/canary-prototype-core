@@ -218,6 +218,7 @@ const TAG_CATEGORY_LABELS: Record<TagCategory, string> = {
   'identification': 'Identification',
   'loyalty': 'Loyalty',
   'other': 'Other',
+  'udf': 'PMS UDFs (hotel-defined)',
 };
 
 const FIELD_TYPE_CATEGORY_LABELS: Record<FieldTypeCategory, string> = {

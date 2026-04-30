@@ -8,7 +8,7 @@
 
 import type { ElementTag, FieldType } from './types';
 
-export type TagCategory = 'guest-info' | 'contact' | 'address' | 'stay' | 'identification' | 'loyalty' | 'other';
+export type TagCategory = 'guest-info' | 'contact' | 'address' | 'stay' | 'identification' | 'loyalty' | 'other' | 'udf';
 
 export interface ElementTagMeta {
   id: ElementTag;
@@ -55,6 +55,15 @@ export const ELEMENT_TAGS: ElementTagMeta[] = [
 
   // Other
   { id: 'signature', displayName: 'Signature', pmsField: 'reservation.signature', category: 'other', defaultFieldType: 'signature' },
+
+  // PMS UDFs — hotel-defined fields the configurator can route data into.
+  // pmsField path uses udf.* convention; production discovers these from the PMS.
+  { id: 'udf-special-occasion', displayName: 'Special Occasion', pmsField: 'udf.special_occasion', category: 'udf', defaultFieldType: 'dropdown' },
+  { id: 'udf-company-account', displayName: 'Company Account', pmsField: 'udf.company_account', category: 'udf', defaultFieldType: 'text-input' },
+  { id: 'udf-loyalty-referral', displayName: 'Loyalty Referral Source', pmsField: 'udf.loyalty_referral', category: 'udf', defaultFieldType: 'text-input' },
+  { id: 'udf-room-preferences', displayName: 'Room Preferences', pmsField: 'udf.room_preferences', category: 'udf', defaultFieldType: 'checkbox-group' },
+  { id: 'udf-dietary-restrictions', displayName: 'Dietary Restrictions', pmsField: 'udf.dietary_restrictions', category: 'udf', defaultFieldType: 'checkbox-group' },
+  { id: 'udf-marketing-source', displayName: 'How did you hear about us?', pmsField: 'udf.marketing_source', category: 'udf', defaultFieldType: 'dropdown' },
 ];
 
 export const ELEMENT_TAG_MAP: Record<ElementTag, ElementTagMeta> = ELEMENT_TAGS.reduce(
@@ -74,4 +83,5 @@ export const ELEMENT_TAGS_BY_CATEGORY: Record<TagCategory, ElementTagMeta[]> = {
   'identification': ELEMENT_TAGS.filter((t) => t.category === 'identification'),
   'loyalty': ELEMENT_TAGS.filter((t) => t.category === 'loyalty'),
   'other': ELEMENT_TAGS.filter((t) => t.category === 'other'),
+  'udf': ELEMENT_TAGS.filter((t) => t.category === 'udf'),
 };

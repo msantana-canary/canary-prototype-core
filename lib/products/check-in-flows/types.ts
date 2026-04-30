@@ -267,7 +267,16 @@ export type ElementTag =
   | 'id-issue-date'
   | 'id-expiry-date'
   | 'id-issuing-country'
-  | 'signature';
+  | 'signature'
+  // PMS UDFs (hotel-defined fields) — surfaced in the configurator so atoms
+  // can map to UDFs the hotel has set up in their PMS. Demo set; in production
+  // these would be discovered from the connected PMS.
+  | 'udf-special-occasion'
+  | 'udf-company-account'
+  | 'udf-loyalty-referral'
+  | 'udf-room-preferences'
+  | 'udf-dietary-restrictions'
+  | 'udf-marketing-source';
 
 // ── Conditions ────────────────────────────────────────────
 
