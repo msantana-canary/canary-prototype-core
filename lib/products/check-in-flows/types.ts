@@ -308,7 +308,10 @@ export type ConditionParameter =
   | 'reservation-source'
   | 'returning-guest'
   | 'rate-code'
-  | 'length-of-stay';
+  | 'length-of-stay'
+  // Form-state — compares against the guest's response to another atom in
+  // the same flow. Requires `formAtomId` to be set on the Condition.
+  | 'form-response';
 
 export type ConditionOperator =
   | 'equals'
@@ -325,6 +328,9 @@ export type ConditionAction = 'show' | 'hide' | 'require' | 'show-option' | 'hid
 export interface Condition {
   id: string;
   parameter?: ConditionParameter;
+  /** When parameter === 'form-response', this is the id of the atom whose
+   *  response is being compared. Undefined for guest-attribute conditions. */
+  formAtomId?: string;
   operator?: ConditionOperator;
   value?: string | string[] | number | boolean;
   action: ConditionAction;
@@ -343,6 +349,10 @@ export interface PreviewContext {
   rateCode: string;
   lengthOfStay: number;            // nights
   language: string;                // ISO 639-1
+  /** Simulated guest answers to atoms collected earlier in the flow.
+   *  Keys are atom IDs; values are the response. Read by form-response
+   *  conditions at runtime. Defaults to empty. */
+  formResponses: Record<string, string | number | boolean | undefined>;
 }
 
 // ── Helpers ───────────────────────────────────────────────

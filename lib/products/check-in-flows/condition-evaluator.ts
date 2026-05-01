@@ -31,12 +31,20 @@ export function evaluateCondition(
   // treated as no-ops so they don't block visibility while the user
   // is still building the rule.
   if (!condition.parameter || !condition.operator) return true;
-  const actual = resolveParameter(condition.parameter, ctx);
+  // Form-response without a chosen gate atom is also a no-op — the user
+  // is still authoring.
+  if (condition.parameter === 'form-response' && !condition.formAtomId) return true;
+  const actual = resolveParameter(condition, ctx);
   return evaluateOperator(actual, condition.operator, condition.value);
 }
 
-function resolveParameter(param: Condition['parameter'], ctx: PreviewContext): any {
-  switch (param) {
+function resolveParameter(condition: Condition, ctx: PreviewContext): any {
+  // Form-state: read the simulated guest answer for the gate atom.
+  if (condition.parameter === 'form-response') {
+    if (!condition.formAtomId) return undefined;
+    return ctx.formResponses[condition.formAtomId];
+  }
+  switch (condition.parameter) {
     case 'nationality': return ctx.guestNationalityCode;
     case 'age': return ctx.guestAge;
     case 'loyalty-tier': return ctx.loyaltyTier;

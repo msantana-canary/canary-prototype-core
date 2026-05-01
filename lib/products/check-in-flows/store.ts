@@ -191,6 +191,7 @@ const DEFAULT_PREVIEW: PreviewContext = {
   rateCode: 'BAR',
   lengthOfStay: 2,
   language: 'en',
+  formResponses: {},
 };
 
 // ── Store shape ─────────────────────────────────────────

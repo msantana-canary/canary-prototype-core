@@ -16,7 +16,10 @@ import type {
 export interface ParameterMeta {
   id: ConditionParameter;
   displayName: string;
-  valueType: 'country-code' | 'number' | 'loyalty-tier' | 'reservation-source' | 'rate-code' | 'boolean' | 'text';
+  /** 'form-atom-ref' is a sentinel for the form-response parameter. The
+   *  ConditionRuleEditor branches on parameter === 'form-response' before
+   *  reading valueType, so it picks the gate atom + value contextually. */
+  valueType: 'country-code' | 'number' | 'loyalty-tier' | 'reservation-source' | 'rate-code' | 'boolean' | 'text' | 'form-atom-ref';
   allowedOperators: ConditionOperator[];
   description: string;
 }
@@ -56,6 +59,20 @@ export const CONDITION_PARAMETERS: ParameterMeta[] = [
     valueType: 'rate-code',
     allowedOperators: ['equals', 'not-equals', 'in', 'not-in'],
     description: 'Booking rate code (CORP, BAR, AAA, RACK, GOV, …)',
+  },
+  {
+    id: 'form-response',
+    displayName: 'Form response',
+    valueType: 'form-atom-ref',
+    // Operators are narrowed by the ConditionRuleEditor based on the chosen
+    // gate atom's fieldType (boolean → is-true/is-false; dropdown → equals/
+    // not-equals/in/not-in; number → equals/not-equals/greater-than/less-than).
+    // List all here so any narrower set is a subset.
+    allowedOperators: [
+      'equals', 'not-equals', 'in', 'not-in',
+      'greater-than', 'less-than', 'is-true', 'is-false',
+    ],
+    description: 'Match against the guest\'s response to another field in this flow',
   },
 ];
 
