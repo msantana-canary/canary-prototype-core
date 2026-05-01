@@ -33,11 +33,19 @@ import { mdiTuneVariant } from '@mdi/js';
 import type {
   Atom,
   Condition,
+  ConditionParameter,
   FlowDefinition,
   InputAtom,
+  PreviewContext,
+  LoyaltyTier,
 } from '@/lib/products/check-in-flows/types';
 import { resolveText } from '@/lib/products/check-in-flows/types';
 import { useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
+import {
+  COUNTRIES,
+  LOYALTY_TIERS,
+  RATE_CODES,
+} from '@/lib/products/check-in-flows/condition-meta';
 
 interface Props {
   flow: FlowDefinition;
@@ -49,7 +57,8 @@ export function PreviewContextSelector({ flow }: Props) {
   const setPreviewContext = useCheckInFlowsStore((s) => s.setPreviewContext);
 
   const gateAtoms = useGateAtoms(flow, allAtoms);
-  if (gateAtoms.length === 0) return null;
+  const guestParams = useReferencedGuestParams(flow, allAtoms);
+  if (gateAtoms.length === 0 && guestParams.length === 0) return null;
 
   const setResponse = (atomId: string, value: string | number | boolean | undefined) => {
     setPreviewContext({
@@ -74,6 +83,14 @@ export function PreviewContextSelector({ flow }: Props) {
           Simulate
         </span>
       </div>
+      {guestParams.map((param) => (
+        <GuestParamControl
+          key={param}
+          param={param}
+          ctx={previewContext}
+          onChange={(updates) => setPreviewContext(updates)}
+        />
+      ))}
       {gateAtoms.map((atom) => (
         <ControlForAtom
           key={atom.id}
@@ -83,6 +100,165 @@ export function PreviewContextSelector({ flow }: Props) {
         />
       ))}
     </div>
+  );
+}
+
+/** Guest-attribute parameters referenced by ANY condition (atom-level,
+ *  variant-level, or step-level) in the previewed flow. */
+function useReferencedGuestParams(flow: FlowDefinition, atoms: Atom[]): ConditionParameter[] {
+  return React.useMemo(() => {
+    const params = new Set<ConditionParameter>();
+    const collect = (conds: Condition[] | undefined) => {
+      if (!conds) return;
+      for (const c of conds) {
+        if (c.parameter && c.parameter !== 'form-response') {
+          params.add(c.parameter);
+        }
+      }
+    };
+    for (const step of flow.steps) collect(step.conditions);
+    const flowAtomIds = new Set<string>();
+    for (const step of flow.steps) {
+      for (const atomId of step.atomIds ?? []) flowAtomIds.add(atomId);
+    }
+    for (const atom of atoms) {
+      if (!flowAtomIds.has(atom.id)) continue;
+      collect(atom.conditions);
+      // Variant-level conditions on selection InputAtoms
+      if (atom.kind === 'input' && atom.optionVariants) {
+        for (const variant of atom.optionVariants) collect(variant.conditions);
+      }
+    }
+    return Array.from(params);
+  }, [flow, atoms]);
+}
+
+function GuestParamControl({
+  param,
+  ctx,
+  onChange,
+}: {
+  param: ConditionParameter;
+  ctx: PreviewContext;
+  onChange: (updates: Partial<PreviewContext>) => void;
+}) {
+  switch (param) {
+    case 'nationality':
+      return (
+        <LabeledControl label="Nationality" minWidth={180}>
+          <CanarySelect
+            size={InputSize.NORMAL}
+            value={ctx.guestNationalityCode}
+            onChange={(e) => onChange({ guestNationalityCode: e.target.value })}
+            options={COUNTRIES.map((c) => ({ value: c.code, label: `${c.name} (${c.code})` }))}
+          />
+        </LabeledControl>
+      );
+    case 'loyalty-tier':
+      return (
+        <LabeledControl label="Loyalty tier" minWidth={150}>
+          <CanarySelect
+            size={InputSize.NORMAL}
+            value={ctx.loyaltyTier}
+            onChange={(e) => onChange({ loyaltyTier: e.target.value as LoyaltyTier })}
+            options={LOYALTY_TIERS.map((t) => ({ value: t.value, label: t.label }))}
+          />
+        </LabeledControl>
+      );
+    case 'loyalty-member':
+      return (
+        <LabeledControl label="Loyalty member" minWidth={120}>
+          <CanarySelect
+            size={InputSize.NORMAL}
+            value={ctx.loyaltyTier === 'none' ? 'no' : 'yes'}
+            onChange={(e) =>
+              onChange({ loyaltyTier: e.target.value === 'yes' ? 'club-member' : 'none' })
+            }
+            options={[{ value: 'no', label: 'Non-member' }, { value: 'yes', label: 'Member' }]}
+          />
+        </LabeledControl>
+      );
+    case 'rate-code':
+      return (
+        <LabeledControl label="Rate code" minWidth={150}>
+          <CanarySelect
+            size={InputSize.NORMAL}
+            value={ctx.rateCode}
+            onChange={(e) => onChange({ rateCode: e.target.value })}
+            options={RATE_CODES.map((r) => ({ value: r.value, label: r.label }))}
+          />
+        </LabeledControl>
+      );
+    case 'reservation-source':
+      return (
+        <LabeledControl label="Source" minWidth={120}>
+          <CanarySelect
+            size={InputSize.NORMAL}
+            value={ctx.reservationSource}
+            onChange={(e) => onChange({ reservationSource: e.target.value as PreviewContext['reservationSource'] })}
+            options={[
+              { value: 'direct', label: 'Direct' },
+              { value: 'ota', label: 'OTA' },
+              { value: 'corporate', label: 'Corporate' },
+              { value: 'group', label: 'Group' },
+            ]}
+          />
+        </LabeledControl>
+      );
+    case 'returning-guest':
+      return (
+        <LabeledControl label="Returning guest" minWidth={110}>
+          <CanarySelect
+            size={InputSize.NORMAL}
+            value={ctx.isReturningGuest ? 'yes' : 'no'}
+            onChange={(e) => onChange({ isReturningGuest: e.target.value === 'yes' })}
+            options={[{ value: 'no', label: 'No' }, { value: 'yes', label: 'Yes' }]}
+          />
+        </LabeledControl>
+      );
+    case 'age':
+      return (
+        <LabeledControl label="Age" minWidth={80}>
+          <CanaryInput
+            type={InputType.NUMBER}
+            size={InputSize.NORMAL}
+            value={String(ctx.guestAge)}
+            onChange={(e) => onChange({ guestAge: Number(e.target.value) || 0 })}
+          />
+        </LabeledControl>
+      );
+    case 'length-of-stay':
+      return (
+        <LabeledControl label="Nights" minWidth={80}>
+          <CanaryInput
+            type={InputType.NUMBER}
+            size={InputSize.NORMAL}
+            value={String(ctx.lengthOfStay)}
+            onChange={(e) => onChange({ lengthOfStay: Number(e.target.value) || 1 })}
+          />
+        </LabeledControl>
+      );
+    default:
+      return null;
+  }
+}
+
+function LabeledControl({
+  label,
+  minWidth,
+  children,
+}: {
+  label: string;
+  minWidth: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex items-center gap-1.5 shrink-0">
+      <span className="text-[11px]" style={{ color: colors.colorBlack4 }}>
+        {label}:
+      </span>
+      <div style={{ minWidth }}>{children}</div>
+    </label>
   );
 }
 
