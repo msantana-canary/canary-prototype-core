@@ -101,10 +101,38 @@ function buildRegCardStep(flowId: string, property: Property, surface: Surface):
       'atom-city',
       'atom-country',
       'atom-estimated-arrival',
+      'atom-pet',
       'atom-special-requests',
       'atom-signature',
     ],
     config: { kind: 'schema-form', fields },
+  };
+}
+
+function buildPetPolicyStep(flowId: string): StepInstance {
+  // Custom step gated by form-state: the whole page skips when guest
+  // answered pet=no on the reg card. When it renders, the pet-size
+  // atom inside it ALSO has its own form-state condition (pet=yes),
+  // demonstrating the layered model end-to-end.
+  return {
+    id: nextStepId(flowId),
+    templateId: 'custom',
+    name: 'Pet Policy',
+    kind: 'schema-form',
+    isSkippable: false,
+    order: 0,
+    atomIds: ['atom-copy-pet-policy', 'atom-pet-size'],
+    conditions: [
+      {
+        id: `${flowId}-cond-pet-step`,
+        parameter: 'form-response',
+        formAtomId: 'atom-pet',
+        operator: 'equals',
+        value: 'yes',
+        action: 'show',
+      },
+    ],
+    config: { kind: 'schema-form', fields: [] },
   };
 }
 
@@ -365,6 +393,10 @@ export function generateDefaultFlow(
     steps.push(buildIdConsentStep(flowId));
     steps.push(buildIdCaptureStep(flowId, property));
   }
+
+  // Pet policy — gated by form-state condition (pet=yes on reg card).
+  // Always added; runtime skips it for guests who say no/skip the pet question.
+  steps.push(buildPetPolicyStep(flowId));
 
   // Credit card
   steps.push(buildCreditCardStep(flowId, property));

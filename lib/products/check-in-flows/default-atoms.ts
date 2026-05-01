@@ -145,6 +145,45 @@ const guestInfo: InputAtom[] = [
     autoSkipIfFilled: true,
     deviceVisibility: visibleAll,
   },
+  // Pet — gates Pet Policy step and pet-size atom (form-state demo).
+  {
+    id: 'atom-pet',
+    kind: 'input',
+    domain: 'guest-info',
+    fieldType: 'boolean-radio',
+    label: { en: 'Are you traveling with a pet?' },
+    required: false,
+    deviceVisibility: visibleAll,
+  },
+  {
+    id: 'atom-pet-size',
+    kind: 'input',
+    domain: 'guest-info',
+    fieldType: 'dropdown',
+    label: { en: 'Pet size' },
+    required: true,
+    deviceVisibility: visibleAll,
+    optionVariants: [
+      {
+        id: 'var-pet-size-default',
+        options: [
+          { id: 'opt-pet-sm', value: 'small',  label: { en: 'Small (under 25 lbs)' }, order: 0 },
+          { id: 'opt-pet-md', value: 'medium', label: { en: 'Medium (25–60 lbs)' },   order: 1 },
+          { id: 'opt-pet-lg', value: 'large',  label: { en: 'Large (60+ lbs)' },      order: 2 },
+        ],
+      },
+    ],
+    conditions: [
+      {
+        id: 'cond-pet-size-gate',
+        parameter: 'form-response',
+        formAtomId: 'atom-pet',
+        operator: 'equals',
+        value: 'yes',
+        action: 'show',
+      },
+    ],
+  },
   {
     id: 'atom-signature',
     kind: 'input',
@@ -397,6 +436,16 @@ const copyBlocks: CopyBlockAtom[] = [
     deviceVisibility: visibleAll,
     content: {
       en: 'Smoking: Statler New York maintains a smoke-free environment. Cancellation: Reservations may be cancelled up to 48 hours prior to arrival. Pets: Well-behaved dogs weighing 50 lbs or less welcome with a $150 fee.',
+    },
+  },
+  {
+    id: 'atom-copy-pet-policy',
+    kind: 'copy-block',
+    domain: 'copy-blocks',
+    name: 'Pet Policy',
+    deviceVisibility: visibleAll,
+    content: {
+      en: 'We welcome pets up to 60 lbs at Statler New York. A $150 cleaning fee is added to your stay. Service animals are always welcome and not subject to fees. Please confirm your pet size below so we can prepare the right room.',
     },
   },
   {
