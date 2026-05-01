@@ -39,6 +39,7 @@ import { getStepTemplateMeta } from '@/lib/products/check-in-flows/step-template
 import { CheckInConfigPage } from './CheckInConfigPage';
 import { PhoneFrame } from '@/components/core/PhoneFrame';
 import { StepRenderer } from './preview/StepRenderer';
+import { PreviewContextSelector } from './preview/PreviewContextSelector';
 import { ConditionRuleEditor } from './editors/ConditionRuleEditor';
 import { SchemaFormEditor } from './editors/SchemaFormEditor';
 import { IdConsentEditor } from './editors/IdConsentEditor';
@@ -221,22 +222,25 @@ function FlowBrowseView() {
       </div>
 
       <div
-        className="absolute right-0 top-0 bottom-0 flex items-center justify-center overflow-hidden"
+        className="absolute right-0 top-0 bottom-0 flex flex-col overflow-hidden"
         style={{
           width: '50%',
           backgroundColor: colors.colorBlack7,
           borderLeft: `1px solid ${colors.colorBlack7}`,
         }}
       >
-        {firstStep ? (
-          <PhoneFrame showUrlBar={false}>
-            <div className="w-full h-full flex flex-col bg-white">
-              <StepRenderer step={firstStep} ctx={ctx} flow={previewFlow} />
-            </div>
-          </PhoneFrame>
-        ) : (
-          <p className="text-[14px]" style={{ color: colors.colorBlack5 }}>Select a flow to preview</p>
-        )}
+        {previewFlow && <PreviewContextSelector flow={previewFlow} />}
+        <div className="flex-1 flex items-center justify-center overflow-hidden">
+          {firstStep ? (
+            <PhoneFrame showUrlBar={false}>
+              <div className="w-full h-full flex flex-col bg-white">
+                <StepRenderer step={firstStep} ctx={ctx} flow={previewFlow} />
+              </div>
+            </PhoneFrame>
+          ) : (
+            <p className="text-[14px]" style={{ color: colors.colorBlack5 }}>Select a flow to preview</p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -277,22 +281,25 @@ function FlowEditorView() {
       </div>
 
       <div
-        className="absolute right-0 top-0 bottom-0 flex items-center justify-center overflow-hidden"
+        className="absolute right-0 top-0 bottom-0 flex flex-col overflow-hidden"
         style={{
           width: '50%',
           backgroundColor: colors.colorBlack7,
           borderLeft: `1px solid ${colors.colorBlack7}`,
         }}
       >
-        {step ? (
-          <PhoneFrame showUrlBar={false}>
-            <div className="w-full h-full flex flex-col bg-white">
-              <StepRenderer step={step} ctx={ctx} flow={flow} />
-            </div>
-          </PhoneFrame>
-        ) : (
-          <p className="text-[14px]" style={{ color: colors.colorBlack5 }}>Select a step to preview</p>
-        )}
+        <PreviewContextSelector flow={flow} />
+        <div className="flex-1 flex items-center justify-center overflow-hidden">
+          {step ? (
+            <PhoneFrame showUrlBar={false}>
+              <div className="w-full h-full flex flex-col bg-white">
+                <StepRenderer step={step} ctx={ctx} flow={flow} />
+              </div>
+            </PhoneFrame>
+          ) : (
+            <p className="text-[14px]" style={{ color: colors.colorBlack5 }}>Select a step to preview</p>
+          )}
+        </div>
       </div>
     </div>
   );
