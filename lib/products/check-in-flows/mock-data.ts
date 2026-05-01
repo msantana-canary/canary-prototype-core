@@ -87,7 +87,7 @@ function buildUpsellsFlow(property: Property): FlowDefinition {
     propertyId: property.id,
     name: 'Upsells',
     description: 'Upgrade offers, add-ons, and early check-in. Slotted into main flows as a nested step.',
-    surface: 'web',
+    surface: 'mobile-web',
     kind: 'nested',
     steps,
     isDefault: true,

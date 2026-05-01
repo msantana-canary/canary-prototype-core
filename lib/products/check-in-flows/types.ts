@@ -12,14 +12,15 @@
 
 // ── Surfaces ──────────────────────────────────────────────
 
-export type Surface = 'web' | 'mobile-web' | 'tablet-reg' | 'kiosk' | 'mobile-app';
+// Real product surfaces — no separate "web" because the Mobile Check-In
+// surface is the in-browser flow (responsive on desktop and mobile alike).
+export type Surface = 'mobile-web' | 'mobile-app' | 'tablet-reg' | 'kiosk';
 
 export const SURFACE_LABELS: Record<Surface, string> = {
-  'web': 'Web Check-In',
   'mobile-web': 'Mobile Check-In',
+  'mobile-app': 'Mobile SDK',
   'tablet-reg': 'Tablet Registration',
   'kiosk': 'Kiosk',
-  'mobile-app': 'Mobile App',
 };
 
 // ── Property ──────────────────────────────────────────────
@@ -461,19 +462,17 @@ export const ATOM_DOMAIN_LABELS: Record<AtomDomain, string> = {
 };
 
 export interface DeviceVisibility {
-  'web': boolean;
   'mobile-web': boolean;
+  'mobile-app': boolean;
   'tablet-reg': boolean;
   'kiosk': boolean;
-  'mobile-app': boolean;
 }
 
 export const DEFAULT_VISIBLE_ALL: DeviceVisibility = {
-  'web': true,
   'mobile-web': true,
+  'mobile-app': true,
   'tablet-reg': true,
   'kiosk': true,
-  'mobile-app': true,
 };
 
 export type AtomKind = 'input' | 'preset' | 'copy-block';

@@ -21,9 +21,9 @@ export const PROPERTIES: Property[] = [
     defaultLanguages: ['en'],
     features: {
       hasCheckIn: true,
-      hasTabletReg: false,
-      hasKiosk: false,
-      hasMobileApp: false,
+      hasTabletReg: true,
+      hasKiosk: true,
+      hasMobileApp: true,
       hasIdVerification: true,
       hasOcr: true,
       hasIdEncodeIntegration: false,

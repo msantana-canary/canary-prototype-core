@@ -48,11 +48,10 @@ import { GenericPresetEditor } from './editors/GenericPresetEditor';
 import { NestedFlowEditor } from './editors/NestedFlowEditor';
 
 const SURFACE_ICON: Record<string, string> = {
-  'web': mdiWeb,
   'mobile-web': mdiCellphone,
+  'mobile-app': mdiApplicationOutline,
   'tablet-reg': mdiTabletCellphone,
   'kiosk': mdiMonitor,
-  'mobile-app': mdiApplicationOutline,
 };
 
 const SHELL_TABS = [

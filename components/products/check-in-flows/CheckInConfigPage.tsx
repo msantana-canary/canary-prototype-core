@@ -41,11 +41,10 @@ import { DomainSection } from './configuration/DomainSection';
 import { AtomDetailPane } from './configuration/AtomDetailPane';
 
 const SURFACE_ICON: Record<string, string> = {
-  'web': mdiWeb,
   'mobile-web': mdiCellphone,
+  'mobile-app': mdiApplicationOutline,
   'tablet-reg': mdiTabletCellphone,
   'kiosk': mdiMonitor,
-  'mobile-app': mdiApplicationOutline,
 };
 
 export function CheckInConfigPage() {

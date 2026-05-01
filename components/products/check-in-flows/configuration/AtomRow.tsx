@@ -12,7 +12,7 @@
 import React from 'react';
 import Icon from '@mdi/react';
 import {
-  mdiWeb,
+  mdiApplicationOutline,
   mdiCellphone,
   mdiTabletCellphone,
   mdiMonitor,
@@ -132,7 +132,7 @@ export function AtomRow({ atom, onUpdate, onRemove }: Props) {
 
           {/* Device pills */}
           <div onClick={stop} className="flex items-center gap-1 shrink-0">
-            {(['web', 'mobile-web', 'tablet-reg', 'kiosk'] as Surface[]).map((s) => {
+            {(['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'] as Surface[]).map((s) => {
               const on = atom.deviceVisibility[s];
               const surfaceMeta = SURFACE_META[s];
               return (
@@ -234,11 +234,10 @@ export function AtomRow({ atom, onUpdate, onRemove }: Props) {
 // ── Helpers ──────────────────────────────────────────
 
 const SURFACE_META: Record<Surface, { icon: string; label: string }> = {
-  'web': { icon: mdiWeb, label: 'Web' },
-  'mobile-web': { icon: mdiCellphone, label: 'Mobile' },
-  'tablet-reg': { icon: mdiTabletCellphone, label: 'Tablet' },
+  'mobile-web': { icon: mdiCellphone, label: 'Mobile Check-In' },
+  'mobile-app': { icon: mdiApplicationOutline, label: 'Mobile SDK' },
+  'tablet-reg': { icon: mdiTabletCellphone, label: 'Tablet Registration' },
   'kiosk': { icon: mdiMonitor, label: 'Kiosk' },
-  'mobile-app': { icon: mdiCellphone, label: 'Mobile App' },
 };
 
 export function describeAtom(atom: Atom): {

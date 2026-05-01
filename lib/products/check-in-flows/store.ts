@@ -136,7 +136,7 @@ function buildUpsellsFlow(property: Property): FlowDefinition {
     propertyId: property.id,
     name: 'Upsells',
     description: 'Upgrade offers, add-ons, and early check-in.',
-    surface: 'web',
+    surface: 'mobile-web',
     kind: 'nested',
     steps: [
       { id: nestedStepId(flowId), templateId: 'completion', name: 'Upgrade Your Stay', kind: 'preset', isSkippable: true, order: 0, atomIds: [],
@@ -204,7 +204,7 @@ interface CheckInFlowsState {
   selectedAtomId: string | null;                            // Phase 6: split-pane selection
   nav: NavState;
   previewContext: PreviewContext;
-  previewSurface: 'web' | 'mobile-web';
+  previewSurface: 'mobile-web' | 'mobile-app';
 
   // Config
   updateConfig: <K extends keyof CheckInConfig>(key: K, value: CheckInConfig[K]) => void;
@@ -245,7 +245,7 @@ interface CheckInFlowsState {
 
   // Preview
   setPreviewContext: (updates: Partial<PreviewContext>) => void;
-  setPreviewSurface: (surface: 'web' | 'mobile-web') => void;
+  setPreviewSurface: (surface: 'mobile-web' | 'mobile-app') => void;
 
   // Flow regeneration
   regenerateFlowsForProperty: (propertyId: string) => void;

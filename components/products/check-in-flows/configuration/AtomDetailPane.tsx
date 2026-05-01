@@ -13,8 +13,8 @@ import React from 'react';
 import Icon from '@mdi/react';
 import {
   mdiClose,
-  mdiWeb,
   mdiCellphone,
+  mdiApplicationOutline,
   mdiTabletCellphone,
   mdiMonitor,
 } from '@mdi/js';
@@ -201,9 +201,9 @@ export function AtomDetailPane() {
 // ── Section ──────────────────────────────────────────
 
 const SURFACE_TOGGLES: Array<{ key: Surface; label: string; icon: string }> = [
-  { key: 'web', label: 'Web', icon: mdiWeb },
-  { key: 'mobile-web', label: 'Mobile', icon: mdiCellphone },
-  { key: 'tablet-reg', label: 'Tablet registration', icon: mdiTabletCellphone },
+  { key: 'mobile-web', label: 'Mobile Check-In', icon: mdiCellphone },
+  { key: 'mobile-app', label: 'Mobile SDK', icon: mdiApplicationOutline },
+  { key: 'tablet-reg', label: 'Tablet Registration', icon: mdiTabletCellphone },
   { key: 'kiosk', label: 'Kiosk', icon: mdiMonitor },
 ];
 

@@ -47,7 +47,7 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     kind: 'schema-form',
     icon: mdiFileDocumentOutline,
     category: 'identity',
-    supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
+    supportedSurfaces: ['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'],
   },
   {
     id: 'ocr',
@@ -56,7 +56,7 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     kind: 'schema-form',
     icon: mdiTextBoxSearchOutline,
     category: 'identity',
-    supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
+    supportedSurfaces: ['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'],
     featureFlag: 'hasOcr',
   },
   {
@@ -66,7 +66,7 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     kind: 'preset',
     icon: mdiFileCheckOutline,
     category: 'identity',
-    supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
+    supportedSurfaces: ['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'],
     featureFlag: 'hasIdVerification',
   },
   {
@@ -76,7 +76,7 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     kind: 'preset',
     icon: mdiCardAccountDetailsOutline,
     category: 'identity',
-    supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
+    supportedSurfaces: ['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'],
     featureFlag: 'hasIdVerification',
   },
   {
@@ -86,7 +86,7 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     kind: 'preset',
     icon: mdiCreditCardOutline,
     category: 'payment',
-    supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
+    supportedSurfaces: ['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'],
   },
   {
     id: 'deposit-collection',
@@ -95,7 +95,7 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     kind: 'preset',
     icon: mdiSafeSquareOutline,
     category: 'payment',
-    supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
+    supportedSurfaces: ['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'],
     featureFlag: 'hasDepositCollection',
   },
   {
@@ -105,7 +105,7 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     kind: 'preset',
     icon: mdiStarOutline,
     category: 'loyalty',
-    supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
+    supportedSurfaces: ['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'],
     featureFlag: 'hasLoyaltyProgram',
   },
   {
@@ -115,7 +115,7 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     kind: 'nested-flow',
     icon: mdiTagOutline,
     category: 'nested',
-    supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
+    supportedSurfaces: ['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'],
     featureFlag: 'hasUpsells',
   },
   {
@@ -125,7 +125,7 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     kind: 'preset',
     icon: mdiCheckCircleOutline,
     category: 'other',
-    supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
+    supportedSurfaces: ['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'],
   },
   {
     id: 'custom',
@@ -134,7 +134,7 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     kind: 'schema-form',
     icon: mdiPuzzleOutline,
     category: 'other',
-    supportedSurfaces: ['web', 'mobile-web', 'tablet-reg', 'kiosk', 'mobile-app'],
+    supportedSurfaces: ['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'],
   },
 ];
 

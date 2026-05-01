@@ -430,12 +430,15 @@ export function generateDefaultFlow(
   };
 }
 
-/** Generates the default main flows for a property: web + mobile-web (+ kiosk + tablet if enabled). */
+/** Generates the default main flows for a property — one per real product
+ *  surface: Mobile Check-In (browser), Mobile SDK, Tablet Reg, Kiosk. */
 export function generateDefaultFlowsForProperty(property: Property): FlowDefinition[] {
   const flows: FlowDefinition[] = [
-    generateDefaultFlow(property, 'web', `${property.id}-web`, 'Web Check-In'),
     generateDefaultFlow(property, 'mobile-web', `${property.id}-mobile-web`, 'Mobile Check-In'),
   ];
+  if (property.features.hasMobileApp) {
+    flows.push(generateDefaultFlow(property, 'mobile-app', `${property.id}-mobile-app`, 'Mobile SDK'));
+  }
   if (property.features.hasTabletReg) {
     flows.push(generateDefaultFlow(property, 'tablet-reg', `${property.id}-tablet-reg`, 'Tablet Registration'));
   }
