@@ -52,20 +52,24 @@ Cascade-with-overrides degrades into "depends which override won" debugging at s
 
 ---
 
-## Where conditionals live: all in Global
+## Where conditionals live: atom-level in Global, step-level in Flow (layered)
 
-Every conditional rule is Global. Flow has zero conditional logic.
+Conditional rules split by intent — **atom-level** describes the atom itself (data-contract truth, applies everywhere the atom is used), **step-level** describes a Flow's compositional choice (this Flow chooses to skip this step under X).
 
-| Rule | Lives in |
-|---|---|
-| "Show ID type X if guest is Italian" | Global (segment-based scope) |
-| "Skip ID step if profile recognized" | Global (PMS-attribute condition) |
-| "Show pet policy if pet=true was captured" | Global (data-state condition, runtime-evaluated) |
-| "Estimated arrival time on mobile-web only" | Global (per-device visibility) |
-| "Step ordering for kiosk" | Flow (presentation) |
-| "Page intro copy: 'Tap below to start'" | Flow (UX guidance) |
+| Rule | Lives in | Why |
+|---|---|---|
+| "Show ID type X if guest is Italian" | Global, atom-level (variant) | Atom variant — same data, different option set per segment |
+| "Show pet-size only if pet=yes" | Global, atom-level (form-state) | Atom only collected under that condition |
+| "Skip ID step if profile recognized" | Flow, step-level (guest-attribute) | Flow chooses to skip the page; atoms inside still valid in other flows |
+| "Skip Pet Policy step if pet=no" | Flow, step-level (form-state) | Flow chooses to skip the page based on a prior form response |
+| "Skip Additional Guests step if count=0" | Flow, step-level (form-state) | Flow chooses to skip when no guests to enter |
+| "Estimated arrival time on mobile-web only" | Global, per-atom metadata (DeviceVisibility) | Surface coverage is atom property, not a condition |
+| "Step ordering for kiosk" | Flow (presentation) | Composition |
+| "Page intro copy" | Flow (UX guidance) | Presentation |
 
-Flow renders inputs/presets when their Global conditions are met; nothing more.
+**Layered, not cascading.** Step gates fire first; if a step's gate fails the whole step skips. If it renders, atom-level conditions then filter individual atoms inside. Step-level does not *override* atom-level — it gates whether atom-level even gets evaluated. The original "all conditions in Global" rule rejected *cascade with overrides* (where Flow could override what Global said); layered step-level conditions don't reintroduce that.
+
+**Form-state conditions** (visibility based on guest's response to another atom in the same flow) work at both levels via `parameter: 'form-response'` + `formAtomId` on the Condition. The runtime evaluator reads `previewContext.formResponses[formAtomId]`.
 
 ---
 
