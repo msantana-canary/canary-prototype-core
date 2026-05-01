@@ -21,6 +21,8 @@ import {
   CanaryTabs,
   CanaryCard,
   CanarySwitch,
+  CanaryTextArea,
+  InputSize,
 } from '@canary-ui/components';
 
 import {
@@ -655,6 +657,37 @@ function StepEditorPane({ flow, step }: { flow: FlowDefinition; step: StepInstan
           emptyHint="Add a condition to skip this step under specific circumstances (e.g., 'no additional guests' → skip Additional Guests page)."
         />
       </div>
+
+      {/* Custom step intro copy — only for custom-template steps; preset
+          atoms own their own copy via the preset config. */}
+      {step.templateId === 'custom' && (
+        <div className="px-6 pt-4 pb-3" style={{ borderBottom: `1px solid ${colors.colorBlack7}` }}>
+          <h4
+            className="text-[11px] font-semibold uppercase tracking-wider mb-1"
+            style={{ color: colors.colorBlack5 }}
+          >
+            Page intro copy
+          </h4>
+          <p
+            className="text-[11px] mb-2"
+            style={{ color: colors.colorBlack4 }}
+          >
+            Optional paragraph rendered above the atoms in this step. Use it
+            to set context for the guest (e.g., explain the pet policy).
+          </p>
+          <CanaryTextArea
+            size={InputSize.NORMAL}
+            placeholder="Optional intro text shown to the guest"
+            rows={3}
+            value={step.introText?.['en'] ?? ''}
+            onChange={(e) =>
+              updateStep(flow.id, step.id, {
+                introText: { ...(step.introText ?? {}), en: e.target.value },
+              })
+            }
+          />
+        </div>
+      )}
 
       {/* Type-specific editor */}
       <div>

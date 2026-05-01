@@ -122,6 +122,9 @@ function buildPetPolicyStep(flowId: string): StepInstance {
     isSkippable: false,
     order: 0,
     atomIds: ['atom-copy-pet-policy', 'atom-pet-size'],
+    introText: localize(
+      'A few quick details about your pet so we can prepare the right room.'
+    ),
     conditions: [
       {
         id: `${flowId}-cond-pet-step`,

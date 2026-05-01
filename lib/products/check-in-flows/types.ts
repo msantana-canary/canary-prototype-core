@@ -133,6 +133,12 @@ export interface StepInstance {
    *  Source of truth for what this step renders. */
   atomIds: string[];
 
+  /** Step-level UX copy. For custom steps (templateId === 'custom') CS can
+   *  edit a short intro paragraph that renders at the top of the page above
+   *  the atoms. Preset steps have their own copy in the preset atom and
+   *  don't use this field. */
+  introText?: LocalizedText;
+
   /** Legacy preset / nested-flow inline config. Schema-form steps derive
    *  rendering from atomIds; preset and nested-flow steps still use this
    *  for type-specific configuration (Phase 3 will decompose presets). */

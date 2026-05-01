@@ -192,12 +192,19 @@ function SchemaFormPreview({
           All fields hidden by conditions for this guest.
         </p>
       ) : (
-        <RegistrationCardPreview
-          fields={visibleFields}
-          language={ctx.language}
-          showReservationInfo={isRegCard}
-          showHotelPolicies={isRegCard}
-        />
+        <>
+          {step.introText && resolveText(step.introText, ctx.language) && (
+            <p style={{ padding: '16px 24px 0', fontSize: 14, lineHeight: '20px', color: '#444' }}>
+              {resolveText(step.introText, ctx.language)}
+            </p>
+          )}
+          <RegistrationCardPreview
+            fields={visibleFields}
+            language={ctx.language}
+            showReservationInfo={isRegCard}
+            showHotelPolicies={isRegCard}
+          />
+        </>
       )}
     </GuestPreviewShell>
   );
