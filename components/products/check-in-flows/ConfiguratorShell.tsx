@@ -497,7 +497,6 @@ function StepEditorPane({ flow, step }: { flow: FlowDefinition; step: StepInstan
   const [draftName, setDraftName] = useState(step.name);
 
   const template = getStepTemplateMeta(step.templateId);
-  const conditionCount = step.conditions?.length ?? 0;
   const showTemplateSubtitle = step.name.trim() !== template.displayName;
 
   // Reset draft when step changes
@@ -523,18 +522,6 @@ function StepEditorPane({ flow, step }: { flow: FlowDefinition; step: StepInstan
   const handleConditionsChange = (next: Condition[]) => {
     if (isReadOnly) return;
     updateStepConditions(flow.id, step.id, next);
-  };
-
-  const handleAddFirstCondition = () => {
-    if (isReadOnly) return;
-    const seed: Condition = {
-      id: `cond-${Date.now()}-init`,
-      parameter: undefined,
-      operator: undefined,
-      value: undefined,
-      action: 'show',
-    };
-    updateStepConditions(flow.id, step.id, [seed]);
   };
 
   return (
@@ -637,19 +624,33 @@ function StepEditorPane({ flow, step }: { flow: FlowDefinition; step: StepInstan
         </div>
       </div>
 
-      {/* Step visibility — informational only.
-          Per architecture: steps don't have their own conditions. Atoms have
-          conditions, and the step disappears at runtime when all its atoms
-          are filtered out. Visibility logic lives in Global, not Flow. */}
-      <div className="px-6 pt-3 pb-1">
-        <p
-          className="text-[11px] italic"
+      {/* Step visibility — page-level gating layered above atom-level
+          conditions. Step gate fires first; if it fails the whole step
+          skips. If it renders, atom-level conditions then filter inside.
+          Both can be guest-attribute or form-response based. */}
+      <div className="px-6 pt-4 pb-3" style={{ borderBottom: `1px solid ${colors.colorBlack7}` }}>
+        <h4
+          className="text-[11px] font-semibold uppercase tracking-wider mb-1"
           style={{ color: colors.colorBlack5 }}
         >
-          Step visibility is derived from its atoms — when all atoms inside
-          this step are filtered out by Global conditions, the step
-          auto-skips. Edit conditions per-atom in the Configuration tab.
+          Step visibility
+        </h4>
+        <p
+          className="text-[11px] mb-2"
+          style={{ color: colors.colorBlack5 }}
+        >
+          Skip this step entirely when conditions don&rsquo;t match. Atom
+          conditions inside the step still apply on top — e.g., gate the
+          whole Pet Policy page on <code>pet = yes</code>.
         </p>
+        <ConditionRuleEditor
+          conditions={step.conditions ?? []}
+          onChange={handleConditionsChange}
+          scope="step"
+          disabled={isReadOnly}
+          emptyLabel="Step is always shown"
+          emptyHint="Add a condition to skip this step under specific circumstances (e.g., 'no additional guests' → skip Additional Guests page)."
+        />
       </div>
 
       {/* Type-specific editor */}
