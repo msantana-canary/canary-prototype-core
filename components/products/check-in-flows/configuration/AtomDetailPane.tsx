@@ -249,6 +249,36 @@ function DeviceVisibilityEditor({
   );
 }
 
+function ToggleRow({
+  checked,
+  onChange,
+  label,
+  description,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+  description?: string;
+}) {
+  return (
+    <label className="flex items-start gap-3 cursor-pointer">
+      <div className="shrink-0 mt-0.5">
+        <CanarySwitch checked={checked} onChange={onChange} />
+      </div>
+      <div className="min-w-0">
+        <div className="text-[13px]" style={{ color: colors.colorBlack2 }}>
+          {label}
+        </div>
+        {description && (
+          <div className="text-[11px] mt-0.5" style={{ color: colors.colorBlack4 }}>
+            {description}
+          </div>
+        )}
+      </div>
+    </label>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
@@ -374,39 +404,19 @@ function InputAtomDetails({
         options={tagOptions}
       />
 
-      <label
-        className="flex items-center gap-2 text-[12px]"
-        style={{ color: colors.colorBlack3 }}
-      >
-        <CanarySwitch
-          checked={atom.required}
-          onChange={(v) => onUpdate({ required: v } as Partial<Atom>)}
-        />
-        Required
-        <span
-          className="text-[11px]"
-          style={{ color: colors.colorBlack5 }}
-        >
-          (guest must answer to continue)
-        </span>
-      </label>
+      <ToggleRow
+        checked={atom.required}
+        onChange={(v) => onUpdate({ required: v } as Partial<Atom>)}
+        label="Required"
+        description="Guest must answer to continue."
+      />
 
-      <label
-        className="flex items-center gap-2 text-[12px]"
-        style={{ color: colors.colorBlack3 }}
-      >
-        <CanarySwitch
-          checked={atom.autoSkipIfFilled ?? false}
-          onChange={(v) => onUpdate({ autoSkipIfFilled: v } as Partial<Atom>)}
-        />
-        Auto-skip if already filled
-        <span
-          className="text-[11px]"
-          style={{ color: colors.colorBlack5 }}
-        >
-          (skips on subsequent flows when prior surface captured the data)
-        </span>
-      </label>
+      <ToggleRow
+        checked={atom.autoSkipIfFilled ?? false}
+        onChange={(v) => onUpdate({ autoSkipIfFilled: v } as Partial<Atom>)}
+        label="Auto-skip if already filled"
+        description="Skips on subsequent flows when a prior surface captured the data."
+      />
     </>
   );
 }
@@ -747,47 +757,26 @@ function CreditCardEditor({
     <>
       <AtomLabelField atom={atom} onUpdate={onUpdate} />
 
-      <label
-        className="flex items-center gap-2 text-[12px]"
-        style={{ color: colors.colorBlack3 }}
-      >
-        <CanarySwitch
-          checked={cfg.requireBillingAddress}
-          onChange={(v) => update({ requireBillingAddress: v })}
-        />
-        Require billing address
-        <span className="text-[11px]" style={{ color: colors.colorBlack5 }}>
-          (collect address along with card)
-        </span>
-      </label>
+      <ToggleRow
+        checked={cfg.requireBillingAddress}
+        onChange={(v) => update({ requireBillingAddress: v })}
+        label="Require billing address"
+        description="Collect address along with card."
+      />
 
-      <label
-        className="flex items-center gap-2 text-[12px]"
-        style={{ color: colors.colorBlack3 }}
-      >
-        <CanarySwitch
-          checked={cfg.requireCvc}
-          onChange={(v) => update({ requireCvc: v })}
-        />
-        Require CVC
-        <span className="text-[11px]" style={{ color: colors.colorBlack5 }}>
-          (security code on card back)
-        </span>
-      </label>
+      <ToggleRow
+        checked={cfg.requireCvc}
+        onChange={(v) => update({ requireCvc: v })}
+        label="Require CVC"
+        description="Security code on card back."
+      />
 
-      <label
-        className="flex items-center gap-2 text-[12px]"
-        style={{ color: colors.colorBlack3 }}
-      >
-        <CanarySwitch
-          checked={cfg.linkedDeposit}
-          onChange={(v) => update({ linkedDeposit: v })}
-        />
-        Use this card for deposit
-        <span className="text-[11px]" style={{ color: colors.colorBlack5 }}>
-          (skip a separate deposit step if a Deposit atom is in this flow)
-        </span>
-      </label>
+      <ToggleRow
+        checked={cfg.linkedDeposit}
+        onChange={(v) => update({ linkedDeposit: v })}
+        label="Use this card for deposit"
+        description="Skip a separate deposit step if a Deposit atom is in this flow."
+      />
     </>
   );
 }
@@ -827,19 +816,12 @@ function DepositCollectionEditor({
         />
       </div>
 
-      <label
-        className="flex items-center gap-2 text-[12px]"
-        style={{ color: colors.colorBlack3 }}
-      >
-        <CanarySwitch
-          checked={cfg.refundable}
-          onChange={(v) => update({ refundable: v })}
-        />
-        Refundable
-        <span className="text-[11px]" style={{ color: colors.colorBlack5 }}>
-          (released after stay if no incidentals)
-        </span>
-      </label>
+      <ToggleRow
+        checked={cfg.refundable}
+        onChange={(v) => update({ refundable: v })}
+        label="Refundable"
+        description="Released after stay if no incidentals."
+      />
 
       <LocalizedField
         label="Description (EN)"
