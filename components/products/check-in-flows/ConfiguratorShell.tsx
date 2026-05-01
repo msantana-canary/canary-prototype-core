@@ -42,9 +42,6 @@ import { StepRenderer } from './preview/StepRenderer';
 import { PreviewContextSelector } from './preview/PreviewContextSelector';
 import { ConditionRuleEditor } from './editors/ConditionRuleEditor';
 import { SchemaFormEditor } from './editors/SchemaFormEditor';
-import { IdConsentEditor } from './editors/IdConsentEditor';
-import { IdCaptureEditor } from './editors/IdCaptureEditor';
-import { GenericPresetEditor } from './editors/GenericPresetEditor';
 import { NestedFlowEditor } from './editors/NestedFlowEditor';
 
 const SURFACE_ICON: Record<string, string> = {
@@ -680,9 +677,10 @@ function StepConfigEditor({
 }) {
   const cfg = step.config;
 
-  // Phase 3 / 5: any step with atomIds populated edits via the unified
-  // SchemaFormEditor (atom-slot composition). Legacy preset-specific editors
-  // only fire for steps without atomIds (a transitional fallback).
+  // Phase 5 made atomIds the source of truth — every step with renderable
+  // content has atomIds populated. SchemaFormEditor handles atom-slot
+  // composition for both schema-form steps (custom + reg-card) and
+  // atom-decomposed presets (id-consent / id-capture / etc.).
   const hasAtomSlots = (step.atomIds?.length ?? 0) > 0;
 
   if (hasAtomSlots) {
@@ -691,16 +689,6 @@ function StepConfigEditor({
 
   if (cfg.kind === 'nested-flow') {
     return <NestedFlowEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
-  }
-  if (cfg.kind === 'preset') {
-    switch (cfg.presetType) {
-      case 'id-consent':
-        return <IdConsentEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
-      case 'id-capture':
-        return <IdCaptureEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
-      default:
-        return <GenericPresetEditor step={step} flow={flow} isReadOnly={isReadOnly} />;
-    }
   }
 
   return (
