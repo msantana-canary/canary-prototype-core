@@ -76,7 +76,7 @@ export function AtomDetailPane() {
     return (
       <div className="h-full overflow-y-auto p-6">
         <div className="mb-4">
-          <p className="text-[12px]" style={{ color: colors.colorBlack5 }}>
+          <p className="text-[12px]" style={{ color: colors.colorBlack3 }}>
             Select a component from the left to edit its details and visibility.
           </p>
         </div>
@@ -110,7 +110,7 @@ export function AtomDetailPane() {
           >
             {display.title}
           </h3>
-          <p className="text-[11px]" style={{ color: colors.colorBlack5 }}>
+          <p className="text-[11px]" style={{ color: colors.colorBlack4 }}>
             Editing component — changes propagate live to all flows that reference it.
           </p>
         </div>
@@ -152,7 +152,7 @@ export function AtomDetailPane() {
         <Section title="Surface coverage">
           <p
             className="text-[11px] mb-2"
-            style={{ color: colors.colorBlack5 }}
+            style={{ color: colors.colorBlack4 }}
           >
             Which surfaces collect this. Toggle off to hide on a surface
             without affecting the others.
@@ -178,7 +178,7 @@ export function AtomDetailPane() {
         <Section title="Field visibility">
           <p
             className="text-[11px] mb-2"
-            style={{ color: colors.colorBlack5 }}
+            style={{ color: colors.colorBlack4 }}
           >
             When the entire component shows. Use this to gate on guest
             attributes (e.g., show only to Diamond members). Variant
@@ -319,25 +319,16 @@ function InputAtomDetails({
 
   return (
     <>
-      <div>
-        <label
-          className="text-[11px] font-semibold uppercase tracking-wider mb-1 block"
-          style={{ color: colors.colorBlack5 }}
-        >
-          Field Type
-        </label>
-        <CanarySelect
-          size={InputSize.NORMAL}
-          value={atom.fieldType}
-          onChange={(e) =>
-            onUpdate({ fieldType: e.target.value as FieldType } as Partial<Atom>)
-          }
-          options={fieldTypeOptions}
-        />
-        <p className="text-[11px] mt-1" style={{ color: colors.colorBlack5 }}>
-          {meta.description}
-        </p>
-      </div>
+      <CanarySelect
+        size={InputSize.NORMAL}
+        label="Field type"
+        helperText={meta.description}
+        value={atom.fieldType}
+        onChange={(e) =>
+          onUpdate({ fieldType: e.target.value as FieldType } as Partial<Atom>)
+        }
+        options={fieldTypeOptions}
+      />
 
       <CanaryInput
         size={InputSize.NORMAL}
@@ -371,24 +362,17 @@ function InputAtomDetails({
         }
       />
 
-      <div>
-        <label
-          className="text-[11px] font-semibold uppercase tracking-wider mb-1 block"
-          style={{ color: colors.colorBlack5 }}
-        >
-          PMS Mapping
-        </label>
-        <CanarySelect
-          size={InputSize.NORMAL}
-          value={atom.pmsTag ?? ''}
-          onChange={(e) =>
-            onUpdate({
-              pmsTag: (e.target.value as ElementTag) || undefined,
-            } as Partial<Atom>)
-          }
-          options={tagOptions}
-        />
-      </div>
+      <CanarySelect
+        size={InputSize.NORMAL}
+        label="PMS mapping"
+        value={atom.pmsTag ?? ''}
+        onChange={(e) =>
+          onUpdate({
+            pmsTag: (e.target.value as ElementTag) || undefined,
+          } as Partial<Atom>)
+        }
+        options={tagOptions}
+      />
 
       <label
         className="flex items-center gap-2 text-[12px]"
@@ -834,20 +818,13 @@ function DepositCollectionEditor({
             update({ amount: Number.isFinite(n) ? n : 0 });
           }}
         />
-        <div>
-          <label
-            className="text-[11px] font-semibold uppercase tracking-wider mb-1 block"
-            style={{ color: colors.colorBlack5 }}
-          >
-            Currency
-          </label>
-          <CanarySelect
-            size={InputSize.NORMAL}
-            value={cfg.currency || 'USD'}
-            onChange={(e) => update({ currency: e.target.value })}
-            options={CURRENCY_OPTIONS}
-          />
-        </div>
+        <CanarySelect
+          size={InputSize.NORMAL}
+          label="Currency"
+          value={cfg.currency || 'USD'}
+          onChange={(e) => update({ currency: e.target.value })}
+          options={CURRENCY_OPTIONS}
+        />
       </div>
 
       <label
