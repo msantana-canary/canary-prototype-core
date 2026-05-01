@@ -27,12 +27,15 @@ import {
 } from '@canary-ui/components';
 
 import type {
+  Atom,
   Condition,
   ConditionParameter,
   ConditionOperator,
   ConditionAction,
+  InputAtom,
   LoyaltyTier,
 } from '@/lib/products/check-in-flows/types';
+import { resolveText } from '@/lib/products/check-in-flows/types';
 import {
   CONDITION_PARAMETERS,
   COUNTRIES,
@@ -42,6 +45,7 @@ import {
   PARAMETER_MAP,
   type ParameterMeta,
 } from '@/lib/products/check-in-flows/condition-meta';
+import { useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
 
 interface Props {
   conditions: Condition[];
@@ -167,24 +171,34 @@ function ConditionRow({
   onUpdate: (patch: Partial<Condition>) => void;
   onRemove: () => void;
 }) {
+  const allAtoms = useCheckInFlowsStore((s) => s.atoms);
   const paramMeta: ParameterMeta | null = condition.parameter
     ? PARAMETER_MAP[condition.parameter]
     : null;
 
   const isParamSet = !!paramMeta;
+  const isFormResponse = condition.parameter === 'form-response';
+  const gateAtom: InputAtom | undefined = isFormResponse && condition.formAtomId
+    ? (allAtoms.find((a) => a.id === condition.formAtomId && a.kind === 'input') as InputAtom | undefined)
+    : undefined;
   const isMultiValue = condition.operator === 'in' || condition.operator === 'not-in';
-  const operatorLabels = paramMeta?.allowedOperators ?? [];
+
+  // For form-response, narrow operators based on the gate atom's fieldType.
+  const operatorLabels = isFormResponse
+    ? getOperatorsForGateAtom(gateAtom)
+    : (paramMeta?.allowedOperators ?? []);
 
   const handleParameterChange = (raw: string) => {
     if (!raw) {
-      onUpdate({ parameter: undefined, operator: undefined, value: undefined });
+      onUpdate({ parameter: undefined, formAtomId: undefined, operator: undefined, value: undefined });
       return;
     }
     const param = raw as ConditionParameter;
     const meta = PARAMETER_MAP[param];
     const firstOp = meta.allowedOperators[0];
     const defaultValue = getDefaultValue(meta.valueType);
-    onUpdate({ parameter: param, operator: firstOp, value: defaultValue });
+    // Switching parameter resets formAtomId (only meaningful for form-response).
+    onUpdate({ parameter: param, formAtomId: undefined, operator: firstOp, value: defaultValue });
   };
 
   const handleOperatorChange = (op: ConditionOperator) => {
@@ -216,17 +230,24 @@ function ConditionRow({
       <CanarySelect
         size={InputSize.NORMAL}
         value={condition.operator ?? ''}
-        disabled={disabled || !isParamSet}
+        disabled={disabled || !isParamSet || (isFormResponse && !gateAtom)}
         onChange={(e) => handleOperatorChange(e.target.value as ConditionOperator)}
         options={
-          isParamSet
+          isParamSet && operatorLabels.length > 0
             ? operatorLabels.map((op) => ({ value: op, label: OPERATOR_LABELS[op] }))
             : [{ value: '', label: '—' }]
         }
       />
 
       {/* Value */}
-      {isParamSet ? (
+      {isFormResponse ? (
+        <FormResponseValueEditor
+          condition={condition}
+          onUpdate={onUpdate}
+          isMultiValue={isMultiValue}
+          disabled={disabled}
+        />
+      ) : isParamSet ? (
         <ValueInput
           paramMeta={paramMeta!}
           operator={condition.operator!}
@@ -375,6 +396,240 @@ function ValueInput({
   }
 }
 
+// ── Form-response helpers ─────────────────────────────────
+
+/** Whether an atom can serve as a gate for form-response conditions. */
+function isGateableAtom(atom: Atom): atom is InputAtom {
+  if (atom.kind !== 'input') return false;
+  // Signatures have no comparable scalar value.
+  if (atom.fieldType === 'signature') return false;
+  return true;
+}
+
+/** Operators allowed for a form-response condition based on the gate atom's
+ *  field type. Returns a sensible default when no atom is picked yet. */
+function getOperatorsForGateAtom(atom: InputAtom | undefined): ConditionOperator[] {
+  if (!atom) return ['equals', 'not-equals'];
+  switch (atom.fieldType) {
+    case 'boolean-radio':
+      return ['equals', 'not-equals'];
+    case 'checkbox':
+      return ['is-true', 'is-false'];
+    case 'dropdown':
+    case 'string-radio':
+    case 'country':
+      return ['equals', 'not-equals', 'in', 'not-in'];
+    case 'checkbox-group':
+      return ['in', 'not-in'];
+    case 'number':
+      return ['equals', 'not-equals', 'greater-than', 'less-than'];
+    case 'text-input':
+    case 'text-area':
+    case 'email':
+    case 'phone':
+    case 'date':
+    default:
+      return ['equals', 'not-equals'];
+  }
+}
+
+/** Comparable values an atom's responses can yield. Used to render the
+ *  value picker when the gate atom has a finite domain. */
+function getGateAtomValueOptions(atom: InputAtom): { value: string; label: string }[] {
+  if (atom.fieldType === 'boolean-radio') {
+    return [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }];
+  }
+  if (atom.fieldType === 'country') {
+    return COUNTRIES.map((c) => ({ value: c.code, label: `${c.name} (${c.code})` }));
+  }
+  if (
+    (atom.fieldType === 'dropdown' ||
+      atom.fieldType === 'string-radio' ||
+      atom.fieldType === 'checkbox-group') &&
+    atom.optionVariants
+  ) {
+    // Union of all options across all variants (CS may gate against any
+    // value the atom can yield, regardless of which variant served it).
+    const seen = new Set<string>();
+    const opts: { value: string; label: string }[] = [];
+    for (const variant of atom.optionVariants) {
+      for (const opt of variant.options) {
+        if (!seen.has(opt.value)) {
+          seen.add(opt.value);
+          opts.push({ value: opt.value, label: resolveText(opt.label, 'en') || opt.value });
+        }
+      }
+    }
+    return opts;
+  }
+  return [];
+}
+
+function getDefaultValueForGateAtom(atom: InputAtom | undefined): any {
+  if (!atom) return '';
+  switch (atom.fieldType) {
+    case 'boolean-radio':
+      return 'yes';
+    case 'number':
+      return 0;
+    case 'country':
+      return 'US';
+    case 'dropdown':
+    case 'string-radio':
+    case 'checkbox-group': {
+      const options = getGateAtomValueOptions(atom);
+      return options[0]?.value ?? '';
+    }
+    case 'checkbox':
+      return undefined; // is-true / is-false uses no value
+    default:
+      return '';
+  }
+}
+
+function FormResponseValueEditor({
+  condition,
+  onUpdate,
+  isMultiValue,
+  disabled,
+}: {
+  condition: Condition;
+  onUpdate: (patch: Partial<Condition>) => void;
+  isMultiValue: boolean;
+  disabled: boolean;
+}) {
+  const allAtoms = useCheckInFlowsStore((s) => s.atoms);
+  const gateableAtoms = React.useMemo(() => allAtoms.filter(isGateableAtom), [allAtoms]);
+  const gateAtom = condition.formAtomId
+    ? gateableAtoms.find((a) => a.id === condition.formAtomId)
+    : undefined;
+  const valueOptions = gateAtom ? getGateAtomValueOptions(gateAtom) : [];
+
+  const handleAtomChange = (atomId: string) => {
+    if (!atomId) {
+      onUpdate({ formAtomId: undefined, operator: 'equals', value: '' });
+      return;
+    }
+    const newAtom = gateableAtoms.find((a) => a.id === atomId);
+    const ops = getOperatorsForGateAtom(newAtom);
+    const firstOp = ops[0] ?? 'equals';
+    const goingMulti = firstOp === 'in' || firstOp === 'not-in';
+    const defaultV = getDefaultValueForGateAtom(newAtom);
+    const value = goingMulti ? (defaultV ? [defaultV] : []) : defaultV;
+    onUpdate({ formAtomId: atomId, operator: firstOp, value });
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <CanarySelect
+        size={InputSize.NORMAL}
+        value={condition.formAtomId ?? ''}
+        disabled={disabled}
+        onChange={(e) => handleAtomChange(e.target.value)}
+        options={[
+          { value: '', label: 'Choose field…' },
+          ...gateableAtoms.map((a) => ({
+            value: a.id,
+            label: resolveText(a.label, 'en') || a.id,
+          })),
+        ]}
+      />
+      {gateAtom ? (
+        <FormResponseValuePicker
+          atom={gateAtom}
+          operator={condition.operator}
+          value={condition.value}
+          onChange={(v) => onUpdate({ value: v })}
+          isMultiValue={isMultiValue}
+          disabled={disabled}
+          options={valueOptions}
+        />
+      ) : (
+        <div
+          className="h-9 rounded-md flex items-center px-3 text-[11px] italic"
+          style={{
+            border: `1px solid ${colors.colorBlack7}`,
+            color: colors.colorBlack5,
+            backgroundColor: colors.colorBlack8,
+          }}
+        >
+          Pick a field to compare against
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FormResponseValuePicker({
+  atom,
+  operator,
+  value,
+  onChange,
+  isMultiValue,
+  disabled,
+  options,
+}: {
+  atom: InputAtom;
+  operator?: ConditionOperator;
+  value: any;
+  onChange: (v: any) => void;
+  isMultiValue: boolean;
+  disabled: boolean;
+  options: { value: string; label: string }[];
+}) {
+  if (operator === 'is-true' || operator === 'is-false') {
+    return (
+      <div
+        className="h-9 rounded-md flex items-center px-3 text-[12px] italic"
+        style={{ border: `1px solid ${colors.colorBlack7}`, color: colors.colorBlack5, backgroundColor: colors.colorBlack8 }}
+      >
+        no value needed
+      </div>
+    );
+  }
+  if (atom.fieldType === 'number') {
+    return (
+      <CanaryInput
+        type={InputType.NUMBER}
+        size={InputSize.NORMAL}
+        value={value == null ? '' : String(Number(value))}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
+      />
+    );
+  }
+  if (options.length > 0) {
+    return isMultiValue ? (
+      <MultiSelect
+        value={(value as string[]) ?? []}
+        options={options}
+        onChange={onChange}
+        disabled={disabled}
+        placeholder="Select values…"
+      />
+    ) : (
+      <CanarySelect
+        size={InputSize.NORMAL}
+        value={String(value ?? options[0]?.value ?? '')}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        options={options}
+      />
+    );
+  }
+  return (
+    <CanaryInput
+      type={InputType.TEXT}
+      size={InputSize.NORMAL}
+      value={String(value ?? '')}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
+}
+
+// ──────────────────────────────────────────────────────────
+
 function getDefaultValue(valueType: string): any {
   switch (valueType) {
     case 'country-code': return 'US';
@@ -382,6 +637,7 @@ function getDefaultValue(valueType: string): any {
     case 'rate-code': return 'CORP';
     case 'number': return 0;
     case 'boolean': return undefined;
+    case 'form-atom-ref': return '';
     default: return '';
   }
 }
