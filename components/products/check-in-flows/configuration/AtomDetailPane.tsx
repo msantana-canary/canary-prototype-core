@@ -218,10 +218,18 @@ function DeviceVisibilityEditor({
     <div className="space-y-1">
       {SURFACE_TOGGLES.map(({ key, label, icon }) => {
         const checked = atom.deviceVisibility[key] ?? false;
+        const setVal = (v: boolean) =>
+          onUpdate({
+            deviceVisibility: { ...atom.deviceVisibility, [key]: v },
+          } as Partial<Atom>);
         return (
-          <label
+          <div
             key={key}
             className="flex items-center gap-3 py-1.5 cursor-pointer"
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest('[data-toggle-switch]')) return;
+              setVal(!checked);
+            }}
           >
             <Icon
               path={icon}
@@ -234,15 +242,10 @@ function DeviceVisibilityEditor({
             >
               {label}
             </span>
-            <CanarySwitch
-              checked={checked}
-              onChange={(v) =>
-                onUpdate({
-                  deviceVisibility: { ...atom.deviceVisibility, [key]: v },
-                } as Partial<Atom>)
-              }
-            />
-          </label>
+            <span data-toggle-switch>
+              <CanarySwitch checked={checked} onChange={setVal} />
+            </span>
+          </div>
         );
       })}
     </div>
@@ -260,9 +263,21 @@ function ToggleRow({
   label: string;
   description?: string;
 }) {
+  // Plain <div> + explicit click handler instead of <label> wrapping.
+  // <label> forwarding to a button-based CanarySwitch can fire onChange
+  // twice AND triggers browser native scroll-into-view, which on this
+  // page collapses the split-pane perception.
   return (
-    <label className="flex items-start gap-3 cursor-pointer">
-      <div className="shrink-0 mt-0.5">
+    <div
+      className="flex items-start gap-3 cursor-pointer"
+      onClick={(e) => {
+        // If the click landed on the switch, let the switch handle it
+        // (avoids double-fire). Only intercept clicks on the label/desc area.
+        if ((e.target as HTMLElement).closest('[data-toggle-switch]')) return;
+        onChange(!checked);
+      }}
+    >
+      <div className="shrink-0 mt-0.5" data-toggle-switch>
         <CanarySwitch checked={checked} onChange={onChange} />
       </div>
       <div className="min-w-0">
@@ -275,7 +290,7 @@ function ToggleRow({
           </div>
         )}
       </div>
-    </label>
+    </div>
   );
 }
 
