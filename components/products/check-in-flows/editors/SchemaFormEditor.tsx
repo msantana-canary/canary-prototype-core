@@ -259,17 +259,6 @@ function SortableAtomSlot({
           </div>
         </div>
 
-        <div className="flex items-center gap-0.5 pr-2 shrink-0">
-          {!isReadOnly && (
-            <button
-              className="w-7 h-7 rounded flex items-center justify-center text-[#888] hover:text-[#D00] hover:bg-[#FDECEF]"
-              onClick={onRemove}
-              title="Remove from step (atom stays in Global)"
-            >
-              <Icon path={mdiClose} size={0.65} />
-            </button>
-          )}
-        </div>
       </div>
     </div>
   );
