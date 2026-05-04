@@ -116,11 +116,20 @@ export function AtomRow({ atom, onUpdate, onRemove }: Props) {
 
           {/* Required (input atoms only) */}
           {isInput && (
-            <div onClick={stop} className="flex items-center gap-1.5 shrink-0">
-              <CanarySwitch
-                checked={(atom as InputAtom).required}
-                onChange={(v) => onUpdate({ required: v } as Partial<Atom>)}
-              />
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpdate({ required: !(atom as InputAtom).required } as Partial<Atom>);
+              }}
+              onMouseDown={(e) => e.preventDefault()}
+              className="flex items-center gap-1.5 shrink-0 cursor-pointer select-none"
+            >
+              <span style={{ pointerEvents: 'none' }}>
+                <CanarySwitch
+                  checked={(atom as InputAtom).required}
+                  onChange={() => {}}
+                />
+              </span>
               <span
                 className="text-[11px]"
                 style={{ color: colors.colorBlack4 }}

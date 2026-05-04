@@ -225,11 +225,9 @@ function DeviceVisibilityEditor({
         return (
           <div
             key={key}
-            className="flex items-center gap-3 py-1.5 cursor-pointer"
-            onClick={(e) => {
-              if ((e.target as HTMLElement).closest('[data-toggle-switch]')) return;
-              setVal(!checked);
-            }}
+            className="flex items-center gap-3 py-1.5 cursor-pointer select-none"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setVal(!checked)}
           >
             <Icon
               path={icon}
@@ -242,8 +240,8 @@ function DeviceVisibilityEditor({
             >
               {label}
             </span>
-            <span data-toggle-switch>
-              <CanarySwitch checked={checked} onChange={setVal} />
+            <span style={{ pointerEvents: 'none' }}>
+              <CanarySwitch checked={checked} onChange={() => {}} />
             </span>
           </div>
         );
@@ -263,22 +261,19 @@ function ToggleRow({
   label: string;
   description?: string;
 }) {
-  // Plain <div> + explicit click handler instead of <label> wrapping.
-  // <label> forwarding to a button-based CanarySwitch can fire onChange
-  // twice AND triggers browser native scroll-into-view, which on this
-  // page collapses the split-pane perception.
+  // CanarySwitch internally has a sr-only <input type="checkbox"> for a11y.
+  // When the click lands on that input the browser scrolls it into view,
+  // which on this page collapses the split-pane perception. Solution:
+  // make the switch purely visual via pointer-events: none and let the
+  // outer div own the click.
   return (
     <div
-      className="flex items-start gap-3 cursor-pointer"
-      onClick={(e) => {
-        // If the click landed on the switch, let the switch handle it
-        // (avoids double-fire). Only intercept clicks on the label/desc area.
-        if ((e.target as HTMLElement).closest('[data-toggle-switch]')) return;
-        onChange(!checked);
-      }}
+      className="flex items-start gap-3 cursor-pointer select-none"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={() => onChange(!checked)}
     >
-      <div className="shrink-0 mt-0.5" data-toggle-switch>
-        <CanarySwitch checked={checked} onChange={onChange} />
+      <div className="shrink-0 mt-0.5" style={{ pointerEvents: 'none' }}>
+        <CanarySwitch checked={checked} onChange={() => {}} />
       </div>
       <div className="min-w-0">
         <div className="text-[13px]" style={{ color: colors.colorBlack2 }}>
