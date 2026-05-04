@@ -22,6 +22,7 @@ import {
   CanaryCard,
   CanarySwitch,
   CanaryTextArea,
+  CanaryInput,
   InputSize,
 } from '@canary-ui/components';
 
@@ -658,26 +659,43 @@ function StepEditorPane({ flow, step }: { flow: FlowDefinition; step: StepInstan
         />
       </div>
 
-      {/* Custom step intro copy — only for custom-template steps; preset
-          atoms own their own copy via the preset config. */}
-      {step.templateId === 'custom' && (
-        <div className="px-6 pt-4 pb-3" style={{ borderBottom: `1px solid ${colors.colorBlack7}` }}>
+      {/* Page header — title + intro copy. Only for schema-form-kind
+          steps that CS composes from atoms (custom / reg-card / ocr).
+          Preset steps don't show this section because their copy lives
+          on the preset atom configs. */}
+      {(step.templateId === 'custom' ||
+        step.templateId === 'reg-card' ||
+        step.templateId === 'ocr') && (
+        <div
+          className="px-6 pt-4 pb-3 space-y-3"
+          style={{ borderBottom: `1px solid ${colors.colorBlack7}` }}
+        >
           <h4
-            className="text-[11px] font-semibold uppercase tracking-wider mb-1"
+            className="text-[11px] font-semibold uppercase tracking-wider"
             style={{ color: colors.colorBlack5 }}
           >
-            Page intro copy
+            Page header
           </h4>
           <p
-            className="text-[11px] mb-2"
+            className="text-[11px]"
             style={{ color: colors.colorBlack4 }}
           >
-            Optional paragraph rendered above the atoms in this step. Use it
-            to set context for the guest (e.g., explain the pet policy).
+            Title and optional intro copy shown to the guest at the top of
+            this page. The title also names the step in the flow editor.
           </p>
+          <CanaryInput
+            size={InputSize.NORMAL}
+            label="Page title"
+            placeholder="e.g., Pet Policy, Registration Card"
+            value={step.name}
+            onChange={(e) =>
+              updateStep(flow.id, step.id, { name: e.target.value })
+            }
+          />
           <CanaryTextArea
             size={InputSize.NORMAL}
-            placeholder="Optional intro text shown to the guest"
+            label="Intro copy (optional)"
+            placeholder="Short paragraph rendered above the form fields"
             rows={3}
             value={step.introText?.['en'] ?? ''}
             onChange={(e) =>
