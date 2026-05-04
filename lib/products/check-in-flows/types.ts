@@ -486,9 +486,18 @@ export type AtomKind = 'input' | 'preset' | 'copy-block';
 interface AtomBase {
   id: string;
   domain: AtomDomain;
+  /** Optional sub-grouping inside a domain. DomainSection renders a small
+   *  divider with the subgroup's label before atoms that share a subgroup
+   *  id. Atoms without a subgroup render first under no header. */
+  subgroup?: string;
   deviceVisibility: DeviceVisibility;
   conditions?: Condition[];   // guest-attribute rules only — NOT device
 }
+
+/** Labels for sub-group ids referenced by atoms.subgroup. */
+export const ATOM_SUBGROUP_LABELS: Record<string, string> = {
+  'ocr-extracted': 'Fields Extracted by OCR',
+};
 
 /** Atomic input — a single data point collected from the guest. */
 export interface InputAtom extends AtomBase {

@@ -21,7 +21,7 @@ import {
 } from '@canary-ui/components';
 
 import type { Atom, AtomDomain } from '@/lib/products/check-in-flows/types';
-import { ATOM_DOMAIN_LABELS } from '@/lib/products/check-in-flows/types';
+import { ATOM_DOMAIN_LABELS, ATOM_SUBGROUP_LABELS } from '@/lib/products/check-in-flows/types';
 import { useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
 import { AtomRow } from './AtomRow';
 import { AddAtomMenu } from './AddAtomMenu';
@@ -94,19 +94,60 @@ export function DomainSection({ domain, description, defaultExpanded = true }: P
               </p>
             </div>
           ) : (
-            <div className="space-y-2 mt-3">
-              {atoms.map((atom) => (
-                <AtomRow
-                  key={atom.id}
-                  atom={atom}
-                  onUpdate={(updates) => updateAtom(atom.id, updates)}
-                  onRemove={() => {
-                    if (confirm(`Remove "${atomDisplayName(atom)}"?`)) {
-                      removeAtom(atom.id);
-                    }
-                  }}
-                />
-              ))}
+            <div className="mt-3">
+              {/* Atoms without a subgroup render first under no header. */}
+              <div className="space-y-2">
+                {atoms.filter((a) => !a.subgroup).map((atom) => (
+                  <AtomRow
+                    key={atom.id}
+                    atom={atom}
+                    onUpdate={(updates) => updateAtom(atom.id, updates)}
+                    onRemove={() => {
+                      if (confirm(`Remove "${atomDisplayName(atom)}"?`)) {
+                        removeAtom(atom.id);
+                      }
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Each subgroup gets a small divider header + its atoms. */}
+              {Array.from(
+                new Set(atoms.map((a) => a.subgroup).filter((s): s is string => !!s))
+              ).map((sg) => {
+                const sgAtoms = atoms.filter((a) => a.subgroup === sg);
+                const label = ATOM_SUBGROUP_LABELS[sg] ?? sg;
+                return (
+                  <div key={sg} className="mt-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span
+                        className="text-[11px] font-semibold uppercase tracking-wider"
+                        style={{ color: colors.colorBlack4 }}
+                      >
+                        {label}
+                      </span>
+                      <div
+                        className="flex-1"
+                        style={{ height: 1, backgroundColor: colors.colorBlack7 }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      {sgAtoms.map((atom) => (
+                        <AtomRow
+                          key={atom.id}
+                          atom={atom}
+                          onUpdate={(updates) => updateAtom(atom.id, updates)}
+                          onRemove={() => {
+                            if (confirm(`Remove "${atomDisplayName(atom)}"?`)) {
+                              removeAtom(atom.id);
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
