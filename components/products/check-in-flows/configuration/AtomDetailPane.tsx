@@ -91,9 +91,13 @@ export function AtomDetailPane() {
     onUpdate({ conditions: next.length > 0 ? next : undefined } as Partial<Atom>);
 
   // Flows that reference this atom — surface to CS so they know edits
-  // propagate.
-  const usedInFlows = useCheckInFlowsStore((s) => s.flows)
+  // propagate everywhere it's used.
+  const allFlows = useCheckInFlowsStore((s) => s.flows);
+  const usedInFlowNames = allFlows
     .filter((f) => f.steps.some((step) => (step.atomIds ?? []).includes(atom.id)))
+    .map((f) => f.name);
+  const notYetInFlowNames = allFlows
+    .filter((f) => f.kind === 'main' && !f.steps.some((step) => (step.atomIds ?? []).includes(atom.id)))
     .map((f) => f.name);
 
   return (
@@ -117,9 +121,14 @@ export function AtomDetailPane() {
             {display.title}
           </h3>
           <p className="text-[11px]" style={{ color: colors.colorBlack4 }}>
-            {usedInFlows.length > 0
-              ? `Used in ${usedInFlows.length} flow${usedInFlows.length === 1 ? '' : 's'}: ${usedInFlows.join(', ')}. Edits apply everywhere.`
+            {usedInFlowNames.length > 0
+              ? `Used in: ${usedInFlowNames.join(', ')}. Edits apply everywhere.`
               : 'Not yet used in any flow.'}
+            {notYetInFlowNames.length > 0 && (
+              <span style={{ color: colors.colorBlack5 }}>
+                {' '}Not in: {notYetInFlowNames.join(', ')} — add manually if needed.
+              </span>
+            )}
           </p>
         </div>
         <button

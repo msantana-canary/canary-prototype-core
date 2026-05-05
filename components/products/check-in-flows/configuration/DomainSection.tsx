@@ -79,8 +79,8 @@ export function DomainSection({ domain, description, defaultExpanded = true, dis
         >
           {description && (
             <p
-              className="text-[12px] mb-3 mt-3"
-              style={{ color: colors.colorBlack4 }}
+              className="text-[13px] mb-4 mt-4 leading-relaxed"
+              style={{ color: colors.colorBlack3 }}
             >
               {description}
             </p>
