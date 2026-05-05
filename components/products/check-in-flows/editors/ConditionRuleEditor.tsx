@@ -373,16 +373,6 @@ function ValueInput({
           options={RATE_CODES.map((r) => ({ value: r.value, label: r.label }))}
         />
       );
-    case 'number':
-      return (
-        <CanaryInput
-          type={InputType.NUMBER}
-          size={InputSize.NORMAL}
-          value={value == null ? '' : String(Number(value))}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
-        />
-      );
     default:
       return (
         <CanaryInput
@@ -421,8 +411,6 @@ function getOperatorsForGateAtom(atom: InputAtom | undefined): ConditionOperator
       return ['equals', 'not-equals', 'in', 'not-in'];
     case 'checkbox-group':
       return ['in', 'not-in'];
-    case 'number':
-      return ['equals', 'not-equals', 'greater-than', 'less-than'];
     case 'text-input':
     case 'text-area':
     case 'email':
@@ -470,8 +458,6 @@ function getDefaultValueForGateAtom(atom: InputAtom | undefined): any {
   switch (atom.fieldType) {
     case 'boolean-radio':
       return 'yes';
-    case 'number':
-      return 0;
     case 'country':
       return 'US';
     case 'dropdown':
@@ -585,17 +571,6 @@ function FormResponseValuePicker({
       >
         no value needed
       </div>
-    );
-  }
-  if (atom.fieldType === 'number') {
-    return (
-      <CanaryInput
-        type={InputType.NUMBER}
-        size={InputSize.NORMAL}
-        value={value == null ? '' : String(Number(value))}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
-      />
     );
   }
   if (options.length > 0) {

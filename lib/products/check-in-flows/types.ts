@@ -233,7 +233,6 @@ export type FieldType =
   | 'text-area'
   | 'email'
   | 'phone'
-  | 'number'
   | 'date'
   | 'country'
   | 'dropdown'

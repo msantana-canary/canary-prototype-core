@@ -164,16 +164,6 @@ function FieldPreview({
           size={InputSize.LARGE}
         />
       );
-    case 'number':
-      return (
-        <CanaryInputUnderline
-          label={labelText}
-          type={InputType.NUMBER}
-          placeholder={placeholder || undefined}
-          helperText={helperProp}
-          size={InputSize.LARGE}
-        />
-      );
     case 'date':
       return (
         <CanaryInputDateUnderline

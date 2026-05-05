@@ -98,10 +98,20 @@ export function OptionsEditor({ variants, onChange }: Props) {
   };
 
   const addVariant = () => {
+    // Seed with a stub condition so the new variant registers as "named"
+    // (the filter that separates default vs named variants checks for
+    // conditions.length > 0). Without this, an empty-conditions variant
+    // collapses back into the default-detection and disappears.
     const next: OptionVariant = {
       id: newVariantId(),
       name: 'New segment',
-      conditions: [],
+      conditions: [{
+        id: `cond-${Date.now()}-stub`,
+        parameter: undefined,
+        operator: undefined,
+        value: undefined,
+        action: 'show',
+      }],
       options: [],
     };
     onChange([...normalized, next]);

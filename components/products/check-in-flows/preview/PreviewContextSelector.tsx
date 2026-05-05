@@ -316,19 +316,7 @@ function ControlForAtom({
       <span className="text-[11px]" style={{ color: colors.colorBlack4 }}>
         {label}:
       </span>
-      {atom.fieldType === 'number' ? (
-        <div style={{ width: 80 }}>
-          <CanaryInput
-            type={InputType.NUMBER}
-            size={InputSize.NORMAL}
-            value={value === undefined || value === null ? '' : String(value)}
-            onChange={(e) => {
-              const raw = e.target.value;
-              onChange(raw === '' ? undefined : Number(raw));
-            }}
-          />
-        </div>
-      ) : options.length > 0 ? (
+      {options.length > 0 ? (
         <div style={{ minWidth: 140 }}>
           <CanarySelect
             size={InputSize.NORMAL}

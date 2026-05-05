@@ -41,7 +41,6 @@ export const FIELD_TYPES: FieldTypeMeta[] = [
   { id: 'text-area', displayName: 'Text Area', description: 'Multi-line text', icon: mdiFormTextarea, category: 'input', supportsOptions: false },
   { id: 'email', displayName: 'Email', description: 'Email with validation', icon: mdiEmailOutline, category: 'input', supportsOptions: false },
   { id: 'phone', displayName: 'Phone', description: 'International phone number', icon: mdiPhoneOutline, category: 'input', supportsOptions: false },
-  { id: 'number', displayName: 'Number', description: 'Numeric input', icon: mdiPound, category: 'input', supportsOptions: false },
   { id: 'date', displayName: 'Date', description: 'Date picker', icon: mdiCalendarOutline, category: 'input', supportsOptions: false },
 
   // Selection

@@ -212,14 +212,6 @@ function FieldRenderer({
       );
     case 'phone':
       return <CanaryInputPhoneUnderline label={labelText} size={InputSize.LARGE} />;
-    case 'number':
-      return (
-        <CanaryInputUnderline
-          label={labelText}
-          type={InputType.NUMBER}
-          size={InputSize.LARGE}
-        />
-      );
     case 'date':
       return <CanaryInputDateUnderline label={labelText} size={InputSize.LARGE} />;
     case 'text-area':
