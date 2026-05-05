@@ -7,7 +7,7 @@
  */
 
 import { create } from 'zustand';
-import { Thread, Message } from './types';
+import { Thread, Message, MessageChannel, ChannelSelectorVariant, EmailComposerVariant, ChannelSelectorPosition } from './types';
 import { mockThreads, mockMessages } from './mock-data';
 
 interface MessagingState {
@@ -23,6 +23,13 @@ interface MessagingState {
   isLinkReservationModalOpen: boolean;
   currentView: 'inbox' | 'archived' | 'blocked';
   searchQuery: string;
+
+  // Channel selector
+  selectedChannel: MessageChannel | 'all';
+  selectedEmailThreadId: string | null;
+  channelSelectorVariant: ChannelSelectorVariant;
+  emailComposerVariant: EmailComposerVariant;
+  channelSelectorPosition: ChannelSelectorPosition;
 
   // Actions
   selectThread: (threadId: string) => void;
@@ -49,6 +56,13 @@ interface MessagingState {
   closeLinkReservationModal: () => void;
   linkReservation: (threadId: string, reservationId: string) => void;
   unlinkReservation: (threadId: string, reservationId: string) => void;
+
+  // Channel selector actions
+  setSelectedChannel: (channel: MessageChannel | 'all') => void;
+  setSelectedEmailThreadId: (emailThreadId: string | null) => void;
+  setChannelSelectorVariant: (variant: ChannelSelectorVariant) => void;
+  setEmailComposerVariant: (variant: EmailComposerVariant) => void;
+  setChannelSelectorPosition: (position: ChannelSelectorPosition) => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set, get) => ({
@@ -64,11 +78,29 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   isLinkReservationModalOpen: false,
   currentView: 'inbox',
   searchQuery: '',
+  selectedChannel: 'SMS' as MessageChannel | 'all',
+  selectedEmailThreadId: null,
+  channelSelectorVariant: 'pills' as ChannelSelectorVariant,
+  emailComposerVariant: 'inline' as EmailComposerVariant,
+  channelSelectorPosition: 'below-header' as ChannelSelectorPosition,
 
-  // Select a thread
+  // Select a thread — auto-open to the notified channel (SMS > WhatsApp > Email)
   selectThread: (threadId: string) => {
-    set({ selectedThreadId: threadId });
-    // Mark as read when selected
+    const thread = get().threads.find((t) => t.id === threadId);
+    const msgs = get().messages[threadId] || [];
+
+    let channel: MessageChannel = 'SMS';
+    if (thread?.isUnread) {
+      const guestMsgs = msgs.filter((m) => m.sender === 'guest');
+      if (guestMsgs.length > 0) {
+        const lastGuestChannel = guestMsgs[guestMsgs.length - 1].channel;
+        const priority: MessageChannel[] = ['SMS', 'WhatsApp', 'Email'];
+        const unreadChannels = new Set(guestMsgs.slice(-5).map((m) => m.channel).filter(Boolean));
+        channel = priority.find((c) => unreadChannels.has(c)) || 'SMS';
+      }
+    }
+
+    set({ selectedThreadId: threadId, selectedChannel: channel, selectedEmailThreadId: null });
     get().markThreadAsRead(threadId);
   },
 
@@ -87,13 +119,15 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
       get().unblockThread(threadId);
     }
 
+    const selectedCh = get().selectedChannel;
+    const channel: MessageChannel = selectedCh === 'all' ? 'SMS' : selectedCh;
     const newMessage: Message = {
       id: `m${Date.now()}`,
       threadId,
       sender,
       content,
       timestamp: new Date(),
-      channel: 'SMS',
+      channel,
       status: 'delivered',
     };
 
@@ -330,5 +364,26 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
           : thread
       ),
     }));
+  },
+
+  // Channel selector
+  setSelectedChannel: (channel: MessageChannel | 'all') => {
+    set({ selectedChannel: channel, selectedEmailThreadId: null });
+  },
+
+  setSelectedEmailThreadId: (emailThreadId: string | null) => {
+    set({ selectedEmailThreadId: emailThreadId });
+  },
+
+  setChannelSelectorVariant: (variant: ChannelSelectorVariant) => {
+    set({ channelSelectorVariant: variant });
+  },
+
+  setEmailComposerVariant: (variant: EmailComposerVariant) => {
+    set({ emailComposerVariant: variant });
+  },
+
+  setChannelSelectorPosition: (position: ChannelSelectorPosition) => {
+    set({ channelSelectorPosition: position });
   },
 }));

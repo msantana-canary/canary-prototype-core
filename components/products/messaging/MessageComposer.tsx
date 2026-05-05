@@ -10,7 +10,8 @@
 import React, { useState, KeyboardEvent } from 'react';
 import { CanarySwitch } from '@canary-ui/components';
 import Icon from '@mdi/react';
-import { mdiAttachment, mdiTranslate, mdiRoomServiceOutline, mdiFormatListBulleted, mdiUnfoldMoreHorizontal } from '@mdi/js';
+import { mdiAttachment, mdiTranslate, mdiRoomServiceOutline, mdiFormatListBulleted, mdiUnfoldMoreHorizontal, mdiFormatBold, mdiFormatItalic, mdiFormatUnderline, mdiLinkVariant, mdiEmailOutline } from '@mdi/js';
+import { MessageChannel, EmailComposerVariant } from '@/lib/products/messaging/types';
 
 interface MessageComposerProps {
   onSend: (content: string) => void;
@@ -19,6 +20,8 @@ interface MessageComposerProps {
   aiEnabled?: boolean;
   onAiToggle?: (enabled: boolean) => void;
   onFocus?: () => void;
+  channel?: MessageChannel | 'all';
+  emailComposerVariant?: EmailComposerVariant;
 }
 
 export function MessageComposer({
@@ -28,9 +31,13 @@ export function MessageComposer({
   aiEnabled = false,
   onAiToggle,
   onFocus,
+  channel = 'SMS',
+  emailComposerVariant = 'inline',
 }: MessageComposerProps) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+
+  const isEmail = channel === 'Email';
 
   // Color tokens
   const colorBlack1 = '#000000';
@@ -57,14 +64,34 @@ export function MessageComposer({
     }
   };
 
+  const channelLabel = channel === 'all' ? 'SMS' : channel;
+  const dynamicPlaceholder = isEmail ? 'Compose email...' : `Type ${channelLabel} message...`;
+  const isFullEmailMode = isEmail && emailComposerVariant === 'full';
+
   return (
     <div className="p-6">
       <div
         className="rounded overflow-hidden transition-all"
         style={{
           border: `1px solid ${isFocused ? colorBlueDark1 : colorBlack3}`,
+          backgroundColor: isFullEmailMode ? '#fafbfd' : colorWhite,
         }}
       >
+        {/* Rich text toolbar for email — full variant */}
+        {isFullEmailMode && (
+          <div className="px-2 pt-2 flex items-center gap-1">
+            {[mdiFormatBold, mdiFormatItalic, mdiFormatUnderline, mdiLinkVariant].map((icon, i) => (
+              <button key={i} className="p-1 hover:bg-[#eaeef9] rounded transition-colors">
+                <Icon path={icon} size={0.58} color="#999999" />
+              </button>
+            ))}
+            <div className="w-[1px] h-4 mx-1" style={{ backgroundColor: colorBlack6 }} />
+            <button className="p-1 hover:bg-[#eaeef9] rounded transition-colors">
+              <Icon path={mdiFormatListBulleted} size={0.58} color="#999999" />
+            </button>
+          </div>
+        )}
+
         {/* Input Area */}
         <div className="p-2">
           <textarea
@@ -76,10 +103,10 @@ export function MessageComposer({
               onFocus?.();
             }}
             onBlur={() => setIsFocused(false)}
-            placeholder={placeholder}
+            placeholder={dynamicPlaceholder}
             disabled={disabled}
-            maxLength={1600}
-            rows={1}
+            maxLength={isEmail ? undefined : 1600}
+            rows={isFullEmailMode ? 2 : 1}
             className="w-full resize-none border-0 outline-none font-['Roboto',sans-serif] text-[14px] leading-[22px] placeholder:text-[#666666]"
             style={{
               color: colorBlack1,
@@ -161,7 +188,7 @@ export function MessageComposer({
                   cursor: disabled || !message.trim() ? 'not-allowed' : 'pointer',
                 }}
               >
-                Send via SMS
+                Send via {channelLabel}
               </button>
 
               {/* Dropdown Button */}

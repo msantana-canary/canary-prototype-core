@@ -7,12 +7,14 @@
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Avatar } from './Avatar';
 import { MessageFeed } from './MessageFeed';
 import { MessageComposer } from './MessageComposer';
 import { GuestInfoSidebar } from './GuestInfoSidebar';
-import { Thread, Message, LinkedReservation } from '@/lib/products/messaging/types';
+import { ChannelSelector } from './ChannelSelector';
+import { EmailThreadSelector } from './EmailThreadSelector';
+import { Thread, Message, LinkedReservation, MessageChannel, ChannelSelectorVariant, EmailComposerVariant, EmailThread, ChannelSelectorPosition } from '@/lib/products/messaging/types';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
 import { CanaryButton, ButtonType, ButtonSize, CanaryTag, TagSize, TagVariant } from '@canary-ui/components';
@@ -38,6 +40,14 @@ interface ThreadViewProps {
   onOpenLinkModal: () => void;
   onUnlinkReservation: (reservationId: string) => void;
   typingThreadId: string | null;
+  selectedChannel: MessageChannel | 'all';
+  onChannelChange: (channel: MessageChannel | 'all') => void;
+  channelSelectorVariant: ChannelSelectorVariant;
+  emailComposerVariant: EmailComposerVariant;
+  emailThreads: EmailThread[];
+  selectedEmailThreadId: string | null;
+  onEmailThreadChange: (id: string | null) => void;
+  channelSelectorPosition: ChannelSelectorPosition;
 }
 
 export function ThreadView({
@@ -59,12 +69,55 @@ export function ThreadView({
   onOpenLinkModal,
   onUnlinkReservation,
   typingThreadId,
+  selectedChannel,
+  onChannelChange,
+  channelSelectorVariant,
+  emailComposerVariant,
+  emailThreads,
+  selectedEmailThreadId,
+  onEmailThreadChange,
+  channelSelectorPosition,
 }: ThreadViewProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const isGuestTyping = typingThreadId === thread.id;
+
+  const availableChannels: MessageChannel[] = ['SMS', 'WhatsApp', 'Email', 'Booking.com', 'Expedia'];
+
+  const unreadChannels = useMemo(() => {
+    const channelsWithGuestMsgs: MessageChannel[] = [];
+    for (const ch of availableChannels) {
+      const chMsgs = messages.filter((m) => m.channel === ch);
+      const lastGuestMsg = [...chMsgs].reverse().find((m) => m.sender === 'guest');
+      const lastStaffMsg = [...chMsgs].reverse().find((m) => m.sender === 'staff' || m.sender === 'ai');
+      if (lastGuestMsg && (!lastStaffMsg || lastGuestMsg.timestamp > lastStaffMsg.timestamp)) {
+        channelsWithGuestMsgs.push(ch);
+      }
+    }
+    return channelsWithGuestMsgs;
+  }, [messages]);
+
+  const filteredMessages = useMemo(() => {
+    if (selectedChannel === 'all') return messages;
+    let filtered = messages.filter((m) => m.channel === selectedChannel);
+    if (selectedChannel === 'Email' && emailThreads.length > 1 && selectedEmailThreadId) {
+      const emailThread = emailThreads.find((et) => et.id === selectedEmailThreadId);
+      if (emailThread) {
+        const emailMsgs = messages.filter((m) => m.channel === 'Email');
+        const threadIndex = emailThreads
+          .filter((et) => et.parentThreadId === thread.id)
+          .findIndex((et) => et.id === selectedEmailThreadId);
+        if (threadIndex === 0) {
+          filtered = emailMsgs.slice(0, 3);
+        } else if (threadIndex === 1) {
+          filtered = emailMsgs.slice(3);
+        }
+      }
+    }
+    return filtered;
+  }, [messages, selectedChannel, selectedEmailThreadId, emailThreads, thread.id]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -191,7 +244,7 @@ export function ThreadView({
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* Actions */}
           <div className="flex items-center gap-2">
             {/* Archive Button (only for inbox threads) */}
             {thread.status === 'inbox' && (
@@ -281,8 +334,28 @@ export function ThreadView({
         </div>
       </div>
 
+      {/* Channel Selector — below header (Version A) */}
+      {channelSelectorPosition === 'below-header' && (
+        <div className="border-b border-gray-200 bg-gray-50 px-6 py-2 flex items-center gap-3">
+          <ChannelSelector
+            variant={channelSelectorVariant}
+            selectedChannel={selectedChannel}
+            availableChannels={availableChannels}
+            unreadChannels={unreadChannels}
+            onChannelChange={onChannelChange}
+          />
+          {selectedChannel === 'Email' && emailThreads.length > 1 && (
+            <EmailThreadSelector
+              emailThreads={emailThreads}
+              selectedEmailThreadId={selectedEmailThreadId}
+              onSelect={onEmailThreadChange}
+            />
+          )}
+        </div>
+      )}
+
       {/* Messages */}
-      <MessageFeed messages={messages} />
+      <MessageFeed messages={filteredMessages} />
 
       {/* Typing Indicator */}
       {isGuestTyping && (
@@ -293,13 +366,34 @@ export function ThreadView({
         </div>
       )}
 
+      {/* Channel Selector — above composer (Version B) */}
+      {channelSelectorPosition === 'above-composer' && (
+        <div className="px-6 pt-2 pb-0 flex items-center gap-3">
+          <ChannelSelector
+            variant={channelSelectorVariant}
+            selectedChannel={selectedChannel}
+            availableChannels={availableChannels}
+            unreadChannels={unreadChannels}
+            onChannelChange={onChannelChange}
+          />
+          {selectedChannel === 'Email' && emailThreads.length > 1 && (
+            <EmailThreadSelector
+              emailThreads={emailThreads}
+              selectedEmailThreadId={selectedEmailThreadId}
+              onSelect={onEmailThreadChange}
+            />
+          )}
+        </div>
+      )}
+
       {/* Composer */}
       <div className="-mt-5">
         <MessageComposer
           onSend={onSendMessage}
-          placeholder="Type SMS message..."
           aiEnabled={aiEnabled}
           onAiToggle={onAiToggle}
+          channel={selectedChannel}
+          emailComposerVariant={emailComposerVariant}
         />
       </div>
 

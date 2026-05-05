@@ -5,7 +5,17 @@
  */
 
 export type MessageSender = 'guest' | 'staff' | 'ai';
-export type MessageChannel = 'SMS' | 'WhatsApp' | 'Email' | 'Web';
+export type MessageChannel = 'SMS' | 'WhatsApp' | 'Email' | 'Booking.com' | 'Expedia' | 'Web';
+
+export interface EmailThread {
+  id: string;
+  subject: string;
+  parentThreadId: string;
+}
+
+export type ChannelSelectorVariant = 'pills' | 'dropdown' | 'icon-tabs';
+export type EmailComposerVariant = 'inline' | 'full';
+export type ChannelSelectorPosition = 'below-header' | 'above-composer';
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'failed';
 export type ThreadStatus = 'inbox' | 'archived' | 'blocked';
 
