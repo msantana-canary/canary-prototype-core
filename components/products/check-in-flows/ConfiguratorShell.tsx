@@ -54,9 +54,11 @@ const SURFACE_ICON: Record<string, string> = {
   'kiosk': mdiMonitor,
 };
 
+// Flow-first pivot: Flows is the primary tab; Library demoted from
+// "Configuration" to a secondary atom registry view.
 const SHELL_TABS = [
-  { id: 'configuration', label: 'Configuration', content: <></> },
   { id: 'flows', label: 'Flows', content: <></> },
+  { id: 'configuration', label: 'Library', content: <></> },
 ];
 
 // ── Shell ───────────────────────────────────────────────
@@ -77,7 +79,7 @@ export function ConfiguratorShell() {
           style={{ padding: '16px 24px 16px 32px', borderBottom: `1px solid ${colors.colorBlack7}` }}
         >
           <h1 style={{ fontSize: 18, fontWeight: 500, color: colors.colorBlack1, margin: 0 }}>
-            Check-In Flows
+            Flow Builder
           </h1>
           <a
             href="/check-in-configurator-spec.md"

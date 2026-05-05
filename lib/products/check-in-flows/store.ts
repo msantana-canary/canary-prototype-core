@@ -173,7 +173,8 @@ export interface NavState {
 }
 
 const DEFAULT_NAV: NavState = {
-  tab: 'configuration',
+  // Flow-first pivot: Flows is the primary CS surface; Library (atoms) is secondary.
+  tab: 'flows',
   flowId: null,
   stepId: null,
   isEditingStep: false,

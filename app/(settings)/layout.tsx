@@ -37,10 +37,10 @@ const withKB = addProduct(
   createSidebarTab('knowledge-base', 'Knowledge Base', <Icon path={mdiCreation} size={1} />),
   { sectionId: 'product-settings-section', insertAfter: 'checkout' }
 );
-// Add "Check-In Flows" to Product Settings
+// Flow Builder — anticipates checkout. Currently only check-in flows ship.
 const withCheckInFlows = addProduct(
   withKB,
-  createSidebarTab('check-in-flows', 'Check-In Flows', <Icon path={mdiLoginVariant} size={1} />),
+  createSidebarTab('check-in-flows', 'Flow Builder', <Icon path={mdiLoginVariant} size={1} />),
   { sectionId: 'product-settings-section', insertAfter: 'knowledge-base' }
 );
 const settingsSections = updateProduct(
