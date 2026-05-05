@@ -114,65 +114,6 @@ export function AtomRow({ atom, onUpdate, onRemove }: Props) {
             )}
           </div>
 
-          {/* Required (input atoms only) */}
-          {isInput && (
-            <div
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdate({ required: !(atom as InputAtom).required } as Partial<Atom>);
-              }}
-              onMouseDown={(e) => e.preventDefault()}
-              className="flex items-center gap-1.5 shrink-0 cursor-pointer select-none"
-            >
-              <span style={{ pointerEvents: 'none' }}>
-                <CanarySwitch
-                  checked={(atom as InputAtom).required}
-                  onChange={() => {}}
-                />
-              </span>
-              <span
-                className="text-[11px]"
-                style={{ color: colors.colorBlack4 }}
-              >
-                Req
-              </span>
-            </div>
-          )}
-
-          {/* Device pills */}
-          <div onClick={stop} className="flex items-center gap-1 shrink-0">
-            {(['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'] as Surface[]).map((s) => {
-              const on = atom.deviceVisibility[s];
-              const surfaceMeta = SURFACE_META[s];
-              return (
-                <button
-                  key={s}
-                  onClick={() =>
-                    onUpdate({
-                      deviceVisibility: {
-                        ...atom.deviceVisibility,
-                        [s]: !on,
-                      },
-                    } as Partial<Atom>)
-                  }
-                  className="inline-flex items-center justify-center w-7 h-7 rounded transition-colors"
-                  style={{
-                    backgroundColor: on ? colors.colorBlueDark5 : 'transparent',
-                    color: on ? colors.colorBlueDark1 : colors.colorBlack5,
-                    border: `1px solid ${on ? colors.colorBlueDark4 : colors.colorBlack7}`,
-                  }}
-                  title={`${surfaceMeta.label}: ${on ? 'visible' : 'hidden'}`}
-                >
-                  <Icon
-                    path={surfaceMeta.icon}
-                    size={0.55}
-                    color={on ? colors.colorBlueDark1 : colors.colorBlack5}
-                  />
-                </button>
-              );
-            })}
-          </div>
-
           {/* Conditions badge — read-only on row, edit happens in right pane */}
           <div className="shrink-0 min-w-[60px] text-right">
             {conditionCount > 0 ? (

@@ -73,8 +73,26 @@ interface Props {
 export function SchemaFormEditor({ step, flow, isReadOnly }: Props) {
   const allAtoms = useCheckInFlowsStore((s) => s.atoms);
   const addAtomToStep = useCheckInFlowsStore((s) => s.addAtomToStep);
+  const addAtom = useCheckInFlowsStore((s) => s.addAtom);
+  const selectAtom = useCheckInFlowsStore((s) => s.selectAtom);
   const removeAtomFromStep = useCheckInFlowsStore((s) => s.removeAtomFromStep);
   const reorderStepAtoms = useCheckInFlowsStore((s) => s.reorderStepAtoms);
+
+  const handleCreateNewAtom = () => {
+    const newId = `atom-new-${Date.now()}`;
+    addAtom({
+      id: newId,
+      kind: 'input',
+      domain: 'guest-info',
+      fieldType: 'text-input',
+      label: { en: 'New input' },
+      required: true,
+      deviceVisibility: { 'mobile-web': true, 'mobile-app': true, 'tablet-reg': false, 'kiosk': false },
+    });
+    addAtomToStep(flow.id, step.id, newId);
+    setIsAddMenuOpen(false);
+    selectAtom(newId);
+  };
 
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
@@ -125,6 +143,7 @@ export function SchemaFormEditor({ step, flow, isReadOnly }: Props) {
                 addAtomToStep(flow.id, step.id, id);
                 setIsAddMenuOpen(false);
               }}
+              onCreateNew={handleCreateNewAtom}
               isOpen={isAddMenuOpen}
               setOpen={setIsAddMenuOpen}
             />
@@ -302,11 +321,13 @@ function describeAtom(atom: Atom): {
 function AddAtomToStepButton({
   available,
   onPick,
+  onCreateNew,
   isOpen,
   setOpen,
 }: {
   available: Atom[];
   onPick: (atomId: string) => void;
+  onCreateNew: () => void;
   isOpen: boolean;
   setOpen: (v: boolean) => void;
 }) {
@@ -328,9 +349,29 @@ function AddAtomToStepButton({
             className="absolute right-0 top-full mt-2 w-[380px] bg-white rounded-lg shadow-lg z-40 p-2 max-h-[480px] overflow-auto"
             style={{ border: `1px solid ${colors.colorBlack6}` }}
           >
+            <button
+              onClick={onCreateNew}
+              className="w-full text-left px-2 py-2 rounded hover:bg-[#F4F4F5] flex items-center gap-2.5 mb-1"
+              style={{ borderBottom: `1px solid ${colors.colorBlack8}` }}
+            >
+              <div
+                className="w-7 h-7 rounded flex items-center justify-center shrink-0"
+                style={{ backgroundColor: colors.colorBlueDark5 }}
+              >
+                <Icon path={mdiPlus} size={0.65} color={colors.colorBlueDark1} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[13px] font-semibold" style={{ color: colors.colorBlueDark1 }}>
+                  Create new atom
+                </div>
+                <div className="text-[11px]" style={{ color: colors.colorBlack5 }}>
+                  Adds a fresh input to Library + this step
+                </div>
+              </div>
+            </button>
             {available.length === 0 ? (
               <div className="p-4 text-center text-[13px]" style={{ color: colors.colorBlack5 }}>
-                All atoms are already in this step. Define more atoms in the Configuration tab.
+                All existing atoms are already in this step.
               </div>
             ) : (
               <div className="space-y-0.5">

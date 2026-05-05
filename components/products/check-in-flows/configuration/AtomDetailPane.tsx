@@ -148,17 +148,9 @@ export function AtomDetailPane() {
           )}
         </Section>
 
-        {/* Surface coverage — every atom kind has device visibility */}
-        <Section title="Surface coverage">
-          <p
-            className="text-[11px] mb-2"
-            style={{ color: colors.colorBlack4 }}
-          >
-            Which surfaces collect this. Toggle off to hide on a surface
-            without affecting the others.
-          </p>
-          <DeviceVisibilityEditor atom={atom} onUpdate={onUpdate} />
-        </Section>
+        {/* Surface coverage removed in flow-first pivot — which surfaces
+            collect an atom is now controlled by which flows include it
+            via atomIds, not a per-atom 4-toggle editor. */}
 
         {/* Options (selection-type InputAtoms — variant model) */}
         {atom.kind === 'input' &&
@@ -421,12 +413,8 @@ function InputAtomDetails({
         description="Guest must answer to continue."
       />
 
-      <ToggleRow
-        checked={atom.autoSkipIfFilled ?? false}
-        onChange={(v) => onUpdate({ autoSkipIfFilled: v } as Partial<Atom>)}
-        label="Auto-skip if already filled"
-        description="Skips on subsequent flows when a prior surface captured the data."
-      />
+      {/* Auto-skip-if-filled removed in flow-first pivot — now default-on
+          runtime behavior (autofill from PMS / prior flow). No CS toggle. */}
     </>
   );
 }
