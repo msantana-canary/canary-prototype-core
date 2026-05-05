@@ -120,12 +120,13 @@ function PageIntro() {
         className="text-[16px] font-bold mb-1"
         style={{ color: colors.colorBlack1 }}
       >
-        Configuration
+        Library
       </h2>
       <p className="text-[13px]" style={{ color: colors.colorBlack4 }}>
-        Define what data check-in collects, how each datapoint routes to PMS,
-        and per-surface visibility. Flows compose these atoms into steps —
-        edit the Flows tab to arrange how each surface presents this data.
+        Catalog of components available across flows. Most authoring happens
+        in the Flows tab — edits there apply to the underlying atom here.
+        This view is for browsing, auditing, or one-off edits to atoms not
+        currently in any flow.
       </p>
     </div>
   );

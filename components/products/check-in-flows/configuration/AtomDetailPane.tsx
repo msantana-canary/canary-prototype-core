@@ -90,6 +90,12 @@ export function AtomDetailPane() {
   const onConditionsChange = (next: Condition[]) =>
     onUpdate({ conditions: next.length > 0 ? next : undefined } as Partial<Atom>);
 
+  // Flows that reference this atom — surface to CS so they know edits
+  // propagate.
+  const usedInFlows = useCheckInFlowsStore((s) => s.flows)
+    .filter((f) => f.steps.some((step) => (step.atomIds ?? []).includes(atom.id)))
+    .map((f) => f.name);
+
   return (
     <div className="flex flex-col h-full">
       {/* Header — fixed at top of pane via flex layout (no sticky) */}
@@ -111,7 +117,9 @@ export function AtomDetailPane() {
             {display.title}
           </h3>
           <p className="text-[11px]" style={{ color: colors.colorBlack4 }}>
-            Editing component — changes propagate live to all flows that reference it.
+            {usedInFlows.length > 0
+              ? `Used in ${usedInFlows.length} flow${usedInFlows.length === 1 ? '' : 's'}: ${usedInFlows.join(', ')}. Edits apply everywhere.`
+              : 'Not yet used in any flow.'}
           </p>
         </div>
         <button
