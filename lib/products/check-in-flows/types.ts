@@ -454,7 +454,6 @@ export type AtomDomain =
   | 'id-documents'       // ID consent, ID type, ID photo capture, OCR field config
   | 'payment'            // CC config, deposits, surcharge (CS-tunable subset only)
   | 'additional-guests'  // multi-guest fields
-  | 'auto-check-in'      // auto-checkin config
   | 'copy-blocks';       // legal/policy text (hotel policies, marketing consent, etc.)
 
 export const ATOM_DOMAIN_LABELS: Record<AtomDomain, string> = {
@@ -462,7 +461,6 @@ export const ATOM_DOMAIN_LABELS: Record<AtomDomain, string> = {
   'id-documents': 'ID Documents',
   'payment': 'Payment',
   'additional-guests': 'Additional Guests',
-  'auto-check-in': 'Auto Check-In',
   'copy-blocks': 'Copy Blocks',
 };
 

@@ -30,9 +30,11 @@ interface Props {
   domain: AtomDomain;
   description?: string;
   defaultExpanded?: boolean;
+  /** Hide the "+ Add component" affordance for fixed-set domains like Payment. */
+  disableAdd?: boolean;
 }
 
-export function DomainSection({ domain, description, defaultExpanded = true }: Props) {
+export function DomainSection({ domain, description, defaultExpanded = true, disableAdd = false }: Props) {
   const allAtoms = useCheckInFlowsStore((s) => s.atoms);
   const updateAtom = useCheckInFlowsStore((s) => s.updateAtom);
   const removeAtom = useCheckInFlowsStore((s) => s.removeAtom);
@@ -151,9 +153,11 @@ export function DomainSection({ domain, description, defaultExpanded = true }: P
             </div>
           )}
 
-          <div className="mt-3">
-            <AddAtomMenu domain={domain} />
-          </div>
+          {!disableAdd && (
+            <div className="mt-3">
+              <AddAtomMenu domain={domain} />
+            </div>
+          )}
         </div>
       )}
     </CanaryCard>

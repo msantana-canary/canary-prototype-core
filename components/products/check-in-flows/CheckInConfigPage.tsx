@@ -80,16 +80,12 @@ export function CheckInConfigPage() {
           />
           <DomainSection
             domain="payment"
-            description="Credit card, deposit, surcharge configuration (CS-tunable subset only)."
+            description="Card information collection, deposit collection, authorization. Payment is a fixed set — no custom additions."
+            disableAdd
           />
           <DomainSection
             domain="additional-guests"
             description="Multi-guest check-in field requirements."
-          />
-          <DomainSection
-            domain="auto-check-in"
-            description="Auto check-in enablement and pre-conditions."
-            defaultExpanded={false}
           />
           <DomainSection
             domain="copy-blocks"
