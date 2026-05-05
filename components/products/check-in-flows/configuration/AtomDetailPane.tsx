@@ -86,9 +86,19 @@ export function AtomDetailPane() {
   }
 
   const display = describeAtom(atom);
-  const onUpdate = (updates: Partial<Atom>) => updateAtom(atom.id, updates);
+  const [savedToast, setSavedToast] = React.useState<number | null>(null);
+  const onUpdate = (updates: Partial<Atom>) => {
+    updateAtom(atom.id, updates);
+    setSavedToast(Date.now());
+  };
   const onConditionsChange = (next: Condition[]) =>
     onUpdate({ conditions: next.length > 0 ? next : undefined } as Partial<Atom>);
+
+  React.useEffect(() => {
+    if (savedToast === null) return;
+    const t = setTimeout(() => setSavedToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [savedToast]);
 
   // Flows that reference this atom — surface to CS so they know edits
   // propagate everywhere it's used.
@@ -146,6 +156,41 @@ export function AtomDetailPane() {
           <Icon path={mdiClose} size={0.65} />
         </button>
       </div>
+
+      {/* Saved toast — appears for ~3.5s after any edit. Lists which
+          flows the change just propagated to + which surfaces still
+          need the atom added manually. */}
+      {savedToast !== null && (
+        <div
+          className="shrink-0 px-4 py-2.5 flex items-start gap-2.5 animate-fade-in"
+          style={{
+            borderBottom: `1px solid ${colors.colorBlack7}`,
+            backgroundColor: '#E7F5EC',
+          }}
+        >
+          <span style={{ color: '#1B5E20', fontSize: 13, lineHeight: 1, marginTop: 1 }}>✓</span>
+          <div className="flex-1 min-w-0">
+            <div className="text-[12px] font-semibold" style={{ color: '#1B5E20' }}>
+              Saved.{' '}
+              {usedInFlowNames.length > 0
+                ? `Applied to: ${usedInFlowNames.join(', ')}.`
+                : 'Atom updated in Library.'}
+            </div>
+            {notYetInFlowNames.length > 0 && (
+              <div className="text-[11px] mt-0.5" style={{ color: colors.colorBlack4 }}>
+                Add manually to: {notYetInFlowNames.join(', ')} if needed.
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => setSavedToast(null)}
+            className="text-[11px] shrink-0"
+            style={{ color: colors.colorBlack5 }}
+          >
+            <Icon path={mdiClose} size={0.5} />
+          </button>
+        </div>
+      )}
 
       {/* Body — owns the scroll within the bounded pane */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
