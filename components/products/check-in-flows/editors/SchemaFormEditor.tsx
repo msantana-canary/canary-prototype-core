@@ -225,7 +225,11 @@ function SortableAtomSlot({
           <Icon path={mdiDrag} size={0.75} />
         </button>
 
-        <div className="flex-1 flex items-center gap-3 py-2.5 pr-3 min-w-0">
+        <div
+          className="flex-1 flex items-center gap-3 py-2.5 pr-3 min-w-0 cursor-pointer"
+          onClick={() => useCheckInFlowsStore.getState().selectAtom(atom.id)}
+          title="Click to edit this atom"
+        >
           <div
             className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
             style={{ backgroundColor: '#F4F4F5' }}

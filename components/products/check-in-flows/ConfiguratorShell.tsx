@@ -40,6 +40,7 @@ import type {
 } from '@/lib/products/check-in-flows/types';
 import { getStepTemplateMeta } from '@/lib/products/check-in-flows/step-templates';
 import { CheckInConfigPage } from './CheckInConfigPage';
+import { AtomDetailModal } from './configuration/AtomDetailModal';
 import { PhoneFrame } from '@/components/core/PhoneFrame';
 import { StepRenderer } from './preview/StepRenderer';
 import { PreviewContextSelector } from './preview/PreviewContextSelector';
@@ -148,6 +149,11 @@ export function ConfiguratorShell() {
           <FlowsContent />
         )}
       </div>
+
+      {/* Flow-first atom editor: clicking an atom slot in a flow step opens
+          this side panel. Library tab uses its own inline right-pane editor
+          inside CheckInConfigPage, so we only mount the modal on Flows. */}
+      {nav.tab === 'flows' && <AtomDetailModal />}
     </div>
   );
 }
