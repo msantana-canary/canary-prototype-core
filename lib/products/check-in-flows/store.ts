@@ -203,6 +203,7 @@ interface CheckInFlowsState {
   flows: FlowDefinition[];
   atoms: Atom[];                                            // Phase 1: Global Config atoms
   selectedAtomId: string | null;                            // Phase 6: split-pane selection
+  recentlyCreatedAtomId: string | null;                     // Used to show "newly created" banner in editor
   nav: NavState;
   previewContext: PreviewContext;
   previewSurface: 'mobile-web' | 'mobile-app';
@@ -244,6 +245,10 @@ interface CheckInFlowsState {
   selectAtom: (atomId: string) => void;
   deselectAtom: () => void;
 
+  // Newly-created banner state
+  markAtomAsNewlyCreated: (atomId: string) => void;
+  clearNewlyCreatedAtom: () => void;
+
   // Preview
   setPreviewContext: (updates: Partial<PreviewContext>) => void;
   setPreviewSurface: (surface: 'mobile-web' | 'mobile-app') => void;
@@ -260,6 +265,7 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
   flows: buildFlowsFromConfig(DEFAULT_CONFIG),
   atoms: DEFAULT_ATOMS,
   selectedAtomId: null,
+  recentlyCreatedAtomId: null,
   nav: DEFAULT_NAV,
   previewContext: DEFAULT_PREVIEW,
   previewSurface: 'mobile-web' as const,
@@ -276,7 +282,11 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
 
   // Atom selection (Phase 6)
   selectAtom: (atomId) => set({ selectedAtomId: atomId }),
-  deselectAtom: () => set({ selectedAtomId: null }),
+  deselectAtom: () => set({ selectedAtomId: null, recentlyCreatedAtomId: null }),
+
+  // Newly-created banner state
+  markAtomAsNewlyCreated: (atomId) => set({ recentlyCreatedAtomId: atomId }),
+  clearNewlyCreatedAtom: () => set({ recentlyCreatedAtomId: null }),
 
   // ── Config ────────────────────────────────────────────
   updateConfig: (key, value) => {

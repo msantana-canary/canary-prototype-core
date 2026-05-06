@@ -77,6 +77,7 @@ export function SchemaFormEditor({ step, flow, isReadOnly }: Props) {
   const selectAtom = useCheckInFlowsStore((s) => s.selectAtom);
   const removeAtomFromStep = useCheckInFlowsStore((s) => s.removeAtomFromStep);
   const reorderStepAtoms = useCheckInFlowsStore((s) => s.reorderStepAtoms);
+  const markAtomAsNewlyCreated = useCheckInFlowsStore((s) => s.markAtomAsNewlyCreated);
 
   const handleCreateNewAtom = () => {
     const newId = `atom-new-${Date.now()}`;
@@ -92,6 +93,8 @@ export function SchemaFormEditor({ step, flow, isReadOnly }: Props) {
     addAtomToStep(flow.id, step.id, newId);
     setIsAddMenuOpen(false);
     selectAtom(newId);
+    // Mark so the editor shows a prominent "this is in the Library now" banner
+    markAtomAsNewlyCreated(newId);
   };
 
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);

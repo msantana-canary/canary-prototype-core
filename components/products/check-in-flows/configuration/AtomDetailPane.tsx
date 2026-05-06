@@ -17,6 +17,7 @@ import {
   mdiApplicationOutline,
   mdiTabletCellphone,
   mdiMonitor,
+  mdiInformationOutline,
 } from '@mdi/js';
 import {
   CanaryInput,
@@ -68,6 +69,8 @@ export function AtomDetailPane() {
   const updateAtom = useCheckInFlowsStore((s) => s.updateAtom);
   const deselectAtom = useCheckInFlowsStore((s) => s.deselectAtom);
   const allFlows = useCheckInFlowsStore((s) => s.flows);
+  const recentlyCreatedAtomId = useCheckInFlowsStore((s) => s.recentlyCreatedAtomId);
+  const clearNewlyCreatedAtom = useCheckInFlowsStore((s) => s.clearNewlyCreatedAtom);
   const [savedToast, setSavedToast] = React.useState<number | null>(null);
 
   React.useEffect(() => {
@@ -156,6 +159,69 @@ export function AtomDetailPane() {
           <Icon path={mdiClose} size={0.65} />
         </button>
       </div>
+
+      {/* Newly-created banner — shown when a fresh component was just
+          added (e.g., via "Create new component" in the flow editor).
+          The component is now in the Library and applies anywhere it's
+          referenced, but other flows won't pick it up automatically.
+          This banner is loud on purpose — Vibhor flagged the previous
+          subtle subtitle as easy to miss. */}
+      {recentlyCreatedAtomId === atom.id && (
+        <div
+          className="shrink-0 px-4 py-3 flex items-start gap-3"
+          style={{
+            borderBottom: `1px solid ${colors.colorBlueDark4}`,
+            backgroundColor: colors.colorBlueDark5,
+          }}
+        >
+          <Icon
+            path={mdiInformationOutline}
+            size={0.8}
+            color={colors.colorBlueDark1}
+          />
+          <div className="flex-1 min-w-0">
+            <div
+              className="text-[13px] font-bold mb-1"
+              style={{ color: colors.colorBlueDark1 }}
+            >
+              New component added to your Library
+            </div>
+            <div
+              className="text-[12px] leading-relaxed"
+              style={{ color: colors.colorBlack2 }}
+            >
+              It&rsquo;s available across every flow now, but only added to
+              the step you created it from.
+              {notYetInFlowNames.length > 0 && (
+                <>
+                  {' '}To use it on{' '}
+                  <span className="font-semibold">
+                    {notYetInFlowNames.join(', ')}
+                  </span>
+                  , open that flow and add it to a step manually.
+                </>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={clearNewlyCreatedAtom}
+            className="shrink-0 text-[11px] font-semibold px-2 py-1 rounded transition-colors"
+            style={{
+              color: colors.colorBlueDark1,
+              border: `1px solid ${colors.colorBlueDark4}`,
+              backgroundColor: '#FFF',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = colors.colorBlueDark5;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#FFF';
+            }}
+          >
+            Got it
+          </button>
+        </div>
+      )}
 
       {/* Saved toast — appears for ~3.5s after any edit. Lists which
           flows the change just propagated to + which surfaces still
