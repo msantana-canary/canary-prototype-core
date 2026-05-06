@@ -37,6 +37,11 @@ export interface StepTemplateMeta {
   supportedSurfaces: Surface[];
   /** If set, the property must have this feature flag enabled. */
   featureFlag?: keyof PropertyFeatureFlags;
+  /** Locked to a fixed position. 'first' = always step 1, 'last' = always
+   *  the final step. Other steps can't be reordered around it. */
+  lockedPosition?: 'first' | 'last';
+  /** When true, CS can't delete this step from a flow. */
+  nonDeletable?: boolean;
 }
 
 export const STEP_TEMPLATES: StepTemplateMeta[] = [
@@ -48,6 +53,8 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     icon: mdiFileDocumentOutline,
     category: 'identity',
     supportedSurfaces: ['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'],
+    lockedPosition: 'first',
+    nonDeletable: true,
   },
   {
     id: 'ocr',
@@ -81,12 +88,13 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
   },
   {
     id: 'credit-card',
-    displayName: 'Credit Card',
-    description: 'Collect payment card info',
+    displayName: 'Payment',
+    description: 'Collect payment card info, deposit hold',
     kind: 'preset',
     icon: mdiCreditCardOutline,
     category: 'payment',
     supportedSurfaces: ['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'],
+    nonDeletable: true,
   },
   {
     id: 'deposit-collection',
@@ -126,6 +134,8 @@ export const STEP_TEMPLATES: StepTemplateMeta[] = [
     icon: mdiCheckCircleOutline,
     category: 'other',
     supportedSurfaces: ['mobile-web', 'mobile-app', 'tablet-reg', 'kiosk'],
+    lockedPosition: 'last',
+    nonDeletable: true,
   },
   {
     id: 'custom',

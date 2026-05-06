@@ -17,7 +17,7 @@
 
 import React from 'react';
 import Icon from '@mdi/react';
-import { mdiPlus, mdiDelete } from '@mdi/js';
+import { mdiPlus, mdiDelete, mdiInformationOutline } from '@mdi/js';
 import {
   CanarySelect,
   CanaryInput,
@@ -134,6 +134,27 @@ export function ConditionRuleEditor({
                 onRemove={() => removeCondition(cond.id)}
               />
             ))}
+          </div>
+
+          {/* Safety-net copy: explains the runtime fallback when gating
+              data is unavailable. Per Vibhor's note that conditional
+              flows always need a default behavior — and we already have
+              one (atom default-on visibility, default option variant). */}
+          <div
+            className="mt-3 pt-2 text-[11px] flex items-start gap-1.5"
+            style={{
+              color: colors.colorBlack5,
+              borderTop: `1px solid ${colors.colorBlack8}`,
+            }}
+          >
+            <Icon path={mdiInformationOutline} size={0.5} color={colors.colorBlack5} />
+            <span>
+              {scope === 'option'
+                ? 'If none of these conditions match at runtime, the default option list applies.'
+                : scope === 'step'
+                  ? 'If gating data is missing at runtime, the step is shown by default — guests are never blocked from a flow they can\'t evaluate.'
+                  : 'If gating data is missing at runtime, the field is shown by default — guests are never blocked from a flow they can\'t evaluate.'}
+            </span>
           </div>
         </div>
       )}

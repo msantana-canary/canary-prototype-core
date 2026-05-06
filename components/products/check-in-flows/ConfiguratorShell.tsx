@@ -12,6 +12,7 @@ import {
   mdiDelete,
   mdiCheck,
   mdiClose,
+  mdiLockOutline,
 } from '@mdi/js';
 import {
   colors,
@@ -258,9 +259,33 @@ function StepListPanel({
     onEditStep(newStep.id);
   };
 
+  // Per-step constraint helpers driven by template metadata. Locked
+  // positions ('first' / 'last') prevent both moves on that step and
+  // moves that would displace it (e.g., another step can't move down
+  // past the last-locked Completion step).
+  const stepLocks = flow.steps.map((s) => getStepTemplateMeta(s.templateId));
+  const canMoveUp = (idx: number) => {
+    if (idx === 0) return false;
+    const meta = stepLocks[idx];
+    const prev = stepLocks[idx - 1];
+    if (meta.lockedPosition === 'first') return false;
+    if (prev.lockedPosition === 'first') return false;
+    return true;
+  };
+  const canMoveDown = (idx: number) => {
+    if (idx === flow.steps.length - 1) return false;
+    const meta = stepLocks[idx];
+    const next = stepLocks[idx + 1];
+    if (meta.lockedPosition === 'last') return false;
+    if (next.lockedPosition === 'last') return false;
+    return true;
+  };
+
   const moveStep = (idx: number, dir: -1 | 1) => {
     const target = idx + dir;
     if (target < 0 || target >= flow.steps.length) return;
+    if (dir === -1 && !canMoveUp(idx)) return;
+    if (dir === 1 && !canMoveDown(idx)) return;
     const orderedIds = flow.steps.map((s) => s.id);
     [orderedIds[idx], orderedIds[target]] = [orderedIds[target], orderedIds[idx]];
     reorderSteps(flow.id, orderedIds);
@@ -285,6 +310,8 @@ function StepListPanel({
             index={idx}
             isLast={idx === flow.steps.length - 1}
             isFirst={idx === 0}
+            canMoveUp={canMoveUp(idx)}
+            canMoveDown={canMoveDown(idx)}
             isActive={step.id === activeStepId}
             onSelect={() => onSelectStep(step.id)}
             onEdit={() => onEditStep(step.id)}
@@ -329,6 +356,8 @@ function StepRow({
   index,
   isLast,
   isFirst,
+  canMoveUp,
+  canMoveDown,
   isActive,
   onSelect,
   onEdit,
@@ -339,6 +368,8 @@ function StepRow({
   index: number;
   isLast: boolean;
   isFirst: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
   isActive: boolean;
   onSelect: () => void;
   onEdit: () => void;
@@ -348,6 +379,7 @@ function StepRow({
   const template = getStepTemplateMeta(step.templateId);
   const stop = (e: React.MouseEvent) => e.stopPropagation();
   const hasConditions = (step.conditions?.length ?? 0) > 0;
+  const isLocked = !!template.lockedPosition;
 
   return (
     <div
@@ -391,30 +423,46 @@ function StepRow({
         </span>
       </div>
 
-      {/* Reorder up/down — always visible so they don't look like a
-          phantom affordance (Vibhor caught the previous hover-only
-          version as "a hidden hide button"). */}
+      {/* Reorder up/down — disabled when constraints prevent movement.
+          Locked steps (Reg Card always first, Completion always last)
+          show a small lock icon instead of arrows. */}
       <div
         onClick={stop}
         className="flex flex-col shrink-0"
         style={{ color: colors.colorBlack5 }}
       >
-        <button
-          onClick={onMoveUp}
-          disabled={isFirst}
-          className="w-5 h-4 flex items-center justify-center disabled:opacity-30 hover:text-[#2858C4]"
-          title="Move step up"
-        >
-          <Icon path={mdiChevronUp} size={0.55} />
-        </button>
-        <button
-          onClick={onMoveDown}
-          disabled={isLast}
-          className="w-5 h-4 flex items-center justify-center disabled:opacity-30 hover:text-[#2858C4]"
-          title="Move step down"
-        >
-          <Icon path={mdiChevronDown} size={0.55} />
-        </button>
+        {isLocked ? (
+          <span
+            className="w-5 h-8 flex items-center justify-center"
+            style={{ opacity: 0.5 }}
+            title={
+              template.lockedPosition === 'first'
+                ? 'Locked as the first step'
+                : 'Locked as the last step'
+            }
+          >
+            <Icon path={mdiLockOutline} size={0.55} />
+          </span>
+        ) : (
+          <>
+            <button
+              onClick={onMoveUp}
+              disabled={!canMoveUp}
+              className="w-5 h-4 flex items-center justify-center disabled:opacity-30 hover:text-[#2858C4]"
+              title={canMoveUp ? 'Move step up' : 'Cannot move past locked step'}
+            >
+              <Icon path={mdiChevronUp} size={0.55} />
+            </button>
+            <button
+              onClick={onMoveDown}
+              disabled={!canMoveDown}
+              className="w-5 h-4 flex items-center justify-center disabled:opacity-30 hover:text-[#2858C4]"
+              title={canMoveDown ? 'Move step down' : 'Cannot move past locked step'}
+            >
+              <Icon path={mdiChevronDown} size={0.55} />
+            </button>
+          </>
+        )}
       </div>
 
       <button
@@ -539,6 +587,16 @@ function StepEditorPane({ flow, step }: { flow: FlowDefinition; step: StepInstan
                 {template.displayName} template
               </p>
             )}
+            {(template.lockedPosition || template.nonDeletable) && (
+              <p className="mt-1 text-[11px] inline-flex items-center gap-1" style={{ color: colors.colorBlack5 }}>
+                <Icon path={mdiLockOutline} size={0.45} />
+                {template.lockedPosition === 'first'
+                  ? 'Locked as first step · cannot be removed'
+                  : template.lockedPosition === 'last'
+                    ? 'Locked as last step · cannot be removed'
+                    : 'Required step · cannot be removed'}
+              </p>
+            )}
           </div>
 
           {!isReadOnly && (
@@ -553,17 +611,19 @@ function StepEditorPane({ flow, step }: { flow: FlowDefinition; step: StepInstan
                 />
                 Skippable
               </label>
-              <button
-                onClick={handleDelete}
-                className="text-[12px] font-medium inline-flex items-center gap-1 transition-colors"
-                style={{ color: colors.colorBlack5 }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = colors.danger; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = colors.colorBlack5; }}
-                title="Remove step"
-              >
-                <Icon path={mdiDelete} size={0.6} />
-                Remove
-              </button>
+              {!template.nonDeletable && (
+                <button
+                  onClick={handleDelete}
+                  className="text-[12px] font-medium inline-flex items-center gap-1 transition-colors"
+                  style={{ color: colors.colorBlack5 }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = colors.danger; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = colors.colorBlack5; }}
+                  title="Remove step"
+                >
+                  <Icon path={mdiDelete} size={0.6} />
+                  Remove
+                </button>
+              )}
             </div>
           )}
         </div>

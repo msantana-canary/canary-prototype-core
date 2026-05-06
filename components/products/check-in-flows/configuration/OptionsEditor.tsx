@@ -27,6 +27,7 @@ import {
   mdiDelete,
   mdiTuneVariant,
   mdiClose,
+  mdiInformationOutline,
 } from '@mdi/js';
 import { CanaryInput, InputSize, colors } from '@canary-ui/components';
 
@@ -150,6 +151,23 @@ export function OptionsEditor({ variants, onChange }: Props) {
         <Icon path={mdiPlus} size={0.6} />
         Add segment variant
       </button>
+
+      {/* Safety-net copy: if no segment variant matches, the default
+          variant is the runtime fallback. This is the same model
+          used elsewhere — guests are never shown an empty option list. */}
+      {namedVariants.length > 0 && (
+        <div
+          className="text-[11px] flex items-start gap-1.5"
+          style={{ color: colors.colorBlack5 }}
+        >
+          <Icon path={mdiInformationOutline} size={0.5} color={colors.colorBlack5} />
+          <span>
+            Guests not matching any segment variant get the default option
+            list above. The default is required and applies whenever
+            segment data is missing or no variant matches.
+          </span>
+        </div>
+      )}
     </div>
   );
 }
