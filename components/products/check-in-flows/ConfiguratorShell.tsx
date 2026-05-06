@@ -5,11 +5,6 @@ import Icon from '@mdi/react';
 import {
   mdiChevronRight,
   mdiArrowLeft,
-  mdiWeb,
-  mdiCellphone,
-  mdiTabletCellphone,
-  mdiMonitor,
-  mdiApplicationOutline,
   mdiPencilOutline,
   mdiPlus,
   mdiDelete,
@@ -18,7 +13,6 @@ import {
 } from '@mdi/js';
 import {
   colors,
-  CanaryTabs,
   CanaryCard,
   CanarySwitch,
   CanaryTextArea,
@@ -30,7 +24,6 @@ import {
   useCheckInFlowsStore,
   useFlowById,
   useStepById,
-  useGeneratedFlows,
 } from '@/lib/products/check-in-flows/store';
 import type {
   FlowDefinition,
@@ -40,6 +33,7 @@ import type {
 } from '@/lib/products/check-in-flows/types';
 import { getStepTemplateMeta } from '@/lib/products/check-in-flows/step-templates';
 import { CheckInConfigPage } from './CheckInConfigPage';
+import { ConfiguratorAppShell } from './ConfiguratorAppShell';
 import { AtomDetailModal } from './configuration/AtomDetailModal';
 import { PhoneFrame } from '@/components/core/PhoneFrame';
 import { StepRenderer } from './preview/StepRenderer';
@@ -48,209 +42,123 @@ import { ConditionRuleEditor } from './editors/ConditionRuleEditor';
 import { SchemaFormEditor } from './editors/SchemaFormEditor';
 import { NestedFlowEditor } from './editors/NestedFlowEditor';
 
-const SURFACE_ICON: Record<string, string> = {
-  'mobile-web': mdiCellphone,
-  'mobile-app': mdiApplicationOutline,
-  'tablet-reg': mdiTabletCellphone,
-  'kiosk': mdiMonitor,
-};
-
-// Flow-first pivot: Flows is the primary tab; Library demoted from
-// "Configuration" to a secondary atom registry view.
-const SHELL_TABS = [
-  { id: 'flows', label: 'Flows', content: <></> },
-  { id: 'configuration', label: 'Library', content: <></> },
-];
-
 // ── Shell ───────────────────────────────────────────────
 
 export function ConfiguratorShell() {
   const nav = useCheckInFlowsStore((s) => s.nav);
-  const setTab = useCheckInFlowsStore((s) => s.setTab);
-  const deselectFlow = useCheckInFlowsStore((s) => s.deselectFlow);
   const stopEditingStep = useCheckInFlowsStore((s) => s.stopEditingStep);
   const flow = useFlowById(nav.flowId);
   const step = useStepById(nav.flowId, nav.stepId);
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="bg-white shrink-0">
+    <ConfiguratorAppShell>
+      <div className="h-full flex flex-col overflow-hidden bg-white">
+        {/* Slim header — title pulled from the active flow / library tab.
+            The sidebar is the primary nav, so the inner header is just
+            a content title + breadcrumb for sub-pages. */}
         <div
-          className="flex items-center justify-between"
-          style={{ padding: '16px 24px 16px 32px', borderBottom: `1px solid ${colors.colorBlack7}` }}
+          className="bg-white shrink-0 flex items-center justify-between"
+          style={{
+            padding: '14px 28px',
+            borderBottom: `1px solid ${colors.colorBlack7}`,
+          }}
         >
-          <h1 style={{ fontSize: 18, fontWeight: 500, color: colors.colorBlack1, margin: 0 }}>
-            Flow Builder
-          </h1>
+          <div className="flex items-center gap-2 min-w-0">
+            <h1
+              style={{
+                fontSize: 17,
+                fontWeight: 600,
+                color: colors.colorBlack1,
+                margin: 0,
+                lineHeight: 1.3,
+              }}
+            >
+              {nav.tab === 'configuration'
+                ? 'Library'
+                : flow?.name ?? 'Form Builder'}
+            </h1>
+            {nav.tab === 'flows' && nav.isEditingStep && step && (
+              <>
+                <Icon
+                  path={mdiChevronRight}
+                  size={0.55}
+                  color={colors.colorBlack6}
+                />
+                <button
+                  className="text-[13px] transition-colors"
+                  style={{ color: colors.colorBlack5 }}
+                  onClick={stopEditingStep}
+                >
+                  Steps
+                </button>
+                <Icon
+                  path={mdiChevronRight}
+                  size={0.55}
+                  color={colors.colorBlack6}
+                />
+                <span
+                  className="text-[13px] font-semibold"
+                  style={{ color: colors.colorBlack2 }}
+                >
+                  {step.name}
+                </span>
+              </>
+            )}
+          </div>
           <a
             href="/check-in-configurator-spec.md"
             target="_blank"
             rel="noopener noreferrer"
             className="text-[12px] font-medium transition-colors"
             style={{ color: colors.colorBlack4 }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = colors.colorBlueDark1; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = colors.colorBlack4; }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = colors.colorBlueDark1;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = colors.colorBlack4;
+            }}
             title="Open architecture spec in new tab"
           >
             Architecture spec ↗
           </a>
         </div>
 
-        <div style={{ padding: '0 24px' }}>
-          <CanaryTabs
-            tabs={SHELL_TABS}
-            variant="text"
-            defaultTab={nav.tab}
-            onChange={(tabId) => setTab(tabId as 'configuration' | 'flows')}
-          />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {nav.tab === 'configuration' ? (
+            <div className="flex-1 overflow-hidden">
+              <CheckInConfigPage />
+            </div>
+          ) : (
+            <FlowsContent />
+          )}
         </div>
 
-        {nav.tab === 'flows' && flow && (
-          <div className="px-6 py-2" style={{ borderTop: `1px solid ${colors.colorBlack7}`, backgroundColor: colors.colorBlack8 }}>
-            <nav className="flex items-center gap-1.5 text-[13px]">
-              <button
-                className="transition-colors"
-                style={{ color: colors.colorBlack5 }}
-                onClick={deselectFlow}
-              >
-                Flows
-              </button>
-              <Icon path={mdiChevronRight} size={0.55} color={colors.colorBlack6} />
-              {nav.isEditingStep && step ? (
-                <>
-                  <button
-                    className="transition-colors"
-                    style={{ color: colors.colorBlack5 }}
-                    onClick={stopEditingStep}
-                  >
-                    {flow.name}
-                  </button>
-                  <Icon path={mdiChevronRight} size={0.55} color={colors.colorBlack6} />
-                  <span className="font-semibold" style={{ color: colors.colorBlack2 }}>
-                    {step.name}
-                  </span>
-                </>
-              ) : (
-                <span className="font-semibold" style={{ color: colors.colorBlack2 }}>
-                  {flow.name}
-                </span>
-              )}
-            </nav>
-          </div>
-        )}
+        {/* Flow-first atom editor: clicking an atom slot in a flow step opens
+            this side panel. Library tab uses its own inline right-pane editor
+            inside CheckInConfigPage, so we only mount the modal on Flows. */}
+        {nav.tab === 'flows' && <AtomDetailModal />}
       </div>
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {nav.tab === 'configuration' ? (
-          <div className="flex-1 overflow-hidden">
-            <CheckInConfigPage />
-          </div>
-        ) : (
-          <FlowsContent />
-        )}
-      </div>
-
-      {/* Flow-first atom editor: clicking an atom slot in a flow step opens
-          this side panel. Library tab uses its own inline right-pane editor
-          inside CheckInConfigPage, so we only mount the modal on Flows. */}
-      {nav.tab === 'flows' && <AtomDetailModal />}
-    </div>
+    </ConfiguratorAppShell>
   );
 }
 
 // ── Flows content routing ───────────────────────────────
+// The dark sidebar auto-selects the first flow on mount, so the
+// "no flow selected" state is unreachable in practice. We render
+// the editor view directly.
 
 function FlowsContent() {
   const nav = useCheckInFlowsStore((s) => s.nav);
-  if (nav.flowId) return <FlowEditorView />;
-  return <FlowBrowseView />;
-}
-
-// ── Flow browse view (Compendium-style list + preview) ─
-
-function FlowBrowseView() {
-  const flows = useGeneratedFlows();
-  const selectFlow = useCheckInFlowsStore((s) => s.selectFlow);
-  const ctx = useCheckInFlowsStore((s) => s.previewContext);
-  const [previewFlowId, setPreviewFlowId] = useState<string>(flows[0]?.id ?? '');
-
-  const previewFlow = flows.find((f) => f.id === previewFlowId);
-  const firstStep = previewFlow?.steps[0];
-
-  return (
-    <div className="flex-1 relative overflow-hidden" style={{ backgroundColor: colors.colorBlack8 }}>
-      <div
-        className="absolute left-0 top-0 bottom-0 overflow-y-auto"
-        style={{ width: '50%', padding: 24 }}
-      >
-        <CanaryCard padding="none" hasBorder>
-          <div className="px-5 py-4" style={{ borderBottom: `1px solid ${colors.colorBlack7}` }}>
-            <h3 className="text-[16px] font-medium" style={{ color: colors.colorBlack1 }}>
-              Flows
-            </h3>
-          </div>
-
-          <div>
-            {flows.map((flow, idx) => {
-              const icon = SURFACE_ICON[flow.surface] ?? mdiWeb;
-              const isActive = flow.id === previewFlowId;
-              return (
-                <div
-                  key={flow.id}
-                  onClick={() => setPreviewFlowId(flow.id)}
-                  className="flex items-center gap-3 px-5 py-3 cursor-pointer transition-colors"
-                  style={{
-                    backgroundColor: isActive ? colors.colorBlueDark5 : undefined,
-                    borderBottom: idx < flows.length - 1 ? `1px solid ${colors.colorBlack7}` : undefined,
-                  }}
-                >
-                  <Icon path={icon} size={0.65} color={isActive ? colors.colorBlueDark1 : colors.colorBlack4} />
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[14px] font-medium block" style={{ color: colors.colorBlack2 }}>
-                      {flow.name}
-                    </span>
-                    <span className="text-[12px]" style={{ color: colors.colorBlack5 }}>
-                      {flow.steps.length} steps
-                    </span>
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); selectFlow(flow.id); }}
-                    className="w-8 h-8 rounded flex items-center justify-center shrink-0"
-                    style={{ color: colors.colorBlack4 }}
-                    title="Edit flow"
-                  >
-                    <Icon path={mdiPencilOutline} size={0.6} />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </CanaryCard>
+  if (!nav.flowId) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-[14px]" style={{ color: colors.colorBlack5 }}>
+          Select a flow from the sidebar.
+        </p>
       </div>
-
-      <div
-        className="absolute right-0 top-0 bottom-0 flex flex-col overflow-hidden"
-        style={{
-          width: '50%',
-          backgroundColor: colors.colorBlack7,
-          borderLeft: `1px solid ${colors.colorBlack7}`,
-        }}
-      >
-        {previewFlow && <PreviewContextSelector flow={previewFlow} />}
-        <div className="flex-1 flex items-center justify-center overflow-hidden">
-          {firstStep ? (
-            <PhoneFrame showUrlBar={false}>
-              <div className="w-full h-full flex flex-col bg-white">
-                <StepRenderer step={firstStep} ctx={ctx} flow={previewFlow} />
-              </div>
-            </PhoneFrame>
-          ) : (
-            <p className="text-[14px]" style={{ color: colors.colorBlack5 }}>Select a flow to preview</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+    );
+  }
+  return <FlowEditorView />;
 }
 
 // ── Flow editor view: left pane swaps (list ↔ editor), right pane is always live ──

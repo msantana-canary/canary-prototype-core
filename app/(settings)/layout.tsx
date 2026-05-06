@@ -75,6 +75,12 @@ export default function SettingsLayout({
     return routeItemMap[pathname] || '';
   }, [pathname]);
 
+  // Flow Builder lives in its own bubble — bypass the standard settings
+  // shell so the configurator can mount its own dark app shell.
+  if (pathname.startsWith('/settings/check-in-flows')) {
+    return <>{children}</>;
+  }
+
   const handleSidebarItemClick = (itemId: string) => {
     const route = settingsRouteMap[itemId];
     if (route) {
