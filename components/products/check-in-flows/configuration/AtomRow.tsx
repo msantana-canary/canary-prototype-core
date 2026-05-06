@@ -43,9 +43,10 @@ import type {
   PresetAtom,
   CopyBlockAtom,
   PresetAtomType,
+  PrefillSource,
   Surface,
 } from '@/lib/products/check-in-flows/types';
-import { resolveText } from '@/lib/products/check-in-flows/types';
+import { resolveText, PREFILL_SOURCE_LABELS } from '@/lib/products/check-in-flows/types';
 import { getFieldTypeMeta } from '@/lib/products/check-in-flows/field-types';
 import { ELEMENT_TAGS } from '@/lib/products/check-in-flows/element-tags';
 import { useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
@@ -111,6 +112,9 @@ export function AtomRow({ atom, onUpdate, onRemove }: Props) {
                 color={TagColor.DEFAULT}
                 size={TagSize.COMPACT}
               />
+            )}
+            {atom.kind === 'input' && atom.sources && atom.sources.length > 0 && (
+              <SourceChips sources={atom.sources} />
             )}
           </div>
 
@@ -232,4 +236,34 @@ function getPresetIcon(presetType: PresetAtomType): string {
     case 'completion': return mdiCheckCircleOutline;
     default: return mdiPuzzleOutline;
   }
+}
+
+const SOURCE_SHORT: Record<PrefillSource, string> = {
+  'pms': 'PMS',
+  'ocr': 'OCR',
+  'guest-input': 'Guest',
+};
+
+export function SourceChips({ sources }: { sources: PrefillSource[] }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      {sources.map((s) => (
+        <span
+          key={s}
+          className="text-[10px] font-bold px-1.5 h-[18px] rounded inline-flex items-center"
+          style={{
+            backgroundColor: s === 'pms' ? '#EBF3FF' : s === 'ocr' ? '#F0EBFF' : colors.colorBlack8,
+            color: s === 'pms' ? '#2858C4' : s === 'ocr' ? '#5A2EB8' : colors.colorBlack3,
+            border: `1px solid ${
+              s === 'pms' ? '#C5D9FF' : s === 'ocr' ? '#D4C2FF' : colors.colorBlack7
+            }`,
+            letterSpacing: '0.04em',
+          }}
+          title={`Prefill source: ${PREFILL_SOURCE_LABELS[s]}`}
+        >
+          {SOURCE_SHORT[s]}
+        </span>
+      ))}
+    </span>
+  );
 }

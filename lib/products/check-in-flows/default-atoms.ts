@@ -44,6 +44,7 @@ const guestInfo: InputAtom[] = [
     pmsTag: 'guest-first-name',
     required: true,
     autoSkipIfFilled: true,
+    sources: ['pms', 'guest-input'],
     deviceVisibility: visibleAll,
   },
   {
@@ -55,6 +56,7 @@ const guestInfo: InputAtom[] = [
     pmsTag: 'guest-last-name',
     required: true,
     autoSkipIfFilled: true,
+    sources: ['pms', 'guest-input'],
     deviceVisibility: visibleAll,
   },
   {
@@ -66,6 +68,7 @@ const guestInfo: InputAtom[] = [
     pmsTag: 'guest-email',
     required: true,
     autoSkipIfFilled: true,
+    sources: ['pms', 'guest-input'],
     deviceVisibility: visibleAll,
   },
   {
@@ -77,6 +80,7 @@ const guestInfo: InputAtom[] = [
     pmsTag: 'guest-phone',
     required: true,
     autoSkipIfFilled: true,
+    sources: ['pms', 'guest-input'],
     deviceVisibility: visibleAll,
   },
   {
@@ -88,6 +92,7 @@ const guestInfo: InputAtom[] = [
     pmsTag: 'address-line-1',
     required: true,
     autoSkipIfFilled: true,
+    sources: ['pms', 'guest-input'],
     deviceVisibility: visibleAll,
   },
   {
@@ -99,6 +104,7 @@ const guestInfo: InputAtom[] = [
     pmsTag: 'city',
     required: true,
     autoSkipIfFilled: true,
+    sources: ['pms', 'guest-input'],
     deviceVisibility: visibleAll,
   },
   {
@@ -110,6 +116,7 @@ const guestInfo: InputAtom[] = [
     pmsTag: 'country',
     required: true,
     autoSkipIfFilled: true,
+    sources: ['pms', 'guest-input'],
     deviceVisibility: visibleAll,
   },
   {
@@ -121,6 +128,7 @@ const guestInfo: InputAtom[] = [
     pmsTag: 'estimated-arrival-time',
     required: true,
     autoSkipIfFilled: true,
+    sources: ['guest-input'],
     deviceVisibility: visibleExceptKiosk,
     optionVariants: [
       {
@@ -143,6 +151,7 @@ const guestInfo: InputAtom[] = [
     pmsTag: 'special-requests',
     required: false,
     autoSkipIfFilled: true,
+    sources: ['guest-input'],
     deviceVisibility: visibleAll,
   },
   // Pet — gates Pet Policy step and pet-size atom (form-state demo).
@@ -153,6 +162,7 @@ const guestInfo: InputAtom[] = [
     fieldType: 'boolean-radio',
     label: { en: 'Are you traveling with a pet?' },
     required: false,
+    sources: ['guest-input'],
     deviceVisibility: visibleAll,
   },
   {
@@ -162,6 +172,7 @@ const guestInfo: InputAtom[] = [
     fieldType: 'dropdown',
     label: { en: 'Pet size' },
     required: true,
+    sources: ['guest-input'],
     deviceVisibility: visibleAll,
     optionVariants: [
       {
@@ -193,6 +204,75 @@ const guestInfo: InputAtom[] = [
     pmsTag: 'signature',
     required: true,
     autoSkipIfFilled: false,
+    sources: ['guest-input'],
+    deviceVisibility: visibleAll,
+  },
+  // OCR-extracted fields — these collect the same data as the Guest Info
+  // entries above but populate from a captured ID photo. Per Vibhor's
+  // observation that "id ocr info and guest info should be different
+  // concepts — maybe they are just one and then within the config we
+  // determine whether it is ocr extracted or not", the OCR atoms now
+  // live in the same Guest Info domain, just visually grouped under an
+  // "Extracted from ID (OCR)" sub-section. Their `sources` field
+  // reflects the runtime path (OCR + guest correction).
+  {
+    id: 'atom-id-doc-first-name',
+    kind: 'input',
+    domain: 'guest-info',
+    subgroup: 'ocr-extracted',
+    fieldType: 'text-input',
+    label: { en: 'First name (from ID)' },
+    pmsTag: 'guest-first-name',
+    required: true,
+    sources: ['ocr', 'guest-input'],
+    deviceVisibility: visibleAll,
+  },
+  {
+    id: 'atom-id-doc-last-name',
+    kind: 'input',
+    domain: 'guest-info',
+    subgroup: 'ocr-extracted',
+    fieldType: 'text-input',
+    label: { en: 'Last name (from ID)' },
+    pmsTag: 'guest-last-name',
+    required: true,
+    sources: ['ocr', 'guest-input'],
+    deviceVisibility: visibleAll,
+  },
+  {
+    id: 'atom-id-doc-date-of-birth',
+    kind: 'input',
+    domain: 'guest-info',
+    subgroup: 'ocr-extracted',
+    fieldType: 'date',
+    label: { en: 'Date of birth (from ID)' },
+    pmsTag: 'guest-date-of-birth',
+    required: true,
+    sources: ['ocr', 'guest-input'],
+    deviceVisibility: visibleAll,
+  },
+  {
+    id: 'atom-id-doc-nationality',
+    kind: 'input',
+    domain: 'guest-info',
+    subgroup: 'ocr-extracted',
+    fieldType: 'country',
+    label: { en: 'Nationality (from ID)' },
+    pmsTag: 'guest-nationality',
+    required: true,
+    sources: ['ocr', 'guest-input'],
+    deviceVisibility: visibleAll,
+  },
+  {
+    id: 'atom-id-doc-document-number',
+    kind: 'input',
+    domain: 'guest-info',
+    subgroup: 'ocr-extracted',
+    fieldType: 'text-input',
+    label: { en: 'Document number' },
+    pmsTag: 'id-number',
+    required: true,
+    sources: ['ocr', 'guest-input'],
     deviceVisibility: visibleAll,
   },
 ];
@@ -288,62 +368,10 @@ const idDocuments: Atom[] = [
       instructionText: { en: 'Take a selfie to verify your ID' },
     },
   },
-  // ID-extracted field editability — InputAtoms tagged from id-documents domain
-  {
-    id: 'atom-id-doc-first-name',
-    kind: 'input',
-    domain: 'id-documents',
-    subgroup: 'ocr-extracted',
-    fieldType: 'text-input',
-    label: { en: 'ID first name' },
-    pmsTag: 'guest-first-name',
-    required: true,
-    deviceVisibility: visibleAll,
-  },
-  {
-    id: 'atom-id-doc-last-name',
-    kind: 'input',
-    domain: 'id-documents',
-    subgroup: 'ocr-extracted',
-    fieldType: 'text-input',
-    label: { en: 'ID last name' },
-    pmsTag: 'guest-last-name',
-    required: true,
-    deviceVisibility: visibleAll,
-  },
-  {
-    id: 'atom-id-doc-date-of-birth',
-    kind: 'input',
-    domain: 'id-documents',
-    subgroup: 'ocr-extracted',
-    fieldType: 'date',
-    label: { en: 'Date of birth' },
-    pmsTag: 'guest-date-of-birth',
-    required: true,
-    deviceVisibility: visibleAll,
-  },
-  {
-    id: 'atom-id-doc-nationality',
-    kind: 'input',
-    domain: 'id-documents',
-    subgroup: 'ocr-extracted',
-    fieldType: 'country',
-    label: { en: 'Nationality' },
-    pmsTag: 'guest-nationality',
-    required: true,
-    deviceVisibility: visibleAll,
-  },
-  {
-    id: 'atom-id-doc-document-number',
-    kind: 'input',
-    domain: 'id-documents',
-    subgroup: 'ocr-extracted',
-    fieldType: 'text-input',
-    label: { en: 'Document number' },
-    pmsTag: 'id-number',
-    required: true,
-    deviceVisibility: visibleAll,
-  },
+  // OCR-extracted fields used to live here under the id-documents domain.
+  // Per Vibhor, they're now grouped with Guest Info (subgroup: ocr-extracted)
+  // so CS doesn't have to reason about two separate concepts. Definitions
+  // moved to the guestInfo array above.
 ];
 
 // ── Payment presets ─────────────────────────────────────
@@ -390,6 +418,7 @@ const additionalGuests: InputAtom[] = [
     fieldType: 'text-input',
     label: { en: 'Full name' },
     required: true,
+    sources: ['guest-input'],
     deviceVisibility: visibleAll,
   },
   {
@@ -400,6 +429,7 @@ const additionalGuests: InputAtom[] = [
     fieldType: 'date',
     label: { en: 'Date of birth' },
     required: false,
+    sources: ['ocr', 'guest-input'],
     deviceVisibility: visibleAll,
   },
   {
@@ -410,6 +440,7 @@ const additionalGuests: InputAtom[] = [
     fieldType: 'country',
     label: { en: 'Nationality' },
     required: false,
+    sources: ['ocr', 'guest-input'],
     deviceVisibility: visibleAll,
   },
   {
@@ -420,6 +451,7 @@ const additionalGuests: InputAtom[] = [
     fieldType: 'dropdown',
     label: { en: 'ID type' },
     required: false,
+    sources: ['ocr', 'guest-input'],
     deviceVisibility: visibleAll,
     optionVariants: [
       {

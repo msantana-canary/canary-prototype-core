@@ -347,6 +347,7 @@ function StepRow({
 }) {
   const template = getStepTemplateMeta(step.templateId);
   const stop = (e: React.MouseEvent) => e.stopPropagation();
+  const hasConditions = (step.conditions?.length ?? 0) > 0;
 
   return (
     <div
@@ -357,12 +358,30 @@ function StepRow({
         borderBottom: !isLast ? `1px solid ${colors.colorBlack7}` : undefined,
       }}
     >
-      <span
-        className="text-[12px] font-bold w-5 text-center shrink-0"
-        style={{ color: isActive ? colors.colorBlueDark1 : colors.colorBlack5 }}
-      >
-        {index + 1}
-      </span>
+      {/* Step counter — sequential number for unconditional steps. For
+          conditional steps, the runtime position can shift (and the step
+          may not appear at all), so we show a "?" pill instead so CS
+          doesn't reason about a fixed position that won't hold. */}
+      {hasConditions ? (
+        <span
+          className="text-[10px] font-bold w-5 h-5 rounded inline-flex items-center justify-center shrink-0"
+          style={{
+            backgroundColor: isActive ? '#FFF' : colors.colorBlueDark5,
+            color: colors.colorBlueDark1,
+            border: `1px solid ${colors.colorBlueDark4}`,
+          }}
+          title="Conditional step — only shows when conditions match. Runtime position can shift."
+        >
+          if
+        </span>
+      ) : (
+        <span
+          className="text-[12px] font-bold w-5 text-center shrink-0"
+          style={{ color: isActive ? colors.colorBlueDark1 : colors.colorBlack5 }}
+        >
+          {index + 1}
+        </span>
+      )}
 
       <Icon path={template.icon} size={0.65} color={isActive ? colors.colorBlueDark1 : colors.colorBlack4} />
 

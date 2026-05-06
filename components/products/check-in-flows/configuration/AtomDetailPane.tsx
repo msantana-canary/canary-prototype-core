@@ -38,6 +38,7 @@ import type {
   FieldType,
   Surface,
   OptionVariant,
+  PrefillSource,
   IdConsentAtomConfig,
   IdPhotoAtomConfig,
   IdSelfieAtomConfig,
@@ -47,6 +48,7 @@ import type {
   DepositCollectionAtomConfig,
   LocalizedText,
 } from '@/lib/products/check-in-flows/types';
+import { PREFILL_SOURCE_LABELS } from '@/lib/products/check-in-flows/types';
 import { useCheckInFlowsStore } from '@/lib/products/check-in-flows/store';
 import {
   getFieldTypeMeta,
@@ -59,7 +61,7 @@ import {
 } from '@/lib/products/check-in-flows/element-tags';
 import { ConditionRuleEditor } from '../editors/ConditionRuleEditor';
 import { SettingsHandledElsewhere } from './SettingsHandledElsewhere';
-import { describeAtom } from './AtomRow';
+import { describeAtom, SourceChips } from './AtomRow';
 import { OptionsEditor } from './OptionsEditor';
 import { AtomPreview } from './AtomPreview';
 
@@ -186,12 +188,17 @@ export function AtomDetailPane() {
           <Icon path={display.icon} size={0.85} color={colors.colorBlueDark1} />
         </div>
         <div className="min-w-0 flex-1">
-          <h3
-            className="text-[14px] font-bold truncate"
-            style={{ color: colors.colorBlack1 }}
-          >
-            {display.title}
-          </h3>
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+            <h3
+              className="text-[14px] font-bold truncate"
+              style={{ color: colors.colorBlack1 }}
+            >
+              {display.title}
+            </h3>
+            {atom.kind === 'input' && atom.sources && atom.sources.length > 0 && (
+              <SourceChips sources={atom.sources} />
+            )}
+          </div>
           <p className="text-[11px]" style={{ color: colors.colorBlack4 }}>
             {usedInFlowNames.length > 0
               ? `Used in: ${usedInFlowNames.join(', ')}. Edits apply everywhere.`
@@ -612,6 +619,81 @@ function DeviceVisibilityEditor({
   );
 }
 
+function SourcesEditor({
+  value,
+  onChange,
+}: {
+  value: PrefillSource[];
+  onChange: (next: PrefillSource[]) => void;
+}) {
+  const allSources: PrefillSource[] = ['pms', 'ocr', 'guest-input'];
+  const valueSet = new Set(value);
+  const toggle = (s: PrefillSource) => {
+    if (valueSet.has(s)) {
+      const next = value.filter((x) => x !== s);
+      // Always keep at least one source — guest-input as the safe fallback
+      onChange(next.length > 0 ? next : ['guest-input']);
+    } else {
+      onChange([...value, s]);
+    }
+  };
+
+  return (
+    <div>
+      <div
+        className="text-[11px] font-semibold uppercase tracking-wider mb-1"
+        style={{ color: colors.colorBlack4 }}
+      >
+        Pre-fill sources
+      </div>
+      <p className="text-[11px] mb-2" style={{ color: colors.colorBlack5 }}>
+        Where this component&rsquo;s value can come from at runtime. The
+        runtime applies the first non-empty source — e.g., PMS pre-fill,
+        then OCR extraction, then guest input.
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {allSources.map((s) => {
+          const isOn = valueSet.has(s);
+          return (
+            <button
+              key={s}
+              onClick={() => toggle(s)}
+              className="text-[11px] font-semibold px-2 h-6 rounded transition-colors"
+              style={{
+                backgroundColor: isOn
+                  ? s === 'pms'
+                    ? '#EBF3FF'
+                    : s === 'ocr'
+                      ? '#F0EBFF'
+                      : colors.colorBlack8
+                  : '#FFF',
+                color: isOn
+                  ? s === 'pms'
+                    ? '#2858C4'
+                    : s === 'ocr'
+                      ? '#5A2EB8'
+                      : colors.colorBlack3
+                  : colors.colorBlack5,
+                border: `1px solid ${
+                  isOn
+                    ? s === 'pms'
+                      ? '#C5D9FF'
+                      : s === 'ocr'
+                        ? '#D4C2FF'
+                        : colors.colorBlack6
+                    : colors.colorBlack7
+                }`,
+              }}
+            >
+              {PREFILL_SOURCE_LABELS[s]}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ToggleRow({
   checked,
   onChange,
@@ -809,6 +891,13 @@ function InputAtomDetails({
         onChange={(v) => onUpdate({ required: v } as Partial<Atom>)}
         label="Required"
         description="Guest must answer to continue."
+      />
+
+      <SourcesEditor
+        value={atom.sources ?? ['guest-input']}
+        onChange={(next) =>
+          onUpdate({ sources: next as PrefillSource[] } as Partial<Atom>)
+        }
       />
 
       {/* Auto-skip-if-filled removed in flow-first pivot — now default-on

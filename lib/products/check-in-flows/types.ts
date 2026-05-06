@@ -493,7 +493,19 @@ interface AtomBase {
 
 /** Labels for sub-group ids referenced by atoms.subgroup. */
 export const ATOM_SUBGROUP_LABELS: Record<string, string> = {
-  'ocr-extracted': 'Fields Extracted by OCR',
+  'ocr-extracted': 'Extracted from ID (OCR)',
+};
+
+/** Where a component's value can come from at runtime. A component can list
+ *  multiple sources — e.g., First Name accepts PMS pre-fill, can be filled
+ *  by OCR extraction from a captured ID, or typed by the guest. The order
+ *  is informational only; the runtime applies the first non-empty source. */
+export type PrefillSource = 'pms' | 'ocr' | 'guest-input';
+
+export const PREFILL_SOURCE_LABELS: Record<PrefillSource, string> = {
+  'pms': 'PMS pre-fill',
+  'ocr': 'OCR-extracted',
+  'guest-input': 'Guest input',
 };
 
 /** Atomic input — a single data point collected from the guest. */
@@ -506,6 +518,9 @@ export interface InputAtom extends AtomBase {
   pmsTag?: ElementTag;
   required: boolean;
   autoSkipIfFilled?: boolean;
+  /** Where this component's value can come from. If omitted, treat as
+   *  ['guest-input'] — the safest default for non-canonical fields. */
+  sources?: PrefillSource[];
   /** Segment-grouped options for selection field types (dropdown / radio /
    *  checkbox-group). First variant is the default (no conditions); subsequent
    *  variants are segment overrides. Resolved at render time via
