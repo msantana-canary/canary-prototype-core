@@ -72,24 +72,24 @@ export function CheckInConfigPage() {
         >
           <DomainSection
             domain="guest-info"
-            description="Guest profile data — name, contact, address, stay preferences."
+            description="Name, contact, address, stay preferences. OCR fields cluster below."
           />
           <DomainSection
             domain="id-documents"
-            description="ID consent, ID type, ID photo capture, OCR-extracted field editability."
+            description="Consent, ID type selection, photo capture."
           />
           <DomainSection
             domain="payment"
-            description="Card information collection, deposit collection, authorization. Payment is a fixed set — no custom additions."
+            description="Card collection, deposit, authorization. Fixed set."
             disableAdd
           />
           <DomainSection
             domain="additional-guests"
-            description="Multi-guest check-in field requirements."
+            description="Per-extra-guest field requirements."
           />
           <DomainSection
             domain="copy-blocks"
-            description="Compliance and policy text — hotel policies, marketing consent, waivers."
+            description="Policy text and consents."
           />
         </div>
 
@@ -119,10 +119,8 @@ function PageIntro() {
         Library
       </h2>
       <p className="text-[13px]" style={{ color: colors.colorBlack4 }}>
-        Catalog of components available across flows. Most authoring happens
-        in the Flows tab — edits there apply to the underlying component here.
-        This view is for browsing, auditing, or one-off edits to components
-        not currently in any flow.
+        All components available across flows. Most authoring happens in
+        the Flows tab — edits there apply here too.
       </p>
     </div>
   );

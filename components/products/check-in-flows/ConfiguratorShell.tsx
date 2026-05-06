@@ -344,8 +344,7 @@ function StepListPanel({
         className="text-[11px] mt-1.5 px-1"
         style={{ color: colors.colorBlack5 }}
       >
-        Custom steps host components you compose from the Library — useful for
-        hotel-specific pages like Pet Policy or Marketing Consent.
+        For hotel-specific pages (Pet Policy, Marketing Consent, etc.).
       </p>
     </div>
   );
@@ -644,9 +643,7 @@ function StepEditorPane({ flow, step }: { flow: FlowDefinition; step: StepInstan
           className="text-[11px] mb-2"
           style={{ color: colors.colorBlack5 }}
         >
-          Skip this step entirely when conditions don&rsquo;t match. Atom
-          conditions inside the step still apply on top — e.g., gate the
-          whole Pet Policy page on <code>pet = yes</code>.
+          Skip the whole step when conditions don&rsquo;t match.
         </p>
         <ConditionRuleEditor
           conditions={step.conditions ?? []}
@@ -654,7 +651,7 @@ function StepEditorPane({ flow, step }: { flow: FlowDefinition; step: StepInstan
           scope="step"
           disabled={isReadOnly}
           emptyLabel="Step is always shown"
-          emptyHint="Add a condition to skip this step under specific circumstances (e.g., 'no additional guests' → skip Additional Guests page)."
+          emptyHint="Add a condition to skip this step under specific circumstances."
         />
       </div>
 
@@ -679,8 +676,7 @@ function StepEditorPane({ flow, step }: { flow: FlowDefinition; step: StepInstan
             className="text-[11px]"
             style={{ color: colors.colorBlack4 }}
           >
-            Title and optional intro copy shown to the guest at the top of
-            this page. The title also names the step in the flow editor.
+            Title and intro copy shown above the form.
           </p>
           <CanaryInput
             size={InputSize.NORMAL}

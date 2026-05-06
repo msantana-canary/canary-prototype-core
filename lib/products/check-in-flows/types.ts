@@ -319,13 +319,22 @@ export type ConditionParameter =
   // the same flow. Requires `formAtomId` to be set on the Condition.
   | 'form-response';
 
+/** Set-membership and numeric comparison operators. Per Vibhor's
+ *  simplification: prefer 'includes' / 'excludes' over the older
+ *  equals/in/is-true variants — a single-value match is just a
+ *  one-element includes. The legacy operators remain in the union
+ *  so existing seed data and stored configs keep evaluating; the
+ *  editor only emits the simplified set going forward. */
 export type ConditionOperator =
+  | 'includes'
+  | 'excludes'
+  | 'greater-than'
+  | 'less-than'
+  // Legacy — still evaluated, no longer offered in the editor.
   | 'equals'
   | 'not-equals'
   | 'in'
   | 'not-in'
-  | 'greater-than'
-  | 'less-than'
   | 'is-true'
   | 'is-false';
 
@@ -338,7 +347,7 @@ export interface Condition {
    *  response is being compared. Undefined for guest-attribute conditions. */
   formAtomId?: string;
   operator?: ConditionOperator;
-  value?: string | string[] | number | boolean;
+  value?: string | string[] | number | number[] | boolean | boolean[];
   action: ConditionAction;
 }
 
@@ -518,6 +527,10 @@ export interface InputAtom extends AtomBase {
   pmsTag?: ElementTag;
   required: boolean;
   autoSkipIfFilled?: boolean;
+  /** When true, the field is shown to the guest as display-only — value
+   *  is rendered, but the input is not editable. Useful for confirming
+   *  pre-filled or OCR-extracted values. */
+  readOnly?: boolean;
   /** Where this component's value can come from. If omitted, treat as
    *  ['guest-input'] — the safest default for non-canonical fields. */
   sources?: PrefillSource[];

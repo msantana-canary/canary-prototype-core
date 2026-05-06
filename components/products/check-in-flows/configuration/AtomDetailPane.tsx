@@ -369,10 +369,8 @@ export function AtomDetailPane() {
             className="text-[11px] mb-2"
             style={{ color: colors.colorBlack4 }}
           >
-            When the entire component shows. Use this to gate on guest
-            attributes (e.g., show only to Diamond members). Variant
-            conditions inside Options are separate — those switch which
-            option list applies, not whether the field appears.
+            Gate when the whole component appears. Variants inside
+            Options switch the option list, not visibility.
           </p>
           <ConditionRuleEditor
             conditions={atom.conditions ?? []}
@@ -521,6 +519,27 @@ const EDITABLE_LANGUAGES: { code: string; label: string }[] = [
   { code: 'ms', label: 'MS' },
 ];
 
+function TranslationReference({
+  defaultValue,
+  visible,
+}: {
+  defaultValue: string;
+  visible: boolean;
+}) {
+  if (!visible) return null;
+  return (
+    <p
+      className="text-[11px] mt-1 px-1 italic"
+      style={{ color: colors.colorBlack5 }}
+    >
+      EN:{' '}
+      <span style={{ color: colors.colorBlack3 }}>
+        {defaultValue.trim() ? defaultValue : '— no English value yet —'}
+      </span>
+    </p>
+  );
+}
+
 function LanguageTabs({
   value,
   onChange,
@@ -647,9 +666,7 @@ function SourcesEditor({
         Pre-fill sources
       </div>
       <p className="text-[11px] mb-2" style={{ color: colors.colorBlack5 }}>
-        Where this component&rsquo;s value can come from at runtime. The
-        runtime applies the first non-empty source — e.g., PMS pre-fill,
-        then OCR extraction, then guest input.
+        Where the value can come from. First non-empty source wins.
       </p>
       <div className="flex flex-wrap gap-1.5">
         {allSources.map((s) => {
@@ -830,49 +847,58 @@ function InputAtomDetails({
         <LanguageTabs value={lang} onChange={setLang} hasContentByLang={labelHas} />
       </div>
 
-      <CanaryInput
-        size={InputSize.NORMAL}
-        label={`Label (${lang.toUpperCase()})`}
-        placeholder={
-          lang === 'en'
-            ? 'Field label shown to guest'
-            : 'Translation — leave empty to fall back to English'
-        }
-        value={atom.label?.[lang] ?? ''}
-        onChange={(e) =>
-          onUpdate({ label: { ...atom.label, [lang]: e.target.value } } as Partial<Atom>)
-        }
-      />
-      <CanaryInput
-        size={InputSize.NORMAL}
-        label={`Placeholder (${lang.toUpperCase()})`}
-        placeholder={
-          lang === 'en'
-            ? 'Optional placeholder text'
-            : 'Translation — leave empty to fall back to English'
-        }
-        value={atom.placeholder?.[lang] ?? ''}
-        onChange={(e) =>
-          onUpdate({
-            placeholder: { ...(atom.placeholder ?? {}), [lang]: e.target.value },
-          } as Partial<Atom>)
-        }
-      />
-      <CanaryInput
-        size={InputSize.NORMAL}
-        label={`Helper text (${lang.toUpperCase()})`}
-        placeholder={
-          lang === 'en'
-            ? 'Optional hint shown under the field'
-            : 'Translation — leave empty to fall back to English'
-        }
-        value={atom.helperText?.[lang] ?? ''}
-        onChange={(e) =>
-          onUpdate({
-            helperText: { ...(atom.helperText ?? {}), [lang]: e.target.value },
-          } as Partial<Atom>)
-        }
-      />
+      <div>
+        <CanaryInput
+          size={InputSize.NORMAL}
+          label={`Label (${lang.toUpperCase()})`}
+          placeholder={
+            lang === 'en'
+              ? 'Field label shown to guest'
+              : 'Translation — leave empty to fall back to English'
+          }
+          value={atom.label?.[lang] ?? ''}
+          onChange={(e) =>
+            onUpdate({ label: { ...atom.label, [lang]: e.target.value } } as Partial<Atom>)
+          }
+        />
+        <TranslationReference defaultValue={atom.label?.['en'] ?? ''} visible={lang !== 'en'} />
+      </div>
+      <div>
+        <CanaryInput
+          size={InputSize.NORMAL}
+          label={`Placeholder (${lang.toUpperCase()})`}
+          placeholder={
+            lang === 'en'
+              ? 'Optional placeholder text'
+              : 'Translation — leave empty to fall back to English'
+          }
+          value={atom.placeholder?.[lang] ?? ''}
+          onChange={(e) =>
+            onUpdate({
+              placeholder: { ...(atom.placeholder ?? {}), [lang]: e.target.value },
+            } as Partial<Atom>)
+          }
+        />
+        <TranslationReference defaultValue={atom.placeholder?.['en'] ?? ''} visible={lang !== 'en'} />
+      </div>
+      <div>
+        <CanaryInput
+          size={InputSize.NORMAL}
+          label={`Helper text (${lang.toUpperCase()})`}
+          placeholder={
+            lang === 'en'
+              ? 'Optional hint shown under the field'
+              : 'Translation — leave empty to fall back to English'
+          }
+          value={atom.helperText?.[lang] ?? ''}
+          onChange={(e) =>
+            onUpdate({
+              helperText: { ...(atom.helperText ?? {}), [lang]: e.target.value },
+            } as Partial<Atom>)
+          }
+        />
+        <TranslationReference defaultValue={atom.helperText?.['en'] ?? ''} visible={lang !== 'en'} />
+      </div>
 
       <CanarySelect
         size={InputSize.NORMAL}
@@ -891,6 +917,13 @@ function InputAtomDetails({
         onChange={(v) => onUpdate({ required: v } as Partial<Atom>)}
         label="Required"
         description="Guest must answer to continue."
+      />
+
+      <ToggleRow
+        checked={!!atom.readOnly}
+        onChange={(v) => onUpdate({ readOnly: v } as Partial<Atom>)}
+        label="Read-only"
+        description="Show the value but disable editing."
       />
 
       <SourcesEditor
@@ -940,22 +973,25 @@ function CopyBlockAtomDetails({
         <LanguageTabs value={lang} onChange={setLang} hasContentByLang={contentHas} />
       </div>
 
-      <CanaryTextArea
-        size={InputSize.NORMAL}
-        label={`Content (${lang.toUpperCase()})`}
-        placeholder={
-          lang === 'en'
-            ? 'Compliance / policy text shown to guest'
-            : 'Translation — leave empty to fall back to English'
-        }
-        value={atom.content?.[lang] ?? ''}
-        rows={6}
-        onChange={(e) =>
-          onUpdate({
-            content: { ...atom.content, [lang]: e.target.value },
-          } as Partial<Atom>)
-        }
-      />
+      <div>
+        <CanaryTextArea
+          size={InputSize.NORMAL}
+          label={`Content (${lang.toUpperCase()})`}
+          placeholder={
+            lang === 'en'
+              ? 'Compliance / policy text shown to guest'
+              : 'Translation — leave empty to fall back to English'
+          }
+          value={atom.content?.[lang] ?? ''}
+          rows={6}
+          onChange={(e) =>
+            onUpdate({
+              content: { ...atom.content, [lang]: e.target.value },
+            } as Partial<Atom>)
+          }
+        />
+        <TranslationReference defaultValue={atom.content?.['en'] ?? ''} visible={lang !== 'en'} />
+      </div>
     </>
   );
 }
@@ -1032,6 +1068,7 @@ function AtomLabelField({
           onUpdate({ label: { ...atom.label, [lang]: e.target.value } } as Partial<Atom>)
         }
       />
+      <TranslationReference defaultValue={atom.label?.['en'] ?? ''} visible={lang !== 'en'} />
       {helper && (
         <p className="text-[11px] mt-1" style={{ color: colors.colorBlack5 }}>
           {helper}
@@ -1292,7 +1329,7 @@ function CreditCardEditor({
         checked={cfg.linkedDeposit}
         onChange={(v) => update({ linkedDeposit: v })}
         label="Use this card for deposit"
-        description="Skip a separate deposit step if a Deposit component is in this flow."
+        description="Reuses the same card for the deposit hold."
       />
     </>
   );
@@ -1327,21 +1364,19 @@ function DepositCollectionEditor({
           border: `1px solid ${colors.colorBlack7}`,
         }}
       >
-        Deposit amount and currency come from the PMS at runtime — they
-        aren&rsquo;t configured here.
+        Amount and currency come from the PMS at runtime.
       </div>
 
       <ToggleRow
         checked={config.isCanaryProcessingDeposits}
         onChange={(v) => updateConfig('isCanaryProcessingDeposits', v)}
         label="Collect deposit"
-        description="When off, the deposit hold is skipped entirely for this property."
+        description="Off skips the deposit hold property-wide."
       />
 
       <Section title="Card surcharges">
         <p className="text-[11px] mb-2" style={{ color: colors.colorBlack4 }}>
-          Optional surcharge percentages applied per card type. Set to 0
-          to disable. Property-level — applies across all flows.
+          Per-card-type % surcharge. 0 disables. Applies property-wide.
         </p>
         <div className="grid grid-cols-2 gap-3">
           <CanaryInput

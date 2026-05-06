@@ -150,10 +150,10 @@ export function ConditionRuleEditor({
             <Icon path={mdiInformationOutline} size={0.5} color={colors.colorBlack5} />
             <span>
               {scope === 'option'
-                ? 'If none of these conditions match at runtime, the default option list applies.'
+                ? 'No match → default option list applies.'
                 : scope === 'step'
-                  ? 'If gating data is missing at runtime, the step is shown by default — guests are never blocked from a flow they can\'t evaluate.'
-                  : 'If gating data is missing at runtime, the field is shown by default — guests are never blocked from a flow they can\'t evaluate.'}
+                  ? 'Missing data → step shown by default.'
+                  : 'Missing data → field shown by default.'}
             </span>
           </div>
         </div>
@@ -202,7 +202,14 @@ function ConditionRow({
   const gateAtom: InputAtom | undefined = isFormResponse && condition.formAtomId
     ? (allAtoms.find((a) => a.id === condition.formAtomId && a.kind === 'input') as InputAtom | undefined)
     : undefined;
-  const isMultiValue = condition.operator === 'in' || condition.operator === 'not-in';
+  // includes/excludes always take an array of values; legacy in/not-in
+  // also multi-value. Single-value operators (equals, greater-than, etc.)
+  // stay scalar.
+  const isMultiValue =
+    condition.operator === 'includes' ||
+    condition.operator === 'excludes' ||
+    condition.operator === 'in' ||
+    condition.operator === 'not-in';
 
   // For form-response, narrow operators based on the gate atom's fieldType.
   const operatorLabels = isFormResponse
@@ -224,10 +231,12 @@ function ConditionRow({
 
   const handleOperatorChange = (op: ConditionOperator) => {
     if (!paramMeta) return;
-    const goingMulti = op === 'in' || op === 'not-in';
-    const wasMulti = condition.operator === 'in' || condition.operator === 'not-in';
+    const isMulti = (o: ConditionOperator) =>
+      o === 'includes' || o === 'excludes' || o === 'in' || o === 'not-in';
+    const goingMulti = isMulti(op);
+    const wasMulti = condition.operator ? isMulti(condition.operator) : false;
     let value = condition.value;
-    if (goingMulti && !wasMulti) value = condition.value != null ? [String(condition.value)] : [];
+    if (goingMulti && !wasMulti) value = condition.value != null ? [condition.value as any] : [];
     if (!goingMulti && wasMulti) value = Array.isArray(condition.value) ? condition.value[0] ?? '' : condition.value;
     if (op === 'is-true' || op === 'is-false') value = undefined as any;
     onUpdate({ operator: op, value });
@@ -418,28 +427,13 @@ function isGateableAtom(atom: Atom): atom is InputAtom {
 }
 
 /** Operators allowed for a form-response condition based on the gate atom's
- *  field type. Returns a sensible default when no atom is picked yet. */
+ *  field type. Simplified to includes / excludes per Vibhor. */
 function getOperatorsForGateAtom(atom: InputAtom | undefined): ConditionOperator[] {
-  if (!atom) return ['equals', 'not-equals'];
-  switch (atom.fieldType) {
-    case 'boolean-radio':
-      return ['equals', 'not-equals'];
-    case 'checkbox':
-      return ['is-true', 'is-false'];
-    case 'dropdown':
-    case 'string-radio':
-    case 'country':
-      return ['equals', 'not-equals', 'in', 'not-in'];
-    case 'checkbox-group':
-      return ['in', 'not-in'];
-    case 'text-input':
-    case 'text-area':
-    case 'email':
-    case 'phone':
-    case 'date':
-    default:
-      return ['equals', 'not-equals'];
-  }
+  if (!atom) return ['includes', 'excludes'];
+  // Every selection / boolean / text gate uses set membership. Numeric
+  // gate atoms get range comparisons too — but we don't ship a numeric
+  // input field type yet, so this branch is dormant.
+  return ['includes', 'excludes'];
 }
 
 /** Comparable values an atom's responses can yield. Used to render the

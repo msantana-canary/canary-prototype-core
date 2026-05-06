@@ -29,49 +29,45 @@ export const CONDITION_PARAMETERS: ParameterMeta[] = [
     id: 'nationality',
     displayName: 'Nationality',
     valueType: 'country-code',
-    allowedOperators: ['equals', 'not-equals', 'in', 'not-in'],
+    allowedOperators: ['includes', 'excludes'],
     description: 'Guest\'s country of citizenship',
   },
   {
     id: 'age',
     displayName: 'Age',
     valueType: 'number',
-    allowedOperators: ['greater-than', 'less-than', 'equals', 'not-equals'],
+    allowedOperators: ['greater-than', 'less-than', 'includes', 'excludes'],
     description: 'Guest\'s age in years',
   },
   {
     id: 'loyalty-member',
     displayName: 'Is Loyalty Member',
     valueType: 'boolean',
-    allowedOperators: ['is-true', 'is-false'],
+    allowedOperators: ['includes', 'excludes'],
     description: 'True if guest is any loyalty-program member',
   },
   {
     id: 'loyalty-tier',
     displayName: 'Loyalty Tier',
     valueType: 'loyalty-tier',
-    allowedOperators: ['equals', 'not-equals', 'in', 'not-in'],
+    allowedOperators: ['includes', 'excludes'],
     description: 'Loyalty status (Club, Silver, Gold, Platinum, Diamond)',
   },
   {
     id: 'rate-code',
     displayName: 'Rate Code',
     valueType: 'rate-code',
-    allowedOperators: ['equals', 'not-equals', 'in', 'not-in'],
+    allowedOperators: ['includes', 'excludes'],
     description: 'Booking rate code (CORP, BAR, AAA, RACK, GOV, …)',
   },
   {
     id: 'form-response',
     displayName: 'Form response',
     valueType: 'form-atom-ref',
-    // Operators are narrowed by the ConditionRuleEditor based on the chosen
-    // gate atom's fieldType (boolean → is-true/is-false; dropdown → equals/
-    // not-equals/in/not-in; number → equals/not-equals/greater-than/less-than).
-    // List all here so any narrower set is a subset.
-    allowedOperators: [
-      'equals', 'not-equals', 'in', 'not-in',
-      'greater-than', 'less-than', 'is-true', 'is-false',
-    ],
+    // The ConditionRuleEditor narrows further based on the gate atom's
+    // fieldType — but at this layer everything is includes/excludes plus
+    // numeric comparisons.
+    allowedOperators: ['includes', 'excludes', 'greater-than', 'less-than'],
     description: 'Match against the guest\'s response to another field in this flow',
   },
 ];
@@ -93,14 +89,18 @@ export const PARAMETER_MAP: Record<ConditionParameter, ParameterMeta> = CONDITIO
 );
 
 export const OPERATOR_LABELS: Record<ConditionOperator, string> = {
-  'equals': 'is',
-  'not-equals': 'is not',
-  'in': 'is any of',
-  'not-in': 'is not any of',
-  'greater-than': 'is greater than',
-  'less-than': 'is less than',
-  'is-true': 'is true',
-  'is-false': 'is false',
+  'includes': 'includes',
+  'excludes': 'excludes',
+  'greater-than': 'greater than',
+  'less-than': 'less than',
+  // Legacy operators — kept evaluable for older configs but the editor
+  // surfaces them under the new vocabulary above.
+  'equals': 'includes',
+  'not-equals': 'excludes',
+  'in': 'includes',
+  'not-in': 'excludes',
+  'is-true': 'includes',
+  'is-false': 'excludes',
 };
 
 /** Which actions are allowed depending on the condition scope. */

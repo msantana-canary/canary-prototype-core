@@ -62,6 +62,14 @@ function slugify(label: string): string {
 
 // ── Top-level editor ─────────────────────────────────────
 
+const EDITABLE_LANGUAGES: { code: string; label: string }[] = [
+  { code: 'en', label: 'EN' },
+  { code: 'es', label: 'ES' },
+  { code: 'it', label: 'IT' },
+  { code: 'zh', label: 'ZH' },
+  { code: 'ms', label: 'MS' },
+];
+
 export function OptionsEditor({ variants, onChange }: Props) {
   // Ensure there's always exactly one default variant (no conditions).
   const ensureDefault = (list: OptionVariant[]): OptionVariant[] => {
@@ -118,11 +126,44 @@ export function OptionsEditor({ variants, onChange }: Props) {
     onChange([...normalized, next]);
   };
 
+  // Language tab state — applies to ALL option labels across all variants
+  // so CS can edit Italian labels for the whole set in one pass.
+  const [lang, setLang] = useState<string>('en');
+
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <span
+          className="text-[11px]"
+          style={{ color: colors.colorBlack5 }}
+        >
+          Edit option labels in:
+        </span>
+        <div className="flex items-center gap-1">
+          {EDITABLE_LANGUAGES.map((l) => {
+            const isActive = l.code === lang;
+            return (
+              <button
+                key={l.code}
+                onClick={() => setLang(l.code)}
+                className="text-[11px] font-bold px-2 h-6 rounded transition-colors"
+                style={{
+                  backgroundColor: isActive ? colors.colorBlueDark5 : 'transparent',
+                  color: isActive ? colors.colorBlueDark1 : colors.colorBlack4,
+                  border: `1px solid ${isActive ? colors.colorBlueDark4 : colors.colorBlack7}`,
+                }}
+              >
+                {l.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <VariantBlock
         variant={defaultVariant}
         isDefault
+        lang={lang}
         onUpdate={(patch) => updateVariant(defaultVariant.id, patch)}
       />
 
@@ -131,6 +172,7 @@ export function OptionsEditor({ variants, onChange }: Props) {
           key={v.id}
           variant={v}
           isDefault={false}
+          lang={lang}
           onUpdate={(patch) => updateVariant(v.id, patch)}
           onRemove={() => removeVariant(v.id)}
         />
@@ -162,9 +204,7 @@ export function OptionsEditor({ variants, onChange }: Props) {
         >
           <Icon path={mdiInformationOutline} size={0.5} color={colors.colorBlack5} />
           <span>
-            Guests not matching any segment variant get the default option
-            list above. The default is required and applies whenever
-            segment data is missing or no variant matches.
+            No segment match → default option list applies.
           </span>
         </div>
       )}
@@ -177,11 +217,13 @@ export function OptionsEditor({ variants, onChange }: Props) {
 function VariantBlock({
   variant,
   isDefault,
+  lang,
   onUpdate,
   onRemove,
 }: {
   variant: OptionVariant;
   isDefault: boolean;
+  lang: string;
   onUpdate: (patch: Partial<OptionVariant>) => void;
   onRemove?: () => void;
 }) {
@@ -307,6 +349,7 @@ function VariantBlock({
             <OptionRow
               key={opt.id}
               option={opt}
+              lang={lang}
               isFirst={idx === 0}
               isLast={idx === variant.options.length - 1}
               onUpdate={(patch) =>
@@ -352,6 +395,7 @@ function VariantBlock({
 
 function OptionRow({
   option,
+  lang,
   isFirst,
   isLast,
   onUpdate,
@@ -360,6 +404,7 @@ function OptionRow({
   onMoveDown,
 }: {
   option: FieldOption;
+  lang: string;
   isFirst: boolean;
   isLast: boolean;
   onUpdate: (patch: Partial<FieldOption>) => void;
@@ -367,14 +412,20 @@ function OptionRow({
   onMoveUp: () => void;
   onMoveDown: () => void;
 }) {
+  const isDefaultLang = lang === 'en';
   const handleLabelChange = (raw: string) => {
-    const wasAutoValue =
-      option.value === '' || option.value === slugify(option.label?.['en'] ?? '');
-    const patch: Partial<FieldOption> = {
-      label: { ...option.label, en: raw },
-    };
-    if (wasAutoValue) patch.value = slugify(raw);
-    onUpdate(patch);
+    if (isDefaultLang) {
+      const wasAutoValue =
+        option.value === '' || option.value === slugify(option.label?.['en'] ?? '');
+      const patch: Partial<FieldOption> = {
+        label: { ...option.label, en: raw },
+      };
+      if (wasAutoValue) patch.value = slugify(raw);
+      onUpdate(patch);
+    } else {
+      // Non-EN translations don't drive the value slug
+      onUpdate({ label: { ...option.label, [lang]: raw } });
+    }
   };
 
   return (
@@ -402,25 +453,42 @@ function OptionRow({
         </button>
       </div>
 
-      {/* Label input */}
+      {/* Label input — switches based on selected language */}
       <div className="flex-1 min-w-0">
         <CanaryInput
           size={InputSize.NORMAL}
-          placeholder="Option label (shown to guest)"
-          value={option.label?.['en'] ?? ''}
+          placeholder={
+            isDefaultLang
+              ? 'Option label (shown to guest)'
+              : 'Translation — empty falls back to English'
+          }
+          value={option.label?.[lang] ?? ''}
           onChange={(e) => handleLabelChange(e.target.value)}
         />
+        {!isDefaultLang && (
+          <p
+            className="text-[11px] mt-1 px-1 italic"
+            style={{ color: colors.colorBlack5 }}
+          >
+            EN:{' '}
+            <span style={{ color: colors.colorBlack3 }}>
+              {(option.label?.['en'] ?? '').trim() || '— no English value yet —'}
+            </span>
+          </p>
+        )}
       </div>
 
-      {/* Value input */}
-      <div className="w-32 shrink-0">
-        <CanaryInput
-          size={InputSize.NORMAL}
-          placeholder="value"
-          value={option.value}
-          onChange={(e) => onUpdate({ value: e.target.value })}
-        />
-      </div>
+      {/* Value input — slug, EN-only context */}
+      {isDefaultLang && (
+        <div className="w-32 shrink-0">
+          <CanaryInput
+            size={InputSize.NORMAL}
+            placeholder="value"
+            value={option.value}
+            onChange={(e) => onUpdate({ value: e.target.value })}
+          />
+        </div>
+      )}
 
       {/* Remove */}
       <button

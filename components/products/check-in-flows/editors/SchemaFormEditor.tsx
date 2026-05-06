@@ -164,8 +164,8 @@ export function SchemaFormEditor({ step, flow, isReadOnly }: Props) {
 
         <p className="text-[11px] mb-3" style={{ color: colors.colorBlack5 }}>
           {step.templateId === 'credit-card'
-            ? 'Payment is a fixed step — card collection plus optional deposit hold. Authorize / collect controls live on the deposit component itself.'
-            : 'Drag to reorder. Component properties (label, validation, conditions) are edited by clicking the row.'}
+            ? 'Fixed step. Deposit controls live on the deposit component.'
+            : 'Drag to reorder. Click a row to edit.'}
         </p>
 
         {slots.length === 0 ? (

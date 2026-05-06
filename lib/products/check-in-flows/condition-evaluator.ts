@@ -59,12 +59,24 @@ function resolveParameter(condition: Condition, ctx: PreviewContext): any {
 
 function evaluateOperator(actual: any, op: ConditionOperator, expected: any): boolean {
   switch (op) {
+    // New simplified operators — set membership, value can be array OR scalar.
+    case 'includes': {
+      const set = Array.isArray(expected) ? expected : [expected];
+      return set.some((v) => v === actual);
+    }
+    case 'excludes': {
+      const set = Array.isArray(expected) ? expected : [expected];
+      return !set.some((v) => v === actual);
+    }
+    case 'greater-than':
+      return typeof actual === 'number' && typeof expected === 'number' && actual > expected;
+    case 'less-than':
+      return typeof actual === 'number' && typeof expected === 'number' && actual < expected;
+    // Legacy operators — same semantics as before so old configs evaluate.
     case 'equals': return actual === expected;
     case 'not-equals': return actual !== expected;
     case 'in': return Array.isArray(expected) && expected.includes(actual);
     case 'not-in': return Array.isArray(expected) && !expected.includes(actual);
-    case 'greater-than': return typeof actual === 'number' && typeof expected === 'number' && actual > expected;
-    case 'less-than': return typeof actual === 'number' && typeof expected === 'number' && actual < expected;
     case 'is-true': return actual === true;
     case 'is-false': return actual === false;
   }
