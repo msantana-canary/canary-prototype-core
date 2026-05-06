@@ -306,7 +306,7 @@ function StepListPanel({
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = '#FFF';
         }}
-        title="Add a custom step composed from Global atoms"
+        title="Add a custom step composed from Library components"
       >
         <Icon path={mdiPlus} size={0.65} />
         Add custom step
@@ -315,7 +315,7 @@ function StepListPanel({
         className="text-[11px] mt-1.5 px-1"
         style={{ color: colors.colorBlack5 }}
       >
-        Custom steps host atoms you compose from Global Config — useful for
+        Custom steps host components you compose from the Library — useful for
         hotel-specific pages like Pet Policy or Marketing Consent.
       </p>
     </div>

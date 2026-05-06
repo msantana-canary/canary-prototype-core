@@ -120,9 +120,9 @@ function PageIntro() {
       </h2>
       <p className="text-[13px]" style={{ color: colors.colorBlack4 }}>
         Catalog of components available across flows. Most authoring happens
-        in the Flows tab — edits there apply to the underlying atom here.
-        This view is for browsing, auditing, or one-off edits to atoms not
-        currently in any flow.
+        in the Flows tab — edits there apply to the underlying component here.
+        This view is for browsing, auditing, or one-off edits to components
+        not currently in any flow.
       </p>
     </div>
   );

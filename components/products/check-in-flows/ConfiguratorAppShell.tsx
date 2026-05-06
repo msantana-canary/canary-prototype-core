@@ -373,7 +373,7 @@ function LibraryRow({
       onMouseLeave={(e) => {
         if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
       }}
-      title="Browse the atom registry — every component available across flows"
+      title="Browse the component library — every component available across flows"
     >
       {isActive && (
         <span

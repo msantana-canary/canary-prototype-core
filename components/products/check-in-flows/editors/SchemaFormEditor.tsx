@@ -151,8 +151,8 @@ export function SchemaFormEditor({ step, flow, isReadOnly }: Props) {
         </div>
 
         <p className="text-[11px] mb-3" style={{ color: colors.colorBlack5 }}>
-          Drag to reorder. Atom properties (label, validation, conditions) are
-          edited in the Configuration tab.
+          Drag to reorder. Component properties (label, validation, conditions)
+          are edited by clicking the row.
         </p>
 
         {slots.length === 0 ? (
@@ -247,7 +247,7 @@ function SortableAtomSlot({
         <div
           className="flex-1 flex items-center gap-3 py-2.5 pr-3 min-w-0 cursor-pointer"
           onClick={() => useCheckInFlowsStore.getState().selectAtom(atom.id)}
-          title="Click to edit this atom"
+          title="Click to edit this component"
         >
           <div
             className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
@@ -340,7 +340,7 @@ function AddAtomToStepButton({
         iconPosition={IconPosition.LEFT}
         onClick={() => setOpen(!isOpen)}
       >
-        Add atom
+        Add component
       </CanaryButton>
       {isOpen && (
         <>
@@ -362,7 +362,7 @@ function AddAtomToStepButton({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-[13px] font-semibold" style={{ color: colors.colorBlueDark1 }}>
-                  Create new atom
+                  Create new component
                 </div>
                 <div className="text-[11px]" style={{ color: colors.colorBlack5 }}>
                   Adds a fresh input to Library + this step
@@ -371,7 +371,7 @@ function AddAtomToStepButton({
             </button>
             {available.length === 0 ? (
               <div className="p-4 text-center text-[13px]" style={{ color: colors.colorBlack5 }}>
-                All existing atoms are already in this step.
+                All existing components are already in this step.
               </div>
             ) : (
               <div className="space-y-0.5">
@@ -380,7 +380,7 @@ function AddAtomToStepButton({
                   style={{ color: colors.colorBlack5 }}
                 >
                   <Icon path={mdiOpenInNew} size={0.45} color={colors.colorBlack5} />
-                  Atoms from Global Config — pick to add to this step
+                  Components from the Library — pick to add to this step
                 </div>
                 {available.map((atom) => {
                   const display = describeAtom(atom);

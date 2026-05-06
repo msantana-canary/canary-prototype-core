@@ -67,6 +67,14 @@ export function AtomDetailPane() {
   const allAtoms = useCheckInFlowsStore((s) => s.atoms);
   const updateAtom = useCheckInFlowsStore((s) => s.updateAtom);
   const deselectAtom = useCheckInFlowsStore((s) => s.deselectAtom);
+  const allFlows = useCheckInFlowsStore((s) => s.flows);
+  const [savedToast, setSavedToast] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    if (savedToast === null) return;
+    const t = setTimeout(() => setSavedToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [savedToast]);
 
   const atom = selectedAtomId
     ? allAtoms.find((a) => a.id === selectedAtomId)
@@ -86,7 +94,6 @@ export function AtomDetailPane() {
   }
 
   const display = describeAtom(atom);
-  const [savedToast, setSavedToast] = React.useState<number | null>(null);
   const onUpdate = (updates: Partial<Atom>) => {
     updateAtom(atom.id, updates);
     setSavedToast(Date.now());
@@ -94,15 +101,8 @@ export function AtomDetailPane() {
   const onConditionsChange = (next: Condition[]) =>
     onUpdate({ conditions: next.length > 0 ? next : undefined } as Partial<Atom>);
 
-  React.useEffect(() => {
-    if (savedToast === null) return;
-    const t = setTimeout(() => setSavedToast(null), 3500);
-    return () => clearTimeout(t);
-  }, [savedToast]);
-
   // Flows that reference this atom — surface to CS so they know edits
   // propagate everywhere it's used.
-  const allFlows = useCheckInFlowsStore((s) => s.flows);
   const usedInFlowNames = allFlows
     .filter((f) => f.steps.some((step) => (step.atomIds ?? []).includes(atom.id)))
     .map((f) => f.name);
@@ -174,7 +174,7 @@ export function AtomDetailPane() {
               Saved.{' '}
               {usedInFlowNames.length > 0
                 ? `Applied to: ${usedInFlowNames.join(', ')}.`
-                : 'Atom updated in Library.'}
+                : 'Component updated in Library.'}
             </div>
             {notYetInFlowNames.length > 0 && (
               <div className="text-[11px] mt-0.5" style={{ color: colors.colorBlack4 }}>
@@ -835,7 +835,7 @@ function CreditCardEditor({
         checked={cfg.linkedDeposit}
         onChange={(v) => update({ linkedDeposit: v })}
         label="Use this card for deposit"
-        description="Skip a separate deposit step if a Deposit atom is in this flow."
+        description="Skip a separate deposit step if a Deposit component is in this flow."
       />
     </>
   );
