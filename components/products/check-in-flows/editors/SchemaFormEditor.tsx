@@ -109,11 +109,20 @@ export function SchemaFormEditor({ step, flow, isReadOnly }: Props) {
       .filter((a): a is Atom => !!a);
   }, [atomIds, allAtoms]);
 
-  // Atoms in Global not currently in this step (available to add)
+  // Components available to add — Library atoms not used anywhere in
+  // the current flow. Components are restricted to one use per flow
+  // (per Vibhor): the same data point shouldn't be collected twice.
   const availableAtoms = useMemo(() => {
-    const inStep = new Set(atomIds);
-    return allAtoms.filter((a) => !inStep.has(a.id));
-  }, [atomIds, allAtoms]);
+    const inFlow = new Set<string>();
+    for (const s of flow.steps) {
+      for (const id of s.atomIds ?? []) inFlow.add(id);
+    }
+    return allAtoms.filter((a) => !inFlow.has(a.id));
+  }, [flow.steps, allAtoms]);
+
+  // Payment step is fixed-set (card + optional deposit). Match the
+  // Library treatment of the Payment domain — no "Add component" UI.
+  const allowAddComponent = !isReadOnly && step.templateId !== 'credit-card';
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -137,9 +146,9 @@ export function SchemaFormEditor({ step, flow, isReadOnly }: Props) {
       <div className="px-6 pb-6 pt-4">
         <div className="mb-3 flex items-center justify-between gap-4">
           <h3 className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: colors.colorBlack5 }}>
-            Atoms in this step
+            Components in this step
           </h3>
-          {!isReadOnly && (
+          {allowAddComponent && (
             <AddAtomToStepButton
               available={availableAtoms}
               onPick={(id) => {
@@ -154,8 +163,9 @@ export function SchemaFormEditor({ step, flow, isReadOnly }: Props) {
         </div>
 
         <p className="text-[11px] mb-3" style={{ color: colors.colorBlack5 }}>
-          Drag to reorder. Component properties (label, validation, conditions)
-          are edited by clicking the row.
+          {step.templateId === 'credit-card'
+            ? 'Payment is a fixed step — card collection plus optional deposit hold. Authorize / collect controls live on the deposit component itself.'
+            : 'Drag to reorder. Component properties (label, validation, conditions) are edited by clicking the row.'}
         </p>
 
         {slots.length === 0 ? (
@@ -164,9 +174,9 @@ export function SchemaFormEditor({ step, flow, isReadOnly }: Props) {
             style={{ borderColor: colors.colorBlack6 }}
           >
             <p className="text-[14px] mb-3" style={{ color: colors.colorBlack5 }}>
-              No atoms in this step yet.
+              No components in this step yet.
             </p>
-            {!isReadOnly && (
+            {allowAddComponent && (
               <CanaryButton
                 type={ButtonType.PRIMARY}
                 size={ButtonSize.NORMAL}
@@ -174,7 +184,7 @@ export function SchemaFormEditor({ step, flow, isReadOnly }: Props) {
                 iconPosition={IconPosition.LEFT}
                 onClick={() => setIsAddMenuOpen(true)}
               >
-                Add first atom
+                Add first component
               </CanaryButton>
             )}
           </div>

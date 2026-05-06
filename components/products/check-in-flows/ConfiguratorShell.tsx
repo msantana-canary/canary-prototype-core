@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Icon from '@mdi/react';
 import {
   mdiChevronRight,
+  mdiChevronUp,
+  mdiChevronDown,
   mdiArrowLeft,
   mdiPencilOutline,
   mdiPlus,
@@ -370,27 +372,29 @@ function StepRow({
         </span>
       </div>
 
-      {/* Reorder up/down — appear on hover or when row is active */}
+      {/* Reorder up/down — always visible so they don't look like a
+          phantom affordance (Vibhor caught the previous hover-only
+          version as "a hidden hide button"). */}
       <div
         onClick={stop}
-        className="flex flex-col shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="flex flex-col shrink-0"
         style={{ color: colors.colorBlack5 }}
       >
         <button
           onClick={onMoveUp}
           disabled={isFirst}
-          className="w-5 h-3 flex items-center justify-center disabled:opacity-30"
+          className="w-5 h-4 flex items-center justify-center disabled:opacity-30 hover:text-[#2858C4]"
           title="Move step up"
         >
-          <span style={{ fontSize: 9, lineHeight: 1 }}>▲</span>
+          <Icon path={mdiChevronUp} size={0.55} />
         </button>
         <button
           onClick={onMoveDown}
           disabled={isLast}
-          className="w-5 h-3 flex items-center justify-center disabled:opacity-30"
+          className="w-5 h-4 flex items-center justify-center disabled:opacity-30 hover:text-[#2858C4]"
           title="Move step down"
         >
-          <span style={{ fontSize: 9, lineHeight: 1 }}>▼</span>
+          <Icon path={mdiChevronDown} size={0.55} />
         </button>
       </div>
 

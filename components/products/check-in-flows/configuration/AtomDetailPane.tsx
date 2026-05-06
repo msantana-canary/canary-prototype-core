@@ -912,15 +912,35 @@ function AtomLabelField({
   onUpdate: (updates: Partial<Atom>) => void;
   helper?: string;
 }) {
+  const [lang, setLang] = React.useState<string>('en');
+
+  const labelHas: Record<string, boolean> = {};
+  for (const code of EDITABLE_LANGUAGES.map((l) => l.code)) {
+    labelHas[code] = !!atom.label?.[code]?.trim();
+  }
+
   return (
     <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <span
+          className="text-[11px] font-semibold uppercase tracking-wider"
+          style={{ color: colors.colorBlack4 }}
+        >
+          Translations
+        </span>
+        <LanguageTabs value={lang} onChange={setLang} hasContentByLang={labelHas} />
+      </div>
       <CanaryInput
         size={InputSize.NORMAL}
-        label="Display label (EN)"
-        placeholder="Internal name shown in editor"
-        value={atom.label?.['en'] ?? ''}
+        label={`Page title (${lang.toUpperCase()})`}
+        placeholder={
+          lang === 'en'
+            ? 'Title shown to the guest at the top of this step'
+            : 'Translation — leave empty to fall back to English'
+        }
+        value={atom.label?.[lang] ?? ''}
         onChange={(e) =>
-          onUpdate({ label: { ...atom.label, en: e.target.value } } as Partial<Atom>)
+          onUpdate({ label: { ...atom.label, [lang]: e.target.value } } as Partial<Atom>)
         }
       />
       {helper && (
@@ -1150,16 +1170,6 @@ function CompletionEditor({
   );
 }
 
-const CURRENCY_OPTIONS = [
-  { value: 'USD', label: 'USD — US Dollar' },
-  { value: 'EUR', label: 'EUR — Euro' },
-  { value: 'GBP', label: 'GBP — British Pound' },
-  { value: 'CAD', label: 'CAD — Canadian Dollar' },
-  { value: 'AUD', label: 'AUD — Australian Dollar' },
-  { value: 'JPY', label: 'JPY — Japanese Yen' },
-  { value: 'CHF', label: 'CHF — Swiss Franc' },
-];
-
 function CreditCardEditor({
   atom,
   onUpdate,
@@ -1210,36 +1220,83 @@ function DepositCollectionEditor({
   const update = (patch: Partial<DepositCollectionAtomConfig>) =>
     onUpdate({ config: { ...cfg, ...patch } } as Partial<Atom>);
 
+  const config = useCheckInFlowsStore((s) => s.config);
+  const updateConfig = useCheckInFlowsStore((s) => s.updateConfig);
+
   return (
     <>
       <AtomLabelField atom={atom} onUpdate={onUpdate} />
 
-      <div className="grid grid-cols-2 gap-3">
-        <CanaryInput
-          size={InputSize.NORMAL}
-          label="Amount"
-          placeholder="0.00"
-          value={String(cfg.amount ?? 0)}
-          onChange={(e) => {
-            const n = Number(e.target.value);
-            update({ amount: Number.isFinite(n) ? n : 0 });
-          }}
-        />
-        <CanarySelect
-          size={InputSize.NORMAL}
-          label="Currency"
-          value={cfg.currency || 'USD'}
-          onChange={(e) => update({ currency: e.target.value })}
-          options={CURRENCY_OPTIONS}
-        />
+      {/* Deposit amount + currency are read from the PMS at runtime;
+          we don't expose them as editable configurator fields. Refundable
+          is a hotel policy, not a per-flow toggle. */}
+      <div
+        className="text-[11px] px-3 py-2 rounded"
+        style={{
+          backgroundColor: colors.colorBlack8,
+          color: colors.colorBlack4,
+          border: `1px solid ${colors.colorBlack7}`,
+        }}
+      >
+        Deposit amount and currency come from the PMS at runtime — they
+        aren&rsquo;t configured here.
       </div>
 
       <ToggleRow
-        checked={cfg.refundable}
-        onChange={(v) => update({ refundable: v })}
-        label="Refundable"
-        description="Released after stay if no incidentals."
+        checked={config.isCanaryProcessingDeposits}
+        onChange={(v) => updateConfig('isCanaryProcessingDeposits', v)}
+        label="Collect deposit"
+        description="When off, the deposit hold is skipped entirely for this property."
       />
+
+      <Section title="Card surcharges">
+        <p className="text-[11px] mb-2" style={{ color: colors.colorBlack4 }}>
+          Optional surcharge percentages applied per card type. Set to 0
+          to disable. Property-level — applies across all flows.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <CanaryInput
+            size={InputSize.NORMAL}
+            label="Credit (%)"
+            placeholder="0"
+            value={String(config.surchargeCredit ?? 0)}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              updateConfig('surchargeCredit', Number.isFinite(n) ? n : 0);
+            }}
+          />
+          <CanaryInput
+            size={InputSize.NORMAL}
+            label="Debit (%)"
+            placeholder="0"
+            value={String(config.surchargeDebit ?? 0)}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              updateConfig('surchargeDebit', Number.isFinite(n) ? n : 0);
+            }}
+          />
+          <CanaryInput
+            size={InputSize.NORMAL}
+            label="Prepaid (%)"
+            placeholder="0"
+            value={String(config.surchargePrepaid ?? 0)}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              updateConfig('surchargePrepaid', Number.isFinite(n) ? n : 0);
+            }}
+          />
+          <CanaryInput
+            size={InputSize.NORMAL}
+            label="Unknown (%)"
+            placeholder="0"
+            value={String(config.surchargeUnknown ?? 0)}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              updateConfig('surchargeUnknown', Number.isFinite(n) ? n : 0);
+            }}
+          />
+        </div>
+      </Section>
 
       <LocalizedField
         label="Description (EN)"
