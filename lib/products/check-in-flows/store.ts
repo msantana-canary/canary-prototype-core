@@ -204,6 +204,7 @@ interface CheckInFlowsState {
   atoms: Atom[];                                            // Phase 1: Global Config atoms
   selectedAtomId: string | null;                            // Phase 6: split-pane selection
   recentlyCreatedAtomId: string | null;                     // Used to show "newly created" banner in editor
+  pendingCloseAtomEditor: number;                           // Counter incremented when modal/parent wants to close — pane decides based on dirty state
   nav: NavState;
   previewContext: PreviewContext;
   previewSurface: 'mobile-web' | 'mobile-app';
@@ -249,6 +250,9 @@ interface CheckInFlowsState {
   markAtomAsNewlyCreated: (atomId: string) => void;
   clearNewlyCreatedAtom: () => void;
 
+  // Atom editor close request (modal backdrop, Escape, X button) — pane handles dirty check
+  requestCloseAtomEditor: () => void;
+
   // Preview
   setPreviewContext: (updates: Partial<PreviewContext>) => void;
   setPreviewSurface: (surface: 'mobile-web' | 'mobile-app') => void;
@@ -266,6 +270,7 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
   atoms: DEFAULT_ATOMS,
   selectedAtomId: null,
   recentlyCreatedAtomId: null,
+  pendingCloseAtomEditor: 0,
   nav: DEFAULT_NAV,
   previewContext: DEFAULT_PREVIEW,
   previewSurface: 'mobile-web' as const,
@@ -287,6 +292,14 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
   // Newly-created banner state
   markAtomAsNewlyCreated: (atomId) => set({ recentlyCreatedAtomId: atomId }),
   clearNewlyCreatedAtom: () => set({ recentlyCreatedAtomId: null }),
+
+  // Close-request: AtomDetailModal backdrop + Escape and the pane's X
+  // button all funnel through this. The pane's effect on
+  // pendingCloseAtomEditor decides whether to close immediately or
+  // show the unsaved-changes confirm.
+  requestCloseAtomEditor: () => set((state) => ({
+    pendingCloseAtomEditor: state.pendingCloseAtomEditor + 1,
+  })),
 
   // ── Config ────────────────────────────────────────────
   updateConfig: (key, value) => {

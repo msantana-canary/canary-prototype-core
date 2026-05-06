@@ -71,7 +71,24 @@ export function AtomDetailPane() {
   const allFlows = useCheckInFlowsStore((s) => s.flows);
   const recentlyCreatedAtomId = useCheckInFlowsStore((s) => s.recentlyCreatedAtomId);
   const clearNewlyCreatedAtom = useCheckInFlowsStore((s) => s.clearNewlyCreatedAtom);
+  const pendingCloseAtomEditor = useCheckInFlowsStore((s) => s.pendingCloseAtomEditor);
+
   const [savedToast, setSavedToast] = React.useState<number | null>(null);
+  const [draft, setDraft] = React.useState<Atom | null>(null);
+  const [confirmCloseOpen, setConfirmCloseOpen] = React.useState(false);
+
+  const storedAtom = selectedAtomId
+    ? allAtoms.find((a) => a.id === selectedAtomId)
+    : null;
+
+  // Reset draft whenever the selected atom changes — picking a different
+  // component discards any in-progress edits on the previous one (which
+  // is fine because the close-confirmation flow already gave the user
+  // a chance to save before they got here).
+  React.useEffect(() => {
+    setDraft(storedAtom ?? null);
+    setConfirmCloseOpen(false);
+  }, [selectedAtomId, storedAtom?.id]);
 
   React.useEffect(() => {
     if (savedToast === null) return;
@@ -79,11 +96,31 @@ export function AtomDetailPane() {
     return () => clearTimeout(t);
   }, [savedToast]);
 
-  const atom = selectedAtomId
-    ? allAtoms.find((a) => a.id === selectedAtomId)
-    : null;
+  // Dirty check via shallow JSON. Good enough for a prototype — atoms
+  // are small. If draft is null, we treat it as clean.
+  const isDirty = React.useMemo(() => {
+    if (!draft || !storedAtom) return false;
+    return JSON.stringify(draft) !== JSON.stringify(storedAtom);
+  }, [draft, storedAtom]);
 
-  if (!atom) {
+  // Modal backdrop / Escape / X button all funnel through
+  // pendingCloseAtomEditor. Decide here whether to close or prompt.
+  const lastCloseRequestRef = React.useRef(pendingCloseAtomEditor);
+  React.useEffect(() => {
+    if (pendingCloseAtomEditor === lastCloseRequestRef.current) return;
+    lastCloseRequestRef.current = pendingCloseAtomEditor;
+    if (!storedAtom) {
+      deselectAtom();
+      return;
+    }
+    if (isDirty) {
+      setConfirmCloseOpen(true);
+    } else {
+      deselectAtom();
+    }
+  }, [pendingCloseAtomEditor, isDirty, storedAtom, deselectAtom]);
+
+  if (!storedAtom || !draft) {
     return (
       <div className="h-full overflow-y-auto p-6">
         <div className="mb-4">
@@ -96,13 +133,35 @@ export function AtomDetailPane() {
     );
   }
 
+  const atom = draft;
   const display = describeAtom(atom);
+
   const onUpdate = (updates: Partial<Atom>) => {
-    updateAtom(atom.id, updates);
-    setSavedToast(Date.now());
+    setDraft((prev) => (prev ? ({ ...prev, ...updates } as Atom) : prev));
   };
   const onConditionsChange = (next: Condition[]) =>
     onUpdate({ conditions: next.length > 0 ? next : undefined } as Partial<Atom>);
+
+  const handleSave = () => {
+    if (!draft || !storedAtom) return;
+    updateAtom(storedAtom.id, draft);
+    setSavedToast(Date.now());
+  };
+
+  const handleSaveAndClose = () => {
+    handleSave();
+    setConfirmCloseOpen(false);
+    deselectAtom();
+  };
+
+  const handleDiscardAndClose = () => {
+    setConfirmCloseOpen(false);
+    deselectAtom();
+  };
+
+  const handleDiscard = () => {
+    if (storedAtom) setDraft(storedAtom);
+  };
 
   // Flows that reference this atom — surface to CS so they know edits
   // propagate everywhere it's used.
@@ -114,7 +173,7 @@ export function AtomDetailPane() {
     .map((f) => f.name);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {/* Header — fixed at top of pane via flex layout (no sticky) */}
       <div
         className="flex items-center gap-3 px-5 py-3 shrink-0 bg-white"
@@ -145,7 +204,10 @@ export function AtomDetailPane() {
           </p>
         </div>
         <button
-          onClick={deselectAtom}
+          onClick={() => {
+            if (isDirty) setConfirmCloseOpen(true);
+            else deselectAtom();
+          }}
           className="w-7 h-7 rounded flex items-center justify-center transition-colors"
           style={{ color: colors.colorBlack5 }}
           onMouseEnter={(e) => {
@@ -314,6 +376,130 @@ export function AtomDetailPane() {
           />
         </Section>
       </div>
+
+      {/* Save bar — pinned to the bottom of the pane. Only shows when
+          there are unsaved changes; clean state hides the bar entirely
+          so it doesn't add chrome. */}
+      {isDirty && (
+        <div
+          className="shrink-0 flex items-center justify-end gap-2 px-5 py-3"
+          style={{
+            borderTop: `1px solid ${colors.colorBlack7}`,
+            backgroundColor: '#FAFAFA',
+          }}
+        >
+          <span
+            className="mr-auto text-[11px]"
+            style={{ color: colors.colorBlack4 }}
+          >
+            Unsaved changes
+          </span>
+          <button
+            onClick={handleDiscard}
+            className="text-[12px] font-semibold px-3 h-8 rounded-md transition-colors"
+            style={{
+              color: colors.colorBlack3,
+              border: `1px solid ${colors.colorBlack6}`,
+              backgroundColor: '#FFF',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = colors.colorBlack8;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#FFF';
+            }}
+          >
+            Discard
+          </button>
+          <button
+            onClick={handleSave}
+            className="text-[12px] font-semibold px-3 h-8 rounded-md transition-colors text-white"
+            style={{ backgroundColor: colors.colorBlueDark1 }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = colors.colorBlueDark2;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = colors.colorBlueDark1;
+            }}
+          >
+            Save changes
+          </button>
+        </div>
+      )}
+
+      {/* Unsaved-changes confirm modal. Triggered by the X button or the
+          parent modal's backdrop/Escape when isDirty. Three options:
+          continue editing, save and close, or discard changes. */}
+      {confirmCloseOpen && (
+        <div
+          className="absolute inset-0 z-10 flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(15, 15, 20, 0.55)' }}
+        >
+          <div
+            className="w-[360px] max-w-[92%] bg-white rounded-lg p-5"
+            style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.25)' }}
+          >
+            <h4
+              className="text-[15px] font-bold mb-1"
+              style={{ color: colors.colorBlack1 }}
+            >
+              Unsaved changes
+            </h4>
+            <p
+              className="text-[12px] mb-4 leading-relaxed"
+              style={{ color: colors.colorBlack3 }}
+            >
+              You have unsaved edits to this component. What would you like
+              to do?
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleSaveAndClose}
+                className="text-[13px] font-semibold px-3 h-9 rounded-md text-white transition-colors"
+                style={{ backgroundColor: colors.colorBlueDark1 }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = colors.colorBlueDark2;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = colors.colorBlueDark1;
+                }}
+              >
+                Save changes and close
+              </button>
+              <button
+                onClick={() => setConfirmCloseOpen(false)}
+                className="text-[13px] font-semibold px-3 h-9 rounded-md transition-colors"
+                style={{
+                  color: colors.colorBlack2,
+                  border: `1px solid ${colors.colorBlack6}`,
+                  backgroundColor: '#FFF',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = colors.colorBlack8;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#FFF';
+                }}
+              >
+                Continue editing
+              </button>
+              <button
+                onClick={handleDiscardAndClose}
+                className="text-[12px] font-medium px-3 h-8 rounded-md transition-colors"
+                style={{ color: colors.danger }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#FBE9E9';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                Discard changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

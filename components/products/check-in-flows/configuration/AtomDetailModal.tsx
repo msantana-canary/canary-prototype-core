@@ -21,17 +21,17 @@ import { AtomDetailPane } from './AtomDetailPane';
 
 export function AtomDetailModal() {
   const selectedAtomId = useCheckInFlowsStore((s) => s.selectedAtomId);
-  const deselectAtom = useCheckInFlowsStore((s) => s.deselectAtom);
+  const requestCloseAtomEditor = useCheckInFlowsStore((s) => s.requestCloseAtomEditor);
   const isOpen = !!selectedAtomId;
 
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') deselectAtom();
+      if (e.key === 'Escape') requestCloseAtomEditor();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [isOpen, deselectAtom]);
+  }, [isOpen, requestCloseAtomEditor]);
 
   if (!isOpen) return null;
 
@@ -40,7 +40,7 @@ export function AtomDetailModal() {
       <div
         className="fixed inset-0 z-40"
         style={{ backgroundColor: 'rgba(0,0,0,0.32)' }}
-        onClick={deselectAtom}
+        onClick={requestCloseAtomEditor}
       />
       <div
         className="fixed right-0 top-0 bottom-0 z-50 bg-white flex flex-col"
