@@ -466,6 +466,16 @@ const copyBlocks: CopyBlockAtom[] = [
       en: 'I consent to receive texts and emails related to both my stay and future marketing materials.',
     },
   },
+  {
+    id: 'atom-copy-id-ocr-intro',
+    kind: 'copy-block',
+    domain: 'copy-blocks',
+    name: 'ID OCR intro',
+    deviceVisibility: visibleAll,
+    content: {
+      en: "We've extracted these details from your ID photo. Review and correct any mistakes before continuing.",
+    },
+  },
 ];
 
 // ── Aggregate ──────────────────────────────────────────

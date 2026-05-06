@@ -151,17 +151,21 @@ function buildOcrStep(flowId: string): StepInstance {
   return {
     id: nextStepId(flowId),
     templateId: 'ocr',
-    name: 'ID Scan',
+    name: 'ID OCR Review',
     kind: 'schema-form',
-    isSkippable: true,
+    isSkippable: false,
     order: 0,
     atomIds: [
+      'atom-copy-id-ocr-intro',
       'atom-id-doc-first-name',
       'atom-id-doc-last-name',
       'atom-id-doc-date-of-birth',
       'atom-id-doc-nationality',
       'atom-id-doc-document-number',
     ],
+    introText: localize(
+      'We extracted these details from your ID photo. Review and correct any mistakes before continuing.'
+    ),
     config: { kind: 'schema-form', fields },
   };
 }
@@ -256,43 +260,27 @@ function buildIdCaptureStep(flowId: string, _property: Property): StepInstance {
 }
 
 function buildCreditCardStep(flowId: string, property: Property): StepInstance {
+  // Deposit collection is folded into the payment step rather than a
+  // separate page — the deposit hold is authorized on the same card the
+  // guest just entered. No reason to make them confirm twice.
+  const atomIds = ['atom-credit-card'];
+  if (property.features.hasDepositCollection) {
+    atomIds.push('atom-deposit');
+  }
   return {
     id: nextStepId(flowId),
     templateId: 'credit-card',
-    name: 'Payment Card',
+    name: 'Payment',
     kind: 'preset',
     isSkippable: false,
     order: 0,
-    atomIds: ['atom-credit-card'],
+    atomIds,
     config: {
       kind: 'preset',
       presetType: 'credit-card',
       requireBillingAddress: true,
       requireCvc: true,
       linkedDeposit: property.features.hasDepositCollection,
-    },
-  };
-}
-
-function buildDepositStep(flowId: string, property: Property): StepInstance {
-  return {
-    id: nextStepId(flowId),
-    templateId: 'deposit-collection',
-    name: 'Deposit',
-    kind: 'preset',
-    isSkippable: false,
-    order: 0,
-    atomIds: ['atom-deposit'],
-    config: {
-      kind: 'preset',
-      presetType: 'deposit-collection',
-      amount: property.currency === 'EUR' ? 200 : property.currency === 'SGD' ? 300 : 250,
-      currency: property.currency,
-      refundable: true,
-      description: localize(
-        'A deposit hold will be authorized on your card and released at checkout.',
-        'Verrà autorizzata una cauzione sulla tua carta e rilasciata al checkout.'
-      ),
     },
   };
 }
@@ -388,26 +376,25 @@ export function generateDefaultFlow(
     steps.push(buildLoyaltyWelcomeStep(flowId, property));
   }
 
-  // ID verification block
-  if (features.hasOcr && features.hasIdVerification) {
-    steps.push(buildOcrStep(flowId));
-  }
+  // ID verification block — proper sequence is consent → capture (photo)
+  // → OCR review (extracted fields). OCR depends on the captured photo
+  // existing, so it must come after capture.
   if (features.hasIdVerification) {
     steps.push(buildIdConsentStep(flowId));
     steps.push(buildIdCaptureStep(flowId, property));
+  }
+  if (features.hasOcr && features.hasIdVerification) {
+    steps.push(buildOcrStep(flowId));
   }
 
   // Pet policy — gated by form-state condition (pet=yes on reg card).
   // Always added; runtime skips it for guests who say no/skip the pet question.
   steps.push(buildPetPolicyStep(flowId));
 
-  // Credit card
+  // Payment — credit card + (optional) deposit collection in the same step.
+  // Deposit used to be a separate page; folded into payment so the guest
+  // doesn't see two consecutive card-related screens.
   steps.push(buildCreditCardStep(flowId, property));
-
-  // Deposit if enabled
-  if (features.hasDepositCollection) {
-    steps.push(buildDepositStep(flowId, property));
-  }
 
   // Upsells (nested)
   if (features.hasUpsells) {
