@@ -28,7 +28,7 @@ import {
   colors,
 } from '@canary-ui/components';
 import Icon from '@mdi/react';
-import { mdiTuneVariant } from '@mdi/js';
+import { mdiTuneVariant, mdiTranslate } from '@mdi/js';
 
 import type {
   Atom,
@@ -51,6 +51,14 @@ interface Props {
   flow: FlowDefinition;
 }
 
+const PREVIEW_LANGUAGES: { value: string; label: string }[] = [
+  { value: 'en', label: 'English' },
+  { value: 'es', label: 'Español' },
+  { value: 'it', label: 'Italiano' },
+  { value: 'zh', label: '中文' },
+  { value: 'ms', label: 'Bahasa Melayu' },
+];
+
 export function PreviewContextSelector({ flow }: Props) {
   const allAtoms = useCheckInFlowsStore((s) => s.atoms);
   const previewContext = useCheckInFlowsStore((s) => s.previewContext);
@@ -58,7 +66,6 @@ export function PreviewContextSelector({ flow }: Props) {
 
   const gateAtoms = useGateAtoms(flow, allAtoms);
   const guestParams = useReferencedGuestParams(flow, allAtoms);
-  if (gateAtoms.length === 0 && guestParams.length === 0) return null;
 
   const setResponse = (atomId: string, value: string | number | boolean | undefined) => {
     setPreviewContext({
@@ -74,15 +81,33 @@ export function PreviewContextSelector({ flow }: Props) {
         backgroundColor: colors.colorBlack8,
       }}
     >
+      {/* Language picker — always visible. Switches the preview locale
+          via previewContext.language. Atoms without a translation for
+          the chosen language fall back to English via resolveText. */}
       <div className="flex items-center gap-1.5 shrink-0">
-        <Icon path={mdiTuneVariant} size={0.55} color={colors.colorBlack4} />
-        <span
-          className="text-[11px] font-bold uppercase tracking-wider"
-          style={{ color: colors.colorBlack4 }}
-        >
-          Simulate
-        </span>
+        <Icon path={mdiTranslate} size={0.55} color={colors.colorBlack4} />
+        <CanarySelect
+          size={InputSize.NORMAL}
+          value={previewContext.language ?? 'en'}
+          onChange={(e) => setPreviewContext({ language: e.target.value })}
+          options={PREVIEW_LANGUAGES.map((l) => ({
+            value: l.value,
+            label: l.label,
+          }))}
+        />
       </div>
+
+      {(guestParams.length > 0 || gateAtoms.length > 0) && (
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Icon path={mdiTuneVariant} size={0.55} color={colors.colorBlack4} />
+          <span
+            className="text-[11px] font-bold uppercase tracking-wider"
+            style={{ color: colors.colorBlack4 }}
+          >
+            Simulate
+          </span>
+        </div>
+      )}
       {guestParams.map((param) => (
         <GuestParamControl
           key={param}

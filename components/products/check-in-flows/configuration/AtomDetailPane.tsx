@@ -504,6 +504,62 @@ export function AtomDetailPane() {
   );
 }
 
+// ── Language tab strip — used by InputAtomDetails + CopyBlockAtomDetails ──
+
+const EDITABLE_LANGUAGES: { code: string; label: string }[] = [
+  { code: 'en', label: 'EN' },
+  { code: 'es', label: 'ES' },
+  { code: 'it', label: 'IT' },
+  { code: 'zh', label: 'ZH' },
+  { code: 'ms', label: 'MS' },
+];
+
+function LanguageTabs({
+  value,
+  onChange,
+  hasContentByLang,
+}: {
+  value: string;
+  onChange: (lang: string) => void;
+  hasContentByLang?: Record<string, boolean>;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      {EDITABLE_LANGUAGES.map((lang) => {
+        const isActive = lang.code === value;
+        const hasContent = hasContentByLang?.[lang.code];
+        return (
+          <button
+            key={lang.code}
+            onClick={() => onChange(lang.code)}
+            className="text-[11px] font-bold px-2 h-6 rounded transition-colors flex items-center gap-1"
+            style={{
+              backgroundColor: isActive ? colors.colorBlueDark5 : 'transparent',
+              color: isActive ? colors.colorBlueDark1 : colors.colorBlack4,
+              border: `1px solid ${isActive ? colors.colorBlueDark4 : colors.colorBlack7}`,
+            }}
+            title={isActive ? 'Editing' : `Switch to ${lang.label}`}
+          >
+            {lang.label}
+            {hasContent === false && (
+              <span
+                style={{
+                  width: 4,
+                  height: 4,
+                  borderRadius: '50%',
+                  backgroundColor: colors.colorBlack5,
+                  display: 'inline-block',
+                }}
+                title="No translation yet — falls back to English"
+              />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Section ──────────────────────────────────────────
 
 const SURFACE_TOGGLES: Array<{ key: Surface; label: string; icon: string }> = [
@@ -636,6 +692,12 @@ function InputAtomDetails({
   onUpdate: (updates: Partial<Atom>) => void;
 }) {
   const meta = getFieldTypeMeta(atom.fieldType);
+  const [lang, setLang] = React.useState<string>('en');
+
+  const labelHas: Record<string, boolean> = {};
+  for (const code of EDITABLE_LANGUAGES.map((l) => l.code)) {
+    labelHas[code] = !!atom.label?.[code]?.trim();
+  }
 
   const fieldTypeOptions: { value: string; label: string; disabled?: boolean }[] = [];
   (Object.keys(FIELD_TYPES_BY_CATEGORY) as FieldTypeCategory[]).forEach((cat) => {
@@ -676,34 +738,56 @@ function InputAtomDetails({
         options={fieldTypeOptions}
       />
 
+      <div className="flex items-center justify-between">
+        <span
+          className="text-[11px] font-semibold uppercase tracking-wider"
+          style={{ color: colors.colorBlack4 }}
+        >
+          Translations
+        </span>
+        <LanguageTabs value={lang} onChange={setLang} hasContentByLang={labelHas} />
+      </div>
+
       <CanaryInput
         size={InputSize.NORMAL}
-        label="Label (EN)"
-        placeholder="Field label shown to guest"
-        value={atom.label?.['en'] ?? ''}
+        label={`Label (${lang.toUpperCase()})`}
+        placeholder={
+          lang === 'en'
+            ? 'Field label shown to guest'
+            : 'Translation — leave empty to fall back to English'
+        }
+        value={atom.label?.[lang] ?? ''}
         onChange={(e) =>
-          onUpdate({ label: { ...atom.label, en: e.target.value } } as Partial<Atom>)
+          onUpdate({ label: { ...atom.label, [lang]: e.target.value } } as Partial<Atom>)
         }
       />
       <CanaryInput
         size={InputSize.NORMAL}
-        label="Placeholder (EN)"
-        placeholder="Optional placeholder text"
-        value={atom.placeholder?.['en'] ?? ''}
+        label={`Placeholder (${lang.toUpperCase()})`}
+        placeholder={
+          lang === 'en'
+            ? 'Optional placeholder text'
+            : 'Translation — leave empty to fall back to English'
+        }
+        value={atom.placeholder?.[lang] ?? ''}
         onChange={(e) =>
           onUpdate({
-            placeholder: { ...(atom.placeholder ?? {}), en: e.target.value },
+            placeholder: { ...(atom.placeholder ?? {}), [lang]: e.target.value },
           } as Partial<Atom>)
         }
       />
       <CanaryInput
         size={InputSize.NORMAL}
-        label="Helper text (EN)"
-        placeholder="Optional hint shown under the field"
-        value={atom.helperText?.['en'] ?? ''}
+        label={`Helper text (${lang.toUpperCase()})`}
+        placeholder={
+          lang === 'en'
+            ? 'Optional hint shown under the field'
+            : 'Translation — leave empty to fall back to English'
+        }
+        value={atom.helperText?.[lang] ?? ''}
         onChange={(e) =>
           onUpdate({
-            helperText: { ...(atom.helperText ?? {}), en: e.target.value },
+            helperText: { ...(atom.helperText ?? {}), [lang]: e.target.value },
           } as Partial<Atom>)
         }
       />
@@ -740,6 +824,13 @@ function CopyBlockAtomDetails({
   atom: CopyBlockAtom;
   onUpdate: (updates: Partial<Atom>) => void;
 }) {
+  const [lang, setLang] = React.useState<string>('en');
+
+  const contentHas: Record<string, boolean> = {};
+  for (const code of EDITABLE_LANGUAGES.map((l) => l.code)) {
+    contentHas[code] = !!atom.content?.[code]?.trim();
+  }
+
   return (
     <>
       <CanaryInput
@@ -749,15 +840,30 @@ function CopyBlockAtomDetails({
         value={atom.name}
         onChange={(e) => onUpdate({ name: e.target.value } as Partial<Atom>)}
       />
+
+      <div className="flex items-center justify-between">
+        <span
+          className="text-[11px] font-semibold uppercase tracking-wider"
+          style={{ color: colors.colorBlack4 }}
+        >
+          Translations
+        </span>
+        <LanguageTabs value={lang} onChange={setLang} hasContentByLang={contentHas} />
+      </div>
+
       <CanaryTextArea
         size={InputSize.NORMAL}
-        label="Content (EN)"
-        placeholder="Compliance / policy text shown to guest"
-        value={atom.content?.['en'] ?? ''}
+        label={`Content (${lang.toUpperCase()})`}
+        placeholder={
+          lang === 'en'
+            ? 'Compliance / policy text shown to guest'
+            : 'Translation — leave empty to fall back to English'
+        }
+        value={atom.content?.[lang] ?? ''}
         rows={6}
         onChange={(e) =>
           onUpdate({
-            content: { ...atom.content, en: e.target.value },
+            content: { ...atom.content, [lang]: e.target.value },
           } as Partial<Atom>)
         }
       />
