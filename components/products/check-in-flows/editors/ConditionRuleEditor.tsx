@@ -224,7 +224,17 @@ function ConditionRow({
     const param = raw as ConditionParameter;
     const meta = PARAMETER_MAP[param];
     const firstOp = meta.allowedOperators[0];
-    const defaultValue = getDefaultValue(meta.valueType);
+    const isMultiOp =
+      firstOp === 'includes' ||
+      firstOp === 'excludes' ||
+      firstOp === 'in' ||
+      firstOp === 'not-in';
+    const scalarDefault = getDefaultValue(meta.valueType);
+    const defaultValue = isMultiOp
+      ? scalarDefault !== undefined && scalarDefault !== ''
+        ? [scalarDefault]
+        : []
+      : scalarDefault;
     // Switching parameter resets formAtomId (only meaningful for form-response).
     onUpdate({ parameter: param, formAtomId: undefined, operator: firstOp, value: defaultValue });
   };
@@ -352,7 +362,7 @@ function ValueInput({
     case 'country-code':
       return isMultiValue ? (
         <MultiSelect
-          value={(value as string[]) ?? []}
+          value={toMultiValue(value)}
           options={COUNTRIES.map((c) => ({ value: c.code, label: `${c.name} (${c.code})` }))}
           onChange={onChange}
           disabled={disabled}
@@ -370,7 +380,7 @@ function ValueInput({
     case 'loyalty-tier':
       return isMultiValue ? (
         <MultiSelect
-          value={(value as string[]) ?? []}
+          value={toMultiValue(value)}
           options={LOYALTY_TIERS.map((t) => ({ value: t.value, label: t.label }))}
           onChange={onChange}
           disabled={disabled}
@@ -388,7 +398,7 @@ function ValueInput({
     case 'rate-code':
       return isMultiValue ? (
         <MultiSelect
-          value={(value as string[]) ?? []}
+          value={toMultiValue(value)}
           options={RATE_CODES.map((r) => ({ value: r.value, label: r.label }))}
           onChange={onChange}
           disabled={disabled}
@@ -508,15 +518,23 @@ function FormResponseValueEditor({
 
   const handleAtomChange = (atomId: string) => {
     if (!atomId) {
-      onUpdate({ formAtomId: undefined, operator: 'equals', value: '' });
+      onUpdate({ formAtomId: undefined, operator: 'includes', value: [] });
       return;
     }
     const newAtom = gateableAtoms.find((a) => a.id === atomId);
     const ops = getOperatorsForGateAtom(newAtom);
-    const firstOp = ops[0] ?? 'equals';
-    const goingMulti = firstOp === 'in' || firstOp === 'not-in';
+    const firstOp = ops[0] ?? 'includes';
+    const isMultiOp =
+      firstOp === 'includes' ||
+      firstOp === 'excludes' ||
+      firstOp === 'in' ||
+      firstOp === 'not-in';
     const defaultV = getDefaultValueForGateAtom(newAtom);
-    const value = goingMulti ? (defaultV ? [defaultV] : []) : defaultV;
+    const value = isMultiOp
+      ? defaultV !== undefined && defaultV !== ''
+        ? [defaultV]
+        : []
+      : defaultV;
     onUpdate({ formAtomId: atomId, operator: firstOp, value });
   };
 
@@ -591,7 +609,7 @@ function FormResponseValuePicker({
   if (options.length > 0) {
     return isMultiValue ? (
       <MultiSelect
-        value={(value as string[]) ?? []}
+        value={toMultiValue(value)}
         options={options}
         onChange={onChange}
         disabled={disabled}
@@ -620,6 +638,16 @@ function FormResponseValuePicker({
 
 // ──────────────────────────────────────────────────────────
 
+/** Defensively coerce a condition value to a string[] so the MultiSelect
+ *  picker can render it. Scalar values (legacy seed data, or operator
+ *  switches that didn't migrate) become single-element arrays; nullish
+ *  values become empty arrays. */
+function toMultiValue(v: any): string[] {
+  if (v == null) return [];
+  if (Array.isArray(v)) return v.map((x) => String(x));
+  return [String(v)];
+}
+
 function getDefaultValue(valueType: string): any {
   switch (valueType) {
     case 'country-code': return 'US';
@@ -633,7 +661,7 @@ function getDefaultValue(valueType: string): any {
 }
 
 function MultiSelect({
-  value,
+  value: rawValue,
   options,
   onChange,
   disabled,
@@ -645,6 +673,15 @@ function MultiSelect({
   disabled?: boolean;
   placeholder?: string;
 }) {
+  // Belt-and-braces: even though every caller now passes an array, an
+  // older callsite or a stale cached condition could send through a
+  // scalar. Coerce to array so .map / .length / .includes never throw.
+  const value: string[] = Array.isArray(rawValue)
+    ? rawValue
+    : rawValue == null
+      ? []
+      : [String(rawValue)];
+
   const toggle = (v: string) => {
     if (value.includes(v)) onChange(value.filter((x) => x !== v));
     else onChange([...value, v]);
