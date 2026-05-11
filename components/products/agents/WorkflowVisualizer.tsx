@@ -14,7 +14,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@mdi/react';
-import { mdiFlashOutline, mdiDeleteOutline, mdiPlusCircleOutline } from '@mdi/js';
+import { mdiFlashOutline, mdiDeleteOutline, mdiPlusCircleOutline, mdiChevronUp, mdiChevronDown } from '@mdi/js';
 import { CanaryButton, CanaryInput, CanaryTextArea, ButtonType, ButtonSize, InputSize } from '@canary-ui/components';
 import type { AgentWorkflow, WorkflowStep, StepCondition } from '@/lib/products/agents/types';
 
@@ -178,6 +178,14 @@ export default function WorkflowVisualizer({
       description: '',
     };
     emit({ steps: [...workflow.steps, newStep] });
+  };
+
+  const moveStep = (fromIdx: number, toIdx: number) => {
+    if (!workflow || fromIdx === toIdx) return;
+    const steps = [...workflow.steps];
+    const [moved] = steps.splice(fromIdx, 1);
+    steps.splice(toIdx, 0, moved);
+    emit({ steps });
   };
 
   // ---------- Empty state ----------
@@ -344,17 +352,35 @@ export default function WorkflowVisualizer({
               {/* ---------- Editable mode ---------- */}
               {editable ? (
                 <>
-                  {/* Header: "Step N" title + trash button (KBSection pattern) */}
-                  <div className="flex items-start justify-between">
+                  {/* Header: "Step N" title + reorder + trash */}
+                  <div className="flex items-center justify-between">
                     <div style={{ flex: 1 }}>
                       <h4 style={{ fontSize: 14, fontWeight: 500, color: '#000', margin: 0 }}>
                         Step {i + 1}
                       </h4>
                     </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      {i > 0 && (
+                        <CanaryButton
+                          type={ButtonType.ICON_SECONDARY}
+                          size={ButtonSize.COMPACT}
+                          icon={<Icon path={mdiChevronUp} size={0.75} />}
+                          onClick={() => moveStep(i, i - 1)}
+                        />
+                      )}
+                      {i < wf.steps.length - 1 && (
+                        <CanaryButton
+                          type={ButtonType.ICON_SECONDARY}
+                          size={ButtonSize.COMPACT}
+                          icon={<Icon path={mdiChevronDown} size={0.75} />}
+                          onClick={() => moveStep(i, i + 1)}
+                        />
+                      )}
+                    </div>
                     <CanaryButton
                       type={ButtonType.ICON_SECONDARY}
                       size={ButtonSize.COMPACT}
-                      icon={<Icon path={mdiDeleteOutline} size={0.75} color="#2858C4" />}
+                      icon={<Icon path={mdiDeleteOutline} size={0.75} color="#CC3340" />}
                       onClick={() => {
                         if (isPendingDelete) {
                           deleteStep(step.id);
