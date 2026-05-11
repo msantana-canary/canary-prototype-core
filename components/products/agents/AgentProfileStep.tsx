@@ -197,30 +197,23 @@ export default function AgentProfileStep() {
       >
         <div style={{ marginBottom: 16 }}>
           <p style={{ fontSize: 18, fontWeight: 500, lineHeight: '28px', color: '#000', margin: 0 }}>
-            Operating Rules
+            Operating Rules & Guardrails
           </p>
           <p style={{ fontSize: 16, fontWeight: 400, lineHeight: '24px', color: '#000', margin: '4px 0 0 0' }}>
-            Define how this agent should operate and what it should never do.
+            Define how this agent should behave — guidelines it follows and boundaries it respects.
           </p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <CanaryTextArea
-            label="Rules & Guidelines"
-            value={behavioralGuidelines}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBehavioralGuidelines(e.target.value)}
-            placeholder="Enter operating rules and guidelines..."
-            rows={6}
-          />
-
-          <CanaryTextArea
-            label="Guardrails"
-            value={guardrailsText}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setGuardrailsText(e.target.value)}
-            placeholder="Enter guardrails (what the agent should never do)..."
-            rows={4}
-          />
-        </div>
+        <CanaryTextArea
+          label="Rules, guidelines, and guardrails"
+          value={behavioralGuidelines + (guardrailsText ? (behavioralGuidelines ? '\n\n' : '') + guardrailsText : '')}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+            setBehavioralGuidelines(e.target.value);
+            setGuardrailsText('');
+          }}
+          placeholder="Enter operating rules, behavioral guidelines, and guardrails..."
+          rows={8}
+        />
       </div>
 
       {/* Communication Settings — optional, collapsible */}
