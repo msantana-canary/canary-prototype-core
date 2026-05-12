@@ -16,7 +16,6 @@ import {
 } from '@canary-ui/components';
 import { useCheckInConfigStore } from '@/lib/products/guest-preview/check-in-config-store';
 import { HOTEL_POLICY_TEXT, DEMO_RESERVATION } from '@/lib/products/guest-preview/mock-form-data';
-import { GuestSignaturePad } from '@/components/core/GuestSignaturePad';
 import { GuestBottomSheet } from '@/components/core/GuestBottomSheet';
 import Icon from '@mdi/react';
 import { mdiChevronRight, mdiCheckboxBlankOutline, mdiCheckboxMarked } from '@mdi/js';
@@ -130,7 +129,6 @@ export function RegistrationCard() {
         {regCardFields.arrivalTime && (
           <CanarySelectUnderline
             label="Estimated arrival time (required)"
-            placeholder="Estimated arrival time (required)"
             options={ARRIVAL_OPTIONS}
             size={InputSize.LARGE}
           />
@@ -243,14 +241,6 @@ export function RegistrationCard() {
           </ThemedCheckbox>
         )}
       </div>
-
-      {/* Signature */}
-      {regCardFields.signature && (
-        <div style={{ padding: '16px 24px' }}>
-          <p style={{ fontSize: 14, color: 'rgba(0,0,0,0.5)', marginBottom: 8 }}>Signature</p>
-          <GuestSignaturePad borderRadius="8px" />
-        </div>
-      )}
 
       {/* Bottom Sheet: Policies (Figma 5:2433) */}
       <GuestBottomSheet isOpen={policyOpen} onClose={() => setPolicyOpen(false)} title="Policies">

@@ -10,6 +10,8 @@ import { useCheckInConfigStore } from '@/lib/products/guest-preview/check-in-con
 import Icon from '@mdi/react';
 import { mdiCameraOutline, mdiCheckCircleOutline } from '@mdi/js';
 
+const DEMO_ID_IMAGE = '/id-scans/maria-id.png';
+
 export function IDPhotos() {
   const theme = useCheckInConfigStore((s) => s.theme);
   const idOptions = useCheckInConfigStore((s) => s.idOptions);
@@ -38,16 +40,15 @@ export function IDPhotos() {
       <CaptureBox
         captured={captured}
         onCapture={() => setCaptured(true)}
-        onRetake={() => setCaptured(false)}
         label="Take photo of your ID"
         primaryColor={theme.primaryColor}
+        capturedImage={DEMO_ID_IMAGE}
       />
 
       {idOptions.requireBackPhoto && (
         <CaptureBox
           captured={backCaptured}
           onCapture={() => setBackCaptured(true)}
-          onRetake={() => setBackCaptured(false)}
           label="Take photo of ID back"
           primaryColor={theme.primaryColor}
         />
@@ -57,7 +58,6 @@ export function IDPhotos() {
         <CaptureBox
           captured={false}
           onCapture={() => {}}
-          onRetake={() => {}}
           label="Take a selfie"
           primaryColor={theme.primaryColor}
           aspectRatio="1/1"
@@ -68,24 +68,34 @@ export function IDPhotos() {
 }
 
 function CaptureBox({
-  captured, onCapture, onRetake, label, primaryColor, aspectRatio = '382/248',
+  captured, onCapture, label, primaryColor, aspectRatio = '382/248', capturedImage,
 }: {
-  captured: boolean; onCapture: () => void; onRetake: () => void;
-  label: string; primaryColor: string; aspectRatio?: string;
+  captured: boolean; onCapture: () => void;
+  label: string; primaryColor: string; aspectRatio?: string; capturedImage?: string;
 }) {
   if (captured) {
     return (
-      <div className="flex flex-col items-center gap-3">
-        <div
-          className="w-full rounded-lg flex flex-col items-center justify-center gap-2"
-          style={{ aspectRatio, backgroundColor: `${primaryColor}10`, border: `1px solid ${primaryColor}` }}
-        >
-          <Icon path={mdiCheckCircleOutline} size={1.5} color={primaryColor} />
-          <span style={{ fontSize: 16, fontWeight: 500, color: primaryColor }}>Photo captured</span>
-        </div>
-        <button onClick={onRetake} style={{ fontSize: 14, fontWeight: 500, color: primaryColor }}>
-          Retake
-        </button>
+      <div className="flex flex-col items-center">
+        {capturedImage ? (
+          <div
+            className="w-full rounded-lg overflow-hidden"
+            style={{ aspectRatio, border: `1px solid ${primaryColor}` }}
+          >
+            <img
+              src={capturedImage}
+              alt="Captured ID"
+              className="w-full h-full object-cover"
+            />
+          </div>
+        ) : (
+          <div
+            className="w-full rounded-lg flex flex-col items-center justify-center gap-2"
+            style={{ aspectRatio, backgroundColor: `${primaryColor}10`, border: `1px solid ${primaryColor}` }}
+          >
+            <Icon path={mdiCheckCircleOutline} size={1.5} color={primaryColor} />
+            <span style={{ fontSize: 16, fontWeight: 500, color: primaryColor }}>Photo captured</span>
+          </div>
+        )}
       </div>
     );
   }

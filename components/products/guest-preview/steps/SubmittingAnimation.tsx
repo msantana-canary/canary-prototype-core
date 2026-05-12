@@ -1,12 +1,5 @@
 'use client';
 
-/**
- * SubmittingAnimation — Completion screen matching Figma
- *
- * Door hanger icon, "Thanks for submitting your check-in!",
- * green checkmarks for completed steps.
- */
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useCheckInConfigStore } from '@/lib/products/guest-preview/check-in-config-store';
 import { resolveIncludedSteps } from '@/lib/products/guest-preview/check-in-flow-engine';
@@ -22,97 +15,114 @@ const STEP_LABELS: Partial<Record<CheckInStep, string>> = {
   [CheckInStep.CREDIT_CARD]: 'Credit card info',
   [CheckInStep.CREDIT_CARD_PHOTOS]: 'Card photos',
   [CheckInStep.ADDITIONAL_GUESTS]: 'Additional guests',
+  [CheckInStep.SIGNATURE]: 'Signature',
 };
+
+const TRANSITION_DELAY_SECONDS = 1;
+
+function DoorHangerV2({ color }: { color: string }) {
+  return (
+    <svg width="49" height="99" viewBox="0 0 49 99" fill={color} style={{ width: 90, height: 100 }}>
+      <path d="M26.1234 0.552455C11.8504 -0.366374 -0.00292969 10.905 -0.00292969 24.9941V30.936C-0.00292969 34.2857 2.70804 37.0006 6.06167 37.0006C9.4001 37.0006 12.0954 34.3053 12.0954 30.936V25.3005C12.0954 17.0394 17.526 12.5589 24.4082 12.5589C37.701 12.5589 41.3764 30.4461 30.0745 36.97L3.21323 51.6717C1.22228 52.7437 -0.00292969 54.8264 -0.00292969 57.0624V95.44C-0.00292969 97.1246 1.37539 98.5029 3.05994 98.5029H45.9401C47.6553 98.5029 49.0029 97.1246 49.0029 95.44V25.8211C49.0029 12.7733 39.1406 1.37949 26.1234 0.552455ZM24.5 89.1305C19.4464 89.1305 15.3114 85.0264 15.3114 79.9419C15.3114 74.8577 19.4464 70.7533 24.5 70.7533C29.5845 70.7533 33.6886 74.8577 33.6886 79.9419C33.6886 85.0264 29.5845 89.1305 24.5 89.1305Z" />
+    </svg>
+  );
+}
 
 export function SubmittingAnimation() {
   const theme = useCheckInConfigStore((s) => s.theme);
   const store = useCheckInConfigStore();
+  const goToNextStep = useCheckInConfigStore((s) => s.goToNextStep);
   const resetFlow = useCheckInConfigStore((s) => s.resetFlow);
 
   const includedSteps = resolveIncludedSteps(store).filter(
     (s) =>
       s.step !== CheckInStep.RESERVATION_LANDING &&
       s.step !== CheckInStep.SUBMITTING &&
+      s.step !== CheckInStep.COMPENDIUM &&
       s.isCounted
   );
 
-  const [completedCount, setCompletedCount] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(0);
+  const [showLookForward, setShowLookForward] = useState(false);
   const totalSteps = includedSteps.length;
 
   useEffect(() => {
-    if (completedCount >= totalSteps) {
-      const timer = setTimeout(() => setIsComplete(true), 500);
+    if (visibleCount < totalSteps) {
+      const timer = setTimeout(
+        () => setVisibleCount((c) => c + 1),
+        TRANSITION_DELAY_SECONDS * 1000
+      );
       return () => clearTimeout(timer);
     }
-    const timer = setTimeout(() => setCompletedCount((c) => c + 1), 350);
-    return () => clearTimeout(timer);
-  }, [completedCount, totalSteps]);
 
-  const handleStartOver = useCallback(() => {
-    setCompletedCount(0);
-    setIsComplete(false);
-    resetFlow();
-  }, [resetFlow]);
+    const lookForwardTimer = setTimeout(() => {
+      setShowLookForward(true);
+    }, TRANSITION_DELAY_SECONDS * 1000);
 
-  if (!isComplete) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-6 px-6 py-12">
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center animate-spin"
-          style={{ borderWidth: 3, borderColor: `${theme.primaryColor}30`, borderTopColor: theme.primaryColor }}
-        />
-        <p className="text-[18px] text-[#666]">Submitting your check-in...</p>
-      </div>
-    );
-  }
+    const redirectTimer = setTimeout(() => {
+      goToNextStep();
+    }, (TRANSITION_DELAY_SECONDS + 2) * 1000);
+
+    return () => {
+      clearTimeout(lookForwardTimer);
+      clearTimeout(redirectTimer);
+    };
+  }, [visibleCount, totalSteps, goToNextStep]);
 
   return (
-    <div className="flex flex-col items-center px-6 py-12" style={{ backgroundColor: theme.backgroundColor }}>
-      {/* Door hanger icon (Canary branded — gold) */}
-      <div className="mb-6">
-        <svg width="64" height="80" viewBox="0 0 64 80" fill="none">
-          <path d="M48 0H16C7.16 0 0 7.16 0 16v48c0 8.84 7.16 16 16 16h32c8.84 0 16-7.16 16-16V16C64 7.16 56.84 0 48 0z" fill={theme.primaryColor} />
-          <circle cx="32" cy="28" r="12" fill="none" stroke="white" strokeWidth="3" />
-          <rect x="28" y="44" width="8" height="20" rx="4" fill="white" />
-        </svg>
-      </div>
+    <div
+      className="flex flex-col items-center h-full"
+      style={{ backgroundColor: theme.backgroundColor }}
+    >
+      {/* Progress section — matches production: p-40, gap-40 */}
+      <div className="flex flex-col items-center flex-1 gap-10 p-10">
+        {/* Door hanger icon — production: 90x100 */}
+        <DoorHangerV2 color={theme.primaryColor} />
 
-      {/* Title */}
-      <h2
-        className="text-[24px] font-medium text-center leading-[36px] mb-8"
-        style={{ color: theme.primaryColor }}
-      >
-        Thanks for submitting your check-in!
-      </h2>
+        {/* Title — production: $title-lg, headerColor, centered */}
+        <h1
+          className="text-[24px] font-semibold text-center leading-[36px]"
+          style={{ color: theme.primaryColor }}
+        >
+          Thanks for submitting your check-in!
+        </h1>
 
-      {/* Checkmarks */}
-      <div className="flex flex-col gap-4 w-full max-w-[280px]">
-        {includedSteps.map((step, i) => {
-          const label = STEP_LABELS[step.step] ?? step.label;
-          const isChecked = i < completedCount;
-          return (
-            <div key={step.step} className="flex items-center gap-3">
+        {/* Checklist — production: 16px, 20px margin-bottom, staggered fade */}
+        <div className="flex flex-col items-start">
+          {includedSteps.map((step, i) => {
+            const label = STEP_LABELS[step.step] ?? step.label;
+            const isVisible = i < visibleCount;
+            return (
               <div
-                className="w-6 h-6 flex items-center justify-center transition-all duration-300"
-                style={{ opacity: isChecked ? 1 : 0.3 }}
+                key={step.step}
+                className="flex items-center mb-5 last:mb-0 transition-opacity duration-500"
+                style={{ opacity: isVisible ? 1 : 0 }}
               >
-                <Icon path={mdiCheck} size={0.85} color={isChecked ? theme.primaryColor : '#ccc'} />
+                <div className="flex-shrink-0 mr-2.5" style={{ width: 18, height: 18 }}>
+                  <Icon path={mdiCheck} size="18px" color={theme.primaryColor} />
+                </div>
+                <span
+                  className="text-[16px] font-light leading-[24px]"
+                  style={{ color: theme.fontColor }}
+                >
+                  {label}
+                </span>
               </div>
-              <span className="text-[18px] text-black">{label}</span>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
 
-      {/* Start over (demo only) */}
-      <button
-        onClick={handleStartOver}
-        className="mt-12 text-[14px] font-medium underline"
-        style={{ color: theme.primaryColor }}
-      >
-        Start over (demo)
-      </button>
+        {/* Look forward text — appears after all checklist items */}
+        <p
+          className="text-[16px] font-light text-center leading-[24px] transition-opacity duration-500"
+          style={{
+            color: theme.fontColor,
+            opacity: showLookForward ? 1 : 0,
+          }}
+        >
+          We look forward to seeing you!
+        </p>
+      </div>
     </div>
   );
 }

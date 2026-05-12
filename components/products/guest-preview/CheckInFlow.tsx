@@ -35,7 +35,9 @@ import { IDPhotos } from './steps/IDPhotos';
 import { IDVerification } from './steps/IDVerification';
 import { Addons } from './steps/Addons';
 import { AdditionalGuests } from './steps/AdditionalGuests';
+import { Signature } from './steps/Signature';
 import { SubmittingAnimation } from './steps/SubmittingAnimation';
+import { Compendium } from './steps/Compendium';
 import Icon from '@mdi/react';
 import { mdiArrowLeft } from '@mdi/js';
 
@@ -48,6 +50,7 @@ const STEP_TITLES: Partial<Record<CheckInStep, string>> = {
   [CheckInStep.CREDIT_CARD]: 'Credit card',
   [CheckInStep.CREDIT_CARD_PHOTOS]: 'Card photos',
   [CheckInStep.ADDITIONAL_GUESTS]: 'Additional guests',
+  [CheckInStep.SIGNATURE]: 'Signature',
 };
 
 export function CheckInFlow() {
@@ -61,8 +64,9 @@ export function CheckInFlow() {
   const isSecondStep = store.currentStepIndex === 1;
   const isLanding = currentStep?.step === CheckInStep.RESERVATION_LANDING;
   const isSubmitting = currentStep?.step === CheckInStep.SUBMITTING;
+  const isCompendium = currentStep?.step === CheckInStep.COMPENDIUM;
   const isAddons = currentStep?.step === CheckInStep.ADDONS;
-  const showHeader = !isLanding && !isSubmitting;
+  const showHeader = !isLanding && !isSubmitting && !isCompendium;
 
   // All main flow steps show progress bar header (back button reserved for sub-pages like room upgrade detail)
   const showBackButton = false;
@@ -253,8 +257,12 @@ function StepContent({ step }: { step?: CheckInStep }) {
       return <CreditCardPhotos />;
     case CheckInStep.ADDITIONAL_GUESTS:
       return <AdditionalGuests />;
+    case CheckInStep.SIGNATURE:
+      return <Signature />;
     case CheckInStep.SUBMITTING:
       return <SubmittingAnimation />;
+    case CheckInStep.COMPENDIUM:
+      return <Compendium />;
     default:
       return null;
   }

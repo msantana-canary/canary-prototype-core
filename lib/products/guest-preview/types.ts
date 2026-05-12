@@ -22,7 +22,9 @@ export enum CheckInStep {
   CREDIT_CARD = 'credit_card',
   CREDIT_CARD_PHOTOS = 'credit_card_photos',
   ADDITIONAL_GUESTS = 'additional_guests',
+  SIGNATURE = 'signature',
   SUBMITTING = 'submitting',
+  COMPENDIUM = 'compendium',
 }
 
 export interface StepDefinition {

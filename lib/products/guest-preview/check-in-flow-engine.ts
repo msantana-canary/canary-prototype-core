@@ -72,9 +72,21 @@ export function resolveAllSteps(config: CheckInConfigState): StepDefinition[] {
       isCounted: true,
     },
     {
+      step: CheckInStep.SIGNATURE,
+      label: 'Signature',
+      isIncluded: true,
+      isCounted: true,
+    },
+    {
       step: CheckInStep.SUBMITTING,
       label: 'Submitting',
-      isIncluded: true, // always included
+      isIncluded: true,
+      isCounted: false,
+    },
+    {
+      step: CheckInStep.COMPENDIUM,
+      label: 'Compendium',
+      isIncluded: true,
       isCounted: false,
     },
   ];

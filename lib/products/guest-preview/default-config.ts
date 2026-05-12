@@ -18,7 +18,7 @@ export const DEFAULT_CHECK_IN_CONFIG: CheckInConfigState = {
   idWithOCR: false,
   creditCardMode: OptionalStep.REQUIRED,
   creditCardPhotosEnabled: false,
-  additionalGuestsEnabled: true,
+  additionalGuestsEnabled: false,
 
   // Group 2: Registration Card Fields
   regCardFields: {

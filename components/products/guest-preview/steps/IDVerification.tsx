@@ -12,6 +12,8 @@ import { useCheckInConfigStore } from '@/lib/products/guest-preview/check-in-con
 import Icon from '@mdi/react';
 import { mdiShieldCheckOutline, mdiCheckCircleOutline, mdiCameraOutline } from '@mdi/js';
 
+const DEMO_ID_IMAGE = '/id-scans/maria-id.png';
+
 type VerificationState = 'consent' | 'scanning' | 'complete';
 
 export function IDVerification() {
@@ -38,23 +40,31 @@ export function IDVerification() {
         <p className="text-[18px] text-black leading-[28px] text-center">
           Position your ID within the frame
         </p>
-        {/* Viewfinder */}
+        {/* Viewfinder with ID image */}
         <div
-          className="w-full rounded-lg flex flex-col items-center justify-center gap-8"
+          className="w-full rounded-lg overflow-hidden relative"
           style={{
-            aspectRatio: '3/4',
-            backgroundColor: `${theme.primaryColor}1A`,
-            border: `1px solid ${theme.primaryColor}1A`,
+            aspectRatio: '382/248',
+            border: `2px solid ${theme.primaryColor}`,
           }}
         >
-          {/* Frame corners */}
-          <div className="relative w-48 h-32">
-            <div className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 rounded-tl" style={{ borderColor: theme.primaryColor }} />
-            <div className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 rounded-tr" style={{ borderColor: theme.primaryColor }} />
-            <div className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 rounded-bl" style={{ borderColor: theme.primaryColor }} />
-            <div className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 rounded-br" style={{ borderColor: theme.primaryColor }} />
+          <img
+            src={DEMO_ID_IMAGE}
+            alt="ID scan"
+            className="w-full h-full object-cover"
+          />
+          {/* Scanning overlay */}
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ backgroundColor: `${theme.primaryColor}15` }}
+          >
+            <div className="relative w-[85%] h-[80%]">
+              <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 rounded-tl" style={{ borderColor: theme.primaryColor }} />
+              <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 rounded-tr" style={{ borderColor: theme.primaryColor }} />
+              <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 rounded-bl" style={{ borderColor: theme.primaryColor }} />
+              <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 rounded-br" style={{ borderColor: theme.primaryColor }} />
+            </div>
           </div>
-          <Icon path={mdiCameraOutline} size={1.2} color={theme.primaryColor} />
         </div>
         <button
           onClick={() => setState('complete')}
