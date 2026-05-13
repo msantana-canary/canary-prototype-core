@@ -4,31 +4,35 @@ import React from 'react';
 import { useCheckInConfigStore } from '@/lib/products/guest-preview/check-in-config-store';
 import Icon from '@mdi/react';
 import {
-  mdiClockOutline,
-  mdiMapMarkerOutline,
+  mdiAccountOutline,
+  mdiOfficeBuilding,
   mdiMessageTextOutline,
   mdiCurrencyUsd,
-  mdiInformationOutline,
+  mdiRoomServiceOutline,
+  mdiChevronRight,
 } from '@mdi/js';
 import Image from 'next/image';
 
-const ACTION_ITEMS = [
-  { icon: mdiClockOutline, label: 'Early Check-in', sublabel: 'Available from 1:00 PM', price: '$59' },
-  { icon: mdiClockOutline, label: 'Late Checkout', sublabel: 'Extend until 2:00 PM', price: '$49' },
-];
-
-const NAV_ITEMS = [
-  { icon: mdiInformationOutline, label: 'Property Info' },
+const CTA_ITEMS = [
+  { icon: mdiAccountOutline, label: 'My Reservation' },
+  { icon: mdiOfficeBuilding, label: 'Property Info' },
   { icon: mdiMessageTextOutline, label: 'Message Us' },
   { icon: mdiCurrencyUsd, label: 'Tip Staff' },
-  { icon: mdiMapMarkerOutline, label: 'Explore Area' },
+  { icon: mdiRoomServiceOutline, label: 'Service Requests' },
+];
+
+const UPSELL_CARDS = [
+  { name: 'Early Check-in', description: '1:00 PM arrival', price: '$59', image: '/images/hotel-property.png' },
+  { name: 'Late Checkout', description: 'Depart by 2:00 PM', price: '$49', image: '/images/hotel-property.png' },
+  { name: 'Premium Suite Upgrade', description: 'Corner suite, park view', price: '$125', image: '/images/hotel-property.png' },
 ];
 
 const AMENITY_CARDS = [
-  { name: 'The Statler Lounge', description: 'Craft cocktails in an Art Deco setting', image: '/images/hotel-property.png' },
-  { name: 'Statler Grill', description: 'Modern American cuisine', image: '/images/hotel-property.png' },
-  { name: 'The Library Bar', description: 'Intimate wine & spirits', image: '/images/hotel-property.png' },
-  { name: 'Rooftop Terrace', description: 'Skyline views & light fare', image: '/images/hotel-property.png' },
+  { name: 'Orla by Michael Mina', keywords: 'Fine Dining · Mediterranean', image: '/images/hotel-property.png' },
+  { name: 'Orla Bar', keywords: 'Cocktails · Lounge', image: '/images/hotel-property.png' },
+  { name: 'Sweet July Café', keywords: 'Coffee · Pastries · Breakfast', image: '/images/hotel-property.png' },
+  { name: 'Azure Bar', keywords: 'Rooftop · Drinks · Views', image: '/images/hotel-property.png' },
+  { name: 'The Spa at Statler', keywords: 'Wellness · Massage · Sauna', image: '/images/hotel-property.png' },
 ];
 
 export function Compendium() {
@@ -40,131 +44,144 @@ export function Compendium() {
       className="flex flex-col h-full"
       style={{ backgroundColor: theme.backgroundColor, color: theme.fontColor }}
     >
-      {/* iOS Status Bar */}
-      <img
-        src="/images/ios-status-bar.png"
-        alt=""
-        className="w-full flex-shrink-0"
-        draggable={false}
-        style={{ filter: 'invert(1)' }}
-      />
-
       <div className="flex-1 overflow-y-auto">
-        {/* Hotel logo + welcome */}
-        <div className="flex flex-col items-center px-6 pt-4 pb-2">
-          <div className="relative" style={{ width: 120, height: 56 }}>
-            <Image
-              src="/images/hotel-logo.png"
-              alt="The Statler New York"
-              fill
-              className="object-contain"
-            />
-          </div>
-        </div>
-
-        {/* Welcome message */}
-        <div className="px-6 py-4">
+        {/* Hero image — production: CanaryHeroImage, max-height 224px */}
+        <div className="relative w-full" style={{ height: 224 }}>
+          <Image
+            src="/images/hotel-property.png"
+            alt="The Statler New York"
+            fill
+            className="object-cover"
+            priority
+          />
+          {/* iOS status bar overlay */}
+          <img
+            src="/images/ios-status-bar.png"
+            alt=""
+            className="absolute top-0 left-0 right-0 z-10 w-full"
+            draggable={false}
+          />
+          {/* Gradient fade at bottom */}
           <div
-            className="rounded-lg p-6"
-            style={{ backgroundColor: theme.cardBackgroundColor }}
+            className="absolute bottom-0 left-0 right-0"
+            style={{
+              height: 80,
+              background: `linear-gradient(to bottom, transparent 0%, ${theme.backgroundColor} 100%)`,
+            }}
+          />
+        </div>
+
+        {/* Hotel logo — production: max-height 64px, max-width 180px */}
+        <div className="flex justify-center" style={{ marginTop: -32 }}>
+          <div
+            className="relative z-10 rounded-lg overflow-hidden px-4 py-2"
+            style={{ backgroundColor: theme.cardBackgroundColor, boxShadow: '0 2px 12px rgba(0,0,0,0.1)' }}
           >
-            <p className="text-[18px] leading-[28px]" style={{ color: theme.fontColor }}>
-              Thank you for completing your check-in. We look forward to providing you with a wonderful and luxurious stay.
-            </p>
+            <div className="relative" style={{ width: 140, height: 52 }}>
+              <Image
+                src="/images/hotel-logo.png"
+                alt="The Statler New York"
+                fill
+                className="object-contain"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Action cards (Early Check-in, Late Checkout) */}
-        <div className="px-6 pb-4">
-          <div className="flex gap-2">
-            {ACTION_ITEMS.map((item) => (
+        {/* Reservation action — production: PostCheckIn with custom message */}
+        <div className="px-6 pt-5 pb-3">
+          <p
+            className="text-[18px] leading-[28px]"
+            style={{ color: theme.fontColor }}
+          >
+            Thank you for completing your check-in. We look forward to providing you with a wonderful and luxurious stay.
+          </p>
+        </div>
+
+        {/* CTA grid — production: 3-col flex grid, SHADED buttons with icon-position TOP */}
+        <div className="px-6 pb-5">
+          <div className="flex flex-wrap gap-2">
+            {CTA_ITEMS.map((item) => (
               <button
                 key={item.label}
-                className="flex-1 flex flex-col items-center justify-center p-4 rounded"
-                style={{ backgroundColor: `${theme.primaryColor}15` }}
+                className="flex flex-col items-center justify-center gap-1 py-4 rounded"
+                style={{
+                  backgroundColor: `${theme.primaryColor}12`,
+                  flex: '1 1 calc(33.333% - 6px)',
+                  minWidth: 0,
+                }}
               >
                 <Icon path={item.icon} size={0.85} color={theme.primaryColor} />
                 <span
-                  className="text-[13px] font-medium mt-1 text-center"
+                  className="text-[12px] font-medium text-center leading-tight px-1"
                   style={{ color: theme.fontColor }}
                 >
                   {item.label}
                 </span>
-                <span
-                  className="text-[16px] font-semibold mt-0.5"
-                  style={{ color: theme.primaryColor }}
-                >
-                  {item.price}
-                </span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Navigation grid */}
-        <div className="px-6 pb-4">
-          <div className="grid grid-cols-2 gap-2">
-            {NAV_ITEMS.map((item) => (
-              <button
-                key={item.label}
-                className="flex items-center gap-3 p-4 rounded"
-                style={{ backgroundColor: theme.cardBackgroundColor, border: '1px solid rgba(0,0,0,0.08)' }}
-              >
-                <Icon path={item.icon} size={0.8} color={theme.primaryColor} />
-                <span className="text-[14px] font-medium" style={{ color: theme.fontColor }}>
-                  {item.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Amenities section */}
-        <div className="px-6 pt-2 pb-2">
-          <h3
-            className="text-[20px] font-semibold leading-[30px]"
-            style={{ color: theme.fontColor }}
-          >
-            Explore The Statler
-          </h3>
-        </div>
-
-        {/* Horizontal scrolling amenity cards */}
-        <div className="overflow-x-auto pb-6">
-          <div className="flex gap-3 px-6" style={{ width: 'max-content' }}>
-            {AMENITY_CARDS.map((card) => (
-              <div
-                key={card.name}
-                className="rounded-lg overflow-hidden flex-shrink-0"
-                style={{
-                  width: 240,
-                  backgroundColor: theme.cardBackgroundColor,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                }}
-              >
-                <div className="relative" style={{ height: 140 }}>
-                  <Image
-                    src={card.image}
-                    alt={card.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div className="p-4">
-                  <p className="text-[16px] font-semibold leading-[24px]" style={{ color: theme.fontColor }}>
-                    {card.name}
-                  </p>
-                  <p className="text-[13px] mt-1" style={{ color: 'rgba(0,0,0,0.5)' }}>
-                    {card.description}
-                  </p>
-                </div>
+        {/* Add-ons / Upsells carousel — production: AddonsCarousel + RoomUpgradesCarousel */}
+        <CarouselSection title="Add-ons" theme={theme}>
+          {UPSELL_CARDS.map((card) => (
+            <div
+              key={card.name}
+              className="rounded-lg overflow-hidden flex-shrink-0"
+              style={{
+                width: 200,
+                backgroundColor: theme.cardBackgroundColor,
+                boxShadow: '0 1px 6px rgba(0,0,0,0.08)',
+              }}
+            >
+              <div className="relative" style={{ height: 120 }}>
+                <Image src={card.image} alt={card.name} fill className="object-cover" />
               </div>
-            ))}
-          </div>
-        </div>
+              <div className="p-3">
+                <p className="text-[15px] font-semibold leading-[22px]" style={{ color: theme.fontColor }}>
+                  {card.name}
+                </p>
+                <p className="text-[12px] mt-0.5" style={{ color: 'rgba(0,0,0,0.45)' }}>
+                  {card.description}
+                </p>
+                <p className="text-[16px] font-semibold mt-2" style={{ color: theme.primaryColor }}>
+                  {card.price}
+                </p>
+              </div>
+            </div>
+          ))}
+        </CarouselSection>
+
+        {/* Amenities carousel — production: SectionCarousel for each GuestSection */}
+        <CarouselSection title="Dining & Amenities" theme={theme}>
+          {AMENITY_CARDS.map((card) => (
+            <div
+              key={card.name}
+              className="rounded-lg overflow-hidden flex-shrink-0"
+              style={{
+                width: 200,
+                backgroundColor: theme.cardBackgroundColor,
+                boxShadow: '0 1px 6px rgba(0,0,0,0.08)',
+              }}
+            >
+              <div className="relative" style={{ height: 140 }}>
+                <Image src={card.image} alt={card.name} fill className="object-cover" />
+              </div>
+              <div className="p-3">
+                <p className="text-[15px] font-semibold leading-[22px]" style={{ color: theme.fontColor }}>
+                  {card.name}
+                </p>
+                <p className="text-[12px] mt-0.5" style={{ color: 'rgba(0,0,0,0.45)' }}>
+                  {card.keywords}
+                </p>
+              </div>
+            </div>
+          ))}
+        </CarouselSection>
 
         {/* Demo restart */}
-        <div className="flex justify-center pb-6">
+        <div className="flex justify-center py-6">
           <button
             onClick={resetFlow}
             className="text-[14px] font-medium underline"
@@ -172,6 +189,37 @@ export function Compendium() {
           >
             Start over (demo)
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CarouselSection({
+  title,
+  theme,
+  children,
+}: {
+  title: string;
+  theme: { primaryColor: string; fontColor: string };
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="pb-5">
+      {/* Section header — production: TitleTypography + "View All" link */}
+      <div className="flex items-center justify-between px-6 pb-3">
+        <h3 className="text-[18px] font-semibold" style={{ color: theme.fontColor }}>
+          {title}
+        </h3>
+        <button className="flex items-center text-[13px] font-medium" style={{ color: theme.primaryColor }}>
+          View All
+          <Icon path={mdiChevronRight} size={0.6} color={theme.primaryColor} />
+        </button>
+      </div>
+      {/* Horizontal scroll — production: CanaryCarousel */}
+      <div className="overflow-x-auto">
+        <div className="flex gap-3 px-6" style={{ width: 'max-content' }}>
+          {children}
         </div>
       </div>
     </div>

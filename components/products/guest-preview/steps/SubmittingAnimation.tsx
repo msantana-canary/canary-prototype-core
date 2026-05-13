@@ -74,8 +74,8 @@ export function SubmittingAnimation() {
       className="flex flex-col items-center h-full"
       style={{ backgroundColor: theme.backgroundColor }}
     >
-      {/* Progress section — matches production: p-40, gap-40 */}
-      <div className="flex flex-col items-center flex-1 gap-10 p-10">
+      {/* Progress section — centered vertically in the phone frame */}
+      <div className="flex flex-col items-center justify-center flex-1 gap-10 px-10">
         {/* Door hanger icon — production: 90x100 */}
         <DoorHangerV2 color={theme.primaryColor} />
 
