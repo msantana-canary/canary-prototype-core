@@ -166,6 +166,8 @@ function buildFlowsFromConfig(config: CheckInConfig): FlowDefinition[] {
 
 export interface NavState {
   tab: 'configuration' | 'flows';
+  /** CS mode = full configurator; property = simplified hotel-facing view. */
+  viewMode: 'cs' | 'property';
   flowId: string | null;
   stepId: string | null;
   isEditingStep: boolean;
@@ -173,8 +175,8 @@ export interface NavState {
 }
 
 const DEFAULT_NAV: NavState = {
-  // Flow-first pivot: Flows is the primary CS surface; Library (atoms) is secondary.
   tab: 'flows',
+  viewMode: 'cs',
   flowId: null,
   stepId: null,
   isEditingStep: false,
@@ -220,6 +222,7 @@ interface CheckInFlowsState {
 
   // Navigation
   setTab: (tab: NavState['tab']) => void;
+  setViewMode: (mode: NavState['viewMode']) => void;
   selectFlow: (flowId: string) => void;
   deselectFlow: () => void;
   selectStep: (stepId: string) => void;
@@ -325,6 +328,9 @@ export const useCheckInFlowsStore = create<CheckInFlowsState>((set, get) => ({
   // ── Navigation ────────────────────────────────────────
   setTab: (tab) => set((state) => ({
     nav: { ...state.nav, tab, flowId: null, stepId: null, isEditingStep: false, fieldId: null },
+  })),
+  setViewMode: (mode) => set((state) => ({
+    nav: { ...state.nav, viewMode: mode, flowId: null, stepId: null, isEditingStep: false, fieldId: null },
   })),
 
   selectFlow: (flowId) => set((state) => {

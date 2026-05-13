@@ -37,6 +37,7 @@ import type {
 import { getStepTemplateMeta } from '@/lib/products/check-in-flows/step-templates';
 import { CheckInConfigPage } from './CheckInConfigPage';
 import { ConfiguratorAppShell } from './ConfiguratorAppShell';
+import { PropertyFlowView } from './PropertyFlowView';
 import { AtomDetailModal } from './configuration/AtomDetailModal';
 import { PhoneFrame } from '@/components/core/PhoneFrame';
 import { StepRenderer } from './preview/StepRenderer';
@@ -53,12 +54,20 @@ export function ConfiguratorShell() {
   const flow = useFlowById(nav.flowId);
   const step = useStepById(nav.flowId, nav.stepId);
 
+  // Property mode gets its own dedicated view — no split pane, no
+  // atom detail modal, no library tab. Just the simplified visual
+  // step-by-step with inline editing.
+  if (nav.viewMode === 'property') {
+    return (
+      <ConfiguratorAppShell>
+        <PropertyFlowView />
+      </ConfiguratorAppShell>
+    );
+  }
+
   return (
     <ConfiguratorAppShell>
       <div className="h-full flex flex-col overflow-hidden bg-white">
-        {/* Slim header — title pulled from the active flow / library tab.
-            The sidebar is the primary nav, so the inner header is just
-            a content title + breadcrumb for sub-pages. */}
         <div
           className="bg-white shrink-0 flex items-center justify-between"
           style={{
@@ -136,9 +145,6 @@ export function ConfiguratorShell() {
           )}
         </div>
 
-        {/* Flow-first atom editor: clicking an atom slot in a flow step opens
-            this side panel. Library tab uses its own inline right-pane editor
-            inside CheckInConfigPage, so we only mount the modal on Flows. */}
         {nav.tab === 'flows' && <AtomDetailModal />}
       </div>
     </ConfiguratorAppShell>
