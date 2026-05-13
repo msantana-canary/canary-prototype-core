@@ -20,10 +20,14 @@ import {
   Connection,
   ConnectorConfig,
   GambitRule,
+  TeamWorkflowTemplate,
   WizardStep,
+  WorkflowTemplate,
+  WorkflowTemplateCategory,
   CANARY_PRODUCTS,
 } from './types';
 import { mockAgents, availableConnections, mockConnectors, mockWorkflowColdLead, mockWorkflowContractPrep } from './mock-data';
+import { defaultTeamTemplates } from './workflow-templates';
 
 interface AgentStoreState {
   // Navigation
@@ -76,6 +80,14 @@ interface AgentStoreState {
 
   // Toast
   toastMessage: string | null;
+
+  // Workflow template library
+  showWorkflowTemplateLibrary: boolean;
+  workflowTemplateFilter: WorkflowTemplateCategory | 'all' | 'team';
+  teamTemplates: TeamWorkflowTemplate[];
+
+  // Workflow test mode
+  testModeWorkflowId: string | null;
 
   // Navigation actions
   setView: (view: AppView) => void;
@@ -139,6 +151,16 @@ interface AgentStoreState {
   selectWorkflow: (id: string | null) => void;
   addWorkflow: (workflow: AgentWorkflow) => void;
   createNewWorkflow: () => void;
+
+  // Workflow template library
+  setShowWorkflowTemplateLibrary: (show: boolean) => void;
+  setWorkflowTemplateFilter: (filter: WorkflowTemplateCategory | 'all' | 'team') => void;
+  addWorkflowFromTemplate: (template: WorkflowTemplate) => void;
+  saveWorkflowAsTeamTemplate: (workflowId: string) => void;
+
+  // Workflow test mode
+  startTestMode: (workflowId: string) => void;
+  stopTestMode: () => void;
 
   // Deploy + reset
   resetBuilder: () => void;
@@ -255,6 +277,10 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
   showDeployModal: false,
   selectedThreadId: null,
   toastMessage: null,
+  showWorkflowTemplateLibrary: false,
+  workflowTemplateFilter: 'all',
+  teamTemplates: [...defaultTeamTemplates],
+  testModeWorkflowId: null,
   ...initialWizardState,
 
   // -- Navigation --
@@ -297,7 +323,7 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
       set({ selectedAgentId: id, currentView: 'detail', editAgentTab: 'overview' });
     }
   },
-  goBack: () => set({ currentView: 'dashboard', selectedAgentId: null, showDeployModal: false, selectedThreadId: null, ...initialWizardState }),
+  goBack: () => set({ currentView: 'dashboard', selectedAgentId: null, showDeployModal: false, selectedThreadId: null, showWorkflowTemplateLibrary: false, workflowTemplateFilter: 'all', testModeWorkflowId: null, ...initialWizardState }),
 
   // -- Agent CRUD --
   createAgent: (agent) =>
@@ -552,7 +578,65 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
     }));
   },
 
-  resetBuilder: () => set(initialWizardState),
+  // -- Workflow template library --
+  setShowWorkflowTemplateLibrary: (show) => set({ showWorkflowTemplateLibrary: show }),
+  setWorkflowTemplateFilter: (filter) => set({ workflowTemplateFilter: filter }),
+  addWorkflowFromTemplate: (template) => {
+    const ts = Date.now();
+    const clonedWf: AgentWorkflow = {
+      id: `wf-${ts}`,
+      name: template.name,
+      description: template.description,
+      trigger: template.trigger,
+      triggerDescription: template.triggerDescription,
+      steps: template.steps.map((s, i) => ({
+        ...s,
+        id: `step-${ts}-${i}`,
+        conditions: s.conditions?.map((c, j) => ({ ...c, id: `cond-${ts}-${i}-${j}` })),
+      })),
+      guardrails: [...template.guardrails],
+    };
+    set((s) => ({
+      wizardWorkflows: [...s.wizardWorkflows, clonedWf],
+      selectedWorkflowId: clonedWf.id,
+      currentWorkflow: clonedWf,
+      builderMessages: [],
+      showWorkflowTemplateLibrary: false,
+    }));
+  },
+
+  saveWorkflowAsTeamTemplate: (workflowId) => {
+    const wf = get().wizardWorkflows.find((w) => w.id === workflowId);
+    if (!wf || !wf.name) return;
+    const template: TeamWorkflowTemplate = {
+      id: `team-${Date.now()}`,
+      name: wf.name,
+      description: wf.description || '',
+      category: 'operations',
+      tags: [],
+      popularity: 3,
+      source: 'team',
+      sharedBy: 'Theresa Webb',
+      sharedAt: new Date().toISOString(),
+      trigger: wf.trigger,
+      triggerDescription: wf.triggerDescription,
+      steps: wf.steps.map((s) => ({ ...s })),
+      guardrails: [...wf.guardrails],
+    };
+    set((s) => ({ teamTemplates: [...s.teamTemplates, template] }));
+    get().showToast(`"${wf.name}" saved as team template`);
+  },
+
+  // -- Workflow test mode --
+  startTestMode: (workflowId) => {
+    const wf = get().wizardWorkflows.find((w) => w.id === workflowId);
+    if (wf) {
+      set({ testModeWorkflowId: workflowId, selectedWorkflowId: workflowId, currentWorkflow: wf });
+    }
+  },
+  stopTestMode: () => set({ testModeWorkflowId: null }),
+
+  resetBuilder: () => set({ ...initialWizardState, showWorkflowTemplateLibrary: false, workflowTemplateFilter: 'all', testModeWorkflowId: null }),
 
   // -- Deploy agent from wizard data --
   saveDraft: () => {

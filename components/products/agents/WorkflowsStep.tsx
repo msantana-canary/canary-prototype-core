@@ -149,6 +149,7 @@ export default function WorkflowsStep({ hideHeader, editable }: { hideHeader?: b
           workflow={currentWorkflow}
           editable={editable}
           onChange={editable ? handleVisualizerChange : undefined}
+          workflows={wizardWorkflows}
         />
       </div>
     </div>

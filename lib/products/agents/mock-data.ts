@@ -385,6 +385,8 @@ export const mockWorkflowColdLead: AgentWorkflow = {
   description: 'Re-engages leads that went silent after initial proposal. Sends progressive follow-ups based on event type and timeline.',
   trigger: 'Detect Silent Lead',
   triggerDescription: 'Monitor for leads with no response after 48 hours from initial proposal.',
+  role: 'sub',
+  parentWorkflowId: 'wf-sales-inquiry',
   steps: [
     {
       id: 'cl-s1',
@@ -433,6 +435,8 @@ export const mockWorkflowContractPrep: AgentWorkflow = {
   description: 'After a site visit or meeting is completed, prepares and sends a contract draft with deposit schedule and cancellation terms.',
   trigger: 'Meeting Completed',
   triggerDescription: 'Detect when a scheduled meeting or site visit is marked as completed in the calendar.',
+  role: 'sub',
+  parentWorkflowId: 'wf-sales-inquiry',
   steps: [
     {
       id: 'cp-s2',
@@ -957,7 +961,11 @@ const fdWorkflowBooking: AgentWorkflow = {
         { id: 'fdb-c6', condition: 'If booking fails', action: 'Apologize and suggest calling the front desk' },
       ],
     },
-    { id: 'fdb-s4', type: 'response', label: 'Send Confirmation', description: 'Send booking confirmation with CTL confirmation number, dates, room type, 48-hour cancellation policy, and check-in instructions.' },
+    { id: 'fdb-s4', type: 'response', label: 'Send Confirmation', description: 'Send booking confirmation with CTL confirmation number, dates, room type, 48-hour cancellation policy, and check-in instructions.',
+      conditions: [
+        { id: 'fdb-c9', condition: 'If guest expresses interest in upgrades', action: 'Run Upsell Offer workflow', invokesWorkflowId: 'wf-fd-upsell' },
+      ],
+    },
   ],
   guardrails: ['Never override published rates without manager approval.', 'Always include The Statler\'s 48-hour free cancellation policy in booking confirmation.', 'Only offer Standard King, Deluxe Double, or Executive Suite — no room types outside the Statler inventory.'],
 };
@@ -995,7 +1003,7 @@ const fdWorkflowServiceTicket: AgentWorkflow = {
       conditions: [
         { id: 'fdt-c1', condition: 'If clear match found', action: 'Use matched HotSOS ticket type' },
         { id: 'fdt-c2', condition: 'If ambiguous', action: 'Ask one clarifying question before proceeding' },
-        { id: 'fdt-c3', condition: 'If safety issue (leak, fire, lockout)', action: 'Skip ticket — escalate to staff immediately' },
+        { id: 'fdt-c3', condition: 'If safety issue (leak, fire, lockout)', action: 'Run Staff Escalation workflow', invokesWorkflowId: 'wf-fd-escalation' },
         { id: 'fdt-c4', condition: 'If housekeeping request', action: 'Route to Housekeeping (ext. 310) via HotSOS — 30 min SLA' },
         { id: 'fdt-c5', condition: 'If maintenance/repair request', action: 'Route to Maintenance (ext. 300) via HotSOS — 1 hour SLA' },
       ],
@@ -1054,7 +1062,11 @@ const fdWorkflowCheckout: AgentWorkflow = {
         { id: 'fdc-c6', condition: 'If checkout after 2 PM without approval', action: 'Charge additional half-day rate — escalate to front desk manager' },
       ],
     },
-    { id: 'fdc-s4', type: 'response', label: 'Departure Confirmation', description: 'Send thank-you message from The Statler New York with feedback survey link and rebooking incentive.' },
+    { id: 'fdc-s4', type: 'response', label: 'Departure Confirmation', description: 'Send thank-you message from The Statler New York with feedback survey link and rebooking incentive.',
+      conditions: [
+        { id: 'fdc-c7', condition: 'After checkout completes', action: 'Run Survey Response workflow', invokesWorkflowId: 'wf-fd-survey' },
+      ],
+    },
   ],
   guardrails: ['Never adjust charges without staff approval.', 'Always include feedback survey in departure message.', 'Standard checkout is 11 AM, late checkout until 2 PM ($50 fee, free for Diamond Elite).'],
 };
@@ -1187,12 +1199,13 @@ const ciWorkflowProcessSubmission: AgentWorkflow = {
   description: 'Validates check-in data, syncs to PMS, and auto-marks verified if all checks pass.',
   trigger: 'Check-in Submitted',
   triggerDescription: 'Guest completes and submits their pre-arrival check-in form.',
+  role: 'primary',
   steps: [
     { id: 'cip-s1', type: 'action', label: 'Validate Completeness', description: 'Check that all required fields are filled — registration card, payment (if required), ID (if required).',
       conditions: [
         { id: 'cip-c1', condition: 'If all required steps complete', action: 'Proceed to PMS sync' },
-        { id: 'cip-c2', condition: 'If partially submitted (missing required steps)', action: 'Flag as incomplete — send guest a reminder to finish' },
-        { id: 'cip-c11', condition: 'If non-prepaid rate and no deposit captured', action: 'Flag for deposit collection — Statler requires $100/night hold for non-prepaid rates' },
+        { id: 'cip-c2', condition: 'If ID verification required', action: 'Run ID Verification Review workflow', invokesWorkflowId: 'wf-ci-id' },
+        { id: 'cip-c11', condition: 'If deposit or payment required', action: 'Run Payment Reconciliation workflow', invokesWorkflowId: 'wf-ci-payment' },
       ],
     },
     { id: 'cip-s2', type: 'action', label: 'Sync to PMS', description: 'Push registration card data, payment method, and guest details to Oracle Opera PMS via gateway API.',
@@ -1204,10 +1217,10 @@ const ciWorkflowProcessSubmission: AgentWorkflow = {
     },
     { id: 'cip-s3', type: 'action', label: 'Auto-verify Eligibility', description: 'Check if submission qualifies for automatic check-in — valid ID, deposit captured, no flags.',
       conditions: [
-        { id: 'cip-c6', condition: 'If all verifications pass', action: 'Auto-mark as Verified (ready for check-in)' },
+        { id: 'cip-c6', condition: 'If all verifications pass', action: 'Run Room Assignment & Key workflow', invokesWorkflowId: 'wf-ci-room' },
         { id: 'cip-c7', condition: 'If any verification pending', action: 'Hold in Submitted status until resolved' },
         { id: 'cip-c8', condition: 'If issues detected (failed ID, declined payment)', action: 'Flag for front desk review with specific issue noted' },
-        { id: 'cip-c12', condition: 'If Diamond Elite guest', action: 'Priority auto-verify — assign high floor room (10th floor+) if available' },
+        { id: 'cip-c12', condition: 'If upsells were accepted during check-in', action: 'Run Upsell Processing workflow', invokesWorkflowId: 'wf-ci-upsells' },
         { id: 'cip-c13', condition: 'If ADA accessibility noted on reservation', action: 'Restrict room assignment to 2nd floor ADA-accessible rooms' },
       ],
     },
@@ -1227,6 +1240,8 @@ const ciWorkflowIdReview: AgentWorkflow = {
   description: 'Auto-validates ID documents from OCR results, checks expiry and document type, flags issues for manual review.',
   trigger: 'ID Document Submitted',
   triggerDescription: 'Guest uploads ID photos or completes OCR scan during check-in.',
+  role: 'sub',
+  parentWorkflowId: 'wf-ci-process',
   steps: [
     { id: 'cid-s1', type: 'action', label: 'Validate OCR Results', description: 'Check extracted data — name match, document type accepted (US passport, driver\'s license, state ID), issue/expiry dates valid.',
       conditions: [
@@ -1254,6 +1269,8 @@ const ciWorkflowPayment: AgentWorkflow = {
   description: 'Syncs deposit to PMS, handles failed payments, and processes refunds when needed.',
   trigger: 'Deposit Captured or Failed',
   triggerDescription: 'Payment gateway returns result after guest submits credit card during check-in.',
+  role: 'sub',
+  parentWorkflowId: 'wf-ci-process',
   steps: [
     { id: 'cipay-s1', type: 'action', label: 'Verify Deposit Status', description: 'Check Stripe payment intent status — fulfilled, pending, or failed. Statler requires $100/night hold for non-prepaid rates.',
       conditions: [
@@ -1280,6 +1297,8 @@ const ciWorkflowRoomAssignment: AgentWorkflow = {
   description: 'Fetches room assignment from PMS, updates Canary, generates mobile key, and notifies guest.',
   trigger: 'Room Assigned in PMS',
   triggerDescription: 'PMS webhook or polling detects that a room number has been assigned to the reservation.',
+  role: 'sub',
+  parentWorkflowId: 'wf-ci-process',
   steps: [
     { id: 'ciroom-s1', type: 'action', label: 'Fetch Room Assignment', description: 'Pull room number from Oracle Opera PMS and update the Canary check-in record.',
       conditions: [
@@ -1310,6 +1329,8 @@ const ciWorkflowUpsells: AgentWorkflow = {
   description: 'Auto-processes accepted upsells — applies upgrades to PMS reservation and captures additional payment.',
   trigger: 'Upsell Accepted During Check-in',
   triggerDescription: 'Guest accepts a room upgrade, early check-in, late checkout, or add-on during the check-in flow.',
+  role: 'sub',
+  parentWorkflowId: 'wf-ci-process',
   steps: [
     { id: 'ciup-s1', type: 'action', label: 'Validate Availability', description: 'Confirm the accepted upsell is still available (room type, time slot) at time of processing.',
       conditions: [
@@ -1443,6 +1464,7 @@ const salesEventsAgent: Agent = {
     description: 'Responds to inbound event and group booking inquiries with availability, proposals, and meeting scheduling.',
     trigger: 'Receive Inquiry',
     triggerDescription: 'Incoming email detected in sales inbox. Extract sender, subject, body.',
+    role: 'primary',
     steps: [
       {
         id: 'se-s1', type: 'action', label: 'Parse Details',
@@ -1481,9 +1503,9 @@ const salesEventsAgent: Agent = {
         id: 'se-s5', type: 'action', label: 'Follow Up',
         description: 'Automated follow-up cadence based on lead type and urgency.',
         conditions: [
-          { id: 'cond-f1', condition: 'If corporate event', action: 'Follow up in 48 hours, then weekly' },
-          { id: 'cond-f2', condition: 'If wedding', action: 'Follow up in 1 week, monthly touchpoints — reference wedding coordinator Sarah Kim' },
-          { id: 'cond-f3', condition: 'If no response after 2nd follow-up', action: 'Handoff to Sarah Kim and sales team with full inquiry context' },
+          { id: 'cond-f1', condition: 'If no response after 48 hours', action: 'Run Lead Follow-up Sequence', invokesWorkflowId: 'wf-cold-lead' },
+          { id: 'cond-f2', condition: 'If meeting or site visit completed', action: 'Run Post-Meeting Contract Prep workflow', invokesWorkflowId: 'wf-contract-prep' },
+          { id: 'cond-f3', condition: 'If no response after 3rd follow-up', action: 'Handoff to Sarah Kim and sales team with full inquiry context' },
         ],
       },
     ],

@@ -89,6 +89,7 @@ export interface StepCondition {
   id: string;
   condition: string;   // "If available"
   action: string;      // "Continue to next step"
+  invokesWorkflowId?: string;  // cross-ref: this condition triggers another workflow
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +118,8 @@ export interface WorkflowStep {
   conditions?: StepCondition[];
 }
 
+export type WorkflowRole = 'primary' | 'sub';
+
 export interface AgentWorkflow {
   id?: string;
   name?: string;           // "Sales Inquiry Response"
@@ -125,6 +128,34 @@ export interface AgentWorkflow {
   triggerDescription?: string; // detail: "Incoming email detected in sales inbox..."
   steps: WorkflowStep[];
   guardrails: string[];
+  role?: WorkflowRole;           // 'primary' = orchestrator, 'sub' = called by primary
+  parentWorkflowId?: string;     // ID of the primary workflow that invokes this one
+}
+
+// ---------------------------------------------------------------------------
+// Workflow Templates (library of reusable workflow blueprints)
+// ---------------------------------------------------------------------------
+
+export type WorkflowTemplateCategory =
+  | 'sales-events'
+  | 'guest-engagement'
+  | 'front-desk'
+  | 'check-in-checkout'
+  | 'operations';
+
+export interface WorkflowTemplate extends AgentWorkflow {
+  id: string;
+  name: string;
+  description: string;
+  category: WorkflowTemplateCategory;
+  tags: string[];
+  popularity: number;  // 1-5 for sorting, higher = more popular
+}
+
+export interface TeamWorkflowTemplate extends WorkflowTemplate {
+  source: 'team';
+  sharedBy: string;    // "Sarah Kim"
+  sharedAt: string;    // ISO date
 }
 
 // ---------------------------------------------------------------------------

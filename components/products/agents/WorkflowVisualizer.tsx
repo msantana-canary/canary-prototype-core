@@ -14,7 +14,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Icon from '@mdi/react';
-import { mdiFlashOutline, mdiDeleteOutline, mdiPlusCircleOutline, mdiChevronUp, mdiChevronDown } from '@mdi/js';
+import { mdiFlashOutline, mdiDeleteOutline, mdiPlusCircleOutline, mdiChevronUp, mdiChevronDown, mdiArrowRightBoldOutline } from '@mdi/js';
 import { CanaryButton, CanaryInput, CanaryTextArea, ButtonType, ButtonSize, InputSize } from '@canary-ui/components';
 import type { AgentWorkflow, WorkflowStep, StepCondition } from '@/lib/products/agents/types';
 
@@ -25,6 +25,12 @@ interface WorkflowVisualizerProps {
   editable?: boolean;
   /** Called on every change when editable */
   onChange?: (workflow: AgentWorkflow) => void;
+  /** Sibling workflows for resolving cross-workflow condition references */
+  workflows?: AgentWorkflow[];
+  /** ID of the currently active step (test mode) — gets a persistent glow */
+  activeStepId?: string | null;
+  /** ID of a matched condition to highlight */
+  activeConditionId?: string | null;
 }
 
 interface ChangeSet {
@@ -109,6 +115,9 @@ export default function WorkflowVisualizer({
   isAnimating,
   editable,
   onChange,
+  workflows,
+  activeStepId,
+  activeConditionId,
 }: WorkflowVisualizerProps) {
   const prevWorkflowRef = useRef<AgentWorkflow | null>(null);
   const [changes, setChanges] = useState<ChangeSet>({
@@ -233,6 +242,11 @@ export default function WorkflowVisualizer({
           70% { box-shadow: 0 0 12px rgba(40, 88, 196, 0.35); }
           100% { box-shadow: 0 0 0px rgba(40, 88, 196, 0); }
         }
+        @keyframes wfActiveGlow {
+          0% { box-shadow: 0 0 8px rgba(40, 88, 196, 0.25); }
+          50% { box-shadow: 0 0 16px rgba(40, 88, 196, 0.4); }
+          100% { box-shadow: 0 0 8px rgba(40, 88, 196, 0.25); }
+        }
         @keyframes wfTypeIn {
           from { max-height: 0; opacity: 0; }
           to { max-height: 200px; opacity: 1; }
@@ -313,6 +327,7 @@ export default function WorkflowVisualizer({
         const stepHighlighted = isStepHighlighted(step.id);
         const isNewStep = changes.newStepIds.has(step.id);
         const isPendingDelete = confirmDeleteId === step.id;
+        const isActive = activeStepId === step.id;
 
         return (
           <React.Fragment key={step.id}>
@@ -320,33 +335,38 @@ export default function WorkflowVisualizer({
               className="wf-step-card"
               style={{
                 width: '100%',
-                backgroundColor: '#fff',
-                border: stepHighlighted ? '1px solid #2858C4' : '1px solid #E5E5E5',
+                backgroundColor: isActive ? '#F8FAFF' : '#fff',
+                border: isActive ? '2px solid #2858C4' : stepHighlighted ? '1px solid #2858C4' : '1px solid #E5E5E5',
                 borderRadius: 4,
-                padding: 16,
+                padding: isActive ? 15 : 16,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 8,
                 position: 'relative',
                 opacity: isAnimating ? 0 : 1,
-                animationName: isAnimating
-                  ? 'wfFadeIn'
-                  : isNewStep
-                    ? 'wfFadeIn, wfHighlight'
-                    : stepHighlighted
-                      ? 'wfHighlight'
-                      : undefined,
-                animationDuration: isAnimating
-                  ? '0.4s'
-                  : isNewStep
-                    ? '0.4s, 3s'
-                    : stepHighlighted
-                      ? '3s'
-                      : undefined,
+                animationName: isActive
+                  ? 'wfActiveGlow'
+                  : isAnimating
+                    ? 'wfFadeIn'
+                    : isNewStep
+                      ? 'wfFadeIn, wfHighlight'
+                      : stepHighlighted
+                        ? 'wfHighlight'
+                        : undefined,
+                animationDuration: isActive
+                  ? '2s'
+                  : isAnimating
+                    ? '0.4s'
+                    : isNewStep
+                      ? '0.4s, 3s'
+                      : stepHighlighted
+                        ? '3s'
+                        : undefined,
                 animationTimingFunction: 'ease-out',
+                animationIterationCount: isActive ? 'infinite' : undefined,
                 animationFillMode: isAnimating ? 'forwards' : undefined,
                 animationDelay: isAnimating ? `${i * 0.12}s` : undefined,
-                transition: 'border-color 0.3s ease',
+                transition: 'border-color 0.3s ease, background-color 0.3s ease',
               }}
             >
               {/* ---------- Editable mode ---------- */}
@@ -515,21 +535,46 @@ export default function WorkflowVisualizer({
                           Conditions
                         </p>
                         <ul style={{ margin: 0, padding: 0, listStyle: 'disc' }}>
-                          {step.conditions.map((cond) => (
+                          {step.conditions.map((cond) => {
+                            const isCondActive = activeConditionId === cond.id;
+                            return (
                             <li
                               key={cond.id}
                               style={{
                                 fontSize: 14,
-                                fontWeight: 400,
+                                fontWeight: isCondActive ? 500 : 400,
                                 lineHeight: 1.5,
-                                color: '#000',
+                                color: isCondActive ? '#2858C4' : '#000',
                                 marginLeft: 21,
                                 marginBottom: 0,
+                                backgroundColor: isCondActive ? '#EAEEF9' : undefined,
+                                borderRadius: isCondActive ? 3 : undefined,
+                                padding: isCondActive ? '1px 4px' : undefined,
+                                transition: 'color 0.3s ease, background-color 0.3s ease',
                               }}
                             >
                               {cond.condition} → {cond.action}
+                              {cond.invokesWorkflowId && workflows && (() => {
+                                const target = workflows.find((w) => w.id === cond.invokesWorkflowId);
+                                if (!target) return null;
+                                return (
+                                  <span
+                                    style={{
+                                      display: 'inline-flex', alignItems: 'center', gap: 3,
+                                      marginLeft: 6, fontSize: 12, fontWeight: 500,
+                                      color: '#2858C4', backgroundColor: '#EAEEF9',
+                                      borderRadius: 3, padding: '1px 6px',
+                                      verticalAlign: 'middle',
+                                    }}
+                                  >
+                                    <Icon path={mdiArrowRightBoldOutline} size={0.45} color="#2858C4" />
+                                    {target.name}
+                                  </span>
+                                );
+                              })()}
                             </li>
-                          ))}
+                            );
+                          })}
                         </ul>
                       </div>
                     );

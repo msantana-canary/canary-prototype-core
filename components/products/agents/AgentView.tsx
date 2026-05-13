@@ -26,6 +26,7 @@ import CapabilitiesStep, { CapabilitiesSidebar } from './CapabilitiesStep';
 import WorkflowsStep from './WorkflowsStep';
 import ConnectorsStep, { ConnectorsSidebar } from './ConnectorsStep';
 import AgentChat from './AgentChat';
+import WorkflowTestMode from './WorkflowTestMode';
 
 const ALL_TABS: { id: AgentViewTab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -62,6 +63,8 @@ export default function AgentView() {
   const selectedWorkflowId = useAgentStore((s) => s.selectedWorkflowId);
   const wizardWorkflows = useAgentStore((s) => s.wizardWorkflows);
   const currentWorkflow = useAgentStore((s) => s.currentWorkflow);
+  const testModeWorkflowId = useAgentStore((s) => s.testModeWorkflowId);
+  const stopTestMode = useAgentStore((s) => s.stopTestMode);
 
   // Slide-over animation
   const [shouldRender, setShouldRender] = useState(false);
@@ -151,12 +154,13 @@ export default function AgentView() {
         );
       case 'workflows': {
         const isManualMode = !agent.templateId;
+        if (testModeWorkflowId && selectedWorkflowId) {
+          return <WorkflowTestMode />;
+        }
         if (selectedWorkflowId) {
           if (isManualMode) {
-            // Advanced Builder: full-width editable visualizer, no chat
             return <WorkflowsStep hideHeader editable />;
           }
-          // Template/Guided: read-only visualizer + chat sidebar
           return (
             <div style={{ display: 'flex', height: '100%' }}>
               <div style={{ flex: 1, overflow: 'hidden' }}><WorkflowsStep hideHeader /></div>
@@ -256,6 +260,13 @@ export default function AgentView() {
               if (editAgentTab === 'workflows' && selectedWorkflowId) {
                 const wf = wizardWorkflows.find((w) => w.id === selectedWorkflowId);
                 const isNewWorkflow = !wf || wf.steps.length === 0;
+                if (testModeWorkflowId) {
+                  return {
+                    title: 'Test Workflow',
+                    subtitle: wf?.name || undefined,
+                    onBack: () => { stopTestMode(); selectWorkflow(null); },
+                  };
+                }
                 return {
                   title: isNewWorkflow ? 'New Workflow' : 'Edit Workflow',
                   subtitle: undefined,
