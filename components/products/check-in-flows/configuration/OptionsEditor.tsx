@@ -259,7 +259,7 @@ function VariantBlock({
       className="rounded-md"
       style={{
         border: `1px solid ${isDefault ? colors.colorBlack7 : colors.colorBlueDark4}`,
-        backgroundColor: isDefault ? '#FFF' : '#F8FBFF',
+        backgroundColor: isDefault ? '#FFF' : colors.colorBlueDark5,
       }}
     >
       {/* Variant header */}
@@ -270,7 +270,7 @@ function VariantBlock({
         {isDefault ? (
           <div className="flex-1 min-w-0">
             <span
-              className="text-[12px] font-bold uppercase tracking-wider"
+              className="text-[11px] font-semibold uppercase tracking-wider"
               style={{ color: colors.colorBlack3 }}
             >
               Default

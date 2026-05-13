@@ -111,7 +111,7 @@ export function PropertyFlowView() {
       {/* Scrollable step cards */}
       <div
         className="flex-1 overflow-y-auto"
-        style={{ backgroundColor: '#F5F5F7', padding: '24px 32px' }}
+        style={{ backgroundColor: colors.colorBlack8, padding: '24px 32px' }}
       >
         <div className="max-w-[720px] mx-auto space-y-5">
           {flow.steps.map((step, idx) => (
@@ -183,7 +183,7 @@ function StepCard({
         className="flex items-center gap-3 px-5 py-3"
         style={{
           borderBottom: `1px solid ${colors.colorBlack7}`,
-          backgroundColor: '#FAFAFA',
+          backgroundColor: colors.colorBlack8,
         }}
       >
         <span
@@ -306,7 +306,7 @@ function StepCard({
   );
 }
 
-// ── Property atom row — inline-editable label ────────
+// ── Property component row — inline-editable label ───
 
 function PropertyAtomRow({
   atom,
@@ -329,7 +329,7 @@ function PropertyAtomRow({
     return (
       <div
         className="flex items-center gap-3 py-2 px-3 rounded-lg"
-        style={{ backgroundColor: '#F9FAFB', border: `1px solid ${colors.colorBlack8}` }}
+        style={{ backgroundColor: colors.colorBlack8, border: `1px solid ${colors.colorBlack8}` }}
       >
         <Icon path={mdiLockOutline} size={0.5} color={colors.colorBlack5} />
         <span className="text-[13px]" style={{ color: colors.colorBlack3 }}>
@@ -363,7 +363,7 @@ function PropertyAtomRow({
     <div
       className="flex items-center gap-3 py-2 px-3 rounded-lg group cursor-pointer"
       style={{
-        backgroundColor: '#F9FAFB',
+        backgroundColor: colors.colorBlack8,
         border: `1px solid ${colors.colorBlack8}`,
       }}
       onClick={() => !editing && startEdit()}

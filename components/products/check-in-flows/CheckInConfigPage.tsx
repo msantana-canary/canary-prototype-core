@@ -1,12 +1,12 @@
 'use client';
 
 /**
- * CheckInConfigPage — Configuration tab content (Phase 2 of architecture).
+ * CheckInConfigPage — Library tab content.
  *
- * After Phase 1c rebuild: domain-grouped atom layout.
- * - Top: read-only "Generated flows" indicator (which flows are enabled per Django).
- * - Middle: collapsible sections per AtomDomain, each rendering atoms via <AtomRow>.
- * - Bottom: "Settings handled outside Manage app" collapsible (added in Phase 1e).
+ * Domain-grouped component layout.
+ * - Top: read-only "Active flows" indicator.
+ * - Middle: collapsible sections per domain, each rendering components via <AtomRow>.
+ * - Bottom: "Settings handled outside Manage app" collapsible.
  *
  * Old feature-panel layout (Identity / Payment / Deposits / etc.) lives in
  * git history (commit before this one). We replaced it because that layout

@@ -152,9 +152,9 @@ function MenuItem({
     >
       <div
         className="w-7 h-7 rounded flex items-center justify-center shrink-0"
-        style={{ backgroundColor: '#F4F4F5' }}
+        style={{ backgroundColor: colors.colorBlack8 }}
       >
-        <Icon path={icon} size={0.7} color="#555" />
+        <Icon path={icon} size={0.65} color={colors.colorBlack3} />
       </div>
       <div className="min-w-0">
         <div className="text-[13px] font-semibold" style={{ color: colors.colorBlack2 }}>

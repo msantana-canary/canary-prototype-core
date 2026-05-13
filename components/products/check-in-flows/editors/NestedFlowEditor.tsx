@@ -90,8 +90,8 @@ export function NestedFlowEditor({ step }: Props) {
         )}
 
         {loopUntilComplete && (
-          <div className="flex items-start gap-2 text-[12px] text-[#666]">
-            <Icon path={mdiLinkVariant} size={0.55} color="#888" className="mt-0.5 shrink-0" />
+          <div className="flex items-start gap-2 text-[12px]" style={{ color: colors.colorBlack4 }}>
+            <Icon path={mdiLinkVariant} size={0.55} color={colors.colorBlack4} className="mt-0.5 shrink-0" />
             <span>
               <span className="font-semibold">Loops until complete</span> — this flow runs once per
               item (e.g. one iteration per accompanying guest).

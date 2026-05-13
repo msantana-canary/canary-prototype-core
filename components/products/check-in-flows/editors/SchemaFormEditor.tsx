@@ -145,7 +145,7 @@ export function SchemaFormEditor({ step, flow, isReadOnly }: Props) {
     <div>
       <div className="px-6 pb-6 pt-4">
         <div className="mb-3 flex items-center justify-between gap-4">
-          <h3 className="text-[12px] font-semibold uppercase tracking-wider" style={{ color: colors.colorBlack5 }}>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: colors.colorBlack5 }}>
             Components in this step
           </h3>
           {allowAddComponent && (
@@ -213,7 +213,7 @@ export function SchemaFormEditor({ step, flow, isReadOnly }: Props) {
   );
 }
 
-// ── Sortable atom slot ─────────────────────────────────
+// ── Sortable component slot ────────────────────────────
 
 function SortableAtomSlot({
   atom,
@@ -264,9 +264,9 @@ function SortableAtomSlot({
         >
           <div
             className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
-            style={{ backgroundColor: '#F4F4F5' }}
+            style={{ backgroundColor: colors.colorBlack8 }}
           >
-            <Icon path={display.icon} size={0.75} color="#555" />
+            <Icon path={display.icon} size={0.65} color={colors.colorBlack3} />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -329,7 +329,7 @@ function describeAtom(atom: Atom): {
   };
 }
 
-// ── Add atom picker ─────────────────────────────────────
+// ── Add component picker ────────────────────────────────
 
 function AddAtomToStepButton({
   available,
@@ -405,9 +405,9 @@ function AddAtomToStepButton({
                     >
                       <div
                         className="w-7 h-7 rounded flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: '#F4F4F5' }}
+                        style={{ backgroundColor: colors.colorBlack8 }}
                       >
-                        <Icon path={display.icon} size={0.65} color="#555" />
+                        <Icon path={display.icon} size={0.65} color={colors.colorBlack3} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="text-[13px] font-semibold truncate" style={{ color: colors.colorBlack2 }}>

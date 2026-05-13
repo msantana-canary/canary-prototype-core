@@ -86,9 +86,9 @@ export function AtomRow({ atom, onUpdate, onRemove }: Props) {
           {/* Type icon */}
           <div
             className="w-7 h-7 rounded flex items-center justify-center shrink-0"
-            style={{ backgroundColor: '#F4F4F5' }}
+            style={{ backgroundColor: colors.colorBlack8 }}
           >
-            <Icon path={display.icon} size={0.65} color="#555" />
+            <Icon path={display.icon} size={0.65} color={colors.colorBlack3} />
           </div>
 
           {/* Name + tag */}

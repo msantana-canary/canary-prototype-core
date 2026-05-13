@@ -445,7 +445,7 @@ export function AtomDetailPane() {
             style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.25)' }}
           >
             <h4
-              className="text-[15px] font-bold mb-1"
+              className="text-[14px] font-bold mb-1"
               style={{ color: colors.colorBlack1 }}
             >
               Unsaved changes

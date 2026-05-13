@@ -6,8 +6,8 @@
  * Replaces the standard settings sidebar with a dedicated dark sidebar
  * matching the kiosk admin app pattern. The sidebar IS the navigation:
  * it lists each Flow under a "Form Builder" section, plus a "Library"
- * sub-item for the atom registry. Clicking a flow selects it; clicking
- * Library switches to the atom registry tab.
+ * sub-item for the component library. Clicking a flow selects it;
+ * clicking Library switches to the component registry tab.
  *
  * The mock items (Issues, Onboarding, Tipping, etc.) are intentionally
  * inert — they convey "you're inside one section of a larger admin app"
