@@ -200,7 +200,7 @@ export function HotelJourneyView() {
             })}
           </div>
 
-          {/* Right: phone preview */}
+          {/* Center: phone preview */}
           <div
             className="flex-1 flex flex-col items-center overflow-hidden"
             style={{ backgroundColor: colors.colorBlack8 }}
@@ -237,25 +237,24 @@ export function HotelJourneyView() {
               </button>
             </div>
 
-            {/* Phone frame — fills available space; PhoneFrame's
-                ResizeObserver auto-scales the device to fit. */}
+            {/* Phone frame */}
             <div className="flex-1 w-full flex items-center justify-center p-4 overflow-hidden">
-              <div className="h-full w-full max-w-[520px] relative">
+              <div className="h-full w-full max-w-[520px]">
                 <PhoneFrame showUrlBar={false}>
                   <div className="w-full h-full flex flex-col bg-white">
                     <StepRenderer step={step} ctx={ctx} flow={flow} />
                   </div>
                 </PhoneFrame>
-
-                {/* Inline edit overlay — floating beside the phone */}
-                <InlineEditPanel
-                  step={step}
-                  flowId={flow.id}
-                  lang={lang}
-                />
               </div>
             </div>
           </div>
+
+          {/* Right: edit content panel */}
+          <InlineEditPanel
+            step={step}
+            flowId={flow.id}
+            lang={lang}
+          />
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center">
@@ -302,40 +301,33 @@ function InlineEditPanel({
   if (editableAtoms.length === 0 && !hasIntro) {
     return (
       <div
-        className="absolute -right-[220px] top-12 w-[200px] p-3 rounded-lg"
-        style={{
-          backgroundColor: '#FFF',
-          border: `1px solid ${colors.colorBlack7}`,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        }}
+        className="w-[280px] shrink-0 overflow-y-auto bg-white flex flex-col"
+        style={{ borderLeft: `1px solid ${colors.colorBlack7}` }}
       >
-        <div className="flex items-center gap-1.5 mb-1">
-          <Icon path={mdiLockOutline} size={0.5} color={colors.colorBlack5} />
-          <span className="text-[11px] font-semibold" style={{ color: colors.colorBlack3 }}>
-            {template.displayName}
-          </span>
+        <div className="flex-1 flex items-center justify-center p-6 text-center">
+          <div>
+            <Icon path={mdiLockOutline} size={0.8} color={colors.colorBlack6} />
+            <p className="text-[12px] font-semibold mt-2" style={{ color: colors.colorBlack3 }}>
+              {template.displayName}
+            </p>
+            <p className="text-[11px] mt-1" style={{ color: colors.colorBlack5 }}>
+              Managed by your Canary team. Contact support to make changes.
+            </p>
+          </div>
         </div>
-        <p className="text-[11px]" style={{ color: colors.colorBlack5 }}>
-          This step is managed by your Canary team. Contact support to make changes.
-        </p>
       </div>
     );
   }
 
   return (
     <div
-      className="absolute -right-[280px] top-12 w-[260px] rounded-lg overflow-hidden"
-      style={{
-        backgroundColor: '#FFF',
-        border: `1px solid ${colors.colorBlack7}`,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-      }}
+      className="w-[280px] shrink-0 bg-white flex flex-col"
+      style={{ borderLeft: `1px solid ${colors.colorBlack7}` }}
     >
       <div
-        className="px-3 py-2 flex items-center gap-1.5"
+        className="px-4 py-3 flex items-center gap-1.5 shrink-0"
         style={{
           borderBottom: `1px solid ${colors.colorBlack7}`,
-          backgroundColor: colors.colorBlack8,
         }}
       >
         <Icon path={mdiPencilOutline} size={0.5} color={colors.colorBlack4} />
@@ -347,7 +339,7 @@ function InlineEditPanel({
         </span>
       </div>
 
-      <div className="p-3 space-y-3 max-h-[500px] overflow-y-auto">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Intro copy */}
         {hasIntro && (
           <LiveField
