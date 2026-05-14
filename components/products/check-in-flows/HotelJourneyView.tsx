@@ -24,21 +24,12 @@ import {
   mdiCellphone,
   mdiTabletCellphone,
   mdiMonitor,
-  mdiTranslate,
   mdiChevronLeft,
   mdiChevronRight,
   mdiPencilOutline,
-  mdiCheck,
-  mdiClose,
   mdiLockOutline,
-  mdiInformationOutline,
 } from '@mdi/js';
-import {
-  colors,
-  CanarySelect,
-  CanaryTextArea,
-  InputSize,
-} from '@canary-ui/components';
+import { colors } from '@canary-ui/components';
 
 import {
   useCheckInFlowsStore,
@@ -115,14 +106,24 @@ export function HotelJourneyView() {
               Preview what your guests see. Click text to edit copy.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Icon path={mdiTranslate} size={0.6} color={colors.colorBlack4} />
-            <CanarySelect
-              size={InputSize.NORMAL}
-              value={lang}
-              onChange={(e) => setLang(e.target.value)}
-              options={LANGUAGES}
-            />
+          <div className="flex items-center gap-1">
+            {LANGUAGES.map((l) => {
+              const isActive = l.value === lang;
+              return (
+                <button
+                  key={l.value}
+                  onClick={() => setLang(l.value)}
+                  className="text-[12px] font-semibold px-2.5 h-7 rounded-md transition-colors"
+                  style={{
+                    backgroundColor: isActive ? colors.colorBlueDark5 : 'transparent',
+                    color: isActive ? colors.colorBlueDark1 : colors.colorBlack4,
+                    border: `1px solid ${isActive ? colors.colorBlueDark4 : 'transparent'}`,
+                  }}
+                >
+                  {l.value.toUpperCase()}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -349,12 +350,12 @@ function InlineEditPanel({
       <div className="p-3 space-y-3 max-h-[500px] overflow-y-auto">
         {/* Intro copy */}
         {hasIntro && (
-          <EditableField
+          <LiveField
             label="Intro copy"
             value={step.introText?.[lang] ?? ''}
             enValue={lang !== 'en' ? (step.introText?.['en'] ?? '') : undefined}
             multiline
-            onSave={(v) =>
+            onChange={(v) =>
               updateStep(flowId, step.id, {
                 introText: { ...(step.introText ?? {}), [lang]: v },
               })
@@ -367,12 +368,12 @@ function InlineEditPanel({
           if (atom.kind === 'input') {
             const input = atom as InputAtom;
             return (
-              <EditableField
+              <LiveField
                 key={atom.id}
                 label={resolveText(input.label, 'en') || 'Field label'}
                 value={input.label?.[lang] ?? ''}
                 enValue={lang !== 'en' ? (input.label?.['en'] ?? '') : undefined}
-                onSave={(v) =>
+                onChange={(v) =>
                   updateAtom(atom.id, { label: { ...input.label, [lang]: v } })
                 }
               />
@@ -381,13 +382,13 @@ function InlineEditPanel({
           if (atom.kind === 'copy-block') {
             const cb = atom as CopyBlockAtom;
             return (
-              <EditableField
+              <LiveField
                 key={atom.id}
                 label={cb.name}
                 value={cb.content?.[lang] ?? ''}
                 enValue={lang !== 'en' ? (cb.content?.['en'] ?? '') : undefined}
                 multiline
-                onSave={(v) =>
+                onChange={(v) =>
                   updateAtom(atom.id, { content: { ...cb.content, [lang]: v } })
                 }
               />
@@ -400,115 +401,53 @@ function InlineEditPanel({
   );
 }
 
-// ── Single editable field ────────────────────────────
+// ── Live-editing field — writes to store on every keystroke so the
+//    phone preview updates in real time. No Save/Cancel per field. ──
 
-function EditableField({
+function LiveField({
   label,
   value,
   enValue,
   multiline,
-  onSave,
+  onChange,
 }: {
   label: string;
   value: string;
   enValue?: string;
   multiline?: boolean;
-  onSave: (v: string) => void;
+  onChange: (v: string) => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState('');
-
-  const start = () => {
-    setDraft(value);
-    setEditing(true);
-  };
-
-  const save = () => {
-    onSave(draft);
-    setEditing(false);
-  };
-
-  if (editing) {
-    return (
-      <div>
-        <label
-          className="text-[10px] font-semibold uppercase tracking-wider block mb-1"
-          style={{ color: colors.colorBlack4 }}
-        >
-          {label}
-        </label>
-        {multiline ? (
-          <textarea
-            autoFocus
-            className="w-full text-[12px] bg-white border rounded-md px-2 py-1.5 outline-none resize-none"
-            style={{ color: colors.colorBlack1, borderColor: colors.colorBlueDark3 }}
-            value={draft}
-            rows={4}
-            onChange={(e) => setDraft(e.target.value)}
-          />
-        ) : (
-          <input
-            autoFocus
-            className="w-full text-[12px] bg-white border rounded-md px-2 py-1.5 outline-none"
-            style={{ color: colors.colorBlack1, borderColor: colors.colorBlueDark3 }}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') save();
-              if (e.key === 'Escape') setEditing(false);
-            }}
-          />
-        )}
-        {enValue && (
-          <p className="text-[10px] mt-1 italic" style={{ color: colors.colorBlack5 }}>
-            EN: {enValue}
-          </p>
-        )}
-        <div className="flex gap-1 mt-1.5">
-          <button
-            onClick={save}
-            className="text-[10px] font-semibold px-2 h-6 rounded text-white"
-            style={{ backgroundColor: colors.colorBlueDark1 }}
-          >
-            Save
-          </button>
-          <button
-            onClick={() => setEditing(false)}
-            className="text-[10px] font-semibold px-2 h-6 rounded"
-            style={{ color: colors.colorBlack4, border: `1px solid ${colors.colorBlack6}` }}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <button
-      onClick={start}
-      className="w-full text-left group"
-    >
-      <div className="flex items-center justify-between mb-0.5">
-        <span
-          className="text-[10px] font-semibold uppercase tracking-wider"
-          style={{ color: colors.colorBlack4 }}
-        >
-          {label}
-        </span>
-        <Icon
-          path={mdiPencilOutline}
-          size={0.4}
-          color={colors.colorBlack5}
-          className="opacity-0 group-hover:opacity-100 transition-opacity"
-        />
-      </div>
-      <p
-        className="text-[12px] leading-relaxed"
-        style={{ color: value ? colors.colorBlack2 : colors.colorBlack5 }}
+    <div>
+      <label
+        className="text-[10px] font-semibold uppercase tracking-wider block mb-1"
+        style={{ color: colors.colorBlack4 }}
       >
-        {value || 'Click to add...'}
-      </p>
-    </button>
+        {label}
+      </label>
+      {multiline ? (
+        <textarea
+          className="w-full text-[12px] bg-white border rounded-md px-2 py-1.5 outline-none resize-none transition-colors focus:border-[#5B8DEF]"
+          style={{ color: colors.colorBlack1, borderColor: colors.colorBlack6 }}
+          value={value}
+          rows={3}
+          placeholder="Type here..."
+          onChange={(e) => onChange(e.target.value)}
+        />
+      ) : (
+        <input
+          className="w-full text-[12px] bg-white border rounded-md px-2 py-1.5 outline-none transition-colors focus:border-[#5B8DEF]"
+          style={{ color: colors.colorBlack1, borderColor: colors.colorBlack6 }}
+          value={value}
+          placeholder="Type here..."
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}
+      {enValue && (
+        <p className="text-[10px] mt-1 italic" style={{ color: colors.colorBlack5 }}>
+          EN: {enValue}
+        </p>
+      )}
+    </div>
   );
 }
