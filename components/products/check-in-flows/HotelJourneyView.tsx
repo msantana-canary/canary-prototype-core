@@ -236,9 +236,10 @@ export function HotelJourneyView() {
               </button>
             </div>
 
-            {/* Phone frame with the actual guest screen */}
-            <div className="flex-1 flex items-start justify-center overflow-y-auto pb-8">
-              <div className="relative">
+            {/* Phone frame — fills available space; PhoneFrame's
+                ResizeObserver auto-scales the device to fit. */}
+            <div className="flex-1 w-full flex items-center justify-center p-4 overflow-hidden">
+              <div className="h-full w-full max-w-[520px] relative">
                 <PhoneFrame showUrlBar={false}>
                   <div className="w-full h-full flex flex-col bg-white">
                     <StepRenderer step={step} ctx={ctx} flow={flow} />
