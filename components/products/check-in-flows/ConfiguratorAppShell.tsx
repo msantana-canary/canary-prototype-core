@@ -36,7 +36,6 @@ import {
   mdiLinkVariant,
   mdiCogOutline,
   mdiChevronDown,
-  mdiEyeOutline,
 } from '@mdi/js';
 
 import {
@@ -92,27 +91,23 @@ export function ConfiguratorAppShell({ children }: { children: React.ReactNode }
   const nav = useCheckInFlowsStore((s) => s.nav);
   const selectFlow = useCheckInFlowsStore((s) => s.selectFlow);
   const setTab = useCheckInFlowsStore((s) => s.setTab);
-  const setViewMode = useCheckInFlowsStore((s) => s.setViewMode);
 
   // Auto-select the first flow on mount if none is selected.
   useEffect(() => {
-    if (!nav.flowId && flows.length > 0) {
+    if (nav.tab === 'flows' && !nav.flowId && flows.length > 0) {
       selectFlow(flows[0].id);
     }
-  }, [nav.flowId, flows, selectFlow]);
+  }, [nav.tab, nav.flowId, flows, selectFlow]);
 
-  const isProperty = nav.viewMode === 'property';
-  const isLibrary = !isProperty && nav.tab === 'configuration';
-  const activeFlowId = nav.flowId;
+  const isLibrary = nav.tab === 'configuration';
+  const activeFlowId = !isLibrary ? nav.flowId : null;
 
-  const handleFlowClick = (flowId: string, mode: 'cs' | 'property') => {
-    if (nav.viewMode !== mode) setViewMode(mode);
-    if (mode === 'cs') setTab('flows');
+  const handleFlowClick = (flowId: string) => {
+    setTab('flows');
     selectFlow(flowId);
   };
 
   const handleLibraryClick = () => {
-    if (nav.viewMode !== 'cs') setViewMode('cs');
     setTab('configuration');
   };
 
@@ -202,38 +197,12 @@ export function ConfiguratorAppShell({ children }: { children: React.ReactNode }
             <FlowRow
               key={flow.id}
               flow={flow}
-              isActive={!isProperty && flow.id === activeFlowId}
-              onClick={() => handleFlowClick(flow.id, 'cs')}
+              isActive={flow.id === activeFlowId}
+              onClick={() => handleFlowClick(flow.id)}
             />
           ))}
 
           <LibraryRow isActive={isLibrary} onClick={handleLibraryClick} />
-
-          {/* ── Hotel View (property mode) ── */}
-          <div className="mt-4 mb-1 px-2 flex items-center gap-1">
-            <Icon path={mdiEyeOutline} size={0.5} color={SIDEBAR_SECTION_LABEL} />
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: SIDEBAR_SECTION_LABEL,
-              }}
-            >
-              Hotel View
-            </span>
-            <Icon path={mdiChevronDown} size={0.4} color={SIDEBAR_SECTION_LABEL} />
-          </div>
-
-          {flows.map((flow) => (
-            <FlowRow
-              key={`prop-${flow.id}`}
-              flow={flow}
-              isActive={isProperty && flow.id === activeFlowId}
-              onClick={() => handleFlowClick(flow.id, 'property')}
-            />
-          ))}
 
           {/* Bottom mock items */}
           <div style={{ height: 1, backgroundColor: SIDEBAR_DIVIDER, margin: '10px 4px' }} />

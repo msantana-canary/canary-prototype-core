@@ -11,7 +11,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiAccountMultipleOutline, mdiMapMarker, mdiCreation, mdiLoginVariant } from '@mdi/js';
+import { mdiArrowLeft, mdiAccountMultipleOutline, mdiMapMarker, mdiCreation, mdiLoginVariant, mdiCellphoneCheck } from '@mdi/js';
 import {
   CanaryAppShell,
   CanaryButton,
@@ -37,14 +37,20 @@ const withKB = addProduct(
   createSidebarTab('knowledge-base', 'Knowledge Base', <Icon path={mdiCreation} size={1} />),
   { sectionId: 'product-settings-section', insertAfter: 'checkout' }
 );
-// Flow Builder — anticipates checkout. Currently only check-in flows ship.
+// Flow Builder — CS-only configurator for authoring flows.
 const withCheckInFlows = addProduct(
   withKB,
   createSidebarTab('check-in-flows', 'Flow Builder', <Icon path={mdiLoginVariant} size={1} />),
   { sectionId: 'product-settings-section', insertAfter: 'knowledge-base' }
 );
-const settingsSections = updateProduct(
+// Guest Journey — hotel-facing WYSIWYG view of the check-in flow.
+const withGuestJourney = addProduct(
   withCheckInFlows,
+  createSidebarTab('guest-journey-check-in', 'Check-In Journey', <Icon path={mdiCellphoneCheck} size={1} />),
+  { sectionId: 'product-settings-section', insertAfter: 'check-in-flows' }
+);
+const settingsSections = updateProduct(
+  withGuestJourney,
   'guest-journey',
   { icon: <Icon path={mdiMapMarker} size={1} /> }
 );
@@ -55,6 +61,7 @@ const settingsRouteMap: Record<string, string> = {
   'segments': '/settings/segments',
   'knowledge-base': '/settings/knowledge-base',
   'check-in-flows': '/settings/check-in-flows',
+  'guest-journey-check-in': '/settings/check-in-journey',
   'calls': '/settings/calls',
 };
 

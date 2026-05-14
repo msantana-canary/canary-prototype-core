@@ -37,7 +37,6 @@ import type {
 import { getStepTemplateMeta } from '@/lib/products/check-in-flows/step-templates';
 import { CheckInConfigPage } from './CheckInConfigPage';
 import { ConfiguratorAppShell } from './ConfiguratorAppShell';
-import { PropertyFlowView } from './PropertyFlowView';
 import { AtomDetailModal } from './configuration/AtomDetailModal';
 import { PhoneFrame } from '@/components/core/PhoneFrame';
 import { StepRenderer } from './preview/StepRenderer';
@@ -53,17 +52,6 @@ export function ConfiguratorShell() {
   const stopEditingStep = useCheckInFlowsStore((s) => s.stopEditingStep);
   const flow = useFlowById(nav.flowId);
   const step = useStepById(nav.flowId, nav.stepId);
-
-  // Property mode gets its own dedicated view — no split pane, no
-  // atom detail modal, no library tab. Just the simplified visual
-  // step-by-step with inline editing.
-  if (nav.viewMode === 'property') {
-    return (
-      <ConfiguratorAppShell>
-        <PropertyFlowView />
-      </ConfiguratorAppShell>
-    );
-  }
 
   return (
     <ConfiguratorAppShell>
