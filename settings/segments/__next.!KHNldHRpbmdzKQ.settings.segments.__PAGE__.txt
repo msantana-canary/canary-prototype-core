@@ -1,0 +1,9 @@
+1:"$Sreact.fragment"
+2:I[66352,["/canary-prototype-core/_next/static/chunks/4ac7000c704de15b.js"],"ClientPageRoot"]
+3:I[76941,["/canary-prototype-core/_next/static/chunks/e6ac17b78555ff20.js","/canary-prototype-core/_next/static/chunks/2ec9c1b02942cda9.js","/canary-prototype-core/_next/static/chunks/e5ca75c9550f00fa.js","/canary-prototype-core/_next/static/chunks/e9d75f82d9998721.js"],"default"]
+6:I[39354,["/canary-prototype-core/_next/static/chunks/4ac7000c704de15b.js"],"OutletBoundary"]
+7:"$Sreact.suspense"
+0:{"buildId":"WoA7TA4anU-uWCWrSZlZ8","rsc":["$","$1","c",{"children":[["$","$L2",null,{"Component":"$3","serverProvidedParams":{"searchParams":{},"params":{},"promises":["$@4","$@5"]}}],[["$","script","script-0",{"src":"/canary-prototype-core/_next/static/chunks/e5ca75c9550f00fa.js","async":true}],["$","script","script-1",{"src":"/canary-prototype-core/_next/static/chunks/e9d75f82d9998721.js","async":true}]],["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]]}],"loading":null,"isPartial":false}
+4:{}
+5:{}
+8:null

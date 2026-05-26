@@ -1,0 +1,6 @@
+:HL["/canary-prototype-core/_next/static/chunks/c3204ac9877abbad.css","style"]
+:HL["/canary-prototype-core/_next/static/chunks/4049c88742c5c847.css","style"]
+:HL["/canary-prototype-core/_next/static/media/ce62453a442c7f35-s.p.124b2306.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/canary-prototype-core/_next/static/media/cf514f5d0007dafa-s.p.417aa1a2.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200","style"]
+0:{"buildId":"WoA7TA4anU-uWCWrSZlZ8","tree":{"name":"","paramType":null,"paramKey":"","hasRuntimePrefetch":false,"slots":{"children":{"name":"(dashboard)","paramType":null,"paramKey":"(dashboard)","hasRuntimePrefetch":false,"slots":{"children":{"name":"calls","paramType":null,"paramKey":"calls","hasRuntimePrefetch":false,"slots":{"children":{"name":"__PAGE__","paramType":null,"paramKey":"__PAGE__","hasRuntimePrefetch":false,"slots":null,"isRootLayout":false}},"isRootLayout":false}},"isRootLayout":false}},"isRootLayout":true},"staleTime":300}
