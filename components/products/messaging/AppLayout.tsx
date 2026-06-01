@@ -14,6 +14,7 @@ import { SubNav } from './SubNav';
 import { Thread } from '@/lib/products/messaging/types';
 import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
 import { BroadcastSubNav } from './broadcast/BroadcastSubNav';
+import { useSpikeStore } from '@/lib/products/team-chat/spike-store';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -36,13 +37,16 @@ export function AppLayout({
   onSearchChange,
   onNewMessage,
 }: AppLayoutProps) {
+  // SPIKE Option D: collapse the SubNav toolbar into the thread-list sidebar instead.
+  const variant = useSpikeStore((s) => s.variant);
+
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Main Navigation */}
       <MainNav activeTab={activeTab} onTabChange={onTabChange} />
 
       {/* Sub Navigation */}
-      {activeTab === 'conversations' && (
+      {activeTab === 'conversations' && variant !== 'D' && (
         <SubNav
           onNewMessage={onNewMessage}
           currentView={currentView}

@@ -15,7 +15,7 @@ import {
   type ChatVariant,
 } from '@/lib/products/team-chat/spike-store';
 
-const VARIANTS: ChatVariant[] = ['A', 'B', 'C'];
+const VARIANTS: ChatVariant[] = ['A', 'B', 'C', 'D'];
 const BACKDROPS = [
   { label: 'Check-in', route: '/check-in' },
   { label: 'Messages', route: '/messages' },
@@ -38,7 +38,7 @@ export function VariantSwitcher() {
         <span className="text-[10px] text-white/45">not final UI</span>
       </div>
 
-      <div className="grid grid-cols-3 gap-1">
+      <div className="grid grid-cols-4 gap-1">
         {VARIANTS.map((v) => (
           <button
             key={v}

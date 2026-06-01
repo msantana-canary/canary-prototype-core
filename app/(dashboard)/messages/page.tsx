@@ -12,6 +12,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AppLayout } from '@/components/products/messaging/AppLayout';
 import { ThreadList } from '@/components/products/messaging/ThreadList';
 import { ThreadView } from '@/components/products/messaging/ThreadView';
+import { useSpikeStore } from '@/lib/products/team-chat/spike-store';
+import { CompactInboxHeader } from '@/components/products/messaging/CompactInboxHeader';
 import { UnlinkReservationModal } from '@/components/products/messaging/UnlinkReservationModal';
 import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
 import { useMessagingStore } from '@/lib/products/messaging/store';
@@ -24,6 +26,7 @@ import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
 
 export default function MessagesPage() {
   const [activeTab, setActiveTab] = useState<MainNavTab>('conversations');
+  const teamChatVariant = useSpikeStore((s) => s.variant); // SPIKE Option D
 
   const {
     threads,
@@ -198,18 +201,29 @@ export default function MessagesPage() {
       {activeTab === 'conversations' && (
         <div className="flex h-full">
           {/* Thread List */}
-          <div className="w-[320px] border-r border-gray-200">
-            <ThreadList
-              threads={filteredThreads}
-              selectedThreadId={selectedThreadId}
-              onSelectThread={selectThread}
-              isComposingNew={isComposingNew}
-              composingPhoneNumber={composingPhoneNumber}
-              onComposingPhoneChange={updateComposingPhone}
-              onCreateThread={createThreadFromPhone}
-              onCancelComposing={cancelComposing}
-              typingThreadId={typingThreadId}
-            />
+          <div className="w-[320px] border-r border-gray-200 flex flex-col">
+            {teamChatVariant === 'D' && (
+              <CompactInboxHeader
+                currentView={currentView}
+                onViewChange={setCurrentView}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onNewMessage={startNewConversation}
+              />
+            )}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <ThreadList
+                threads={filteredThreads}
+                selectedThreadId={selectedThreadId}
+                onSelectThread={selectThread}
+                isComposingNew={isComposingNew}
+                composingPhoneNumber={composingPhoneNumber}
+                onComposingPhoneChange={updateComposingPhone}
+                onCreateThread={createThreadFromPhone}
+                onCancelComposing={cancelComposing}
+                typingThreadId={typingThreadId}
+              />
+            </div>
           </div>
 
           {/* Thread View */}

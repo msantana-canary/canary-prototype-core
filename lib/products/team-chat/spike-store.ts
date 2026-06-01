@@ -14,7 +14,7 @@
 import { create } from 'zustand';
 import type { GroupId } from './types';
 
-export type ChatVariant = 'A' | 'B' | 'C';
+export type ChatVariant = 'A' | 'B' | 'C' | 'D';
 export const PANEL_WIDTH = 384;
 
 type PanelView = 'list' | 'thread';
@@ -58,8 +58,13 @@ export const VARIANT_META: Record<ChatVariant, { label: string; mechanic: string
     ref: 'Slack single-slot / shell push',
   },
   C: {
-    label: 'Gutter + reclaim nav',
-    mechanic: 'Pushes like B, but hides the main nav while open so the product barely compresses. Cleaner at 1440.',
-    ref: 'Jake / 3-panel vaporware nav-collapse',
+    label: 'Collapse nav (stand-in)',
+    mechanic: 'Should collapse the nav to an icon rail; the component library has no collapse mode yet, so this just hides it as a stand-in. Needs the collapsible-sidebar work.',
+    ref: 'Wenjun collapsible sidebar (dependency)',
+  },
+  D: {
+    label: 'Toolbar → sidebar',
+    mechanic: 'Removes the messaging top toolbar; compresses Inbox/Archived/Blocked + search + new-message into the thread-list column header. Frees the top strip.',
+    ref: 'vaporware compact inbox',
   },
 };

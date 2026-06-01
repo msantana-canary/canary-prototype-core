@@ -15,7 +15,7 @@ import { TeamChatPanel } from './TeamChatPanel';
 
 export function TeamChatContainer() {
   const { variant, panelOpen } = useSpikeStore();
-  const isFloat = variant === 'A';
+  const isFloat = variant === 'A' || variant === 'D';
 
   return (
     <div
