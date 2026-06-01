@@ -19,7 +19,7 @@ export function TeamChatContainer() {
 
   return (
     <div
-      className="absolute inset-y-0 right-0 z-40 bg-white"
+      className="absolute inset-y-0 right-0 z-[55] bg-white"
       style={{
         width: PANEL_WIDTH,
         transform: panelOpen ? 'translateX(0)' : 'translateX(100%)',
