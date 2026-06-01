@@ -54,8 +54,5 @@ export interface ChatMessage {
   card?: ObjectCardRef;    // optional embedded object card
   isAI?: boolean;          // AI / system auto-post (command-center gesture)
   seenBy?: number;         // passive read-receipt count
-  needsAck?: boolean;      // requires an explicit "confirm you've seen this" (Deputy-style)
-  ackConfirmed?: number;   // how many have confirmed so far
-  ackTotal?: number;       // group size for the confirm tally
   self?: boolean;          // authored by the current user (Theresa Webb)
 }
