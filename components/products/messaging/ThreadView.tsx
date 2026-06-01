@@ -12,6 +12,7 @@ import { Avatar } from './Avatar';
 import { MessageFeed } from './MessageFeed';
 import { MessageComposer } from './MessageComposer';
 import { GuestInfoSidebar } from './GuestInfoSidebar';
+import { SuggestedTeamChatPost } from '@/components/products/team-chat/SuggestedTeamChatPost';
 import { Thread, Message, LinkedReservation } from '@/lib/products/messaging/types';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
@@ -291,6 +292,14 @@ export function ThreadView({
             Guest is typing
           </p>
         </div>
+      )}
+
+      {/* SPIKE: Team Chat feature surfacing in the guest thread — AI suggests posting to a staff group */}
+      {guest?.name === 'John Smith' && (
+        <SuggestedTeamChatPost
+          targetGroup="Front Desk"
+          suggestion="Heads up — John Smith just texted that his flight's delayed. New ETA is around 4:30pm instead of 3pm."
+        />
       )}
 
       {/* Composer */}

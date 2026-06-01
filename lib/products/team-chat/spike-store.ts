@@ -14,7 +14,7 @@
 import { create } from 'zustand';
 import type { GroupId } from './types';
 
-export type ChatVariant = 'A' | 'B';
+export type ChatVariant = 'A' | 'B' | 'C';
 export const PANEL_WIDTH = 384;
 
 type PanelView = 'list' | 'thread';
@@ -56,5 +56,10 @@ export const VARIANT_META: Record<ChatVariant, { label: string; mechanic: string
     label: 'Shell gutter',
     mechanic: 'Reserves a right gutter at the shell level; the product reflows into the narrower viewport by its own rules.',
     ref: 'Slack single-slot / shell push',
+  },
+  C: {
+    label: 'Gutter + reclaim nav',
+    mechanic: 'Pushes like B, but hides the main nav while open so the product barely compresses. Cleaner at 1440.',
+    ref: 'Jake / 3-panel vaporware nav-collapse',
   },
 };

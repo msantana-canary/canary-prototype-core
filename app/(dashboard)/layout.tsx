@@ -17,6 +17,7 @@ import {
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { TeamChatPill } from '@/components/products/team-chat/TeamChatPill';
 import { TeamChatSpikeRoot } from '@/components/products/team-chat/TeamChatSpikeRoot';
+import { useSpikeStore } from '@/lib/products/team-chat/spike-store';
 
 // Map sidebar item IDs to routes
 const itemRouteMap: Record<string, string> = {
@@ -47,6 +48,9 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  // SPIKE: variant C reclaims the nav's width by hiding it while team chat is open.
+  const { variant, panelOpen } = useSpikeStore();
+  const hideNav = variant === 'C' && panelOpen;
 
   // Get messaging store for unread badge
   const { threads } = useMessagingStore();
@@ -86,6 +90,7 @@ export default function DashboardLayout({
       selectedSidebarItemId={selectedItemId}
       onSidebarItemClick={handleSidebarItemClick}
       sidebarSections={sectionsWithBadge}
+      hideSidebar={hideNav}
       // Header config
       propertyName="Statler New York"
       userProfile={{

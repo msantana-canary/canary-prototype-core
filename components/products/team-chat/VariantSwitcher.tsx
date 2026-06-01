@@ -15,7 +15,7 @@ import {
   type ChatVariant,
 } from '@/lib/products/team-chat/spike-store';
 
-const VARIANTS: ChatVariant[] = ['A', 'B'];
+const VARIANTS: ChatVariant[] = ['A', 'B', 'C'];
 const BACKDROPS = [
   { label: 'Check-in', route: '/check-in' },
   { label: 'Messages', route: '/messages' },
@@ -38,24 +38,25 @@ export function VariantSwitcher() {
         <span className="text-[10px] text-white/45">not final UI</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-1">
+      <div className="grid grid-cols-3 gap-1">
         {VARIANTS.map((v) => (
           <button
             key={v}
             onClick={() => setVariant(v)}
-            className="rounded-md py-1.5 text-[12px] font-semibold transition-colors"
+            className="rounded-md py-1.5 text-[13px] font-semibold transition-colors"
             style={{
               backgroundColor: v === variant ? '#2858C4' : 'rgba(255,255,255,0.08)',
               color: v === variant ? 'white' : 'rgba(255,255,255,0.7)',
             }}
           >
-            {v} · {VARIANT_META[v].label}
+            {v}
           </button>
         ))}
       </div>
 
       <div className="mt-2">
-        <p className="text-[11px] leading-snug text-white/65">{meta.mechanic}</p>
+        <div className="text-[12px] font-semibold text-white">{meta.label}</div>
+        <p className="mt-0.5 text-[11px] leading-snug text-white/65">{meta.mechanic}</p>
         <p className="mt-1 text-[10px] text-white/40">ref: {meta.ref}</p>
       </div>
 

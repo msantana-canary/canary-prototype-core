@@ -18,6 +18,7 @@ import {
   mdiPaperclip,
   mdiBullhornOutline,
   mdiCheckAll,
+  mdiCheckCircleOutline,
 } from '@mdi/js';
 import { colors } from '@canary-ui/components';
 import { useSpikeStore } from '@/lib/products/team-chat/spike-store';
@@ -250,7 +251,38 @@ function FlatMessage({ message: m }: { message: ChatMessage }) {
             Seen by {m.seenBy}
           </span>
         )}
+        {m.needsAck && <AckControl confirmed={m.ackConfirmed ?? 0} total={m.ackTotal ?? 0} />}
       </div>
+    </div>
+  );
+}
+
+/** Deputy-style "confirm you've seen this" — more useful than a passive receipt for a shift handoff. */
+function AckControl({ confirmed, total }: { confirmed: number; total: number }) {
+  const [acked, setAcked] = useState(false);
+  const n = confirmed + (acked ? 1 : 0);
+
+  return (
+    <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-2">
+      {acked ? (
+        <div className="flex items-center gap-1.5 text-[12px] font-medium" style={{ color: '#1F9D78' }}>
+          <Icon path={mdiCheckCircleOutline} size={0.7} color="#1F9D78" />
+          You confirmed · {n}/{total} seen
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[11px]" style={{ color: colors.colorBlack3 }}>
+            {n}/{total} confirmed
+          </span>
+          <button
+            onClick={() => setAcked(true)}
+            className="rounded-md px-2.5 py-1 text-[12px] font-semibold text-white"
+            style={{ backgroundColor: colors.colorBlueDark1 }}
+          >
+            Confirm you&apos;ve seen this
+          </button>
+        </div>
+      )}
     </div>
   );
 }

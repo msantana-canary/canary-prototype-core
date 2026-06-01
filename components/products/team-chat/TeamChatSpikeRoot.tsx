@@ -14,7 +14,7 @@ import { VariantSwitcher } from './VariantSwitcher';
 
 export function TeamChatSpikeRoot({ children }: { children: React.ReactNode }) {
   const { variant, panelOpen } = useSpikeStore();
-  const pushes = panelOpen && variant === 'B';
+  const pushes = panelOpen && (variant === 'B' || variant === 'C');
 
   return (
     <div className="relative h-full w-full overflow-hidden">

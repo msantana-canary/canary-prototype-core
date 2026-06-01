@@ -133,7 +133,9 @@ export const messagesByGroup: Record<GroupId, ChatMessage[]> = {
       authorInitials: 'GM',
       time: 'Mon 4:10 PM',
       text: 'Reminder: harassment-prevention training is due Friday. Link is in your email — please confirm once done.',
-      seenBy: 9,
+      needsAck: true,
+      ackConfirmed: 12,
+      ackTotal: 15,
     },
   ],
 };
