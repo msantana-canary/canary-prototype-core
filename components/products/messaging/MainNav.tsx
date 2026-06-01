@@ -13,6 +13,7 @@ import Icon from '@mdi/react';
 import { mdiMessageProcessing, mdiVideoInputAntenna, mdiLayersOutline } from '@mdi/js';
 import { CanarySelect, InputSize } from '@canary-ui/components';
 import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
+import { useSpikeStore } from '@/lib/products/team-chat/spike-store';
 
 interface MainNavProps {
   activeTab: MainNavTab;
@@ -21,6 +22,8 @@ interface MainNavProps {
 
 export function MainNav({ activeTab, onTabChange }: MainNavProps) {
   const [onlineStatus, setOnlineStatus] = useState('online');
+  // SPIKE Option D: compact chrome only when a D variant (overlay/gutter) is active.
+  const compact = useSpikeStore((s) => s.variant === 'D' || s.variant === 'E');
 
   const segments = [
     {
@@ -41,7 +44,7 @@ export function MainNav({ activeTab, onTabChange }: MainNavProps) {
   ];
 
   return (
-    <div className="h-[44px] bg-[#f0f0f0] border-b border-gray-200 px-6 py-1 flex items-center justify-between">
+    <div className={compact ? "h-[44px] bg-[#f0f0f0] border-b border-gray-200 px-6 py-1 flex items-center justify-between" : "h-[60px] bg-[#f0f0f0] border-b border-gray-200 px-6 py-2 flex items-center justify-between"}>
       {/* Text Tabs */}
       <div className="flex items-center">
         {segments.map((segment) => {
@@ -52,18 +55,18 @@ export function MainNav({ activeTab, onTabChange }: MainNavProps) {
               onClick={() => onTabChange(segment.id)}
               className="flex flex-col items-start overflow-clip relative shrink-0 focus:outline-none transition-all duration-200"
             >
-              <div className="flex gap-1.5 items-center justify-center px-3 py-1 cursor-pointer transition-colors duration-200 hover:bg-black/5 focus-within:bg-black/5">
+              <div className={compact ? "flex gap-1.5 items-center justify-center px-3 py-1 cursor-pointer transition-colors duration-200 hover:bg-black/5 focus-within:bg-black/5" : "flex gap-2 items-center justify-center px-4 py-2 cursor-pointer transition-colors duration-200 hover:bg-black/5 focus-within:bg-black/5"}>
                 <Icon
                   path={segment.icon}
-                  size={0.6}
+                  size={compact ? 0.6 : 0.67}
                   color={isActive ? '#2858c4' : '#333333'}
                 />
                 <span
                   className="font-medium font-['Roboto',sans-serif] text-center whitespace-nowrap"
                   style={{
-                    fontSize: '13px',
+                    fontSize: compact ? '13px' : '16px',
                     color: isActive ? '#2858c4' : '#333333',
-                    lineHeight: '18px',
+                    lineHeight: compact ? '18px' : '24px',
                   }}
                 >
                   {segment.label}
@@ -105,7 +108,7 @@ export function MainNav({ activeTab, onTabChange }: MainNavProps) {
             8:00 AM – 11:00 PM EST
           </div>
         </div>
-        <div className="w-[112px] online-status-wrapper" data-status={onlineStatus}>
+        <div className={compact ? "w-[112px] online-status-wrapper" : "w-[136px] online-status-wrapper"} data-status={onlineStatus}>
           <CanarySelect
             options={[
               { label: 'Online', value: 'online' },
@@ -114,7 +117,7 @@ export function MainNav({ activeTab, onTabChange }: MainNavProps) {
             ]}
             value={onlineStatus}
             onChange={(e) => setOnlineStatus(e.target.value)}
-            size={InputSize.COMPACT}
+            size={compact ? InputSize.COMPACT : InputSize.NORMAL}
           />
         </div>
       </div>

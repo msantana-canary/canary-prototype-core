@@ -15,7 +15,7 @@ import { CollapsedNavRail, RAIL_WIDTH } from './CollapsedNavRail';
 
 export function TeamChatSpikeRoot({ children }: { children: React.ReactNode }) {
   const { variant, panelOpen } = useSpikeStore();
-  const pushes = panelOpen && (variant === 'B' || variant === 'C');
+  const pushes = panelOpen && (variant === 'B' || variant === 'C' || variant === 'E');
   const leftRail = panelOpen && variant === 'C'; // C: collapse nav to an icon rail
 
   return (

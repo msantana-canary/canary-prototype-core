@@ -204,7 +204,7 @@ export default function MessagesPage() {
         <div className="flex h-full">
           {/* Thread List */}
           <div className="w-[320px] border-r border-gray-200 flex flex-col">
-            {teamChatVariant === 'D' && (
+            {(teamChatVariant === 'D' || teamChatVariant === 'E') && (
               <CompactInboxHeader
                 currentView={currentView}
                 onViewChange={setCurrentView}
@@ -226,7 +226,7 @@ export default function MessagesPage() {
                 onCreateThread={createThreadFromPhone}
                 onCancelComposing={cancelComposing}
                 typingThreadId={typingThreadId}
-                hideFilter={teamChatVariant === 'D'}
+                hideFilter={teamChatVariant === 'D' || teamChatVariant === 'E'}
               />
             </div>
           </div>

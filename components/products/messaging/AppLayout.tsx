@@ -46,7 +46,7 @@ export function AppLayout({
       <MainNav activeTab={activeTab} onTabChange={onTabChange} />
 
       {/* Sub Navigation */}
-      {activeTab === 'conversations' && variant !== 'D' && (
+      {activeTab === 'conversations' && variant !== 'D' && variant !== 'E' && (
         <SubNav
           onNewMessage={onNewMessage}
           currentView={currentView}

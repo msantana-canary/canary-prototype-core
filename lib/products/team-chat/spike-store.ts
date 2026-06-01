@@ -14,7 +14,7 @@
 import { create } from 'zustand';
 import type { GroupId } from './types';
 
-export type ChatVariant = 'A' | 'B' | 'C' | 'D';
+export type ChatVariant = 'A' | 'B' | 'C' | 'D' | 'E';
 export const PANEL_WIDTH = 384;
 
 type PanelView = 'list' | 'thread';
@@ -63,8 +63,13 @@ export const VARIANT_META: Record<ChatVariant, { label: string; mechanic: string
     ref: 'vaporware collapsible sidebar',
   },
   D: {
-    label: 'Toolbar → sidebar',
-    mechanic: 'Removes the messaging top toolbar; compresses Inbox/Archived/Blocked + search + new-message into the thread-list column header. Frees the top strip.',
+    label: 'D · overlay (compact)',
+    mechanic: 'Compact messaging chrome (toolbar → sidebar header) + overlay panel. Compare vs A.',
+    ref: 'vaporware compact inbox',
+  },
+  E: {
+    label: 'D · gutter (compact)',
+    mechanic: 'Compact messaging chrome (toolbar → sidebar header) + shell-gutter push. Compare vs B.',
     ref: 'vaporware compact inbox',
   },
 };
