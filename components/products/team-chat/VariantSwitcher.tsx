@@ -8,6 +8,7 @@
  * NOT product UI.
  */
 
+import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   useSpikeStore,
@@ -27,6 +28,20 @@ export function VariantSwitcher() {
   const router = useRouter();
   const pathname = usePathname();
   const meta = VARIANT_META[variant];
+  const [collapsed, setCollapsed] = useState(false);
+
+  if (collapsed) {
+    return (
+      <button
+        onClick={() => setCollapsed(false)}
+        className="absolute bottom-4 left-4 z-[60] flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white/90 shadow-2xl backdrop-blur"
+        style={{ backgroundColor: 'rgba(17,20,28,0.93)' }}
+        title="Expand spike harness"
+      >
+        Spike · {variant}
+      </button>
+    );
+  }
 
   return (
     <div
@@ -35,7 +50,13 @@ export function VariantSwitcher() {
     >
       <div className="mb-2 flex items-center justify-between">
         <span className="text-[11px] font-bold uppercase tracking-wider text-white/90">Spike harness</span>
-        <span className="text-[10px] text-white/45">not final UI</span>
+        <button
+          onClick={() => setCollapsed(true)}
+          className="text-[10px] text-white/45 hover:text-white/80"
+          title="Collapse spike harness"
+        >
+          collapse ✕
+        </button>
       </div>
 
       <div className="grid grid-cols-4 gap-1">
