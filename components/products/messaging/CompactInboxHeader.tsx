@@ -9,7 +9,7 @@
  */
 
 import Icon from '@mdi/react';
-import { mdiMagnify, mdiPencilOutline } from '@mdi/js';
+import { mdiMagnify, mdiPencilOutline, mdiFilterVariant } from '@mdi/js';
 import { colors } from '@canary-ui/components';
 
 type CategoryFilter = 'inbox' | 'archived' | 'blocked';
@@ -55,14 +55,24 @@ export function CompactInboxHeader({
             );
           })}
         </div>
-        <button
-          onClick={onNewMessage}
-          aria-label="New message"
-          className="flex h-8 w-8 items-center justify-center rounded"
-          style={{ backgroundColor: colors.colorBlueDark1 }}
-        >
-          <Icon path={mdiPencilOutline} size={0.75} color="white" />
-        </button>
+        <div className="flex gap-2">
+          <button
+            aria-label="Filter conversations"
+            title="Filter: All conversations"
+            className="flex h-8 w-8 items-center justify-center rounded"
+            style={{ backgroundColor: '#EAEEF9' }}
+          >
+            <Icon path={mdiFilterVariant} size={0.75} color={colors.colorBlueDark1} />
+          </button>
+          <button
+            onClick={onNewMessage}
+            aria-label="New message"
+            className="flex h-8 w-8 items-center justify-center rounded"
+            style={{ backgroundColor: colors.colorBlueDark1 }}
+          >
+            <Icon path={mdiPencilOutline} size={0.75} color="white" />
+          </button>
+        </div>
       </div>
       <div className="px-4 pb-4">
         <div className="relative">
