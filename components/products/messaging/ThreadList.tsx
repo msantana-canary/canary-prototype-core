@@ -72,24 +72,7 @@ export function ThreadList({
         </div>
       )}
 
-      {/* New Conversation Phone Input */}
-      {isComposingNew && (
-        <div className="bg-blue-50 border-b border-blue-200 p-4 flex items-center gap-2">
-          <CanaryInput
-            placeholder="Enter phone number..."
-            value={composingPhoneNumber}
-            onChange={(e) => onComposingPhoneChange?.(e.target.value)}
-            onKeyDown={handlePhoneKeyDown}
-            size={InputSize.NORMAL}
-          />
-          <button
-            onClick={onCancelComposing}
-            className="p-1 hover:bg-blue-100 rounded"
-          >
-            <Icon path={mdiClose} size={0.8} color="#666" />
-          </button>
-        </div>
-      )}
+      {/* New-conversation phone input now lives in the thread pane (ComposeHeader), per the real product */}
 
       {/* Thread List */}
       <div className="flex-1 overflow-y-auto">

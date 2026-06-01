@@ -14,6 +14,7 @@ import { ThreadList } from '@/components/products/messaging/ThreadList';
 import { ThreadView } from '@/components/products/messaging/ThreadView';
 import { useSpikeStore } from '@/lib/products/team-chat/spike-store';
 import { CompactInboxHeader } from '@/components/products/messaging/CompactInboxHeader';
+import { ComposeHeader } from '@/components/products/messaging/ComposeHeader';
 import { UnlinkReservationModal } from '@/components/products/messaging/UnlinkReservationModal';
 import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
 import { useMessagingStore } from '@/lib/products/messaging/store';
@@ -232,7 +233,14 @@ export default function MessagesPage() {
 
           {/* Thread View */}
           <div className="flex-1">
-            {selectedThread ? (
+            {isComposingNew ? (
+              <ComposeHeader
+                composingPhoneNumber={composingPhoneNumber}
+                onComposingPhoneChange={updateComposingPhone}
+                onCreateThread={createThreadFromPhone}
+                onCancelComposing={cancelComposing}
+              />
+            ) : selectedThread ? (
               <ThreadView
                 thread={selectedThread}
                 guest={selectedGuest}
