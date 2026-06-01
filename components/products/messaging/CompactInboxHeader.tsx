@@ -76,7 +76,7 @@ export function CompactInboxHeader({
       </div>
       <div className="px-4 pb-4">
         <div className="relative">
-          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2">
+          <span className="pointer-events-none absolute inset-y-0 left-2 flex items-center">
             <Icon path={mdiMagnify} size={0.8} color={colors.colorBlack4} />
           </span>
           <input
