@@ -41,7 +41,7 @@ export function MainNav({ activeTab, onTabChange }: MainNavProps) {
   ];
 
   return (
-    <div className="h-[60px] bg-[#f0f0f0] border-b border-gray-200 px-6 py-2 flex items-center justify-between">
+    <div className="h-[44px] bg-[#f0f0f0] border-b border-gray-200 px-6 py-1 flex items-center justify-between">
       {/* Text Tabs */}
       <div className="flex items-center">
         {segments.map((segment) => {
@@ -52,18 +52,18 @@ export function MainNav({ activeTab, onTabChange }: MainNavProps) {
               onClick={() => onTabChange(segment.id)}
               className="flex flex-col items-start overflow-clip relative shrink-0 focus:outline-none transition-all duration-200"
             >
-              <div className="flex gap-2 items-center justify-center px-4 py-2 cursor-pointer transition-colors duration-200 hover:bg-black/5 focus-within:bg-black/5">
+              <div className="flex gap-1.5 items-center justify-center px-3 py-1 cursor-pointer transition-colors duration-200 hover:bg-black/5 focus-within:bg-black/5">
                 <Icon
                   path={segment.icon}
-                  size={0.67}
+                  size={0.6}
                   color={isActive ? '#2858c4' : '#333333'}
                 />
                 <span
                   className="font-medium font-['Roboto',sans-serif] text-center whitespace-nowrap"
                   style={{
-                    fontSize: '16px',
+                    fontSize: '13px',
                     color: isActive ? '#2858c4' : '#333333',
-                    lineHeight: '24px',
+                    lineHeight: '18px',
                   }}
                 >
                   {segment.label}
@@ -105,7 +105,7 @@ export function MainNav({ activeTab, onTabChange }: MainNavProps) {
             8:00 AM – 11:00 PM EST
           </div>
         </div>
-        <div className="w-[136px] online-status-wrapper" data-status={onlineStatus}>
+        <div className="w-[112px] online-status-wrapper" data-status={onlineStatus}>
           <CanarySelect
             options={[
               { label: 'Online', value: 'online' },
@@ -114,7 +114,7 @@ export function MainNav({ activeTab, onTabChange }: MainNavProps) {
             ]}
             value={onlineStatus}
             onChange={(e) => setOnlineStatus(e.target.value)}
-            size={InputSize.NORMAL}
+            size={InputSize.COMPACT}
           />
         </div>
       </div>

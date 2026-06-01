@@ -137,7 +137,7 @@ export function CompactInboxHeader({
           placeholder="Search guests..."
           value={searchQuery}
           onChange={(e) => onSearchChange?.(e.target.value)}
-          size={InputSize.NORMAL}
+          size={InputSize.COMPACT}
         />
       </div>
     </div>
