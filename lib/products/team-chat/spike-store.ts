@@ -1,73 +1,60 @@
 /**
  * Team Chat (SPIKE) — shared state
  *
- * One tiny Zustand store shared by the header pill, the panel, the variant
- * container, and the dev variant-switcher. Lets you flip A/B/C/D live over the
- * same real product page and compare the container mechanic side by side.
+ * Container is a CONSISTENT GLOBAL LAYER over the whole suite — it never knows
+ * what product is underneath. Two product-agnostic models under test:
+ *   A — overlay layer : floats on top of any product; reflows nothing.
+ *   B — shell gutter   : reserves a right gutter at the shell level; the product
+ *                        reflows into the narrower viewport by its OWN rules.
+ * (C resize and D footer were dropped — see git history.)
+ *
+ * Panel IA is group-list-first: open → list of groups → tap → thread → back.
  */
 
 import { create } from 'zustand';
 import type { GroupId } from './types';
 
-export type ChatVariant = 'A' | 'B' | 'C' | 'D';
+export type ChatVariant = 'A' | 'B';
+export const PANEL_WIDTH = 384;
 
-export const MIN_PANEL_WIDTH = 320;
-export const MAX_PANEL_WIDTH = 560;
-export const DEFAULT_PANEL_WIDTH = 384;
-export const FOOTER_BAR_HEIGHT = 44;
+type PanelView = 'list' | 'thread';
 
 interface SpikeStore {
   variant: ChatVariant;
   panelOpen: boolean;
-  panelWidth: number;        // used by push variants (B/C)
-  activeGroupId: GroupId;
+  view: PanelView;
+  activeGroupId: GroupId | null;
   setVariant: (v: ChatVariant) => void;
   togglePanel: () => void;
   openPanel: () => void;
   closePanel: () => void;
-  setPanelWidth: (w: number) => void;
-  setActiveGroup: (id: GroupId) => void;
+  openThread: (id: GroupId) => void;
+  backToList: () => void;
 }
-
-const clampWidth = (w: number) =>
-  Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, w));
 
 export const useSpikeStore = create<SpikeStore>((set) => ({
   variant: 'A',
   panelOpen: false,
-  panelWidth: DEFAULT_PANEL_WIDTH,
-  activeGroupId: 'front-desk',
+  view: 'list',
+  activeGroupId: null,
   setVariant: (variant) => set({ variant }),
-  togglePanel: () => set((s) => ({ panelOpen: !s.panelOpen })),
-  openPanel: () => set({ panelOpen: true }),
+  togglePanel: () => set((s) => ({ panelOpen: !s.panelOpen, view: s.panelOpen ? s.view : 'list' })),
+  openPanel: () => set({ panelOpen: true, view: 'list' }),
   closePanel: () => set({ panelOpen: false }),
-  setPanelWidth: (w) => set({ panelWidth: clampWidth(w) }),
-  setActiveGroup: (activeGroupId) => set({ activeGroupId }),
+  openThread: (activeGroupId) => set({ activeGroupId, view: 'thread' }),
+  backToList: () => set({ view: 'list', activeGroupId: null }),
 }));
 
-/** Human-readable descriptions shown in the dev variant-switcher. */
-export const VARIANT_META: Record<
-  ChatVariant,
-  { label: string; mechanic: string; ref: string }
-> = {
+/** Descriptions shown in the dev variant-switcher. */
+export const VARIANT_META: Record<ChatVariant, { label: string; mechanic: string; ref: string }> = {
   A: {
-    label: 'Overlay float',
-    mechanic: 'Floats over the page — nothing reflows. Page stays put underneath.',
+    label: 'Overlay layer',
+    mechanic: 'Floats on top of any product — demands nothing, reflows nothing. Covers content while open.',
     ref: 'Salesforce Utility Bar / Messenger',
   },
   B: {
-    label: 'Push + reflow',
-    mechanic: 'Reserves a right gutter — the page compresses into the remaining width.',
-    ref: 'Slack single-slot panel',
-  },
-  C: {
-    label: 'Push + resize',
-    mechanic: 'Push, but drag the left edge to resize. Find the width where both survive.',
-    ref: 'OpenPhone drag-to-resize',
-  },
-  D: {
-    label: 'Footer launcher',
-    mechanic: 'Persistent bottom bar; panel pops up bottom-right. Watch it hit the Messages composer.',
-    ref: 'Salesforce footer / Intercom',
+    label: 'Shell gutter',
+    mechanic: 'Reserves a right gutter at the shell level; the product reflows into the narrower viewport by its own rules.',
+    ref: 'Slack single-slot / shell push',
   },
 };
