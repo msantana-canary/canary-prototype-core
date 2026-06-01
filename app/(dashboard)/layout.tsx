@@ -15,6 +15,8 @@ import {
   addBadge,
 } from '@canary-ui/components';
 import { useMessagingStore } from '@/lib/products/messaging/store';
+import { TeamChatPill } from '@/components/products/team-chat/TeamChatPill';
+import { TeamChatSpikeRoot } from '@/components/products/team-chat/TeamChatSpikeRoot';
 
 // Map sidebar item IDs to routes
 const itemRouteMap: Record<string, string> = {
@@ -95,11 +97,12 @@ export default function DashboardLayout({
         label: 'Reservations',
         isConnected: true,
       }}
+      headerActions={<TeamChatPill />}
       // Content config
       contentPadding="none"
       contentBackground="#FFFFFF"
     >
-      {children}
+      <TeamChatSpikeRoot>{children}</TeamChatSpikeRoot>
     </CanaryAppShell>
   );
 }
