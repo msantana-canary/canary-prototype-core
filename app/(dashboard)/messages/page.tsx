@@ -27,6 +27,7 @@ import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
 export default function MessagesPage() {
   const [activeTab, setActiveTab] = useState<MainNavTab>('conversations');
   const teamChatVariant = useSpikeStore((s) => s.variant); // SPIKE Option D
+  const [convFilter, setConvFilter] = useState('all-conversations'); // SPIKE Option D: filter relocated from ThreadList
 
   const {
     threads,
@@ -209,6 +210,8 @@ export default function MessagesPage() {
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 onNewMessage={startNewConversation}
+                filterValue={convFilter}
+                onFilterChange={setConvFilter}
               />
             )}
             <div className="flex-1 min-h-0 overflow-hidden">
@@ -222,6 +225,7 @@ export default function MessagesPage() {
                 onCreateThread={createThreadFromPhone}
                 onCancelComposing={cancelComposing}
                 typingThreadId={typingThreadId}
+                hideFilter={teamChatVariant === 'D'}
               />
             </div>
           </div>

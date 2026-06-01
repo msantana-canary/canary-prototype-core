@@ -20,6 +20,7 @@ interface ThreadListProps {
   threads: Thread[];
   selectedThreadId: string | null;
   onSelectThread: (threadId: string) => void;
+  hideFilter?: boolean;
   isComposingNew?: boolean;
   composingPhoneNumber?: string;
   onComposingPhoneChange?: (phone: string) => void;
@@ -32,6 +33,7 @@ export function ThreadList({
   threads,
   selectedThreadId,
   onSelectThread,
+  hideFilter,
   isComposingNew = false,
   composingPhoneNumber = '',
   onComposingPhoneChange,
@@ -56,17 +58,19 @@ export function ThreadList({
 
   return (
     <div className="w-full bg-neutral-50 flex flex-col h-full">
-      {/* Filter Section */}
-      <div className="bg-white border-b border-t border-neutral-200 h-[70px] px-4 py-4 flex items-center">
-        <div className="flex-1">
-          <CanarySelect
-            options={filterOptions}
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            size={InputSize.NORMAL}
-          />
+      {/* Filter Section (hidden in Option D — relocated to the compact header) */}
+      {!hideFilter && (
+        <div className="bg-white border-b border-t border-neutral-200 h-[70px] px-4 py-4 flex items-center">
+          <div className="flex-1">
+            <CanarySelect
+              options={filterOptions}
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              size={InputSize.NORMAL}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* New Conversation Phone Input */}
       {isComposingNew && (
