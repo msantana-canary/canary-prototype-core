@@ -58,9 +58,9 @@ export const VARIANT_META: Record<ChatVariant, { label: string; mechanic: string
     ref: 'Slack single-slot / shell push',
   },
   C: {
-    label: 'Collapse nav (stand-in)',
-    mechanic: 'Should collapse the nav to an icon rail; the component library has no collapse mode yet, so this just hides it as a stand-in. Needs the collapsible-sidebar work.',
-    ref: 'Wenjun collapsible sidebar (dependency)',
+    label: 'Collapse nav to rail',
+    mechanic: 'Collapses the main nav to an icon rail (structure from the vaporware) so opening chat reclaims the nav width instead of squeezing the product.',
+    ref: 'vaporware collapsible sidebar',
   },
   D: {
     label: 'Toolbar → sidebar',
