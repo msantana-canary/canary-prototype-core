@@ -107,7 +107,13 @@ export default function DashboardLayout({
       contentPadding="none"
       contentBackground="#FFFFFF"
     >
-      <TeamChatSpikeRoot>{children}</TeamChatSpikeRoot>
+      <TeamChatSpikeRoot
+        sidebarSections={sectionsWithBadge}
+        selectedItemId={selectedItemId}
+        onItemClick={handleSidebarItemClick}
+      >
+        {children}
+      </TeamChatSpikeRoot>
     </CanaryAppShell>
   );
 }

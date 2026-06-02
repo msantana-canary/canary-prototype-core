@@ -4,7 +4,7 @@
 > **How a fresh Claude should start:** read this → tell Miguel your understanding of the top decisions AND their reasoning AND where you're unsure → let him correct → only then proceed. Don't cold-execute.
 
 ## Status (2026-06-01)
-Spike on `prototype/team-chat-container` (off `main`), pushed for a Vercel preview (main untouched). Harness compares container models A–E live at 1440px over real product pages. **No container model chosen yet** after two Jake calls (a third transcript is pending a read). The spike's job was to make the decision *feel-able*, not to ship.
+Spike on `prototype/team-chat-container` (off `main`), pushed for a Vercel preview (main untouched). Harness compares container models A–E live at 1440px over real product pages. **No container model chosen yet** after two Jake calls (third transcript now read — synthesis pending Miguel's ratification). The spike's job was to make the decision *feel-able*, not to ship. **Next:** present A–E as options to **SJ tomorrow** (container still unchosen); variant **C hardened** to a faithful collapsed render of the real sidebar for that review — see **D13**.
 
 ---
 
@@ -59,6 +59,13 @@ Spike on `prototype/team-chat-container` (off `main`), pushed for a Vercel previ
 
 ### D12 — Library pinned to `bbc64f3` (reverted off latest)
 - Updating to latest `0c485c5` silently **broke the AppShell header** (breaking `CanaryAppShell` header change; it still *built*, so dev-200 didn't catch it). Reverted + pinned for spike stability. The header-API change must be reconciled before adopting latest.
+
+### D13 — Variant C rail = faithful render of the REAL sidebar, not a hand-rolled list
+- **Decision:** the collapsed rail now renders the SAME `standardMainSidebarSections` the live `CanarySidebar` uses (threaded from the dashboard layout so the unread badge + selected item stay 1:1), with the real MAIN treatment — ground `#375492`, white icons ~50% at rest, selected = white pill with icon/label in the ground color, 3 sections w/ dividers, Settings pinned bottom. Added **hover-to-expand** (mini → 208px) so collapsing the nav doesn't cost label legibility.
+- **Why:** the old rail hardcoded **5 of the 13** products with *guessed* icons (Check-in = bed not `mdiLogin`; Upsells = tag not `mdiCashMultiple`; Checkout = grid not `mdiLogout`) and a wrong navy (`#1E335A`, absent from the lib; real ground is `#375492`). For SJ to read C as a credible "collapsed sidebar" option it must match the real nav exactly; deriving from the lib source-of-truth guarantees it and won't drift.
+- **Rejected — "match the vaporware collapsed sidebar" (the original ask):** there isn't one. Searched all branches + commits — the vaporware only has a collapsible *guest-info* (right) sidebar + collapsible thread swim-lanes; its CLAUDE.md "Phase 2: Collapsible Product Sidebar" was never landed (branch gone). So **D9's "structure lifted from the vaporware" was inaccurate.** Modeled on the real `CanarySidebar` MAIN instead.
+- **Rejected — rebuild icons via an id→mdi map:** unnecessary + drift-prone. `item.icon` is an `@mdi/react` `<Icon>` with no `color` prop (inherits `currentColor`), so the real icon nodes are reused as-is and themed via CSS.
+- **Open:** still a *visual* stand-in — production C needs a real collapse mode in `@canary-ui/components` (the D9 / collapsible-sidebar / **SJ-tomorrow** dependency). Structural nit: the rail sits in the content region (below the full-width header), not in the sidebar's full-height slot — fine for an option demo; flag if SJ wants it pixel-true. Files: `CollapsedNavRail.tsx` (rewrite); `TeamChatSpikeRoot.tsx` + `(dashboard)/layout.tsx` (thread sections/selection/handler); `spike-store.ts` (C meta).
 
 ---
 

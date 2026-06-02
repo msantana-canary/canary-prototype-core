@@ -59,8 +59,8 @@ export const VARIANT_META: Record<ChatVariant, { label: string; mechanic: string
   },
   C: {
     label: 'Collapse nav to rail',
-    mechanic: 'Collapses the main nav to an icon rail (structure from the vaporware) so opening chat reclaims the nav width instead of squeezing the product.',
-    ref: 'vaporware collapsible sidebar',
+    mechanic: 'Hides the main sidebar and shows a collapsed icon rail (real products/icons from standardMainSidebarSections; hover to peek labels) so opening chat reclaims the nav width instead of squeezing the product.',
+    ref: 'CanarySidebar MAIN, collapsed',
   },
   D: {
     label: 'D · overlay (compact)',
