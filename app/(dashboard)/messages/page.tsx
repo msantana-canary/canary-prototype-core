@@ -12,6 +12,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AppLayout } from '@/components/products/messaging/AppLayout';
 import { ThreadList } from '@/components/products/messaging/ThreadList';
 import { ThreadView } from '@/components/products/messaging/ThreadView';
+import { ComposeHeader } from '@/components/products/messaging/ComposeHeader';
 import { UnlinkReservationModal } from '@/components/products/messaging/UnlinkReservationModal';
 import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
 import { useMessagingStore } from '@/lib/products/messaging/store';
@@ -178,12 +179,16 @@ export default function MessagesPage() {
     setUnlinkTarget(null);
   };
 
-  // Auto-select first thread on mount (conversations only)
+  // Auto-select first thread on mount (conversations only).
+  // Skip while composing — startNewConversation nulls selectedThreadId, and without
+  // this guard the effect would instantly re-select thread #1 (spurious mark-as-read +
+  // clobbers the compose pane). On cancel, isComposingNew flips false and this re-runs,
+  // landing the user back on the inbox's first thread.
   useEffect(() => {
-    if (activeTab === 'conversations' && !selectedThreadId && filteredThreads.length > 0) {
+    if (activeTab === 'conversations' && !selectedThreadId && !isComposingNew && filteredThreads.length > 0) {
       selectThread(filteredThreads[0].id);
     }
-  }, [activeTab, selectedThreadId, filteredThreads, selectThread]);
+  }, [activeTab, selectedThreadId, isComposingNew, filteredThreads, selectThread]);
 
   return (
     <AppLayout
@@ -203,18 +208,20 @@ export default function MessagesPage() {
               threads={filteredThreads}
               selectedThreadId={selectedThreadId}
               onSelectThread={selectThread}
-              isComposingNew={isComposingNew}
-              composingPhoneNumber={composingPhoneNumber}
-              onComposingPhoneChange={updateComposingPhone}
-              onCreateThread={createThreadFromPhone}
-              onCancelComposing={cancelComposing}
               typingThreadId={typingThreadId}
             />
           </div>
 
           {/* Thread View */}
           <div className="flex-1">
-            {selectedThread ? (
+            {isComposingNew ? (
+              <ComposeHeader
+                composingPhoneNumber={composingPhoneNumber}
+                onComposingPhoneChange={updateComposingPhone}
+                onCreateThread={createThreadFromPhone}
+                onCancelComposing={cancelComposing}
+              />
+            ) : selectedThread ? (
               <ThreadView
                 thread={selectedThread}
                 guest={selectedGuest}
