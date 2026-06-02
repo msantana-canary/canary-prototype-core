@@ -1,0 +1,101 @@
+# Team Chat — Decision Log (the *why*, not just the *what*)
+
+> **Purpose:** capture the reasoning + rejected alternatives that plain status docs lose. Read this WITH `TEAM_CHAT_SPIKE.md` (state/file-map) and the `team-chat-design-tasks` memory. Then read the source transcripts (bottom) for full depth.
+> **How a fresh Claude should start:** read this → tell Miguel your understanding of the top decisions AND their reasoning AND where you're unsure → let him correct → only then proceed. Don't cold-execute.
+
+## Status (2026-06-01)
+Spike on `prototype/team-chat-container` (off `main`), pushed for a Vercel preview (main untouched). Harness compares container models A–E live at 1440px over real product pages. **No container model chosen yet** after two Jake calls (a third transcript is pending a read). The spike's job was to make the decision *feel-able*, not to ship.
+
+---
+
+## DECISION LOG (each: Decision · Why · Rejected & why · Still-open)
+
+### D1 — It's a *coordination layer*, not a chat app
+- **Why:** the only thing that beats WhatsApp is knowing Canary objects (guest/reservation/ticket/upsell). Plain chat loses to WhatsApp's 15-yr head start + universal mobile.
+- **Rejected:** "build a chat tab" — a worse WhatsApp. Also rejected: scoping it as just a feature *of* Messaging (it should reach every product).
+- **Open:** is it its own SKU? Jake/Mati say yes (you can have check-in without messaging but still coordinate); Kevin says no. UNRESOLVED — but gate it independently of Messaging regardless.
+
+### D2 — Why build it at all
+- **Why:** *both* real customer demand (AE channel asks, lost deals) AND SJ's MSA-driven "more products → more MSAs." Be honest which is driving: MSA-driven → must be packageable/differentiated enough to justify a line item; product-driven → must measurably help existing users.
+- **Risk:** if it's MSA-theater shipped as plain chat, it won't get adopted (see D5).
+
+### D3 — Entry = global header pill → slide-in panel
+- **Why:** reachable from every product without leaving the screen; Wenjun *independently* placed team chat in the header (convergent signal).
+- **Rejected:** dedicated tab/destination (just another place to go, competes head-on with WhatsApp); right rail (the app already has a left sidebar → sandwiching content between two rails).
+
+### D4 — Container model is the core OPEN fork (A–E)
+- **The principle that constrains it (Miguel's catch):** team chat must be ONE consistent global layer, identical on every product (and sellable as a SKU). It must NOT negotiate with each product's internal panels.
+- **Rejected (important):** the "tab between Guest Profile and Team Chat" idea — elegant *only* in messaging; it breaks the moment you're in check-in/checkout (no guest-profile rail to tab with), and it conflates *guest context* (one guest) with *team coordination* (departments). Don't per-surface it.
+- **The five built to compare:** A overlay (floats, reflows nothing, hides content) · B shell-gutter (page reflows by its own responsive rules) · C collapse-nav-to-rail · D compact-chrome + overlay · E compact-chrome + gutter.
+- **Claude's lean:** **B** (keeps content visible = the "reference the guest while coordinating" value), with **A** as the demands-nothing fallback where push would break a page. C is conceptually cleanest for width but is a *stand-in* (see D9). D/E are messaging-specific polish.
+- **Still-open:** pick one. The spike multiplies options; the next job is to NARROW, ideally to a recommendation for Jake, not all five.
+
+### D5 — The 1440px squeeze / the real collision
+- **Reframe:** the contest is NOT team-chat-vs-the-page; it's **team-chat vs. the product's OWN right panel** (messaging's Conversation Details behind the "i"; check-in's detail panel). At 1440: nav|list|thread|details|chat = 5 regions = impossible.
+- **The tension:** team chat's value is "see the guest while coordinating," but that's exactly what blows the width budget.
+- **The bet we made:** it's largely a v1+ problem — object cards (which carry context into chat) are v1, and staff-ops chat rarely needs the guest's full details open simultaneously. So v0 default = 4 regions (fine); the 5th is a rare, deliberate, degrade-gracefully case.
+- **Rejected:** building messaging's speculative 3-panel-always-on (always-on Guest Profile) — Miguel: "no reliable argument" to execute it. If it ever ships, IT owns the coexistence.
+- **Still-open fork:** coexist-simultaneously (real multi-panel, aggressive collapse) vs. single-shared-slot-that-swaps-and-leans-on-cards (Jake's implicit bet). Unresolved after 2 Jake calls.
+
+### D6 — IA: group-list-first + flat thread
+- **Why group-list-first:** scales to Andrew's many department groups AND gives cross-group unread triage (which group needs me now?) — the seed of the command-center.
+- **Rejected:** the dropdown switcher (my first attempt) — it *buries* cross-group awareness; it was a width-saving shortcut, the wrong trade. The fix for "narrow" is a compact list, not eliminating the list.
+- **Why flat thread (not bubbles):** reads as a scannable ops log; AI auto-posts + object cards sit cleanly; bubbles waste width. Counter-argument considered: bubbles feel like WhatsApp (adoption) — but ops-tool legibility won. Low-stakes; gut-check in visual pass.
+
+### D7 — Object cards = the differentiator, deferred to v1
+- Compact guest/reservation/ticket card dropped into a message. NOT v0 (kept in the spike only as illustrative content). This is half the wedge.
+
+### D8 — Acknowledge/confirm-read: REMOVED (was a misstep)
+- Built it Deputy-style ("Confirm you've seen this / N of M"); Miguel correctly called it **redundant** — passive "Seen by N" suffices. Reverted.
+
+### D9 — Variant C is a stand-in (lib dependency)
+- A *true* collapsible icon-rail needs the component library to support collapse — **it doesn't** (grep-confirmed: no collapse/icon-rail mode in `@canary-ui/components`). C uses a custom `CollapsedNavRail` (structure lifted from the vaporware) + `hideSidebar`. The real version is the **collapsible-sidebar / Wenjun** track. (I first shipped C as a full-*hide* — wrong; Miguel corrected → icon rail → then we found it's actually lib-blocked.)
+
+### D10 — Compact chrome (Option D) is an ORTHOGONAL modifier, not a peer of A/B/C
+- D = compact messaging chrome (toolbar→sidebar header, compact tabs/online-hours) + overlay; **E** = compact chrome + gutter. So you can compare D-overlay vs D-gutter against A/B. Compact chrome gates on D/E only (not global — that was a bug Miguel flagged).
+
+### D11 — New-message compose paradigm (a real prototype-core bug)
+- prototype-core put the new-message phone input in the thread **LIST** (wrong). Correct (real product + vaporware) = a "To:" header in the thread **PANE**. Root cause: inherited from the initial `canary-messaging` port (commit `5ae7e59e`), never intentional — NOT our session. Fixed in the spike via `ComposeHeader`; the proper -core fix is prompted in `FIX_NEW_MESSAGE_PROMPT.md`.
+
+### D12 — Library pinned to `bbc64f3` (reverted off latest)
+- Updating to latest `0c485c5` silently **broke the AppShell header** (breaking `CanaryAppShell` header change; it still *built*, so dev-200 didn't catch it). Reverted + pinned for spike stability. The header-API change must be reconciled before adopting latest.
+
+---
+
+## Reasoning texture / near-misses (the stuff docs usually drop)
+- We almost over-fitted the container to *messaging* (the tabbed-rail idea) before Miguel pulled it up an altitude to "one consistent global layer." That altitude shift is the most important reasoning move in the whole project.
+- "Dev server returns 200" ≠ "production build passes." The lib-update header break and the likely Vercel build risk both come from trusting dev over `next build`.
+- The spike kept *accreting* variants (A→E). Good for exploration, but its value now is **narrowing**, not adding. Presenting all five to Jake would be a mistake.
+- The deepest strategic truth: as plain chat-in-a-panel this is a worse WhatsApp; the reason-to-switch is entirely the v1 wedge.
+
+## Personas (source of truth = the calls)
+- **Garden City / Andrew Gee:** many department groups; WhatsApp + radio + email; loves read receipts; mobile is make-or-break (staff float a large campus).
+- **HIE Spring Hill / Ryan Cornelius:** ONE shared daily log (OneNote), cadenced not live, searchable, no mobile; wants guest-card-in-chat + cross-product; HotelKey PMS.
+- → The product must serve BOTH live department groups AND a cadenced shared log.
+
+## The v1 wedge (why it's worth switching — all deferred)
+Service-ticket loop (guest texts "towels" → AI ticket → posts to Housekeeping group → claim/resolve → status syncs → **kills the radio**) · the inline **Suggested Team Chat Post** (Jake's idea, strongest single concept) · cadenced shift-handover/daily-log (Ryan's half, currently under-served).
+
+## v0 scope risk (most concrete)
+Attachments + @mentions are "fast-follow" in the PRD, but Jake himself said it's **"dead in the water"** without attachments. They're probably really v0; ship without them and the "5 msgs/day" adoption metric never triggers.
+
+## Biggest risks (priority order)
+1. **No decision** — comparison tool that doesn't force a pick = analysis paralysis. Commit to a model (lean: B + A fallback).
+2. **1440 worst case is deferred, not solved** — could break the chosen model if the bet (rare/v1) is wrong or messaging goes 3-panel.
+3. **v0 scope** (attachments/@mentions).
+4. **Wedge is v1** — v0 alone won't drive adoption / justify the MSA bet.
+5. **Demo ≠ production** — pinned old lib, dev-only verification, spike scaffolding; Vercel prod build untested (likely unused-imports in `ThreadList.tsx`).
+6. **Mobile** — desktop-first v0 is intentional, but Andrew's adoption hinges on the staff app.
+
+## Spike commits (the durable trail)
+`70492ee` A/B/C/D harness → `53ebc06` group-list+flat-thread → `dc3216e` boosters+C → `08bb983` Option D → `9590108` C real rail → `b17f4bd` doc+lib-bump → cleanup (`f9db0b9`,`8712ad8`) → `cae6ac6` compose-in-pane fix → `24dcca2` compact pass+design brief → `7669f21` collapsible harness → `e8576cc` D=overlay+gutter (variant E) → `ee8b62a` z-index fix. Pushed; **not merged to main**.
+
+## Source transcripts (the territory — zoom in here for depth)
+- Garden City / Andrew (discovery) — Notion.
+- HIE Spring Hill / Ryan — Notion: `2026-05-22 HIE Spring Hill Ryan Cornelius`.
+- Internal Team Chat w/ Jake (2026-05-27) — Notion (full transcript + PRD link).
+- **Miguel ↔ Jake (NEW, unread):** https://www.notion.so/canarytechnologies/Miguel-Jake-37281468615180daa555e24cdcba2a42 — read the TRANSCRIPT, not the summary. Synthesize what it changes vs this log.
+- Companion docs in-repo: `TEAM_CHAT_SPIKE.md` (state/files), `TEAM_CHAT_DESIGN_BRIEF.md` (Claude Design prompt), `FIX_NEW_MESSAGE_PROMPT.md` (the -core compose fix).
+
+## Reusable resume prompt (paste into a fresh session)
+> "Continue the Team Chat spike. Read `TEAM_CHAT_DECISIONS.md` + `TEAM_CHAT_SPIKE.md` + the `team-chat-design-tasks` memory. Tell me your understanding of the top decisions, the *reasoning* behind each, and where you're unsure — don't proceed until I correct you. Then read the transcript at [Notion link] (transcript, not summary) and tell me what it changes."
