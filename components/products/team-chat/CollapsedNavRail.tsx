@@ -3,28 +3,25 @@
 /**
  * Team Chat (SPIKE) — CollapsedNavRail  [variant C]
  *
- * C's real form: the main product nav collapsed to a narrow icon rail, shown (with
- * the AppShell sidebar hidden) when variant C + panel open — so opening team chat
- * reclaims the nav's width instead of squeezing the product.
+ * C's real form: the main product nav collapsed to a FULL-HEIGHT icon rail in the
+ * sidebar's own slot. The dashboard layout hides the AppShell sidebar and offsets
+ * the whole shell right by RAIL_WIDTH, so this rail sits flush top-left BESIDE the
+ * header (not underneath it). Opening team chat collapses the nav to reclaim its
+ * width instead of squeezing the product.
  *
- * Fidelity: this does NOT re-list products. It renders the SAME
- * `standardMainSidebarSections` the live CanarySidebar uses — threaded from the
- * dashboard layout so the unread badge + selected item stay 1:1 — so links, icons,
- * order, and section grouping match the real sidebar exactly. Visual treatment
- * mirrors CanarySidebar MAIN: #375492 ground, white icons at rest, selected = white
- * pill with the icon/label in the ground color. Hover the rail to peek labels
- * (mini → expanded) so collapsing the nav doesn't cost legibility.
- *
- * (Earlier this rail hardcoded 5 products with guessed icons. The component library
- * has no real collapse mode, so we render a faithful stand-in rather than a wrong one.)
+ * Fidelity: renders the SAME `standardMainSidebarSections` the live CanarySidebar
+ * uses (threaded from the layout so the unread badge + selection stay 1:1), with the
+ * real MAIN treatment — ground #375492, white icons ~50% at rest, selected = white
+ * pill with icon/label in the ground color, sections w/ dividers, Settings pinned
+ * bottom, Canary mark up top. Hover the rail to peek labels (mini → expanded).
  */
 
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { standardMainSidebarSections } from '@canary-ui/components';
+import { standardMainSidebarSections, CanaryLogo } from '@canary-ui/components';
 import type { SidebarSection } from '@canary-ui/components';
 
-export const RAIL_WIDTH = 64;
+export const RAIL_WIDTH = 64; // keep in sync with the shell offset (pl-[64px]) in app/(dashboard)/layout.tsx
 const EXPANDED_WIDTH = 208;
 const SIDEBAR_BG = '#375492'; // CanarySidebar MAIN ground color (from @canary-ui/components)
 
@@ -56,7 +53,7 @@ export function CollapsedNavRail({
     <div
       onMouseEnter={() => setExpanded(true)}
       onMouseLeave={() => setExpanded(false)}
-      className="absolute inset-y-0 left-0 z-40 flex flex-col overflow-hidden py-4"
+      className="fixed inset-y-0 left-0 z-50 flex flex-col overflow-hidden pb-4"
       style={{
         width: expanded ? EXPANDED_WIDTH : RAIL_WIDTH,
         backgroundColor: SIDEBAR_BG,
@@ -64,6 +61,13 @@ export function CollapsedNavRail({
         boxShadow: expanded ? '6px 0 28px rgba(0,0,0,0.22)' : 'none',
       }}
     >
+      {/* brand mark — mirrors the real sidebar's logo slot (top-left); clipped when collapsed */}
+      <div className="flex h-14 shrink-0 items-center overflow-hidden pl-4">
+        <div className="shrink-0" style={{ width: 132, height: 24, opacity: 0.35 }}>
+          <CanaryLogo />
+        </div>
+      </div>
+
       {sections.map((section, sectionIndex) => {
         const isLast = sectionIndex === sections.length - 1;
         return (

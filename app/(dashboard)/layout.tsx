@@ -17,6 +17,7 @@ import {
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { TeamChatPill } from '@/components/products/team-chat/TeamChatPill';
 import { TeamChatSpikeRoot } from '@/components/products/team-chat/TeamChatSpikeRoot';
+import { CollapsedNavRail } from '@/components/products/team-chat/CollapsedNavRail';
 import { useSpikeStore } from '@/lib/products/team-chat/spike-store';
 
 // Map sidebar item IDs to routes
@@ -85,35 +86,43 @@ export default function DashboardLayout({
   };
 
   return (
-    <CanaryAppShell
-      // Sidebar config
-      selectedSidebarItemId={selectedItemId}
-      onSidebarItemClick={handleSidebarItemClick}
-      sidebarSections={sectionsWithBadge}
-      hideSidebar={hideNav}
-      // Header config
-      propertyName="Statler New York"
-      userProfile={{
-        name: 'Theresa Webb',
-        role: 'Front desk',
-        avatarUrl: 'https://i.pravatar.cc/150?img=5',
-      }}
-      reservationStatus={{
-        label: 'Reservations',
-        isConnected: true,
-      }}
-      headerActions={<TeamChatPill />}
-      // Content config
-      contentPadding="none"
-      contentBackground="#FFFFFF"
-    >
-      <TeamChatSpikeRoot
+    <>
+      {/* SPIKE variant C: full-height collapsed rail in the sidebar's own slot. */}
+      {hideNav && (
+        <CollapsedNavRail
+          sections={sectionsWithBadge}
+          selectedItemId={selectedItemId}
+          onItemClick={handleSidebarItemClick}
+        />
+      )}
+      <CanaryAppShell
+        // Variant C: with the AppShell sidebar hidden, offset the whole shell
+        // (header + content) right by the rail width so the rail occupies the
+        // sidebar's full-height slot — not underneath the header. Must equal RAIL_WIDTH (64).
+        className={`transition-[padding] duration-200 ease-out ${hideNav ? 'pl-[64px]' : ''}`}
+        // Sidebar config
+        selectedSidebarItemId={selectedItemId}
+        onSidebarItemClick={handleSidebarItemClick}
         sidebarSections={sectionsWithBadge}
-        selectedItemId={selectedItemId}
-        onItemClick={handleSidebarItemClick}
+        hideSidebar={hideNav}
+        // Header config
+        propertyName="Statler New York"
+        userProfile={{
+          name: 'Theresa Webb',
+          role: 'Front desk',
+          avatarUrl: 'https://i.pravatar.cc/150?img=5',
+        }}
+        reservationStatus={{
+          label: 'Reservations',
+          isConnected: true,
+        }}
+        headerActions={<TeamChatPill />}
+        // Content config
+        contentPadding="none"
+        contentBackground="#FFFFFF"
       >
-        {children}
-      </TeamChatSpikeRoot>
-    </CanaryAppShell>
+        <TeamChatSpikeRoot>{children}</TeamChatSpikeRoot>
+      </CanaryAppShell>
+    </>
   );
 }
