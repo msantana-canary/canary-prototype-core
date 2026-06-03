@@ -24,12 +24,14 @@ interface SpikeStore {
   panelOpen: boolean;
   view: PanelView;
   activeGroupId: GroupId | null;
+  cleanHeader: boolean;
   setVariant: (v: ChatVariant) => void;
   togglePanel: () => void;
   openPanel: () => void;
   closePanel: () => void;
   openThread: (id: GroupId) => void;
   backToList: () => void;
+  setCleanHeader: (v: boolean) => void;
 }
 
 export const useSpikeStore = create<SpikeStore>((set) => ({
@@ -37,12 +39,14 @@ export const useSpikeStore = create<SpikeStore>((set) => ({
   panelOpen: false,
   view: 'list',
   activeGroupId: null,
+  cleanHeader: false,
   setVariant: (variant) => set({ variant }),
   togglePanel: () => set((s) => ({ panelOpen: !s.panelOpen, view: s.panelOpen ? s.view : 'list' })),
   openPanel: () => set({ panelOpen: true, view: 'list' }),
   closePanel: () => set({ panelOpen: false }),
   openThread: (activeGroupId) => set({ activeGroupId, view: 'thread' }),
   backToList: () => set({ view: 'list', activeGroupId: null }),
+  setCleanHeader: (cleanHeader) => set({ cleanHeader }),
 }));
 
 /** Descriptions shown in the dev variant-switcher. */

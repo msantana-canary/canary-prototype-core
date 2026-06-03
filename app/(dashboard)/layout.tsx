@@ -18,6 +18,7 @@ import { useMessagingStore } from '@/lib/products/messaging/store';
 import { TeamChatPill } from '@/components/products/team-chat/TeamChatPill';
 import { TeamChatSpikeRoot } from '@/components/products/team-chat/TeamChatSpikeRoot';
 import { CollapsedNavRail } from '@/components/products/team-chat/CollapsedNavRail';
+import { CleanHeaderActions } from '@/components/products/team-chat/CleanHeaderActions';
 import { useSpikeStore } from '@/lib/products/team-chat/spike-store';
 
 // Map sidebar item IDs to routes
@@ -50,7 +51,8 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   // SPIKE: variant C reclaims the nav's width by hiding it while team chat is open.
-  const { variant, panelOpen } = useSpikeStore();
+  // cleanHeader is the orthogonal header-treatment toggle (Reservations → Team → avatar).
+  const { variant, panelOpen, cleanHeader } = useSpikeStore();
   const hideNav = variant === 'C' && panelOpen;
 
   // Get messaging store for unread badge
@@ -105,18 +107,20 @@ export default function DashboardLayout({
         onSidebarItemClick={handleSidebarItemClick}
         sidebarSections={sectionsWithBadge}
         hideSidebar={hideNav}
-        // Header config
+        // Header config — header-treatment toggle: clean = Reservations → Team → avatar-only,
+        // built in headerActions with the lib's reservation/account slots suppressed.
         propertyName="Statler New York"
-        userProfile={{
-          name: 'Theresa Webb',
-          role: 'Front desk',
-          avatarUrl: 'https://i.pravatar.cc/150?img=5',
-        }}
-        reservationStatus={{
-          label: 'Reservations',
-          isConnected: true,
-        }}
-        headerActions={<TeamChatPill />}
+        userProfile={
+          cleanHeader
+            ? undefined
+            : {
+                name: 'Theresa Webb',
+                role: 'Front desk',
+                avatarUrl: 'https://i.pravatar.cc/150?img=5',
+              }
+        }
+        reservationStatus={cleanHeader ? undefined : { label: 'Reservations', isConnected: true }}
+        headerActions={cleanHeader ? <CleanHeaderActions /> : <TeamChatPill />}
         // Content config
         contentPadding="none"
         contentBackground="#FFFFFF"

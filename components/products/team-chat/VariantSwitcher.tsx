@@ -24,7 +24,7 @@ const BACKDROPS = [
 ];
 
 export function VariantSwitcher() {
-  const { variant, setVariant, panelOpen, togglePanel } = useSpikeStore();
+  const { variant, setVariant, panelOpen, togglePanel, cleanHeader, setCleanHeader } = useSpikeStore();
   const router = useRouter();
   const pathname = usePathname();
   const meta = VARIANT_META[variant];
@@ -88,6 +88,25 @@ export function VariantSwitcher() {
       >
         {panelOpen ? 'Close panel' : 'Open panel'}
       </button>
+
+      <div className="mt-2.5 border-t border-white/10 pt-2">
+        <div className="mb-1 text-[10px] uppercase tracking-wider text-white/40">Header treatment (any variant)</div>
+        <div className="grid grid-cols-2 gap-1">
+          {([['Current', false], ['Clean', true]] as const).map(([label, val]) => (
+            <button
+              key={label}
+              onClick={() => setCleanHeader(val)}
+              className="rounded-md py-1 text-[11px] font-medium transition-colors"
+              style={{
+                backgroundColor: cleanHeader === val ? 'rgba(40,88,196,0.35)' : 'rgba(255,255,255,0.06)',
+                color: cleanHeader === val ? 'white' : 'rgba(255,255,255,0.65)',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="mt-2.5 border-t border-white/10 pt-2">
         <div className="mb-1 text-[10px] uppercase tracking-wider text-white/40">Backdrop</div>
