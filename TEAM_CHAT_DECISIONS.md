@@ -68,6 +68,30 @@ Spike on `prototype/team-chat-container` (off `main`), pushed for a Vercel previ
 - **Structural fix (2nd pass):** rail is now **full-height in the sidebar's own slot** — `fixed inset-y-0` + the shell offset right by `pl-[64px]` so the header sits to its *right* (Miguel caught it flooding the full width over the nav). Canary mark added top-left to match the real sidebar. The rail rendering moved up from `TeamChatSpikeRoot` (content region) to `(dashboard)/layout.tsx` (shell level).
 - **Open:** still a *visual* stand-in — production C needs a real collapse mode in `@canary-ui/components` (the D9 / collapsible-sidebar / **SJ-tomorrow** dependency). Files: `CollapsedNavRail.tsx` (full-height rail); `(dashboard)/layout.tsx` (renders rail + offsets shell); `TeamChatSpikeRoot.tsx` (reverted to content-push only); `spike-store.ts` (C meta).
 
+### D14 — v0 container = side panel; floating widget rejected
+- **Decision (team, 2026-06-02 SJ review + eng debrief):** ship v0 as a **side panel** (overlay or push — still low-stakes). Wenjun's floating/draggable co-pilot widget is **out**.
+- **Why:** persistence is the wedge — hotels keep internal comms open all day ("the pulse of the hotel"; a GM runs Canary + WhatsApp side-by-side on 32" monitors). Side-by-side lets staff copy guest context into chat without task-switching. Push slightly favored (Jake: "slide in so we don't cover info"); overlay fine too (Sudarshan: "you can always minimize it").
+- **Rejected — floating widget:** Sudarshan (eng) — draggable in-browser chat = refresh/resize/stacking/state nightmare ("wreaks havoc"); even coded perfectly the UX is bad (always covering content, must reposition as you switch products, 2000s-popup feel). Only semi-viable floaty = a bottom-corner web-chat launcher; still lost.
+- **Open:** final push-vs-overlay; maybe offer pin+float as a user preference in v1; SJ sign-off (see process entry).
+
+### D15 — SJ's real objection = the entry-pill *treatment*, not placement
+- **Decision:** the header/top-bar is the **confirmed home** for global functions (SJ conceded). The fix is **differentiating the Team Chat entry** from the Reservations pill, not moving it off the header.
+- **Why:** SJ's only concrete gripe — Team Chat and Reservations pills look identical but do different things ("Design Logic 101").
+- **Agreed tweaks (Jake + Miguel, 6/2 Slack — bucketed as part of the *separate* nav redesign, NOT a v0 blocker):** Jake **approved the prototype's Team Chat button**; move the Team Chat pill to the **right of Reservations** (keeps Reservations + the $500 Referral pill adjacent); **shrink the account button to just the avatar** (easy FE lift) so the action pills read as buttons.
+- **Rejected:** three visually-equal top-right pills. **Open:** exact treatment lands in the nav-redesign track.
+
+### D16 — Decouple the left-nav overhaul / collapsible sidebar from team-chat v0
+- **Decision:** v0 ships a side panel on the **existing** chrome. SJ's "everything-on-the-left / strip-the-header / full-vertical-height" overhaul — and any collapsible sidebar — is a **separate track**, not a v0 dependency.
+- **Why:** Langham is contingent on team chat shipping and August (frontend) is waiting; the team explicitly refuses to block v0 on a nav redesign.
+- **Reframes Variant C:** the full-height collapsed rail is **no longer a v0 container candidate** — it belongs to the decoupled nav track. *(Claude's suggestion: it doubles as a ready-made "clean-left future" demo for SJ, since it shows exactly the full-vertical-height he's asking for.)*
+- **Open:** owner/timing of the nav track.
+
+### D17 — v0 is blocked on SJ conviction, not design
+- **Decision/path:** Jake sends SJ the user-interview / Gong recordings + transcripts, then schedules a **follow-up with engineers (Sudarshan + Mati) in the room** to bring a unified **side-panel recommendation** + the floaty's technical refutation (engineers "cornering" SJ has historically gotten him to yes).
+- **Why:** no decision was made — "too many stakeholders," SJ asked for the Gong calls. Jake feels "disempowered to decide"; this is "service-ticket-settings all over again" (4 laps back to Jake + Miguel's original side-panel instinct, now validated by customers + engineers).
+- **Craft note (Wenjun):** frame **user-first** ("quick in/out") and anchor on **competitor examples** before showing the solution — SJ needs evidence, not assertion.
+- **Confirmations (no change):** global access = #1 customer ask; department/group-first; **≥1440px single-monitor = 80% of users** (desktop-first validated); v0 needs 1–2 differentiators to market (Catherine).
+
 ---
 
 ## Reasoning texture / near-misses (the stuff docs usually drop)
