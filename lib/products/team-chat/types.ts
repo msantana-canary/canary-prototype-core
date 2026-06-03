@@ -45,7 +45,7 @@ export interface ObjectCardRef {
 
 export interface ChatMessage {
   id: string;
-  groupId: GroupId;
+  groupId?: GroupId;       // optional: 1:1 staff DMs aren't tied to a group
   authorName: string;
   authorInitials: string;
   authorAvatar?: string;
@@ -55,4 +55,29 @@ export interface ChatMessage {
   isAI?: boolean;          // AI / system auto-post (command-center gesture)
   seenBy?: number;         // passive read-receipt count
   self?: boolean;          // authored by the current user (Theresa Webb)
+}
+
+/* ── Variant F (SJ's docked Messenger launcher) ─────────────────────────
+ * The dock lists Departments (reusing the groups above) + individual Staff,
+ * and opens stackable popup windows. A "conversation" is either a group or a
+ * staff DM, addressed by ConversationId. */
+
+export interface StaffMember {
+  id: string;
+  name: string;
+  initials: string;
+  avatar?: string;
+  online?: boolean;
+}
+
+export type ConversationId = GroupId | `staff:${string}`;
+
+export interface Conversation {
+  id: ConversationId;
+  title: string;
+  accent?: string;
+  avatar?: string;
+  initials?: string;
+  isBroadcast?: boolean;
+  messages: ChatMessage[];
 }

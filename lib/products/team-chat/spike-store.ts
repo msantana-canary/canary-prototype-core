@@ -14,7 +14,7 @@
 import { create } from 'zustand';
 import type { GroupId } from './types';
 
-export type ChatVariant = 'A' | 'B' | 'C' | 'D' | 'E';
+export type ChatVariant = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 export const PANEL_WIDTH = 384;
 
 type PanelView = 'list' | 'thread';
@@ -25,6 +25,9 @@ interface SpikeStore {
   view: PanelView;
   activeGroupId: GroupId | null;
   cleanHeader: boolean;
+  // Variant F (docked launcher): list expanded + open popup windows.
+  floatyListOpen: boolean;
+  floatyWindows: string[];
   setVariant: (v: ChatVariant) => void;
   togglePanel: () => void;
   openPanel: () => void;
@@ -32,6 +35,9 @@ interface SpikeStore {
   openThread: (id: GroupId) => void;
   backToList: () => void;
   setCleanHeader: (v: boolean) => void;
+  toggleFloatyList: () => void;
+  openFloatyWindow: (id: string) => void;
+  closeFloatyWindow: (id: string) => void;
 }
 
 export const useSpikeStore = create<SpikeStore>((set) => ({
@@ -40,6 +46,8 @@ export const useSpikeStore = create<SpikeStore>((set) => ({
   view: 'list',
   activeGroupId: null,
   cleanHeader: false,
+  floatyListOpen: false,
+  floatyWindows: [],
   setVariant: (variant) => set({ variant }),
   togglePanel: () => set((s) => ({ panelOpen: !s.panelOpen, view: s.panelOpen ? s.view : 'list' })),
   openPanel: () => set({ panelOpen: true, view: 'list' }),
@@ -47,6 +55,10 @@ export const useSpikeStore = create<SpikeStore>((set) => ({
   openThread: (activeGroupId) => set({ activeGroupId, view: 'thread' }),
   backToList: () => set({ view: 'list', activeGroupId: null }),
   setCleanHeader: (cleanHeader) => set({ cleanHeader }),
+  toggleFloatyList: () => set((s) => ({ floatyListOpen: !s.floatyListOpen })),
+  openFloatyWindow: (id) =>
+    set((s) => (s.floatyWindows.includes(id) ? {} : { floatyWindows: [...s.floatyWindows, id].slice(-5) })),
+  closeFloatyWindow: (id) => set((s) => ({ floatyWindows: s.floatyWindows.filter((w) => w !== id) })),
 }));
 
 /** Descriptions shown in the dev variant-switcher. */
@@ -75,5 +87,11 @@ export const VARIANT_META: Record<ChatVariant, { label: string; mechanic: string
     label: 'D · gutter (compact)',
     mechanic: 'Compact messaging chrome (toolbar → sidebar header) + shell-gutter push. Compare vs B.',
     ref: 'vaporware compact inbox',
+  },
+  F: {
+    label: 'Docked launcher (floaty)',
+    mechanic:
+      "SJ's Messenger-style dock: a Team chat launcher in the sidebar's bottom-left → Departments + Staff → stackable popup windows. Overlays the product (A baseline, no reflow).",
+    ref: 'FB Messenger / SJ Wyndham concept',
   },
 };

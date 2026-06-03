@@ -207,7 +207,7 @@ function ThreadView() {
   );
 }
 
-function FlatMessage({ message: m }: { message: ChatMessage }) {
+export function FlatMessage({ message: m }: { message: ChatMessage }) {
   const isAI = m.isAI;
   const isSelf = m.self;
 

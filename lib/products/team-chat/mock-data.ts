@@ -6,7 +6,7 @@
  * lib/core/data) per the repo's "never hardcode guest data" rule.
  */
 
-import type { ChatGroup, ChatMessage, GroupId } from './types';
+import type { ChatGroup, ChatMessage, GroupId, StaffMember, ConversationId, Conversation } from './types';
 
 export const CURRENT_USER = {
   name: 'Theresa Webb',
@@ -137,3 +137,57 @@ export const messagesByGroup: Record<GroupId, ChatMessage[]> = {
     },
   ],
 };
+
+/* ── Variant F: staff DMs + conversation resolver ───────────────────────
+ * The docked launcher lists Departments (the groups above) + individual Staff.
+ * A "conversation" opened in a popup is addressed by ConversationId. */
+
+export const staff: StaffMember[] = [
+  { id: 'kristin', name: 'Kristin Watson', initials: 'KW', avatar: 'https://i.pravatar.cc/150?img=45', online: true },
+  { id: 'ralph', name: 'Ralph Edwards', initials: 'RE', avatar: 'https://i.pravatar.cc/150?img=12', online: true },
+  { id: 'bessie', name: 'Bessie Cooper', initials: 'BC', avatar: 'https://i.pravatar.cc/150?img=20' },
+  { id: 'brooklyn', name: 'Brooklyn Simmons', initials: 'BS', avatar: 'https://i.pravatar.cc/150?img=32', online: true },
+  { id: 'guy', name: 'Guy Hawkins', initials: 'GH', avatar: 'https://i.pravatar.cc/150?img=15' },
+  { id: 'bill', name: 'Bill Robertson', initials: 'BR', avatar: 'https://i.pravatar.cc/150?img=8' },
+];
+
+const messagesByStaff: Record<string, ChatMessage[]> = {
+  kristin: [
+    { id: 'kr-1', authorName: 'Kristin Watson', authorInitials: 'KW', authorAvatar: 'https://i.pravatar.cc/150?img=45', time: '8:32 PM',
+      text: 'Hey, have you seen room 302 on the third floor? It still needs to be cleaned.' },
+    { id: 'kr-2', authorName: CURRENT_USER.name, authorInitials: CURRENT_USER.initials, authorAvatar: CURRENT_USER.avatar, self: true, time: '8:34 PM',
+      text: "No, I haven't been up there yet. What's the status of the room?" },
+    { id: 'kr-3', authorName: 'Kristin Watson', authorInitials: 'KW', authorAvatar: 'https://i.pravatar.cc/150?img=45', time: '8:38 PM',
+      text: 'The guest checked out this morning and it needs a thorough cleaning. Dirty towels on the floor, trash in the bin, and the bed needs to be made.' },
+  ],
+  ralph: [
+    { id: 'ra-1', authorName: 'Ralph Edwards', authorInitials: 'RE', authorAvatar: 'https://i.pravatar.cc/150?img=12', time: '2:10 PM',
+      text: 'Front drive is backed up — can someone grab the next arrival for me?' },
+  ],
+  bessie: [
+    { id: 'be-1', authorName: 'Bessie Cooper', authorInitials: 'BC', time: '11:20 AM',
+      text: 'Conference group needs 4 extra rollaways set up before tonight.' },
+  ],
+  brooklyn: [
+    { id: 'br-1', authorName: 'Brooklyn Simmons', authorInitials: 'BS', authorAvatar: 'https://i.pravatar.cc/150?img=32', time: '10:05 AM',
+      text: 'Lost & found: AirPods turned in from 1408 — logging them now.' },
+  ],
+  guy: [
+    { id: 'gu-1', authorName: 'Guy Hawkins', authorInitials: 'GH', time: '9:15 AM',
+      text: 'Pool chemicals delivered and balanced — all set for the day.' },
+  ],
+  bill: [
+    { id: 'bi-1', authorName: 'Bill Robertson', authorInitials: 'BR', time: 'Yesterday',
+      text: 'Covering the AM shift Thursday — swapped with Marcus.' },
+  ],
+};
+
+export function getConversation(id: ConversationId): Conversation {
+  if (id.startsWith('staff:')) {
+    const sid = id.slice('staff:'.length);
+    const s = staff.find((x) => x.id === sid);
+    return { id, title: s?.name ?? 'Staff', avatar: s?.avatar, initials: s?.initials, messages: messagesByStaff[sid] ?? [] };
+  }
+  const g = groups.find((x) => x.id === id);
+  return { id, title: g?.name ?? 'Group', accent: g?.accent, isBroadcast: g?.isBroadcast, messages: messagesByGroup[id as GroupId] ?? [] };
+}

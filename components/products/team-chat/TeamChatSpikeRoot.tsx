@@ -14,11 +14,13 @@
 
 import { useSpikeStore, PANEL_WIDTH } from '@/lib/products/team-chat/spike-store';
 import { TeamChatContainer } from './TeamChatContainer';
+import { TeamChatDock } from './TeamChatDock';
 import { VariantSwitcher } from './VariantSwitcher';
 
 export function TeamChatSpikeRoot({ children }: { children: React.ReactNode }) {
   const { variant, panelOpen } = useSpikeStore();
   const pushes = panelOpen && (variant === 'B' || variant === 'C' || variant === 'E');
+  const isFloaty = variant === 'F'; // docked launcher replaces the right-side panel
 
   return (
     <div className="relative h-full w-full overflow-hidden">
@@ -32,7 +34,8 @@ export function TeamChatSpikeRoot({ children }: { children: React.ReactNode }) {
         {children}
       </div>
 
-      <TeamChatContainer />
+      {!isFloaty && <TeamChatContainer />}
+      {isFloaty && <TeamChatDock />}
       <VariantSwitcher />
     </div>
   );
