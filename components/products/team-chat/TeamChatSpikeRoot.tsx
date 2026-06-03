@@ -23,12 +23,14 @@ export function TeamChatSpikeRoot({ children }: { children: React.ReactNode }) {
   const pushes = panelOpen && (variant === 'B' || variant === 'C' || variant === 'E');
   const isFloaty = variant === 'F'; // docked launcher + popups
   const isFull = variant === 'G'; // docked launcher + full-takeover workspace
+  const pushesLeft = panelOpen && variant === 'H'; // left gutter, right of the nav
 
   return (
     <div className="relative h-full w-full overflow-hidden">
       <div
         className="h-full w-full"
         style={{
+          paddingLeft: pushesLeft ? PANEL_WIDTH : 0,
           paddingRight: pushes ? PANEL_WIDTH : 0,
           transition: 'padding 220ms cubic-bezier(0.4, 0, 0.2, 1)',
         }}

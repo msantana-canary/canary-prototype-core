@@ -14,7 +14,7 @@
 import { create } from 'zustand';
 import type { GroupId } from './types';
 
-export type ChatVariant = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+export type ChatVariant = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H';
 export const PANEL_WIDTH = 384;
 
 type PanelView = 'list' | 'thread';
@@ -104,5 +104,11 @@ export const VARIANT_META: Record<ChatVariant, { label: string; mechanic: string
     mechanic:
       "Same launcher as F, but opens the FULL two-pane command center as a dismissible OVERLAY floating over your (dimmed) work — not a screen takeover. SJ's call: 'overlay not take over.'",
     ref: "SJ's 'overlay not take over'",
+  },
+  H: {
+    label: 'Left gutter (right of nav)',
+    mechanic:
+      'Like B, but the panel slides in from the LEFT — right of the nav sidebar — and the product reflows to the right. Header-pill entry.',
+    ref: 'Slack/Teams left thread rail',
   },
 };
