@@ -14,7 +14,7 @@
 import { create } from 'zustand';
 import type { GroupId } from './types';
 
-export type ChatVariant = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+export type ChatVariant = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
 export const PANEL_WIDTH = 384;
 
 type PanelView = 'list' | 'thread';
@@ -28,6 +28,8 @@ interface SpikeStore {
   // Variant F (docked launcher): list expanded + open popup windows.
   floatyListOpen: boolean;
   floatyWindows: string[];
+  // Variant G (full takeover): which conversation is open in the full workspace.
+  fullActiveId: string | null;
   setVariant: (v: ChatVariant) => void;
   togglePanel: () => void;
   openPanel: () => void;
@@ -38,6 +40,7 @@ interface SpikeStore {
   toggleFloatyList: () => void;
   openFloatyWindow: (id: string) => void;
   closeFloatyWindow: (id: string) => void;
+  setFullActive: (id: string) => void;
 }
 
 export const useSpikeStore = create<SpikeStore>((set) => ({
@@ -48,6 +51,7 @@ export const useSpikeStore = create<SpikeStore>((set) => ({
   cleanHeader: false,
   floatyListOpen: false,
   floatyWindows: [],
+  fullActiveId: 'front-desk',
   setVariant: (variant) => set({ variant }),
   togglePanel: () => set((s) => ({ panelOpen: !s.panelOpen, view: s.panelOpen ? s.view : 'list' })),
   openPanel: () => set({ panelOpen: true, view: 'list' }),
@@ -59,6 +63,7 @@ export const useSpikeStore = create<SpikeStore>((set) => ({
   openFloatyWindow: (id) =>
     set((s) => (s.floatyWindows.includes(id) ? {} : { floatyWindows: [...s.floatyWindows, id].slice(-5) })),
   closeFloatyWindow: (id) => set((s) => ({ floatyWindows: s.floatyWindows.filter((w) => w !== id) })),
+  setFullActive: (fullActiveId) => set({ fullActiveId }),
 }));
 
 /** Descriptions shown in the dev variant-switcher. */
@@ -93,5 +98,11 @@ export const VARIANT_META: Record<ChatVariant, { label: string; mechanic: string
     mechanic:
       "SJ's Messenger-style dock: a Team chat launcher in the sidebar's bottom-left → Departments + Staff → stackable popup windows. Overlays the product (A baseline, no reflow).",
     ref: 'FB Messenger / SJ Wyndham concept',
+  },
+  G: {
+    label: 'Full takeover',
+    mechanic:
+      "Same bottom-left launcher as F, but clicking opens team chat as a FULL two-pane workspace (list | thread) over the content area — nav stays. The 'opens to full' reading of SJ's idea, vs F's popups.",
+    ref: "SJ's 'opens to full sidebar'",
   },
 };
