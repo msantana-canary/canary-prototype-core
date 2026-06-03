@@ -8,7 +8,7 @@
  * NOT product UI.
  */
 
-import { useState } from 'react';
+import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   useSpikeStore,
@@ -29,13 +29,33 @@ export function VariantSwitcher() {
   const pathname = usePathname();
   const meta = VARIANT_META[variant];
   const [collapsed, setCollapsed] = useState(false);
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ dx: number; dy: number } | null>(null);
+  const startDrag = (e: ReactPointerEvent) => {
+    const r = containerRef.current?.getBoundingClientRect();
+    if (!r) return;
+    e.preventDefault();
+    drag.current = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    const move = (ev: PointerEvent) => {
+      if (drag.current) setPos({ x: ev.clientX - drag.current.dx, y: ev.clientY - drag.current.dy });
+    };
+    const up = () => {
+      drag.current = null;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  const posStyle: CSSProperties = pos ? { left: pos.x, top: pos.y } : { left: 16, bottom: 16 };
 
   if (collapsed) {
     return (
       <button
         onClick={() => setCollapsed(false)}
-        className="absolute bottom-4 left-4 z-[60] flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white/90 shadow-2xl backdrop-blur"
-        style={{ backgroundColor: 'rgba(17,20,28,0.93)' }}
+        className="fixed z-[60] flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white/90 shadow-2xl backdrop-blur"
+        style={{ ...posStyle, backgroundColor: 'rgba(17,20,28,0.93)' }}
         title="Expand spike harness"
       >
         Spike · {variant}
@@ -45,11 +65,12 @@ export function VariantSwitcher() {
 
   return (
     <div
-      className="absolute bottom-4 left-4 z-[60] w-[280px] rounded-xl border border-white/10 p-3 text-white shadow-2xl backdrop-blur"
-      style={{ backgroundColor: 'rgba(17,20,28,0.93)' }}
+      ref={containerRef}
+      className="fixed z-[60] w-[280px] rounded-xl border border-white/10 p-3 text-white shadow-2xl backdrop-blur"
+      style={{ ...posStyle, backgroundColor: 'rgba(17,20,28,0.93)' }}
     >
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-white/90">Spike harness</span>
+        <span onPointerDown={startDrag} className="cursor-move select-none text-[11px] font-bold uppercase tracking-wider text-white/90" title="Drag to move">⠿ Spike harness</span>
         <button
           onClick={() => setCollapsed(true)}
           className="text-[10px] text-white/45 hover:text-white/80"

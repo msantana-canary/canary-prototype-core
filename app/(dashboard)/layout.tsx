@@ -54,6 +54,9 @@ export default function DashboardLayout({
   // cleanHeader is the orthogonal header-treatment toggle (Reservations → Team → avatar).
   const { variant, panelOpen, cleanHeader } = useSpikeStore();
   const hideNav = variant === 'C' && panelOpen;
+  // F/G put the team-chat entry in the sidebar dock, so drop the header pill there.
+  const isDock = variant === 'F' || variant === 'G';
+  const useClean = cleanHeader && !isDock;
 
   // Get messaging store for unread badge
   const { threads } = useMessagingStore();
@@ -111,7 +114,7 @@ export default function DashboardLayout({
         // built in headerActions with the lib's reservation/account slots suppressed.
         propertyName="Statler New York"
         userProfile={
-          cleanHeader
+          useClean
             ? undefined
             : {
                 name: 'Theresa Webb',
@@ -119,8 +122,8 @@ export default function DashboardLayout({
                 avatarUrl: 'https://i.pravatar.cc/150?img=5',
               }
         }
-        reservationStatus={cleanHeader ? undefined : { label: 'Reservations', isConnected: true }}
-        headerActions={cleanHeader ? <CleanHeaderActions /> : <TeamChatPill />}
+        reservationStatus={useClean ? undefined : { label: 'Reservations', isConnected: true }}
+        headerActions={isDock ? undefined : cleanHeader ? <CleanHeaderActions /> : <TeamChatPill />}
         // Content config
         contentPadding="none"
         contentBackground="#FFFFFF"
