@@ -9,7 +9,7 @@
  * tradeoff we're deliberately pressure-testing.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Icon from '@mdi/react';
 import { mdiClose, mdiSendOutline, mdiPaperclip, mdiBullhornOutline } from '@mdi/js';
 import { colors } from '@canary-ui/components';
@@ -32,6 +32,11 @@ export function TeamChatFloatyWindow({
   const convo = getConversation(id);
   const [draft, setDraft] = useState('');
   const [appended, setAppended] = useState<ChatMessage[]>([]);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
   const thread = useMemo(() => [...convo.messages, ...appended], [convo.messages, appended]);
 
   const send = () => {
@@ -57,7 +62,15 @@ export function TeamChatFloatyWindow({
   return (
     <div
       className="fixed bottom-0 z-40 flex flex-col rounded-t-xl border border-gray-200 bg-white"
-      style={{ left, width: FLOATY_WIDTH, height: FLOATY_HEIGHT, boxShadow: '0 -2px 28px rgba(16,24,40,0.18)' }}
+      style={{
+        left,
+        width: FLOATY_WIDTH,
+        height: FLOATY_HEIGHT,
+        boxShadow: '0 -2px 28px rgba(16,24,40,0.18)',
+        opacity: shown ? 1 : 0,
+        transform: shown ? 'translateY(0)' : 'translateY(12px)',
+        transition: 'opacity 180ms ease, transform 200ms cubic-bezier(0.4,0,0.2,1)',
+      }}
     >
       <div className="flex items-center gap-2 rounded-t-xl border-b border-gray-200 px-3 py-2">
         {convo.avatar ? (

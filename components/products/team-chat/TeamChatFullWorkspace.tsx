@@ -10,7 +10,7 @@
  * makes SJ's own ambiguity feel-able: popups vs takeover — which did he picture?
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Icon from '@mdi/react';
 import {
   mdiChevronUp,
@@ -31,6 +31,14 @@ const LAUNCHER_WIDTH = 180; // matches the navy App Shell sidebar
 export function TeamChatFullWorkspace() {
   const { floatyListOpen, toggleFloatyList, fullActiveId, setFullActive } = useSpikeStore();
   const totalUnread = groups.reduce((n, g) => n + g.unread, 0);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (floatyListOpen) {
+      const id = requestAnimationFrame(() => setShown(true));
+      return () => cancelAnimationFrame(id);
+    }
+    setShown(false);
+  }, [floatyListOpen]);
 
   if (!floatyListOpen) {
     return (
@@ -51,10 +59,19 @@ export function TeamChatFullWorkspace() {
   return (
     <>
       {/* dim the work behind — overlay, not takeover (dismiss to get back to it) */}
-      <div className="fixed inset-0 z-30" style={{ backgroundColor: 'rgba(16,24,40,0.18)' }} onClick={toggleFloatyList} />
+      <div className="fixed inset-0 z-30" style={{ backgroundColor: 'rgba(16,24,40,0.18)', opacity: shown ? 1 : 0, transition: 'opacity 200ms ease' }} onClick={toggleFloatyList} />
       <div
         className="fixed z-40 flex overflow-hidden rounded-xl bg-white shadow-2xl"
-        style={{ top: 72, bottom: 24, left: LAUNCHER_WIDTH + 24, right: 24 }}
+        style={{
+          top: 72,
+          bottom: 24,
+          left: LAUNCHER_WIDTH + 24,
+          right: 24,
+          opacity: shown ? 1 : 0,
+          transform: shown ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.985)',
+          transformOrigin: 'bottom left',
+          transition: 'opacity 200ms ease, transform 220ms cubic-bezier(0.4,0,0.2,1)',
+        }}
       >
       {/* left: conversation list */}
       <div className="flex w-[280px] shrink-0 flex-col border-r border-gray-200">
