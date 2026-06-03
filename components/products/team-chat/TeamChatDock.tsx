@@ -20,7 +20,7 @@ import { groups, staff } from '@/lib/products/team-chat/mock-data';
 import type { ConversationId } from '@/lib/products/team-chat/types';
 import { TeamChatFloatyWindow, FLOATY_WIDTH } from './TeamChatFloatyWindow';
 
-const LAUNCHER_WIDTH = 212;
+const LAUNCHER_WIDTH = 180; // match the navy App Shell sidebar (180px) so the dock sits flush as its footer, not spilling into content
 const LIST_WIDTH = 264;
 const DOCK_BLUE = colors.colorBlueDark1; // #2858C4
 
@@ -69,8 +69,8 @@ export function TeamChatDock() {
       ) : (
         <button
           onClick={toggleFloatyList}
-          className="fixed bottom-0 left-0 z-40 flex items-center justify-between rounded-tr-xl px-4 py-3 text-white"
-          style={{ width: LAUNCHER_WIDTH, backgroundColor: DOCK_BLUE, boxShadow: '0 -2px 16px rgba(0,0,0,0.18)' }}
+          className="fixed bottom-0 left-0 z-40 flex items-center justify-between border-t border-white/15 px-4 py-3 text-white"
+          style={{ width: LAUNCHER_WIDTH, backgroundColor: DOCK_BLUE }}
         >
           <span className="flex items-center gap-2 text-[14px] font-semibold">
             Team chat
