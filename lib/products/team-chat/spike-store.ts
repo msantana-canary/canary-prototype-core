@@ -100,9 +100,9 @@ export const VARIANT_META: Record<ChatVariant, { label: string; mechanic: string
     ref: 'FB Messenger / SJ Wyndham concept',
   },
   G: {
-    label: 'Full takeover',
+    label: 'Overlay command center',
     mechanic:
-      "Same bottom-left launcher as F, but clicking opens team chat as a FULL two-pane workspace (list | thread) over the content area — nav stays. The 'opens to full' reading of SJ's idea, vs F's popups.",
-    ref: "SJ's 'opens to full sidebar'",
+      "Same launcher as F, but opens the FULL two-pane command center as a dismissible OVERLAY floating over your (dimmed) work — not a screen takeover. SJ's call: 'overlay not take over.'",
+    ref: "SJ's 'overlay not take over'",
   },
 };

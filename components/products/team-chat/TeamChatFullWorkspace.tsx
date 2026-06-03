@@ -49,10 +49,13 @@ export function TeamChatFullWorkspace() {
   }
 
   return (
-    <div
-      className="fixed inset-y-0 right-0 z-40 flex bg-white"
-      style={{ left: LAUNCHER_WIDTH, boxShadow: '-2px 0 28px rgba(16,24,40,0.12)' }}
-    >
+    <>
+      {/* dim the work behind — overlay, not takeover (dismiss to get back to it) */}
+      <div className="fixed inset-0 z-30" style={{ backgroundColor: 'rgba(16,24,40,0.18)' }} onClick={toggleFloatyList} />
+      <div
+        className="fixed z-40 flex overflow-hidden rounded-xl bg-white shadow-2xl"
+        style={{ top: 72, bottom: 24, left: LAUNCHER_WIDTH + 24, right: 24 }}
+      >
       {/* left: conversation list */}
       <div className="flex w-[280px] shrink-0 flex-col border-r border-gray-200">
         <div className="flex items-center justify-between px-4 py-3" style={{ backgroundColor: colors.colorBlueDark1 }}>
@@ -91,7 +94,8 @@ export function TeamChatFullWorkspace() {
 
       {/* right: active thread */}
       <FullThread id={(fullActiveId ?? 'front-desk') as ConversationId} />
-    </div>
+      </div>
+    </>
   );
 }
 
