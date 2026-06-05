@@ -24,6 +24,10 @@ export interface ChatGroup {
   unread: number;
   /** Announcements is a one-to-many broadcast lane, not a back-and-forth. */
   isBroadcast?: boolean;
+  /** Member count (shown in the thread header). */
+  members?: number;
+  /** Whether the current user is a member — "Your groups" vs "Other groups". */
+  subscribed?: boolean;
 }
 
 export type ObjectCardKind = 'guest' | 'reservation' | 'ticket';

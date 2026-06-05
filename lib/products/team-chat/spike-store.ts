@@ -25,6 +25,7 @@ interface SpikeStore {
   panelExpanded: boolean;
   view: PanelView;
   activeGroupId: GroupId | null;
+  joinedGroups: GroupId[];
   cleanHeader: boolean;
   // Variant F (docked launcher): list expanded + open popup windows.
   floatyListOpen: boolean;
@@ -38,6 +39,7 @@ interface SpikeStore {
   closePanel: () => void;
   openThread: (id: GroupId) => void;
   backToList: () => void;
+  joinGroup: (id: GroupId) => void;
   setCleanHeader: (v: boolean) => void;
   toggleFloatyList: () => void;
   openFloatyWindow: (id: string) => void;
@@ -51,6 +53,7 @@ export const useSpikeStore = create<SpikeStore>((set) => ({
   panelExpanded: false,
   view: 'list',
   activeGroupId: null,
+  joinedGroups: [],
   cleanHeader: false,
   floatyListOpen: false,
   floatyWindows: [],
@@ -62,6 +65,7 @@ export const useSpikeStore = create<SpikeStore>((set) => ({
   closePanel: () => set({ panelOpen: false, panelExpanded: false }),
   openThread: (activeGroupId) => set({ activeGroupId, view: 'thread' }),
   backToList: () => set({ view: 'list', activeGroupId: null }),
+  joinGroup: (id) => set((s) => ({ joinedGroups: s.joinedGroups.includes(id) ? s.joinedGroups : [...s.joinedGroups, id] })),
   setCleanHeader: (cleanHeader) => set({ cleanHeader }),
   toggleFloatyList: () => set((s) => ({ floatyListOpen: !s.floatyListOpen })),
   openFloatyWindow: (id) =>

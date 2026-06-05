@@ -15,11 +15,11 @@ export const CURRENT_USER = {
 };
 
 export const groups: ChatGroup[] = [
-  { id: 'front-desk', name: 'Front Desk', accent: '#2858C4', unread: 2 },
-  { id: 'housekeeping', name: 'Housekeeping', accent: '#1F9D78', unread: 5 },
-  { id: 'maintenance', name: 'Maintenance', accent: '#C2700E', unread: 1 },
-  { id: 'valet', name: 'Valet', accent: '#7A5AF8', unread: 0 },
-  { id: 'announcements', name: 'Announcements', accent: '#D92D20', unread: 1, isBroadcast: true },
+  { id: 'front-desk', name: 'Front Desk', accent: '#2858C4', unread: 2, members: 5, subscribed: true },
+  { id: 'housekeeping', name: 'Housekeeping', accent: '#1F9D78', unread: 5, members: 8, subscribed: true },
+  { id: 'announcements', name: 'Announcements', accent: '#D92D20', unread: 1, isBroadcast: true, members: 42, subscribed: true },
+  { id: 'maintenance', name: 'Maintenance', accent: '#C2700E', unread: 1, members: 8, subscribed: false },
+  { id: 'valet', name: 'Valet', accent: '#7A5AF8', unread: 0, members: 4, subscribed: false },
 ];
 
 export const messagesByGroup: Record<GroupId, ChatMessage[]> = {
