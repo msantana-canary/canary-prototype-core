@@ -22,6 +22,7 @@ type PanelView = 'list' | 'thread';
 interface SpikeStore {
   variant: ChatVariant;
   panelOpen: boolean;
+  panelExpanded: boolean;
   view: PanelView;
   activeGroupId: GroupId | null;
   cleanHeader: boolean;
@@ -32,6 +33,7 @@ interface SpikeStore {
   fullActiveId: string | null;
   setVariant: (v: ChatVariant) => void;
   togglePanel: () => void;
+  toggleExpanded: () => void;
   openPanel: () => void;
   closePanel: () => void;
   openThread: (id: GroupId) => void;
@@ -46,6 +48,7 @@ interface SpikeStore {
 export const useSpikeStore = create<SpikeStore>((set) => ({
   variant: 'A',
   panelOpen: false,
+  panelExpanded: false,
   view: 'list',
   activeGroupId: null,
   cleanHeader: false,
@@ -53,9 +56,10 @@ export const useSpikeStore = create<SpikeStore>((set) => ({
   floatyWindows: [],
   fullActiveId: 'front-desk',
   setVariant: (variant) => set({ variant }),
-  togglePanel: () => set((s) => ({ panelOpen: !s.panelOpen, view: s.panelOpen ? s.view : 'list' })),
+  togglePanel: () => set((s) => ({ panelOpen: !s.panelOpen, view: s.panelOpen ? s.view : 'list', panelExpanded: s.panelOpen ? false : s.panelExpanded })),
+  toggleExpanded: () => set((s) => ({ panelExpanded: !s.panelExpanded })),
   openPanel: () => set({ panelOpen: true, view: 'list' }),
-  closePanel: () => set({ panelOpen: false }),
+  closePanel: () => set({ panelOpen: false, panelExpanded: false }),
   openThread: (activeGroupId) => set({ activeGroupId, view: 'thread' }),
   backToList: () => set({ view: 'list', activeGroupId: null }),
   setCleanHeader: (cleanHeader) => set({ cleanHeader }),

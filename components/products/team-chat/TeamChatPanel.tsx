@@ -18,6 +18,8 @@ import {
   mdiPaperclip,
   mdiBullhornOutline,
   mdiCheckAll,
+  mdiFullscreen,
+  mdiFullscreenExit,
 } from '@mdi/js';
 import { colors } from '@canary-ui/components';
 import { useSpikeStore } from '@/lib/products/team-chat/spike-store';
@@ -27,6 +29,22 @@ import { ObjectCard } from './ObjectCard';
 
 export function TeamChatPanel() {
   const view = useSpikeStore((s) => s.view);
+  const panelExpanded = useSpikeStore((s) => s.panelExpanded);
+
+  if (panelExpanded) {
+    // Full-screen two-pane: group list (left) | active thread (right).
+    return (
+      <div className="flex h-full w-full bg-white">
+        <div className="flex w-[320px] shrink-0 flex-col border-r border-gray-200">
+          <GroupListView />
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <ThreadView />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full w-full flex-col bg-white">
       {view === 'list' ? <GroupListView /> : <ThreadView />}
@@ -34,23 +52,41 @@ export function TeamChatPanel() {
   );
 }
 
+function ExpandToggle() {
+  const { panelExpanded, toggleExpanded } = useSpikeStore();
+  return (
+    <button
+      onClick={toggleExpanded}
+      className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-gray-100"
+      title={panelExpanded ? 'Collapse' : 'Expand to full screen'}
+      aria-label={panelExpanded ? 'Collapse team chat' : 'Expand team chat'}
+    >
+      <Icon path={panelExpanded ? mdiFullscreenExit : mdiFullscreen} size={0.85} color={colors.colorBlack3} />
+    </button>
+  );
+}
+
 /* ── Group list ─────────────────────────────────────────────────────── */
 
 function GroupListView() {
-  const { closePanel, openThread } = useSpikeStore();
+  const { closePanel, openThread, activeGroupId, panelExpanded } = useSpikeStore();
+  const effectiveActive = activeGroupId ?? groups[0].id;
   return (
     <>
       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
         <span className="text-[15px] font-semibold" style={{ color: colors.colorBlack1 }}>
           Team Chat
         </span>
-        <button
-          onClick={closePanel}
-          className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-gray-100"
-          aria-label="Close team chat"
-        >
-          <Icon path={mdiClose} size={0.8} color={colors.colorBlack3} />
-        </button>
+        <div className="flex items-center gap-0.5">
+          <ExpandToggle />
+          <button
+            onClick={closePanel}
+            className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-gray-100"
+            aria-label="Close team chat"
+          >
+            <Icon path={mdiClose} size={0.8} color={colors.colorBlack3} />
+          </button>
+        </div>
       </div>
       <div className="flex-1 overflow-y-auto pb-2">
         <div
@@ -60,20 +96,20 @@ function GroupListView() {
           Your groups
         </div>
         {groups.map((g) => (
-          <GroupRow key={g.id} group={g} onClick={() => openThread(g.id)} />
+          <GroupRow key={g.id} group={g} active={panelExpanded && g.id === effectiveActive} onClick={() => openThread(g.id)} />
         ))}
       </div>
     </>
   );
 }
 
-function GroupRow({ group, onClick }: { group: ChatGroup; onClick: () => void }) {
+function GroupRow({ group, active, onClick }: { group: ChatGroup; active?: boolean; onClick: () => void }) {
   const msgs = messagesByGroup[group.id] ?? [];
   const last = msgs[msgs.length - 1];
   const lastAuthor = last ? (last.self ? 'You' : last.authorName.split(' ')[0]) : '';
 
   return (
-    <button onClick={onClick} className="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-gray-50">
+    <button onClick={onClick} className="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-gray-50" style={{ backgroundColor: active ? '#EAF1FE' : undefined }}>
       <span
         className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
         style={{ backgroundColor: group.accent + '1A' }}
@@ -116,7 +152,7 @@ function GroupRow({ group, onClick }: { group: ChatGroup; onClick: () => void })
 /* ── Thread ─────────────────────────────────────────────────────────── */
 
 function ThreadView() {
-  const { activeGroupId, backToList, closePanel } = useSpikeStore();
+  const { activeGroupId, backToList, closePanel, panelExpanded } = useSpikeStore();
   const [draft, setDraft] = useState('');
   const [appended, setAppended] = useState<ChatMessage[]>([]);
 
@@ -146,25 +182,30 @@ function ThreadView() {
   return (
     <>
       <div className="flex items-center gap-1.5 border-b border-gray-200 px-2 py-2.5">
-        <button
-          onClick={backToList}
-          className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-gray-100"
-          aria-label="Back to groups"
-        >
-          <Icon path={mdiArrowLeft} size={0.8} color={colors.colorBlack3} />
-        </button>
-        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: group.accent }} />
+        {!panelExpanded && (
+          <button
+            onClick={backToList}
+            className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-gray-100"
+            aria-label="Back to groups"
+          >
+            <Icon path={mdiArrowLeft} size={0.8} color={colors.colorBlack3} />
+          </button>
+        )}
+        <span className="ml-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: group.accent }} />
         <span className="flex-1 truncate text-[14px] font-semibold" style={{ color: colors.colorBlack1 }}>
           {group.name}
         </span>
         {group.isBroadcast && <Icon path={mdiBullhornOutline} size={0.6} color={colors.colorBlack4} />}
-        <button
-          onClick={closePanel}
-          className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-gray-100"
-          aria-label="Close team chat"
-        >
-          <Icon path={mdiClose} size={0.8} color={colors.colorBlack3} />
-        </button>
+        {!panelExpanded && <ExpandToggle />}
+        {!panelExpanded && (
+          <button
+            onClick={closePanel}
+            className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-gray-100"
+            aria-label="Close team chat"
+          >
+            <Icon path={mdiClose} size={0.8} color={colors.colorBlack3} />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 py-2">
