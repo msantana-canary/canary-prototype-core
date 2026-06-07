@@ -24,6 +24,7 @@ interface AppLayoutProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onNewMessage: () => void;
+  hideSubNav?: boolean;
 }
 
 export function AppLayout({
@@ -35,14 +36,15 @@ export function AppLayout({
   searchQuery,
   onSearchChange,
   onNewMessage,
+  hideSubNav = false,
 }: AppLayoutProps) {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Main Navigation */}
       <MainNav activeTab={activeTab} onTabChange={onTabChange} />
 
-      {/* Sub Navigation */}
-      {activeTab === 'conversations' && (
+      {/* Sub Navigation — hidden in compact layout */}
+      {activeTab === 'conversations' && !hideSubNav && (
         <SubNav
           onNewMessage={onNewMessage}
           currentView={currentView}

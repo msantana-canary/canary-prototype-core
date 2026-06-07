@@ -16,6 +16,7 @@ export interface EmailThread {
 export type ChannelSelectorVariant = 'pills' | 'dropdown' | 'icon-tabs';
 export type EmailComposerVariant = 'inline' | 'full';
 export type ChannelSelectorPosition = 'below-header' | 'above-composer';
+export type InboxLayout = 'standard' | 'compact';
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'failed';
 export type ThreadStatus = 'inbox' | 'archived' | 'blocked';
 

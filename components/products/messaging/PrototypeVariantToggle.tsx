@@ -1,33 +1,27 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChannelSelectorVariant, EmailComposerVariant, ChannelSelectorPosition } from '@/lib/products/messaging/types';
+import { InboxLayout } from '@/lib/products/messaging/types';
 import Icon from '@mdi/react';
 import { mdiTuneVariant, mdiClose } from '@mdi/js';
 
+type SearchVariant = 'slide-down' | 'takeover';
+
 interface PrototypeVariantToggleProps {
-  channelVariant: ChannelSelectorVariant;
-  emailComposerVariant: EmailComposerVariant;
-  channelPosition: ChannelSelectorPosition;
-  onChannelVariantChange: (v: ChannelSelectorVariant) => void;
-  onEmailComposerVariantChange: (v: EmailComposerVariant) => void;
-  onChannelPositionChange: (v: ChannelSelectorPosition) => void;
+  inboxLayout: InboxLayout;
+  onInboxLayoutChange: (v: InboxLayout) => void;
+  searchVariant: SearchVariant;
+  onSearchVariantChange: (v: SearchVariant) => void;
 }
 
-const channelOptions: { value: ChannelSelectorVariant; label: string; desc: string }[] = [
-  { value: 'pills', label: 'A: Inline Pills', desc: 'Segmented buttons, always visible' },
-  { value: 'dropdown', label: 'B: Dropdown', desc: 'Compact select, one click to reveal' },
-  { value: 'icon-tabs', label: 'C: Icon Tabs', desc: 'Channel icons, minimal footprint' },
+const layoutOptions: { value: InboxLayout; label: string; desc: string }[] = [
+  { value: 'standard', label: 'Standard', desc: 'Full-width SubNav bar (current production)' },
+  { value: 'compact', label: 'Compact', desc: 'Controls above thread list, more vertical space' },
 ];
 
-const positionOptions: { value: ChannelSelectorPosition; label: string; desc: string }[] = [
-  { value: 'below-header', label: 'A: Below Header', desc: 'Own row under guest info' },
-  { value: 'above-composer', label: 'B: Above Composer', desc: 'Near the send action' },
-];
-
-const composerOptions: { value: EmailComposerVariant; label: string; desc: string }[] = [
-  { value: 'inline', label: 'Minimal', desc: 'Same compose area, button changes' },
-  { value: 'full', label: 'Rich Compose', desc: 'Taller area with formatting toolbar' },
+const searchOptions: { value: SearchVariant; label: string; desc: string }[] = [
+  { value: 'slide-down', label: 'Slide Down', desc: 'Search bar appears below controls' },
+  { value: 'takeover', label: 'Takeover', desc: 'Search replaces Row 1 controls' },
 ];
 
 function RadioGroup<T extends string>({
@@ -70,12 +64,10 @@ function RadioGroup<T extends string>({
 }
 
 export function PrototypeVariantToggle({
-  channelVariant,
-  emailComposerVariant,
-  channelPosition,
-  onChannelVariantChange,
-  onEmailComposerVariantChange,
-  onChannelPositionChange,
+  inboxLayout,
+  onInboxLayoutChange,
+  searchVariant,
+  onSearchVariantChange,
 }: PrototypeVariantToggleProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -97,23 +89,20 @@ export function PrototypeVariantToggle({
 
           <div className="p-4">
             <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
-              Selector Position
+              Inbox Layout
             </p>
             <div className="mb-4">
-              <RadioGroup options={positionOptions} value={channelPosition} onChange={onChannelPositionChange} />
+              <RadioGroup options={layoutOptions} value={inboxLayout} onChange={onInboxLayoutChange} />
             </div>
 
-            <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
-              Selector Style
-            </p>
-            <div className="mb-4">
-              <RadioGroup options={channelOptions} value={channelVariant} onChange={onChannelVariantChange} />
-            </div>
-
-            <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
-              Email Composer
-            </p>
-            <RadioGroup options={composerOptions} value={emailComposerVariant} onChange={onEmailComposerVariantChange} />
+            {inboxLayout === 'compact' && (
+              <>
+                <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
+                  Search Behavior
+                </p>
+                <RadioGroup options={searchOptions} value={searchVariant} onChange={onSearchVariantChange} />
+              </>
+            )}
           </div>
         </div>
       )}

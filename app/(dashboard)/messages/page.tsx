@@ -7,6 +7,8 @@ import { ThreadView } from '@/components/products/messaging/ThreadView';
 import { UnlinkReservationModal } from '@/components/products/messaging/UnlinkReservationModal';
 import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
 import { PrototypeVariantToggle } from '@/components/products/messaging/PrototypeVariantToggle';
+import { CompactInboxHeader } from '@/components/products/messaging/CompactInboxHeader';
+import { ComposeHeader } from '@/components/products/messaging/ComposeHeader';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { guests } from '@/lib/core/data/guests';
 import { reservations } from '@/lib/core/data/reservations';
@@ -18,6 +20,8 @@ import { getEmailThreadsForThread } from '@/lib/products/messaging/mock-data';
 
 export default function MessagesPage() {
   const [activeTab, setActiveTab] = useState<MainNavTab>('conversations');
+  const [convFilter, setConvFilter] = useState('all-conversations');
+  const [searchVariant, setSearchVariant] = useState<'slide-down' | 'takeover'>('slide-down');
 
   const {
     threads,
@@ -35,6 +39,7 @@ export default function MessagesPage() {
     channelSelectorVariant,
     emailComposerVariant,
     channelSelectorPosition,
+    inboxLayout,
     selectThread,
     setAiEnabled,
     sendMessage,
@@ -61,7 +66,10 @@ export default function MessagesPage() {
     setChannelSelectorVariant,
     setEmailComposerVariant,
     setChannelSelectorPosition,
+    setInboxLayout,
   } = useMessagingStore();
+
+  const isCompact = inboxLayout === 'compact';
 
   const selectedThread = useMemo(() => {
     if (!selectedThreadId) return null;
@@ -174,10 +182,10 @@ export default function MessagesPage() {
   };
 
   useEffect(() => {
-    if (activeTab === 'conversations' && !selectedThreadId && filteredThreads.length > 0) {
+    if (activeTab === 'conversations' && !selectedThreadId && !isComposingNew && filteredThreads.length > 0) {
       selectThread(filteredThreads[0].id);
     }
-  }, [activeTab, selectedThreadId, filteredThreads, selectThread]);
+  }, [activeTab, selectedThreadId, isComposingNew, filteredThreads, selectThread]);
 
   return (
     <AppLayout
@@ -188,25 +196,43 @@ export default function MessagesPage() {
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       onNewMessage={startNewConversation}
+      hideSubNav={isCompact}
     >
       {activeTab === 'conversations' && (
         <div className="flex h-full">
-          <div className="w-[320px] border-r border-gray-200">
-            <ThreadList
-              threads={filteredThreads}
-              selectedThreadId={selectedThreadId}
-              onSelectThread={selectThread}
-              isComposingNew={isComposingNew}
-              composingPhoneNumber={composingPhoneNumber}
-              onComposingPhoneChange={updateComposingPhone}
-              onCreateThread={createThreadFromPhone}
-              onCancelComposing={cancelComposing}
-              typingThreadId={typingThreadId}
-            />
+          <div className="w-[320px] border-r border-gray-200 flex flex-col">
+            {isCompact && (
+              <CompactInboxHeader
+                currentView={currentView}
+                onViewChange={setCurrentView}
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                onNewMessage={startNewConversation}
+                filterValue={convFilter}
+                onFilterChange={setConvFilter}
+                searchVariant={searchVariant}
+              />
+            )}
+            <div className="flex-1 overflow-hidden">
+              <ThreadList
+                threads={filteredThreads}
+                selectedThreadId={selectedThreadId}
+                onSelectThread={selectThread}
+                typingThreadId={typingThreadId}
+                hideFilter={isCompact}
+              />
+            </div>
           </div>
 
           <div className="flex-1">
-            {selectedThread ? (
+            {isComposingNew ? (
+              <ComposeHeader
+                composingPhoneNumber={composingPhoneNumber}
+                onComposingPhoneChange={updateComposingPhone}
+                onCreateThread={createThreadFromPhone}
+                onCancelComposing={cancelComposing}
+              />
+            ) : selectedThread ? (
               <ThreadView
                 thread={selectedThread}
                 guest={selectedGuest}
@@ -273,12 +299,10 @@ export default function MessagesPage() {
       />
 
       <PrototypeVariantToggle
-        channelVariant={channelSelectorVariant}
-        emailComposerVariant={emailComposerVariant}
-        channelPosition={channelSelectorPosition}
-        onChannelVariantChange={setChannelSelectorVariant}
-        onEmailComposerVariantChange={setEmailComposerVariant}
-        onChannelPositionChange={setChannelSelectorPosition}
+        inboxLayout={inboxLayout}
+        onInboxLayoutChange={setInboxLayout}
+        searchVariant={searchVariant}
+        onSearchVariantChange={setSearchVariant}
       />
     </AppLayout>
   );

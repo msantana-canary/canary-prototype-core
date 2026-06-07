@@ -12,9 +12,9 @@ import { Avatar } from './Avatar';
 import { MessageFeed } from './MessageFeed';
 import { MessageComposer } from './MessageComposer';
 import { GuestInfoSidebar } from './GuestInfoSidebar';
-import { ChannelSelector } from './ChannelSelector';
 import { EmailThreadSelector } from './EmailThreadSelector';
 import { Thread, Message, LinkedReservation, MessageChannel, ChannelSelectorVariant, EmailComposerVariant, EmailThread, ChannelSelectorPosition } from '@/lib/products/messaging/types';
+import { CanaryTabs } from '@canary-ui/components';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
 import { CanaryButton, ButtonType, ButtonSize, CanaryTag, TagSize, TagVariant } from '@canary-ui/components';
@@ -334,25 +334,34 @@ export function ThreadView({
         </div>
       </div>
 
-      {/* Channel Selector — below header (Version A) */}
-      {channelSelectorPosition === 'below-header' && (
-        <div className="border-b border-gray-200 bg-gray-50 px-6 py-2 flex items-center gap-3">
-          <ChannelSelector
-            variant={channelSelectorVariant}
-            selectedChannel={selectedChannel}
-            availableChannels={availableChannels}
-            unreadChannels={unreadChannels}
-            onChannelChange={onChannelChange}
+      {/* Channel Tabs — text underline style, part of the header unit */}
+      <div className="border-b border-gray-200 bg-white px-6 flex items-center gap-3">
+        <CanaryTabs
+          tabs={availableChannels.map((ch) => {
+            const unreadCount = messages.filter(
+              (m) => m.channel === ch && m.sender === 'guest' &&
+              !messages.some((s) => (s.sender === 'staff' || s.sender === 'ai') && s.channel === ch && s.timestamp > m.timestamp)
+            ).length;
+            return {
+              id: ch,
+              label: ch === 'Booking.com' ? 'OTA' : ch,
+              content: null,
+              badge: unreadCount > 0 ? unreadCount : undefined,
+            };
+          })}
+          variant="text"
+          size="compact"
+          defaultTab={selectedChannel === 'all' ? 'SMS' : selectedChannel}
+          onChange={(tabId) => onChannelChange(tabId as MessageChannel)}
+        />
+        {selectedChannel === 'Email' && emailThreads.length > 1 && (
+          <EmailThreadSelector
+            emailThreads={emailThreads}
+            selectedEmailThreadId={selectedEmailThreadId}
+            onSelect={onEmailThreadChange}
           />
-          {selectedChannel === 'Email' && emailThreads.length > 1 && (
-            <EmailThreadSelector
-              emailThreads={emailThreads}
-              selectedEmailThreadId={selectedEmailThreadId}
-              onSelect={onEmailThreadChange}
-            />
-          )}
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Messages */}
       <MessageFeed messages={filteredMessages} />
@@ -363,26 +372,6 @@ export function ThreadView({
           <p className="font-['Roboto',sans-serif] text-[10px] leading-[16px] text-[#999999]">
             Guest is typing
           </p>
-        </div>
-      )}
-
-      {/* Channel Selector — above composer (Version B) */}
-      {channelSelectorPosition === 'above-composer' && (
-        <div className="px-6 pt-2 pb-0 flex items-center gap-3">
-          <ChannelSelector
-            variant={channelSelectorVariant}
-            selectedChannel={selectedChannel}
-            availableChannels={availableChannels}
-            unreadChannels={unreadChannels}
-            onChannelChange={onChannelChange}
-          />
-          {selectedChannel === 'Email' && emailThreads.length > 1 && (
-            <EmailThreadSelector
-              emailThreads={emailThreads}
-              selectedEmailThreadId={selectedEmailThreadId}
-              onSelect={onEmailThreadChange}
-            />
-          )}
         </div>
       )}
 

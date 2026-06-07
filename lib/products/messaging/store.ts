@@ -7,7 +7,7 @@
  */
 
 import { create } from 'zustand';
-import { Thread, Message, MessageChannel, ChannelSelectorVariant, EmailComposerVariant, ChannelSelectorPosition } from './types';
+import { Thread, Message, MessageChannel, ChannelSelectorVariant, EmailComposerVariant, ChannelSelectorPosition, InboxLayout } from './types';
 import { mockThreads, mockMessages } from './mock-data';
 
 interface MessagingState {
@@ -30,6 +30,7 @@ interface MessagingState {
   channelSelectorVariant: ChannelSelectorVariant;
   emailComposerVariant: EmailComposerVariant;
   channelSelectorPosition: ChannelSelectorPosition;
+  inboxLayout: InboxLayout;
 
   // Actions
   selectThread: (threadId: string) => void;
@@ -63,6 +64,7 @@ interface MessagingState {
   setChannelSelectorVariant: (variant: ChannelSelectorVariant) => void;
   setEmailComposerVariant: (variant: EmailComposerVariant) => void;
   setChannelSelectorPosition: (position: ChannelSelectorPosition) => void;
+  setInboxLayout: (layout: InboxLayout) => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set, get) => ({
@@ -83,6 +85,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   channelSelectorVariant: 'pills' as ChannelSelectorVariant,
   emailComposerVariant: 'inline' as EmailComposerVariant,
   channelSelectorPosition: 'below-header' as ChannelSelectorPosition,
+  inboxLayout: 'compact' as InboxLayout,
 
   // Select a thread — auto-open to the notified channel (SMS > WhatsApp > Email)
   selectThread: (threadId: string) => {
@@ -385,5 +388,9 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
 
   setChannelSelectorPosition: (position: ChannelSelectorPosition) => {
     set({ channelSelectorPosition: position });
+  },
+
+  setInboxLayout: (layout: InboxLayout) => {
+    set({ inboxLayout: layout });
   },
 }));
