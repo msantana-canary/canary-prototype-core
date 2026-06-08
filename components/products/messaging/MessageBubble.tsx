@@ -57,7 +57,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             {message.channel && (
               <span
                 className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase shrink-0"
-                style={{ color: message.channel === 'Email' ? '#EA4335' : message.channel === 'WhatsApp' ? '#25D366' : colorBlack3 }}
+                style={{ color: colorBlack3 }}
               >
                 {message.channel}
               </span>
@@ -110,7 +110,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             {message.channel && (
               <span
                 className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase shrink-0"
-                style={{ color: message.channel === 'Email' ? '#EA4335' : message.channel === 'WhatsApp' ? '#25D366' : colorBlack3 }}
+                style={{ color: colorBlack3 }}
               >
                 {message.channel}
               </span>

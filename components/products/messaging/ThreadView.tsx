@@ -160,7 +160,7 @@ export function ThreadView({
   return (
     <div className="flex-1 flex flex-col h-full bg-white relative">
       {/* Thread Header */}
-      <div className="border-b border-gray-200 bg-white px-6 py-4">
+      <div className="bg-white px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Guest Info / Contact Number */}
           <div className="flex items-center gap-4">
@@ -335,31 +335,36 @@ export function ThreadView({
       </div>
 
       {/* Channel Tabs — text underline style, part of the header unit */}
-      <div className="border-b border-gray-200 bg-white px-6 flex items-center gap-3">
-        <CanaryTabs
-          tabs={availableChannels.map((ch) => {
-            const unreadCount = messages.filter(
-              (m) => m.channel === ch && m.sender === 'guest' &&
-              !messages.some((s) => (s.sender === 'staff' || s.sender === 'ai') && s.channel === ch && s.timestamp > m.timestamp)
-            ).length;
-            return {
-              id: ch,
-              label: ch === 'Booking.com' ? 'OTA' : ch,
-              content: null,
-              badge: unreadCount > 0 ? unreadCount : undefined,
-            };
-          })}
-          variant="text"
-          size="compact"
-          defaultTab={selectedChannel === 'all' ? 'SMS' : selectedChannel}
-          onChange={(tabId) => onChannelChange(tabId as MessageChannel)}
-        />
-        {selectedChannel === 'Email' && emailThreads.length > 1 && (
-          <EmailThreadSelector
-            emailThreads={emailThreads}
-            selectedEmailThreadId={selectedEmailThreadId}
-            onSelect={onEmailThreadChange}
+      <div className="border-b border-gray-200 bg-white">
+        <div className="px-6">
+          <CanaryTabs
+            key={`${thread.id}-${selectedChannel}`}
+            tabs={availableChannels.map((ch) => {
+              const unreadCount = messages.filter(
+                (m) => m.channel === ch && m.sender === 'guest' &&
+                !messages.some((s) => (s.sender === 'staff' || s.sender === 'ai') && s.channel === ch && s.timestamp > m.timestamp)
+              ).length;
+              return {
+                id: ch,
+                label: ch === 'Booking.com' ? 'OTA' : ch,
+                content: null,
+                badge: unreadCount > 0 ? unreadCount : undefined,
+              };
+            })}
+            variant="text"
+            size="compact"
+            defaultTab={selectedChannel === 'all' ? 'SMS' : selectedChannel}
+            onChange={(tabId) => onChannelChange(tabId as MessageChannel)}
           />
+        </div>
+        {selectedChannel === 'Email' && emailThreads.length > 1 && (
+          <div className="px-6 pb-2">
+            <EmailThreadSelector
+              emailThreads={emailThreads}
+              selectedEmailThreadId={selectedEmailThreadId}
+              onSelect={onEmailThreadChange}
+            />
+          </div>
         )}
       </div>
 

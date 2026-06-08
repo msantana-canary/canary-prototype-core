@@ -265,23 +265,23 @@ export const mockThreads: Thread[] = [
  * Mock messages - organized by thread ID
  */
 export const mockMessages: Record<string, Message[]> = {
-  // Multi-reservation thread — multi-channel (SMS + WhatsApp)
+  // ===== JOHN SMITH (thread 14) — Group coordinator, SMS + WhatsApp =====
   '14': [
     {
       id: 'm100',
       threadId: '14',
       sender: 'guest',
-      content: 'I will arrive late today. My flight is delayed.',
-      timestamp: new Date('2026-03-16T17:10:00'),
+      content: 'Hi, this is John Smith. I have a group of 4 rooms arriving this Friday (Mar 14). Can you confirm all rooms are on the same floor?',
+      timestamp: new Date('2026-03-12T14:30:00'),
       channel: 'SMS',
       status: 'delivered',
     },
     {
       id: 'm101',
       threadId: '14',
-      sender: 'ai',
-      content: 'Thanks for letting us know!',
-      timestamp: new Date('2026-03-16T17:25:00'),
+      sender: 'staff',
+      content: 'Hi John! I can see your group booking. Let me check floor assignments. Currently we have rooms 502, 504, 506, and 510 — all on the 5th floor.',
+      timestamp: new Date('2026-03-12T14:45:00'),
       channel: 'SMS',
       status: 'delivered',
     },
@@ -289,27 +289,45 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm102',
       threadId: '14',
       sender: 'guest',
-      content: 'Give me a list of nearby restaurants',
-      timestamp: new Date('2026-03-16T18:30:00'),
+      content: 'Perfect. One more thing — James and Ethan are flying in late, probably around 11pm. Can you hold their rooms?',
+      timestamp: new Date('2026-03-12T15:00:00'),
       channel: 'SMS',
       status: 'delivered',
     },
     {
       id: 'm103',
       threadId: '14',
-      sender: 'ai',
-      content: "Here are some nearby restaurant recommendations: Ithaca Ale House, Komonz Grill, MIX, Red's Place, and Chili's Grill & Bar. The hotel also recommends Il Ristorante Alga, Coltivare, Moosewood Restaurant, and Gola Osteria. Let me know if you need more assistance!",
-      timestamp: new Date('2026-03-16T18:32:00'),
+      sender: 'staff',
+      content: 'Absolutely, all rooms are guaranteed for late arrival. No worries there. Keys will be ready at the front desk whenever they get in.',
+      timestamp: new Date('2026-03-12T15:05:00'),
       channel: 'SMS',
       status: 'delivered',
     },
-    // WhatsApp messages
+    {
+      id: 'm104',
+      threadId: '14',
+      sender: 'guest',
+      content: 'Great. We all checked in, rooms are good. Quick question — any restaurant recs for a group dinner tonight?',
+      timestamp: new Date('2026-03-15T18:20:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm105',
+      threadId: '14',
+      sender: 'ai',
+      content: "Here are some nearby restaurant recommendations: Ithaca Ale House, Komonz Grill, MIX, Red's Place, and Chili's Grill & Bar. The hotel also recommends Il Ristorante Alga, Coltivare, Moosewood Restaurant, and Gola Osteria. Let me know if you need more assistance!",
+      timestamp: new Date('2026-03-15T18:22:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    // WhatsApp messages — late checkout follow-up
     {
       id: 'm100-w1',
       threadId: '14',
       sender: 'guest',
-      content: 'Hey, just following up — do you have any availability for a late checkout on the 18th?',
-      timestamp: new Date('2026-03-16T19:00:00'),
+      content: 'Hey, quick one — any chance we can get late checkout on Sunday for all 4 rooms? We have a 4pm flight',
+      timestamp: new Date('2026-03-16T09:30:00'),
       channel: 'WhatsApp',
       status: 'delivered',
     },
@@ -317,8 +335,8 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm100-w2',
       threadId: '14',
       sender: 'staff',
-      content: 'Hi! Let me check on that for you. For March 18th, we can offer a late checkout until 2 PM at no extra charge.',
-      timestamp: new Date('2026-03-16T19:05:00'),
+      content: 'Hi John! Let me check availability for all four rooms. I can confirm late checkout until 2 PM for rooms 502, 504, and 506. Room 510 can do 1 PM — there\'s an incoming reservation that evening.',
+      timestamp: new Date('2026-03-16T09:45:00'),
       channel: 'WhatsApp',
       status: 'delivered',
     },
@@ -326,59 +344,16 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm100-w3',
       threadId: '14',
       sender: 'guest',
-      content: 'That works perfectly, thank you! 🙏',
-      timestamp: new Date('2026-03-16T19:08:00'),
+      content: 'That works for us. 1pm is fine for 510. Thanks! 🙏',
+      timestamp: new Date('2026-03-16T10:04:00'),
       channel: 'WhatsApp',
       status: 'delivered',
     },
   ],
-  // Emerson Smith — multi-channel (SMS + WhatsApp + Email)
+
+  // ===== EMERSON SMITH (thread 15) — Anniversary planner, Email + WhatsApp + SMS =====
   '15': [
-    {
-      id: 'm104',
-      threadId: '15',
-      sender: 'guest',
-      content: 'Hi, I wanted to confirm my reservation for next month.',
-      timestamp: new Date('2026-03-16T09:50:00'),
-      channel: 'SMS',
-      status: 'delivered',
-    },
-    {
-      id: 'm15-w1',
-      threadId: '15',
-      sender: 'guest',
-      content: 'Hey, do you guys have a spa? I want to book a couples massage for our anniversary',
-      timestamp: new Date('2026-03-16T10:15:00'),
-      channel: 'WhatsApp',
-      status: 'delivered',
-    },
-    {
-      id: 'm15-w2',
-      threadId: '15',
-      sender: 'staff',
-      content: 'Happy anniversary! Yes, our Serenity Spa is on the 4th floor. For a couples massage I\'d recommend the 90-minute deep tissue — it\'s our most popular. Would you like me to book a time?',
-      timestamp: new Date('2026-03-16T10:20:00'),
-      channel: 'WhatsApp',
-      status: 'delivered',
-    },
-    {
-      id: 'm15-w3',
-      threadId: '15',
-      sender: 'guest',
-      content: 'That sounds perfect. Can we do Saturday morning around 10?',
-      timestamp: new Date('2026-03-16T10:25:00'),
-      channel: 'WhatsApp',
-      status: 'delivered',
-    },
-    {
-      id: 'm15-w4',
-      threadId: '15',
-      sender: 'staff',
-      content: 'You\'re all set! Saturday March 22 at 10:00 AM, couples deep tissue massage (90 min). Please arrive 15 minutes early to enjoy the sauna beforehand.',
-      timestamp: new Date('2026-03-16T10:30:00'),
-      channel: 'WhatsApp',
-      status: 'delivered',
-    },
+    // Email: early March — confirmation + anniversary inquiry
     {
       id: 'm15-e1',
       threadId: '15',
@@ -406,8 +381,65 @@ export const mockMessages: Record<string, Message[]> = {
       channel: 'Email',
       status: 'delivered',
     },
+    // WhatsApp: mid-March — spa booking follow-up
+    {
+      id: 'm15-w1',
+      threadId: '15',
+      sender: 'guest',
+      content: 'Hey, do you guys have a spa? I want to book a couples massage for our anniversary weekend in June',
+      timestamp: new Date('2026-03-14T10:15:00'),
+      channel: 'WhatsApp',
+      status: 'delivered',
+    },
+    {
+      id: 'm15-w2',
+      threadId: '15',
+      sender: 'staff',
+      content: 'Happy anniversary! Yes, our Serenity Spa is on the 4th floor. For a couples massage I\'d recommend the 90-minute deep tissue — it\'s our most popular. Would you like me to book a time for your stay (Jun 14-17)?',
+      timestamp: new Date('2026-03-14T10:20:00'),
+      channel: 'WhatsApp',
+      status: 'delivered',
+    },
+    {
+      id: 'm15-w3',
+      threadId: '15',
+      sender: 'guest',
+      content: 'That sounds perfect. Can we do Saturday morning around 10?',
+      timestamp: new Date('2026-03-14T10:25:00'),
+      channel: 'WhatsApp',
+      status: 'delivered',
+    },
+    {
+      id: 'm15-w4',
+      threadId: '15',
+      sender: 'staff',
+      content: 'You\'re all set! Saturday June 15 at 10:00 AM, couples deep tissue massage (90 min). Please arrive 15 minutes early to enjoy the sauna beforehand. ✨',
+      timestamp: new Date('2026-03-14T10:30:00'),
+      channel: 'WhatsApp',
+      status: 'delivered',
+    },
+    // SMS: quick parking question
+    {
+      id: 'm104',
+      threadId: '15',
+      sender: 'guest',
+      content: 'Hi, I wanted to confirm my reservation for next month. Also quick q — is parking included or extra?',
+      timestamp: new Date('2026-03-16T09:50:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm15-s2',
+      threadId: '15',
+      sender: 'ai',
+      content: 'Hi Emerson! Your June 14-17 reservation is confirmed. Regarding parking: self-parking is $25/day and valet is $35/day. As a Gold Elite member, we can offer complimentary self-parking. Want me to add that?',
+      timestamp: new Date('2026-03-16T09:52:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
   ],
-  // +12125550000 — unlinked guest, multi-channel (SMS + Expedia)
+
+  // ===== +12125550000 (thread 16) — Walk-in inquiry, SMS + Expedia =====
   '16': [
     {
       id: 'm105',
@@ -431,7 +463,7 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm16-s3',
       threadId: '16',
       sender: 'guest',
-      content: 'The king room works. Friday and Saturday nights. How do I book?',
+      content: 'The king room works. Friday and Saturday nights. Let me book through Expedia though, I have credits there.',
       timestamp: new Date('2026-03-16T09:35:00'),
       channel: 'SMS',
       status: 'delivered',
@@ -440,16 +472,17 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm16-s4',
       threadId: '16',
       sender: 'staff',
-      content: 'Great choice! You can book directly on our website for the best rate, or I can send you a booking link. Just need your name and email to get started.',
+      content: 'No problem at all! Book through Expedia and we\'ll see the reservation come in. Feel free to message us here if you need anything before or during your stay.',
       timestamp: new Date('2026-03-16T09:38:00'),
       channel: 'SMS',
       status: 'delivered',
     },
+    // Expedia: followed up by booking on Expedia
     {
       id: 'm16-x1',
       threadId: '16',
       sender: 'guest',
-      content: 'Hi, I just made a reservation through Expedia for this Friday-Sunday (itinerary #EXP-2938471). The listing said free cancellation — can you confirm?',
+      content: 'Hi, I just made a reservation through Expedia for this Friday-Sunday (itinerary #EXP-2938471). The listing said free cancellation — can you confirm the cutoff date?',
       timestamp: new Date('2026-03-16T11:00:00'),
       channel: 'Expedia',
       status: 'delivered',
@@ -458,7 +491,7 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm16-x2',
       threadId: '16',
       sender: 'staff',
-      content: 'Welcome! I can see your Expedia reservation. Yes, it includes free cancellation up to 48 hours before check-in (so by Wednesday 3 PM). After that, the first night is non-refundable.',
+      content: 'Welcome! I can see your Expedia reservation. Yes, free cancellation applies up to 48 hours before check-in (so by Wednesday March 19 at 3 PM). After that, the first night is non-refundable.',
       timestamp: new Date('2026-03-16T11:10:00'),
       channel: 'Expedia',
       status: 'delivered',
@@ -467,57 +500,22 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm16-x3',
       threadId: '16',
       sender: 'guest',
-      content: 'Perfect, thanks. Also is parking included or is that extra?',
+      content: 'Perfect, thanks. One more — is parking included or is that extra?',
       timestamp: new Date('2026-03-16T11:15:00'),
       channel: 'Expedia',
       status: 'delivered',
     },
   ],
-  // Emily Smith's conversation — multi-channel (SMS + Email)
+
+  // ===== EMILY SMITH (thread 1) — Corporate repeat guest, Email (pre-stay) + SMS (mid-stay) =====
   '1': [
-    {
-      id: 'm1',
-      threadId: '1',
-      sender: 'guest',
-      content: 'I will arrive late today. My flight is delayed.',
-      timestamp: new Date('2026-03-16T17:10:00'),
-      channel: 'SMS',
-      status: 'delivered',
-    },
-    {
-      id: 'm2',
-      threadId: '1',
-      sender: 'ai',
-      content: 'Thanks for letting us know!',
-      timestamp: new Date('2026-03-16T17:25:00'),
-      channel: 'SMS',
-      status: 'delivered',
-    },
-    {
-      id: 'm3',
-      threadId: '1',
-      sender: 'guest',
-      content: 'Give me a list of nearby restaurants',
-      timestamp: new Date('2026-03-16T18:30:00'),
-      channel: 'SMS',
-      status: 'delivered',
-    },
-    {
-      id: 'm4',
-      threadId: '1',
-      sender: 'ai',
-      content: "Here are some nearby restaurant recommendations: Ithaca Ale House, Komonz Grill, MIX, Red's Place, and Chili's Grill & Bar. The hotel also recommends Il Ristorante Alga, Coltivare, Moosewood Restaurant, and Gola Osteria. Let me know if you need more assistance!",
-      timestamp: new Date('2026-03-16T18:32:00'),
-      channel: 'SMS',
-      status: 'delivered',
-    },
-    // Email thread: reservation confirmation
+    // Email: Mar 12-13 pre-stay exchange
     {
       id: 'm1-e1',
       threadId: '1',
       sender: 'staff',
-      content: 'Dear Ms. Smith,\n\nThank you for choosing The Grand Ithaca Hotel for your upcoming stay. We are pleased to confirm your reservation:\n\n• Check-in: July 15, 2026\n• Check-out: July 18, 2026\n• Room Type: Deluxe King\n• Confirmation: #GIH-2026-4821\n\nPlease let us know if you have any special requests prior to your arrival.\n\nWarm regards,\nThe Grand Ithaca Hotel',
-      timestamp: new Date('2026-03-14T09:00:00'),
+      content: 'Dear Ms. Smith,\n\nThank you for choosing The Grand Ithaca Hotel for your upcoming stay. We are pleased to confirm your reservation:\n\n• Check-in: March 15, 2026\n• Check-out: March 18, 2026\n• Room Type: Deluxe King (Room 153)\n• Confirmation: #GIH-2026-4821\n\nAs a Diamond Elite member, you\'ll enjoy complimentary breakfast, room upgrade (subject to availability), and express check-in.\n\nPlease let us know if you have any special requests prior to your arrival.\n\nWarm regards,\nThe Grand Ithaca Hotel',
+      timestamp: new Date('2026-03-12T09:00:00'),
       channel: 'Email',
       status: 'delivered',
     },
@@ -525,8 +523,8 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm1-e2',
       threadId: '1',
       sender: 'guest',
-      content: 'Hi,\n\nThank you for the confirmation. I was wondering if it would be possible to get an early check-in around 11 AM? My flight arrives at 9:30 AM.\n\nAlso, do you have any gluten-free options for breakfast?\n\nThanks,\nEmily',
-      timestamp: new Date('2026-03-14T14:22:00'),
+      content: 'Hi,\n\nThank you for the confirmation. I was wondering if it would be possible to get an early check-in around 11 AM? My flight arrives at 9:30.\n\nAlso, could you have the room stocked with still water and some fresh fruit? I have meetings all afternoon and won\'t have time to step out.\n\nThanks,\nEmily',
+      timestamp: new Date('2026-03-12T14:22:00'),
       channel: 'Email',
       status: 'delivered',
     },
@@ -534,14 +532,108 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm1-e3',
       threadId: '1',
       sender: 'staff',
-      content: 'Hi Emily,\n\nWe\'ll do our best to accommodate early check-in at 11 AM — this is subject to availability, but we\'ve noted your preference.\n\nRegarding breakfast, yes! Our buffet includes a dedicated gluten-free section with fresh fruit, yogurt, eggs, and gluten-free bread and pastries.\n\nLooking forward to welcoming you!\n\nBest,\nTheresa Webb\nGuest Services',
-      timestamp: new Date('2026-03-14T16:05:00'),
+      content: 'Hi Emily,\n\nWe\'ll do our best to accommodate early check-in at 11 AM — we\'ve flagged your room for priority cleaning. As a Diamond Elite member, early check-in is complimentary when available.\n\nWe\'ll have still water (Acqua Panna) and a fresh fruit plate ready in the room.\n\nSafe travels and see you Saturday!\n\nBest,\nTheresa Webb\nGuest Services',
+      timestamp: new Date('2026-03-13T08:45:00'),
       channel: 'Email',
       status: 'delivered',
     },
+    // SMS: Mar 15-16 mid-stay
+    {
+      id: 'm1',
+      threadId: '1',
+      sender: 'guest',
+      content: 'Checked in! Room is great. Quick q — any restaurant recs within walking distance for a business dinner tonight? Party of 3.',
+      timestamp: new Date('2026-03-15T16:10:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm2',
+      threadId: '1',
+      sender: 'ai',
+      content: "Here are some nearby restaurant recommendations: Ithaca Ale House, Komonz Grill, MIX, Red's Place, and Chili's Grill & Bar. The hotel also recommends Il Ristorante Alga, Coltivare, Moosewood Restaurant, and Gola Osteria. Let me know if you need more assistance!",
+      timestamp: new Date('2026-03-15T16:12:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm3',
+      threadId: '1',
+      sender: 'guest',
+      content: 'Can you make a reservation at Coltivare for 7:30pm tonight? 3 people, Emily Smith.',
+      timestamp: new Date('2026-03-15T16:20:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm4',
+      threadId: '1',
+      sender: 'staff',
+      content: 'Done! Coltivare, tonight at 7:30 PM, party of 3 under Emily Smith. It\'s about a 5-minute walk from the hotel — turn left out the lobby and it\'s on the corner of State Street.',
+      timestamp: new Date('2026-03-15T16:30:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm1-s5',
+      threadId: '1',
+      sender: 'guest',
+      content: 'Hi, can I get room service? A club sandwich and a sparkling water to room 153.',
+      timestamp: new Date('2026-03-16T09:45:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm1-s6',
+      threadId: '1',
+      sender: 'ai',
+      content: 'Absolutely! Club sandwich and sparkling water coming to room 153. Estimated delivery: 20-25 minutes. Anything else?',
+      timestamp: new Date('2026-03-16T09:47:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm1-s7',
+      threadId: '1',
+      sender: 'guest',
+      content: 'That\'s it, thanks!',
+      timestamp: new Date('2026-03-16T10:04:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
   ],
-  // Miguel's conversation — multi-channel (SMS + WhatsApp + Email)
+
+  // ===== MIGUEL (thread 2) — In-house guest, Email + SMS + WhatsApp =====
   '2': [
+    // Email: welcome email on arrival day
+    {
+      id: 'm2-e1',
+      threadId: '2',
+      sender: 'staff',
+      content: 'Dear Mr. Santana,\n\nWelcome to The Grand Ithaca Hotel! We hope you enjoy your stay in room 206.\n\nAs a reminder, our complimentary breakfast buffet is available daily from 6:30-10:30 AM in the Garden Room (2nd floor). Your room key grants you access.\n\nThis week\'s special events:\n• Sunday: Live jazz in the lobby lounge, 7-10 PM\n• Monday: Wine tasting at the rooftop bar, 6 PM ($45/person)\n• Wednesday: Chef\'s table dinner, 7:30 PM (reservation required)\n\nPlease reply if you\'d like us to reserve a spot for any of these.\n\nWarm regards,\nThe Grand Ithaca Hotel',
+      timestamp: new Date('2026-03-15T08:00:00'),
+      channel: 'Email',
+      status: 'delivered',
+    },
+    {
+      id: 'm2-e2',
+      threadId: '2',
+      sender: 'guest',
+      content: 'The wine tasting sounds great — can you put me down for 2 people on Monday?\n\nAlso, is there a dress code for the chef\'s table?\n\nThanks,\nMiguel',
+      timestamp: new Date('2026-03-15T12:30:00'),
+      channel: 'Email',
+      status: 'delivered',
+    },
+    {
+      id: 'm2-e3',
+      threadId: '2',
+      sender: 'staff',
+      content: 'Hi Miguel,\n\nYou\'re booked for the wine tasting — Monday at 6 PM, party of 2. Meet at the rooftop bar.\n\nFor the chef\'s table, it\'s smart casual. No shorts or flip-flops, but no need for a jacket. Would you like me to reserve Wednesday as well?\n\nBest,\nTheresa Webb',
+      timestamp: new Date('2026-03-15T13:00:00'),
+      channel: 'Email',
+      status: 'delivered',
+    },
+    // SMS: mid-stay immediate needs
     {
       id: 'm5',
       threadId: '2',
@@ -578,6 +670,7 @@ export const mockMessages: Record<string, Message[]> = {
       channel: 'SMS',
       status: 'delivered',
     },
+    // WhatsApp: late checkout request
     {
       id: 'm2-w1',
       threadId: '2',
@@ -591,7 +684,7 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm2-w2',
       threadId: '2',
       sender: 'staff',
-      content: 'Hi Miguel! Let me check availability for a late checkout on Tuesday. With an 8 PM flight, would 2 PM work? That gives you plenty of buffer.',
+      content: 'Hi Miguel! Let me check availability for a late checkout on Tuesday. With an 8 PM flight, would 2 PM work? That gives you plenty of buffer for the airport.',
       timestamp: new Date('2026-03-16T20:05:00'),
       channel: 'WhatsApp',
       status: 'delivered',
@@ -609,46 +702,95 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm2-w4',
       threadId: '2',
       sender: 'staff',
-      content: 'No charge — complimentary late checkout until 2 PM confirmed for Tuesday. Enjoy the rest of your stay!',
+      content: 'No charge — complimentary late checkout until 2 PM confirmed for Tuesday. Enjoy the rest of your stay! 🙌',
       timestamp: new Date('2026-03-16T20:15:00'),
       channel: 'WhatsApp',
       status: 'delivered',
     },
-    {
-      id: 'm2-e1',
-      threadId: '2',
-      sender: 'staff',
-      content: 'Dear Mr. Santana,\n\nWelcome to The Grand Ithaca Hotel! We hope you\'re enjoying your stay.\n\nAs a reminder, our complimentary breakfast buffet is available daily from 6:30-10:30 AM in the Garden Room (2nd floor). Your room key grants you access.\n\nThis week\'s special events:\n• Wednesday: Live jazz in the lobby lounge, 7-10 PM\n• Thursday: Wine tasting at the rooftop bar, 6 PM ($45/person)\n• Saturday: Chef\'s table dinner, 7:30 PM (reservation required)\n\nPlease reply if you\'d like us to reserve a spot for any of these.\n\nWarm regards,\nThe Grand Ithaca Hotel',
-      timestamp: new Date('2026-03-15T08:00:00'),
-      channel: 'Email',
-      status: 'delivered',
-    },
-    {
-      id: 'm2-e2',
-      threadId: '2',
-      sender: 'guest',
-      content: 'The wine tasting sounds great — can you put me down for 2 people on Thursday?\n\nAlso, is there a dress code for the chef\'s table?\n\nThanks,\nMiguel',
-      timestamp: new Date('2026-03-15T12:30:00'),
-      channel: 'Email',
-      status: 'delivered',
-    },
-    {
-      id: 'm2-e3',
-      threadId: '2',
-      sender: 'staff',
-      content: 'Hi Miguel,\n\nYou\'re booked for the wine tasting — Thursday at 6 PM, party of 2. Meet at the rooftop bar.\n\nFor the chef\'s table, it\'s smart casual. No shorts or flip-flops, but no need for a jacket. Would you like me to reserve Saturday as well?\n\nBest,\nTheresa Webb',
-      timestamp: new Date('2026-03-15T13:00:00'),
-      channel: 'Email',
-      status: 'delivered',
-    },
   ],
-  // Brooklyn's conversation — multi-channel (SMS + Booking.com)
+
+  // ===== BROOKLYN SIMMONS (thread 3) — OTA guest, Booking.com + WhatsApp + SMS =====
   '3': [
+    // Booking.com: pre-stay (Mar 10-11, before check-in Mar 14)
+    {
+      id: 'm3-b1',
+      threadId: '3',
+      sender: 'guest',
+      content: 'Hi, I booked through Booking.com (confirmation #BK-9847263). Can I request a room on a higher floor? I\'m a light sleeper and prefer to be away from street noise.',
+      timestamp: new Date('2026-03-10T14:00:00'),
+      channel: 'Booking.com',
+      status: 'delivered',
+    },
+    {
+      id: 'm3-b2',
+      threadId: '3',
+      sender: 'staff',
+      content: 'Hi Brooklyn! We\'ve noted your preference for a higher floor. We\'ll do our best to accommodate — your current assignment is room 130, which is on the quiet side of the building. I\'ll flag this for a higher floor if one opens up before your arrival.',
+      timestamp: new Date('2026-03-10T14:20:00'),
+      channel: 'Booking.com',
+      status: 'delivered',
+    },
+    {
+      id: 'm3-b3',
+      threadId: '3',
+      sender: 'guest',
+      content: 'That works, thanks! Also — does the room have a fridge? I have medication that needs refrigeration.',
+      timestamp: new Date('2026-03-11T09:30:00'),
+      channel: 'Booking.com',
+      status: 'delivered',
+    },
+    {
+      id: 'm3-b4',
+      threadId: '3',
+      sender: 'staff',
+      content: 'Yes, all our rooms include a mini-fridge. We\'ll make sure it\'s cleared and ready for your medication when you arrive. Is there anything else we can prepare?',
+      timestamp: new Date('2026-03-11T09:45:00'),
+      channel: 'Booking.com',
+      status: 'delivered',
+    },
+    // WhatsApp: day-of arrival questions (Mar 14)
+    {
+      id: 'm3-w1',
+      threadId: '3',
+      sender: 'guest',
+      content: 'Hi! I\'m arriving around 3pm today. Will the room be ready by then? 🙏',
+      timestamp: new Date('2026-03-14T11:00:00'),
+      channel: 'WhatsApp',
+      status: 'delivered',
+    },
+    {
+      id: 'm3-w2',
+      threadId: '3',
+      sender: 'ai',
+      content: 'Hi Brooklyn! Check-in starts at 3 PM so your room should be ready. If you arrive a few minutes early, we\'re happy to store your luggage at the front desk while you wait.',
+      timestamp: new Date('2026-03-14T11:02:00'),
+      channel: 'WhatsApp',
+      status: 'delivered',
+    },
+    {
+      id: 'm3-w3',
+      threadId: '3',
+      sender: 'guest',
+      content: 'Perfect, thanks! And just confirming — the fridge will be cleared for my medication right?',
+      timestamp: new Date('2026-03-14T11:05:00'),
+      channel: 'WhatsApp',
+      status: 'delivered',
+    },
+    {
+      id: 'm3-w4',
+      threadId: '3',
+      sender: 'staff',
+      content: 'Confirmed! The mini-fridge in room 130 is cleared and set to the right temperature for medication storage. See you at 3! 👍',
+      timestamp: new Date('2026-03-14T11:10:00'),
+      channel: 'WhatsApp',
+      status: 'delivered',
+    },
+    // SMS: during stay, checkout question (Mar 16)
     {
       id: 'm6',
       threadId: '3',
       sender: 'guest',
-      content: 'What are the check-out procedures?',
+      content: 'What are the check-out procedures? Can I do it from the room or do I need to go to the desk?',
       timestamp: new Date('2026-03-16T09:30:00'),
       channel: 'SMS',
       status: 'delivered',
@@ -657,7 +799,7 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm7',
       threadId: '3',
       sender: 'ai',
-      content: 'Check-out time is 11:00 AM. You can check out at the front desk or use express check-out through the TV in your room.',
+      content: 'Check-out time is 11:00 AM. You can check out at the front desk, use express check-out through the TV in your room, or simply leave your key in the room and we\'ll email your receipt.',
       timestamp: new Date('2026-03-16T09:32:00'),
       channel: 'SMS',
       status: 'delivered',
@@ -671,62 +813,9 @@ export const mockMessages: Record<string, Message[]> = {
       channel: 'SMS',
       status: 'delivered',
     },
-    {
-      id: 'm3-b1',
-      threadId: '3',
-      sender: 'guest',
-      content: 'Hi, I booked through Booking.com (confirmation #BK-9847263). Can I request a room on a higher floor?',
-      timestamp: new Date('2026-03-15T14:00:00'),
-      channel: 'Booking.com',
-      status: 'delivered',
-    },
-    {
-      id: 'm3-b2',
-      threadId: '3',
-      sender: 'staff',
-      content: 'Hi Brooklyn! We\'ve noted your preference for a higher floor. We\'ll do our best to accommodate — your current assignment is room 130 on the 13th floor.',
-      timestamp: new Date('2026-03-15T14:20:00'),
-      channel: 'Booking.com',
-      status: 'delivered',
-    },
-    {
-      id: 'm3-w1',
-      threadId: '3',
-      sender: 'guest',
-      content: 'Hi! I\'m arriving around 3pm today. Is the room going to be ready by then?',
-      timestamp: new Date('2026-03-16T11:00:00'),
-      channel: 'WhatsApp',
-      status: 'delivered',
-    },
-    {
-      id: 'm3-w2',
-      threadId: '3',
-      sender: 'ai',
-      content: 'Hi Brooklyn! Check-in starts at 3 PM so your room should be ready. If you arrive early, we\'re happy to store your luggage at the front desk.',
-      timestamp: new Date('2026-03-16T11:02:00'),
-      channel: 'WhatsApp',
-      status: 'delivered',
-    },
-    {
-      id: 'm3-w3',
-      threadId: '3',
-      sender: 'guest',
-      content: 'Great, and can I get a fridge in the room? I have medication that needs to stay cold',
-      timestamp: new Date('2026-03-16T11:05:00'),
-      channel: 'WhatsApp',
-      status: 'delivered',
-    },
-    {
-      id: 'm3-w4',
-      threadId: '3',
-      sender: 'staff',
-      content: 'Absolutely — we\'ll make sure room 130 has a mini-fridge ready and cleared out for your medication before you arrive.',
-      timestamp: new Date('2026-03-16T11:10:00'),
-      channel: 'WhatsApp',
-      status: 'delivered',
-    },
   ],
-  // Marco's conversation
+
+  // ===== MARCO (thread 4) — Simple SMS =====
   '4': [
     {
       id: 'm9',
@@ -738,14 +827,15 @@ export const mockMessages: Record<string, Message[]> = {
       status: 'delivered',
     },
   ],
-  // Kristin's conversation
+
+  // ===== KRISTIN (thread 5) — Simple SMS =====
   '5': [
     {
       id: 'm10',
       threadId: '5',
       sender: 'guest',
       content: 'Is there a gym in the hotel?',
-      timestamp: new Date('2026-03-16T09:45:00'),
+      timestamp: new Date('2026-03-15T09:45:00'),
       channel: 'SMS',
       status: 'delivered',
     },
@@ -753,8 +843,8 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm11',
       threadId: '5',
       sender: 'ai',
-      content: 'Yes! Our fitness center is on the 2nd floor and is open 24/7 for all guests.',
-      timestamp: new Date('2026-03-16T09:46:00'),
+      content: 'Yes! Our fitness center is on the 2nd floor and is open 24/7 for all guests. Towels and water are provided.',
+      timestamp: new Date('2026-03-15T09:46:00'),
       channel: 'SMS',
       status: 'delivered',
     },
@@ -763,19 +853,58 @@ export const mockMessages: Record<string, Message[]> = {
       threadId: '5',
       sender: 'guest',
       content: "Great. That's super helpful.",
-      timestamp: new Date('2026-03-16T10:04:00'),
+      timestamp: new Date('2026-03-15T09:50:00'),
       channel: 'SMS',
       status: 'delivered',
     },
   ],
-  // Liam's conversation — multi-channel (SMS + Expedia)
+
+  // ===== LIAM JOHNSON (thread 6) — OTA guest, Expedia + SMS =====
   '6': [
+    // Expedia: pre-stay reservation modification (Mar 12-13)
+    {
+      id: 'm6-x1',
+      threadId: '6',
+      sender: 'guest',
+      content: 'Hello, I booked via Expedia (itinerary #EXP-7291034). I need to modify my reservation to add one more night — arriving the 15th now instead of the 16th. Is that possible?',
+      timestamp: new Date('2026-03-12T11:00:00'),
+      channel: 'Expedia',
+      status: 'delivered',
+    },
+    {
+      id: 'm6-x2',
+      threadId: '6',
+      sender: 'staff',
+      content: 'Hi Liam! Since you booked through Expedia, the modification would need to go through them directly. However, I can confirm we have availability for March 15th at the same rate. Go ahead and update on Expedia and it\'ll sync on our end.',
+      timestamp: new Date('2026-03-12T11:15:00'),
+      channel: 'Expedia',
+      status: 'delivered',
+    },
+    {
+      id: 'm6-x3',
+      threadId: '6',
+      sender: 'guest',
+      content: 'Done, updated it. One more question — what are the parking options? I\'m driving up from Philly.',
+      timestamp: new Date('2026-03-13T09:00:00'),
+      channel: 'Expedia',
+      status: 'delivered',
+    },
+    {
+      id: 'm6-x4',
+      threadId: '6',
+      sender: 'staff',
+      content: 'Great! For parking we have self-parking at $25/day and valet at $35/day, both available 24/7. The self-parking garage entrance is on Oak Street, right behind the hotel.',
+      timestamp: new Date('2026-03-13T09:20:00'),
+      channel: 'Expedia',
+      status: 'delivered',
+    },
+    // SMS: day-of check-in questions (Mar 16)
     {
       id: 'm13',
       threadId: '6',
       sender: 'guest',
-      content: 'Can you explain the parking options?',
-      timestamp: new Date('2026-03-16T09:20:00'),
+      content: 'Hey, I\'m about an hour away. Just confirming — the self-parking garage is on Oak Street right?',
+      timestamp: new Date('2026-03-16T14:20:00'),
       channel: 'SMS',
       status: 'delivered',
     },
@@ -783,8 +912,8 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm14',
       threadId: '6',
       sender: 'ai',
-      content: 'We offer valet parking for $35/day and self-parking for $25/day. Both are available 24/7.',
-      timestamp: new Date('2026-03-16T09:22:00'),
+      content: 'Yes! Self-parking garage entrance is on Oak Street, right behind the hotel. $25/day. Your room is 318 — check-in at the front desk whenever you arrive.',
+      timestamp: new Date('2026-03-16T14:22:00'),
       channel: 'SMS',
       status: 'delivered',
     },
@@ -793,46 +922,20 @@ export const mockMessages: Record<string, Message[]> = {
       threadId: '6',
       sender: 'guest',
       content: 'Awesome! That really clears things up.',
-      timestamp: new Date('2026-03-16T10:04:00'),
+      timestamp: new Date('2026-03-16T14:25:00'),
       channel: 'SMS',
       status: 'delivered',
     },
-    {
-      id: 'm6-x1',
-      threadId: '6',
-      sender: 'guest',
-      content: 'Hello, I booked via Expedia (itinerary #EXP-7291034). I need to modify my reservation to add one more night. Is that possible?',
-      timestamp: new Date('2026-03-15T11:00:00'),
-      channel: 'Expedia',
-      status: 'delivered',
-    },
-    {
-      id: 'm6-x2',
-      threadId: '6',
-      sender: 'staff',
-      content: 'Hi Liam! Since you booked through Expedia, the modification would need to go through them directly. However, I can confirm we have availability for an additional night at the same rate.',
-      timestamp: new Date('2026-03-15T11:15:00'),
-      channel: 'Expedia',
-      status: 'delivered',
-    },
-    {
-      id: 'm6-x3',
-      threadId: '6',
-      sender: 'guest',
-      content: 'OK great, I\'ll update it on Expedia then. Thanks for confirming availability!',
-      timestamp: new Date('2026-03-15T11:30:00'),
-      channel: 'Expedia',
-      status: 'delivered',
-    },
   ],
-  // Olivia's conversation
+
+  // ===== OLIVIA (thread 7) — Simple SMS =====
   '7': [
     {
       id: 'm16',
       threadId: '7',
       sender: 'guest',
       content: 'What time is breakfast served?',
-      timestamp: new Date('2026-03-16T09:00:00'),
+      timestamp: new Date('2026-03-15T07:00:00'),
       channel: 'SMS',
       status: 'delivered',
     },
@@ -840,8 +943,8 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm17',
       threadId: '7',
       sender: 'ai',
-      content: 'Our complimentary breakfast buffet is served daily from 6:30 AM to 10:30 AM in the main dining room.',
-      timestamp: new Date('2026-03-16T09:02:00'),
+      content: 'Our complimentary breakfast buffet is served daily from 6:30 AM to 10:30 AM in the Garden Room on the 2nd floor.',
+      timestamp: new Date('2026-03-15T07:02:00'),
       channel: 'SMS',
       status: 'delivered',
     },
@@ -850,19 +953,20 @@ export const mockMessages: Record<string, Message[]> = {
       threadId: '7',
       sender: 'guest',
       content: 'Fantastic! This is exactly what I needed.',
-      timestamp: new Date('2026-03-16T10:04:00'),
+      timestamp: new Date('2026-03-15T07:05:00'),
       channel: 'SMS',
       status: 'delivered',
     },
   ],
-  // Noah's conversation
+
+  // ===== NOAH (thread 8) — Simple SMS =====
   '8': [
     {
       id: 'm19',
       threadId: '8',
       sender: 'guest',
-      content: 'Do you have any recommendations for local attractions?',
-      timestamp: new Date('2026-03-16T08:45:00'),
+      content: 'Do you have any recommendations for local attractions? We have kids.',
+      timestamp: new Date('2026-03-14T08:45:00'),
       channel: 'SMS',
       status: 'delivered',
     },
@@ -870,8 +974,8 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm20',
       threadId: '8',
       sender: 'ai',
-      content: "Absolutely! Within walking distance you have the waterfront, several museums, and historic downtown. I can also arrange tours if you're interested.",
-      timestamp: new Date('2026-03-16T08:47:00'),
+      content: 'Absolutely! For families: the Sciencenter is great for kids (10 min drive), Ithaca Falls is a quick walk, and the Farmer\'s Market is on Saturdays. We also have a pool and game room here at the hotel.',
+      timestamp: new Date('2026-03-14T08:47:00'),
       channel: 'SMS',
       status: 'delivered',
     },
@@ -880,18 +984,19 @@ export const mockMessages: Record<string, Message[]> = {
       threadId: '8',
       sender: 'guest',
       content: 'Perfect! This information is incredibly useful.',
-      timestamp: new Date('2026-03-16T10:04:00'),
+      timestamp: new Date('2026-03-14T08:50:00'),
       channel: 'SMS',
       status: 'delivered',
     },
   ],
-  // Emma's conversation
+
+  // ===== EMMA (thread 9) — Simple SMS =====
   '9': [
     {
       id: 'm22',
       threadId: '9',
       sender: 'guest',
-      content: 'Can I request a late checkout?',
+      content: 'Can I request a late checkout tomorrow?',
       timestamp: new Date('2026-03-16T08:30:00'),
       channel: 'SMS',
       status: 'delivered',
@@ -900,7 +1005,7 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm23',
       threadId: '9',
       sender: 'ai',
-      content: 'Yes, we can accommodate a late checkout until 2:00 PM for an additional $50, subject to availability. Would you like me to arrange that for you?',
+      content: 'I\'d be happy to help! We can offer a late checkout until 1 PM tomorrow at no extra charge, or until 3 PM for $50. Which would you prefer?',
       timestamp: new Date('2026-03-16T08:32:00'),
       channel: 'SMS',
       status: 'delivered',
@@ -909,25 +1014,36 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm24',
       threadId: '9',
       sender: 'guest',
-      content: 'Excellent! I appreciate your help with this.',
-      timestamp: new Date('2026-03-16T10:04:00'),
+      content: '1pm is perfect, thank you!',
+      timestamp: new Date('2026-03-16T08:35:00'),
       channel: 'SMS',
       status: 'delivered',
     },
   ],
-  // Priya's conversation
+
+  // ===== PRIYA (thread 17) — Simple SMS =====
   '17': [
     {
       id: 'm62',
       threadId: '17',
       sender: 'guest',
-      content: 'Hi, could you arrange a taxi to the airport for tomorrow at 6 AM?',
+      content: 'Hi, could you arrange a taxi to the airport for tomorrow at 6 AM? Terminal 2.',
       timestamp: new Date('2026-03-16T09:15:00'),
       channel: 'SMS',
       status: 'delivered',
     },
+    {
+      id: 'm62-r',
+      threadId: '17',
+      sender: 'staff',
+      content: 'Of course! I\'ve booked a car for 6:00 AM pickup at the main entrance, destination airport Terminal 2. The driver will text you when they arrive. Safe travels!',
+      timestamp: new Date('2026-03-16T09:20:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
   ],
-  // Yuki's conversation
+
+  // ===== YUKI (thread 18) — Simple SMS =====
   '18': [
     {
       id: 'm63',
@@ -938,90 +1054,56 @@ export const mockMessages: Record<string, Message[]> = {
       channel: 'SMS',
       status: 'delivered',
     },
+    {
+      id: 'm63-r',
+      threadId: '18',
+      sender: 'ai',
+      content: 'Yes! Miyake is excellent — authentic Japanese cuisine about a 10-minute walk from the hotel on Aurora Street. For sushi specifically, Ithaca Sushi is also nearby. Would you like me to make a reservation?',
+      timestamp: new Date('2026-03-16T08:52:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
   ],
-  // Fatima's conversation — multi-channel (SMS + Email x2 subjects + WhatsApp)
+
+  // ===== FATIMA AL-HASSAN (thread 19) — Diamond Elite VIP, TWO stays, full multi-channel =====
   '19': [
-    {
-      id: 'm64',
-      threadId: '19',
-      sender: 'guest',
-      content: 'I just arrived and noticed my suite has been upgraded!',
-      timestamp: new Date('2026-03-16T09:40:00'),
-      channel: 'SMS',
-      status: 'delivered',
-    },
-    {
-      id: 'm65',
-      threadId: '19',
-      sender: 'staff',
-      content: 'Welcome back, Ms. Al-Hassan! As a Diamond Elite member, we upgraded you to the Presidential Suite. We hope you enjoy your stay!',
-      timestamp: new Date('2026-03-16T09:42:00'),
-      channel: 'SMS',
-      status: 'delivered',
-    },
-    {
-      id: 'm66',
-      threadId: '19',
-      sender: 'guest',
-      content: 'Thank you for the upgrade, the suite is beautiful!',
-      timestamp: new Date('2026-03-16T10:00:00'),
-      channel: 'SMS',
-      status: 'delivered',
-    },
-    // Email thread 1: Welcome / pre-arrival
+    // ---- FIRST STAY: Mar 7-14 ----
+    // Email: welcome back (Mar 7)
     {
       id: 'm19-e1',
       threadId: '19',
       sender: 'staff',
-      content: 'Dear Ms. Al-Hassan,\n\nWelcome back! We see you are a returning Diamond Elite guest and we are delighted to host you again.\n\nAs a valued member, you have been upgraded to our Presidential Suite. Your preferred amenities (extra pillows, sparkling water, and fresh orchids) have been arranged.\n\nPlease don\'t hesitate to reach out if there is anything else we can prepare before your arrival.\n\nWith warm regards,\nThe Grand Ithaca Hotel',
-      timestamp: new Date('2026-03-15T10:00:00'),
+      content: 'Dear Ms. Al-Hassan,\n\nWelcome back to The Grand Ithaca Hotel! We are delighted to host you again.\n\nAs a Diamond Elite member, you have been upgraded to our Executive Suite (room 602). Your preferred amenities (extra pillows, sparkling water, and fresh orchids) have been arranged.\n\nYour stay details:\n• Check-in: March 7, 2026\n• Check-out: March 14, 2026\n• Room: Executive Suite 602\n\nPlease don\'t hesitate to reach out if there is anything else we can prepare.\n\nWith warm regards,\nThe Grand Ithaca Hotel',
+      timestamp: new Date('2026-03-07T08:00:00'),
       channel: 'Email',
       status: 'delivered',
     },
+    // SMS: room upgrade acknowledgment (Mar 7)
     {
-      id: 'm19-e2',
+      id: 'm19-s1',
       threadId: '19',
       sender: 'guest',
-      content: 'Thank you so much for remembering my preferences! That is wonderful.\n\nOne additional request — could you arrange a car service from the airport? My flight arrives at 8:15 AM on the 16th (Delta DL 1847).\n\nBest,\nFatima',
-      timestamp: new Date('2026-03-15T11:30:00'),
-      channel: 'Email',
+      content: 'Just checked in. The suite is gorgeous, thank you for the upgrade!',
+      timestamp: new Date('2026-03-07T15:30:00'),
+      channel: 'SMS',
       status: 'delivered',
     },
     {
-      id: 'm19-e3',
+      id: 'm19-s2',
       threadId: '19',
       sender: 'staff',
-      content: 'Absolutely, Ms. Al-Hassan!\n\nA black car will be waiting at the arrivals terminal for Delta DL 1847. The driver will have a sign with your name. Estimated drive to the hotel is 25 minutes.\n\nSafe travels!\n\nTheresa Webb\nGuest Services',
-      timestamp: new Date('2026-03-15T12:15:00'),
-      channel: 'Email',
+      content: 'So glad you like it, Ms. Al-Hassan! We remembered you enjoy the view from the 6th floor. Let us know if you need anything at all.',
+      timestamp: new Date('2026-03-07T15:35:00'),
+      channel: 'SMS',
       status: 'delivered',
     },
-    // Email thread 2: Dinner reservation
-    {
-      id: 'm19-e4',
-      threadId: '19',
-      sender: 'guest',
-      content: 'Hi,\n\nI would like to make a dinner reservation at Il Ristorante Alga for March 17th at 7:30 PM, party of 4. Could you help arrange this?\n\nAlso, one guest has a severe nut allergy — please let the kitchen know.\n\nThank you,\nFatima Al-Hassan',
-      timestamp: new Date('2026-03-16T11:00:00'),
-      channel: 'Email',
-      status: 'delivered',
-    },
-    {
-      id: 'm19-e5',
-      threadId: '19',
-      sender: 'staff',
-      content: 'Hi Fatima,\n\nYour reservation at Il Ristorante Alga is confirmed:\n\n• Date: March 17, 2026\n• Time: 7:30 PM\n• Party size: 4\n• Note: Severe nut allergy communicated to the kitchen\n\nThey have reserved the corner table by the window for your party. Enjoy!\n\nBest,\nTheresa Webb',
-      timestamp: new Date('2026-03-16T11:45:00'),
-      channel: 'Email',
-      status: 'delivered',
-    },
-    // WhatsApp
+    // WhatsApp: pool question (Mar 10)
     {
       id: 'm19-w1',
       threadId: '19',
       sender: 'guest',
-      content: 'Quick question — is the hotel pool heated? Thinking of going for a swim this evening',
-      timestamp: new Date('2026-03-16T15:30:00'),
+      content: 'Is the pool heated? Thinking of a swim before my morning meetings 🏊‍♀️',
+      timestamp: new Date('2026-03-10T06:30:00'),
       channel: 'WhatsApp',
       status: 'delivered',
     },
@@ -1029,25 +1111,133 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm19-w2',
       threadId: '19',
       sender: 'ai',
-      content: 'Yes, our pool is heated to 82°F year-round! It\'s open until 10 PM tonight. Towels are provided poolside.',
+      content: 'Yes! The pool is heated to 82°F year-round and opens at 6 AM. Towels are provided poolside. Enjoy your swim!',
+      timestamp: new Date('2026-03-10T06:32:00'),
+      channel: 'WhatsApp',
+      status: 'delivered',
+    },
+    // Email: checkout follow-up, thank you (Mar 14)
+    {
+      id: 'm19-e2',
+      threadId: '19',
+      sender: 'staff',
+      content: 'Dear Ms. Al-Hassan,\n\nThank you for staying with us this past week. We hope you enjoyed your time at The Grand Ithaca.\n\nYour folio has been emailed separately. As a Diamond Elite member, your loyalty points for this stay (4,200 pts) will be credited within 48 hours.\n\nWe understand you\'ll be returning tomorrow for another stay — we\'re already preparing your suite!\n\nWarm regards,\nThe Grand Ithaca Hotel',
+      timestamp: new Date('2026-03-14T11:00:00'),
+      channel: 'Email',
+      status: 'delivered',
+    },
+    // ---- BETWEEN STAYS: Mar 14-15 ----
+    // Email: welcome back again, car service arrangement
+    {
+      id: 'm19-e3',
+      threadId: '19',
+      sender: 'guest',
+      content: 'Thank you for the wonderful first week! Looking forward to coming back tomorrow.\n\nCould you arrange a car service from the airport again? My flight arrives at 10:45 AM on the 15th (Emirates EK 203).\n\nAlso, would it be possible to get the Presidential Suite this time? I\'ll be hosting a small dinner on Sunday evening.\n\nBest,\nFatima',
+      timestamp: new Date('2026-03-14T14:00:00'),
+      channel: 'Email',
+      status: 'delivered',
+    },
+    {
+      id: 'm19-e4',
+      threadId: '19',
+      sender: 'staff',
+      content: 'Dear Ms. Al-Hassan,\n\nAbsolutely! Here\'s what we\'ve arranged for your return:\n\n• Car service: Black car at arrivals for Emirates EK 203 (10:45 AM, March 15). Driver will have a sign.\n• Room: Presidential Suite confirmed for March 15-20\n• Same amenities as before (extra pillows, sparkling water, orchids)\n\nFor your Sunday dinner, the Presidential Suite has a dining area that seats 8. Shall I arrange catering from our kitchen, or would you prefer a restaurant reservation?\n\nSafe travels!\n\nTheresa Webb\nGuest Services',
+      timestamp: new Date('2026-03-14T15:30:00'),
+      channel: 'Email',
+      status: 'delivered',
+    },
+    // ---- SECOND STAY: Mar 15-20 ----
+    // SMS: suite upgrade reaction (Mar 15)
+    {
+      id: 'm64',
+      threadId: '19',
+      sender: 'guest',
+      content: 'I just arrived and the Presidential Suite is incredible! Even better than the Executive. Thank you!',
+      timestamp: new Date('2026-03-15T12:40:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm65',
+      threadId: '19',
+      sender: 'staff',
+      content: 'Welcome back, Ms. Al-Hassan! We\'re so pleased you love it. The views from the Presidential are our best in the house. Let me know if I can help with anything for your Sunday dinner.',
+      timestamp: new Date('2026-03-15T12:45:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    // Email: dinner reservation at Il Ristorante Alga (Mar 16)
+    {
+      id: 'm19-e5',
+      threadId: '19',
+      sender: 'guest',
+      content: 'Hi,\n\nI\'ve decided to do the dinner at Il Ristorante Alga instead of in-suite. Could you reserve for March 17th at 7:30 PM, party of 4?\n\nOne guest has a severe nut allergy — please let the kitchen know.\n\nThank you,\nFatima Al-Hassan',
+      timestamp: new Date('2026-03-16T11:00:00'),
+      channel: 'Email',
+      status: 'delivered',
+    },
+    {
+      id: 'm19-e6',
+      threadId: '19',
+      sender: 'staff',
+      content: 'Hi Fatima,\n\nYour reservation at Il Ristorante Alga is confirmed:\n\n• Date: March 17, 2026\n• Time: 7:30 PM\n• Party size: 4\n• Note: Severe nut allergy communicated to the kitchen\n\nThey have reserved the corner table by the window for your party. It\'s a 5-minute walk from the hotel, or I can arrange a car.\n\nEnjoy!\n\nBest,\nTheresa Webb',
+      timestamp: new Date('2026-03-16T11:45:00'),
+      channel: 'Email',
+      status: 'delivered',
+    },
+    // WhatsApp: quick pool question again (Mar 16)
+    {
+      id: 'm19-w3',
+      threadId: '19',
+      sender: 'guest',
+      content: 'What time does the pool close tonight? Want to get a late swim in after dinner',
+      timestamp: new Date('2026-03-16T15:30:00'),
+      channel: 'WhatsApp',
+      status: 'delivered',
+    },
+    {
+      id: 'm19-w4',
+      threadId: '19',
+      sender: 'ai',
+      content: 'The pool is open until 10 PM tonight. Heated to 82°F as always! Towels are provided poolside.',
       timestamp: new Date('2026-03-16T15:32:00'),
       channel: 'WhatsApp',
       status: 'delivered',
     },
+    {
+      id: 'm66',
+      threadId: '19',
+      sender: 'guest',
+      content: 'Thank you for the upgrade, the suite is beautiful!',
+      timestamp: new Date('2026-03-16T16:00:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
   ],
-  // Lucia's conversation
+
+  // ===== LUCIA (thread 20) — Simple SMS =====
   '20': [
     {
       id: 'm67',
       threadId: '20',
       sender: 'guest',
-      content: 'Can someone bring extra blankets to room 226?',
+      content: 'Can someone bring extra blankets to room 226? It\'s pretty cold in here.',
       timestamp: new Date('2026-03-16T07:30:00'),
       channel: 'SMS',
       status: 'delivered',
     },
+    {
+      id: 'm67-r',
+      threadId: '20',
+      sender: 'ai',
+      content: 'Of course! I\'ll have housekeeping bring extra blankets to room 226 right away. Would you also like us to check the thermostat?',
+      timestamp: new Date('2026-03-16T07:32:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
   ],
-  // Hiroshi's conversation
+
+  // ===== HIROSHI (thread 21) — Simple SMS =====
   '21': [
     {
       id: 'm68',
@@ -1062,19 +1252,20 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm69',
       threadId: '21',
       sender: 'ai',
-      content: 'Our room service is available 24 hours. The full menu is in your room, or I can send you a digital copy.',
+      content: 'Yes! Our room service is available 24 hours. The full menu is in your room, or I can send you a digital copy. After midnight we have a slightly limited late-night menu.',
       timestamp: new Date('2026-03-15T23:46:00'),
       channel: 'SMS',
       status: 'delivered',
     },
   ],
-  // Ingrid's conversation
+
+  // ===== INGRID (thread 22) — Simple SMS =====
   '22': [
     {
       id: 'm70',
       threadId: '22',
       sender: 'guest',
-      content: 'Hi, I left my mobile key in the old room after I switched. Can I get a new one?',
+      content: 'Hi, I left my key card in the old room after I switched. Can I get a new one?',
       timestamp: new Date('2026-03-15T16:00:00'),
       channel: 'SMS',
       status: 'delivered',
@@ -1083,7 +1274,7 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm71',
       threadId: '22',
       sender: 'staff',
-      content: 'Of course! I\'ve reissued a mobile key for your new room 608. You can also pick up a physical key at the front desk.',
+      content: 'Of course! I\'ve reissued a mobile key for your new room 608. You can also pick up a physical key at the front desk anytime.',
       timestamp: new Date('2026-03-15T16:05:00'),
       channel: 'SMS',
       status: 'delivered',
@@ -1098,7 +1289,8 @@ export const mockMessages: Record<string, Message[]> = {
       status: 'delivered',
     },
   ],
-  // Thomas's conversation
+
+  // ===== THOMAS (thread 23) — Simple SMS =====
   '23': [
     {
       id: 'm73',
@@ -1109,8 +1301,18 @@ export const mockMessages: Record<string, Message[]> = {
       channel: 'SMS',
       status: 'delivered',
     },
+    {
+      id: 'm73-r',
+      threadId: '23',
+      sender: 'ai',
+      content: 'Yes! Our business center is on the lobby level, open 24/7. It has printers, scanners, and two workstations. Your room key gives you access.',
+      timestamp: new Date('2026-03-16T08:02:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
   ],
-  // Rachel's conversation
+
+  // ===== RACHEL (thread 24) — Simple SMS =====
   '24': [
     {
       id: 'm74',
@@ -1140,7 +1342,8 @@ export const mockMessages: Record<string, Message[]> = {
       status: 'delivered',
     },
   ],
-  // Chloe's conversation
+
+  // ===== CHLOE (thread 25) — Simple SMS =====
   '25': [
     {
       id: 'm77',
@@ -1151,8 +1354,18 @@ export const mockMessages: Record<string, Message[]> = {
       channel: 'SMS',
       status: 'delivered',
     },
+    {
+      id: 'm77-r',
+      threadId: '25',
+      sender: 'ai',
+      content: 'Yes! The Serenity Spa is open Sunday 9 AM to 6 PM. Would you like me to book a treatment?',
+      timestamp: new Date('2026-03-16T09:02:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
   ],
-  // Andre's conversation
+
+  // ===== ANDRE (thread 26) — Simple SMS =====
   '26': [
     {
       id: 'm78',
@@ -1167,7 +1380,7 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm79',
       threadId: '26',
       sender: 'staff',
-      content: 'Sorry about that! I\'m sending maintenance to check the AC unit right away.',
+      content: 'Sorry about that! I\'m sending maintenance to check the AC unit right away. Should be there within 10 minutes.',
       timestamp: new Date('2026-03-15T21:35:00'),
       channel: 'SMS',
       status: 'delivered',
@@ -1182,19 +1395,30 @@ export const mockMessages: Record<string, Message[]> = {
       status: 'delivered',
     },
   ],
-  // Maya's conversation
+
+  // ===== MAYA (thread 27) — Simple SMS =====
   '27': [
     {
       id: 'm81',
       threadId: '27',
       sender: 'guest',
-      content: 'We loved the complimentary breakfast. Thank you!',
+      content: 'We loved the complimentary breakfast. The pastries were amazing. Thank you!',
       timestamp: new Date('2026-03-16T10:30:00'),
       channel: 'SMS',
       status: 'delivered',
     },
+    {
+      id: 'm81-r',
+      threadId: '27',
+      sender: 'staff',
+      content: 'That makes our day! I\'ll pass your kind words to Chef Marco. Glad you\'re enjoying your stay!',
+      timestamp: new Date('2026-03-16T10:35:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
   ],
-  // Sarah Martinez - Archived
+
+  // ===== SARAH MARTINEZ (thread 10) — Archived =====
   '10': [
     {
       id: 'm25',
@@ -1224,7 +1448,8 @@ export const mockMessages: Record<string, Message[]> = {
       status: 'delivered',
     },
   ],
-  // James Chen - Archived
+
+  // ===== JAMES CHEN (thread 11) — Archived =====
   '11': [
     {
       id: 'm35',
@@ -1239,7 +1464,7 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm36',
       threadId: '11',
       sender: 'staff',
-      content: "I'm so sorry about that! Let me get our IT team to your room right away.",
+      content: "I'm so sorry about that! Let me get our IT team to your room right away. In the meantime, the lobby has a separate network that's running fine.",
       timestamp: new Date('2026-03-10T14:16:00'),
       channel: 'SMS',
       status: 'delivered',
@@ -1254,7 +1479,8 @@ export const mockMessages: Record<string, Message[]> = {
       status: 'delivered',
     },
   ],
-  // Maria Garcia - Archived
+
+  // ===== MARIA GARCIA (thread 12) — Archived =====
   '12': [
     {
       id: 'm43',
@@ -1269,7 +1495,7 @@ export const mockMessages: Record<string, Message[]> = {
       id: 'm44',
       threadId: '12',
       sender: 'ai',
-      content: 'Hi Maria! Yes, we can arrange a late checkout for you. Would 3:00 PM work for your schedule?',
+      content: 'Hi Maria! Yes, we can arrange a late checkout for you. Would 2:00 PM work for your schedule?',
       timestamp: new Date('2026-03-09T09:35:00'),
       channel: 'SMS',
       status: 'delivered',
@@ -1284,7 +1510,8 @@ export const mockMessages: Record<string, Message[]> = {
       status: 'delivered',
     },
   ],
-  // Robert Thompson - Archived
+
+  // ===== ROBERT THOMPSON (thread 13) — Archived =====
   '13': [
     {
       id: 'm51',
@@ -1338,8 +1565,18 @@ export const mockEmailThreads: EmailThread[] = [
     parentThreadId: '19',
   },
   {
+    id: 'email-19-between',
+    subject: 'Re: Returning March 15 — Car Service & Suite Request',
+    parentThreadId: '19',
+  },
+  {
     id: 'email-19-dinner',
     subject: 'Dinner Reservation — Il Ristorante Alga, March 17',
+    parentThreadId: '19',
+  },
+  {
+    id: 'email-19-checkout',
+    subject: 'Thank You for Staying With Us — See You Tomorrow!',
     parentThreadId: '19',
   },
 ];

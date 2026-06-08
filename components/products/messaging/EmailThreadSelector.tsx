@@ -3,18 +3,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { EmailThread } from '@/lib/products/messaging/types';
 import Icon from '@mdi/react';
-import { mdiChevronDown, mdiEmailOutline } from '@mdi/js';
+import { mdiChevronDown, mdiEmailOutline, mdiCircleSmall } from '@mdi/js';
 
 interface EmailThreadSelectorProps {
   emailThreads: EmailThread[];
   selectedEmailThreadId: string | null;
   onSelect: (emailThreadId: string | null) => void;
+  unreadThreadIds?: string[];
 }
 
 export function EmailThreadSelector({
   emailThreads,
   selectedEmailThreadId,
   onSelect,
+  unreadThreadIds = [],
 }: EmailThreadSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -35,17 +37,15 @@ export function EmailThreadSelector({
     <div ref={ref} className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors hover:bg-gray-50 max-w-[300px]"
-        style={{ borderColor: '#e5e5e5' }}
+        className="flex items-center gap-1.5 px-2 py-1 rounded transition-colors hover:bg-gray-100 max-w-[280px]"
       >
-        <Icon path={mdiEmailOutline} size={0.5} color="#EA4335" />
         <span
-          className="font-['Roboto',sans-serif] text-xs text-black truncate"
+          className="font-['Roboto',sans-serif] text-[11px] text-gray-500 truncate"
           title={selected.subject}
         >
-          {selected.subject}
+          Re: {selected.subject}
         </span>
-        <Icon path={mdiChevronDown} size={0.5} color="#999999" className="shrink-0" />
+        <Icon path={mdiChevronDown} size={0.45} color="#999999" className="shrink-0" />
       </button>
 
       {isOpen && (
@@ -57,6 +57,7 @@ export function EmailThreadSelector({
           </div>
           {emailThreads.map((thread) => {
             const isSelected = thread.id === (selectedEmailThreadId || emailThreads[0]?.id);
+            const hasUnread = unreadThreadIds.includes(thread.id);
             return (
               <button
                 key={thread.id}
@@ -64,7 +65,10 @@ export function EmailThreadSelector({
                 className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors"
                 style={{ backgroundColor: isSelected ? '#f5f8ff' : undefined }}
               >
-                <Icon path={mdiEmailOutline} size={0.5} color="#EA4335" className="shrink-0" />
+                {hasUnread && (
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: '#f16682' }} />
+                )}
+                {!hasUnread && <span className="w-2 shrink-0" />}
                 <span
                   className="font-['Roboto',sans-serif] text-xs truncate"
                   style={{ color: '#000000', fontWeight: isSelected ? 500 : 400 }}

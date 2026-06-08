@@ -65,7 +65,8 @@ export function MessageComposer({
   };
 
   const channelLabel = channel === 'all' ? 'SMS' : channel;
-  const dynamicPlaceholder = isEmail ? 'Compose email...' : `Type ${channelLabel} message...`;
+  const dynamicPlaceholder = isEmail ? 'Reply to this email...' : `Type ${channelLabel} message...`;
+  const sendLabel = isEmail ? 'Reply' : `Send via ${channelLabel}`;
   const isFullEmailMode = isEmail && emailComposerVariant === 'full';
 
   return (
@@ -188,7 +189,7 @@ export function MessageComposer({
                   cursor: disabled || !message.trim() ? 'not-allowed' : 'pointer',
                 }}
               >
-                Send via {channelLabel}
+                {sendLabel}
               </button>
 
               {/* Dropdown Button */}
