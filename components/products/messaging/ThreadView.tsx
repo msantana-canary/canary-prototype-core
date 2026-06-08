@@ -338,7 +338,7 @@ export function ThreadView({
       <div className="border-b border-gray-200 bg-white">
         <div className="px-6">
           <CanaryTabs
-            key={`${thread.id}-${selectedChannel}`}
+            key={thread.id}
             tabs={availableChannels.map((ch) => {
               const unreadCount = messages.filter(
                 (m) => m.channel === ch && m.sender === 'guest' &&
