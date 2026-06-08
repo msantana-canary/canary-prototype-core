@@ -67,3 +67,51 @@
 **Why:** SJ's overlay pivot (June 3) threatened to block progress. Team pushed back that power users can't work from a popup. Kevin unblocked by authorizing the team to act as "informed decision makers."
 **Rejected:** SJ's "ever-present bottom-left overlay" for messaging (too constraining for staff who live in messaging all day).
 **Open:** SJ may still push back. Strategy: bring engineers (Sudarshan + Matias) into next SJ conversation.
+
+## Compact Inbox Header over Full-Width SubNav
+**Decision:** Collapse Inbox/Archived/Blocked + filter + search + compose into a compact header above the thread list column, replacing the full-width SubNav bar.
+**Why:** Reclaims vertical space for the conversation area. Conversation/Broadcast moving down one level (Design Jam June 2). Vaporware and team-chat branches already proved the pattern.
+**Rejected:** Keeping the full-width SubNav (wastes vertical space). Prototype has a toggle to compare both.
+**Open:** None — both variants available for demo.
+
+## Inbox/Archived/Blocked as Dropdown (not pills)
+**Decision:** Use CanarySelect compact dropdown for mailbox switching instead of horizontal pills.
+**Why:** Miguel: dropdown is extensible for future custom inboxes beyond just Inbox/Archived/Blocked. Saves horizontal space.
+**Rejected:** Horizontal pills (team-chat branch pattern) — limited scalability.
+**Open:** None.
+
+## Search Collapsed to Icon Button
+**Decision:** Search bar hidden by default, revealed by icon click with two variants (slide-down, takeover).
+**Why:** Search bar sitting empty 95% of the time wastes space. Same click count (click icon → type = click field → type). Validated: messaging is async, not high-urgency scan-time-critical.
+**Rejected:** Always-visible search bar (wastes space for a fallback action).
+**Open:** None.
+
+## Channel Tabs as CanaryTabs Text Underline (not pills/dropdown/icon-tabs)
+**Decision:** Use CanaryTabs with variant="text" and size="compact" for channel switching, with badge counts for unreads.
+**Why:** Design Jam June 2 landed on "smaller tabs that look visually different from top-level tabs." Text underline fits. Badges show unread counts per channel without extra clicks.
+**Rejected:** Old pills variant (crowded at 5 channels). Dropdown (hides unread counts — flagged at Design Jam). Icon tabs (relies on icon recognition).
+**Open:** Component doesn't exist in Canary UI design system — needs formal proposal per Amanda's June 4 guidance.
+
+## SMS Default, Not "All Channels"
+**Decision:** Default to SMS when opening a thread. Do not show all channels mixed chronologically.
+**Why:** Miguel: "It doesn't make sense to arbitrarily bundle ALL messages from ALL channels together when there are clearly DIFFERENT use cases. They're HOTEL guests. THAT'S the delta. We're not a generic comms product." SMS is the primary in-stay channel. Mixing pre-stay OTA with mid-stay SMS creates noise.
+**Rejected:** "All" as default (Intercom pattern) — applies to generic helpdesk, not hotel communication where channels serve distinct journey phases.
+**Open:** Reinforced. Do not revisit without new hotel-specific evidence.
+
+## Email Thread Selector as CanarySelect (for now)
+**Decision:** Use CanarySelect dropdown for switching between email threads within a guest. Full-width, compact size, below Email tab.
+**Why:** Design system compliance. Long email subjects need full-width text, not chips. Works for 1-4 threads.
+**Rejected:** Custom dropdown (Miguel: "custom component is not how we do things"). Chips/pills (email subjects too long to truncate meaningfully, would be yet another custom component).
+**Open:** Competitive research shows NO product uses a dropdown for this. Intercom/Front use separate list items + sidebar "Recent Conversations." The dropdown works for the prototype but may not be the final Figma solution. Needs further design thinking.
+
+## Email Thread Filtering by emailThreadId
+**Decision:** Each email Message has an emailThreadId field linking it to a specific EmailThread. Filtering uses this ID, not array slicing.
+**Why:** Old slice(0,3)/slice(3) hack broke when Fatima grew to 4 email threads. Proper ID-based association is robust regardless of thread count.
+**Rejected:** Position-based slicing (fragile, hardcoded).
+**Open:** None.
+
+## Reply-Oriented Email Composer
+**Decision:** Email composer shows "Reply to this email..." placeholder and "Reply" button. No subject line field.
+**Why:** V1 is reply-only per PRD. Staff are responding to guest journey emails, not composing new ones. Matches PRD spec.
+**Rejected:** "Compose email..." / "Send via Email" (implies compose-new, not reply).
+**Open:** PRD says subject should auto-fill as read-only "Re: [last subject]" — not yet implemented. Consider adding when email thread selector is refined.
