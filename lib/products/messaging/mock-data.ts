@@ -40,6 +40,15 @@ export const mockThreads: Thread[] = [
     isUnread: false,
     status: 'inbox',
   },
+  {
+    id: '19',
+    contactNumber: '+15005550043',
+    linkedReservationIds: ['res-fatima-nov'],
+    lastMessage: 'Thank you for the upgrade, the suite is beautiful!',
+    lastMessageAt: new Date('2026-03-16T10:00:00'),
+    isUnread: false,
+    status: 'inbox',
+  },
   // Single auto-linked threads (existing guests — phone matches contactNumber)
   {
     id: '1',
@@ -139,15 +148,6 @@ export const mockThreads: Thread[] = [
     lastMessage: 'Is there a Japanese restaurant nearby you would recommend?',
     lastMessageAt: new Date('2026-03-16T08:50:00'),
     isUnread: true,
-    status: 'inbox',
-  },
-  {
-    id: '19',
-    contactNumber: '+15005550043',
-    linkedReservationIds: ['res-fatima-nov'],
-    lastMessage: 'Thank you for the upgrade, the suite is beautiful!',
-    lastMessageAt: new Date('2026-03-16T10:00:00'),
-    isUnread: false,
     status: 'inbox',
   },
   {
