@@ -5,7 +5,7 @@
  */
 
 export type MessageSender = 'guest' | 'staff' | 'ai';
-export type MessageChannel = 'SMS' | 'WhatsApp' | 'Email' | 'Booking.com' | 'Expedia' | 'Web';
+export type MessageChannel = 'SMS' | 'WhatsApp' | 'Email' | 'OTA' | 'Web';
 
 export interface EmailThread {
   id: string;

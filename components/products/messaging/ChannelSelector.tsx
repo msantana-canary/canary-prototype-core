@@ -25,8 +25,7 @@ const channelConfig: Record<MessageChannel, { label: string; shortLabel: string;
   SMS: { label: 'SMS', shortLabel: 'SMS', icon: mdiMessageTextOutline, color: '#2858c4' },
   WhatsApp: { label: 'WhatsApp', shortLabel: 'WA', icon: mdiWhatsapp, color: '#25D366' },
   Email: { label: 'Email', shortLabel: 'Email', icon: mdiEmailOutline, color: '#EA4335' },
-  'Booking.com': { label: 'Booking.com', shortLabel: 'BDC', icon: mdiBedOutline, color: '#003580' },
-  Expedia: { label: 'Expedia', shortLabel: 'Exp', icon: mdiAirplane, color: '#FBAD18' },
+  OTA: { label: 'OTA', shortLabel: 'OTA', icon: mdiBedOutline, color: '#003580' },
   Web: { label: 'Web', shortLabel: 'Web', icon: mdiWeb, color: '#666666' },
 };
 

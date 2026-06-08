@@ -84,7 +84,7 @@ export function ThreadView({
 
   const isGuestTyping = typingThreadId === thread.id;
 
-  const availableChannels: MessageChannel[] = ['SMS', 'WhatsApp', 'Email', 'Booking.com', 'Expedia'];
+  const availableChannels: MessageChannel[] = ['SMS', 'WhatsApp', 'Email', 'OTA'];
 
   const unreadChannels = useMemo(() => {
     const channelsWithGuestMsgs: MessageChannel[] = [];
@@ -335,7 +335,7 @@ export function ThreadView({
               ).length;
               return {
                 id: ch,
-                label: ch === 'Booking.com' ? 'OTA' : ch,
+                label: ch,
                 content: null,
                 badge: unreadCount > 0 ? unreadCount : undefined,
               };

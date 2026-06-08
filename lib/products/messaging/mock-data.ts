@@ -487,7 +487,7 @@ export const mockMessages: Record<string, Message[]> = {
       sender: 'guest',
       content: 'Hi, I just made a reservation through Expedia for this Friday-Sunday (itinerary #EXP-2938471). The listing said free cancellation — can you confirm the cutoff date?',
       timestamp: new Date('2026-03-16T11:00:00'),
-      channel: 'Expedia',
+      channel: 'OTA',
       status: 'delivered',
     },
     {
@@ -496,7 +496,7 @@ export const mockMessages: Record<string, Message[]> = {
       sender: 'staff',
       content: 'Welcome! I can see your Expedia reservation. Yes, free cancellation applies up to 48 hours before check-in (so by Wednesday March 19 at 3 PM). After that, the first night is non-refundable.',
       timestamp: new Date('2026-03-16T11:10:00'),
-      channel: 'Expedia',
+      channel: 'OTA',
       status: 'delivered',
     },
     {
@@ -505,7 +505,7 @@ export const mockMessages: Record<string, Message[]> = {
       sender: 'guest',
       content: 'Perfect, thanks. One more — is parking included or is that extra?',
       timestamp: new Date('2026-03-16T11:15:00'),
-      channel: 'Expedia',
+      channel: 'OTA',
       status: 'delivered',
     },
   ],
@@ -727,7 +727,7 @@ export const mockMessages: Record<string, Message[]> = {
       sender: 'guest',
       content: 'Hi, I booked through Booking.com (confirmation #BK-9847263). Can I request a room on a higher floor? I\'m a light sleeper and prefer to be away from street noise.',
       timestamp: new Date('2026-03-10T14:00:00'),
-      channel: 'Booking.com',
+      channel: 'OTA',
       status: 'delivered',
     },
     {
@@ -736,7 +736,7 @@ export const mockMessages: Record<string, Message[]> = {
       sender: 'staff',
       content: 'Hi Brooklyn! We\'ve noted your preference for a higher floor. We\'ll do our best to accommodate — your current assignment is room 130, which is on the quiet side of the building. I\'ll flag this for a higher floor if one opens up before your arrival.',
       timestamp: new Date('2026-03-10T14:20:00'),
-      channel: 'Booking.com',
+      channel: 'OTA',
       status: 'delivered',
     },
     {
@@ -745,7 +745,7 @@ export const mockMessages: Record<string, Message[]> = {
       sender: 'guest',
       content: 'That works, thanks! Also — does the room have a fridge? I have medication that needs refrigeration.',
       timestamp: new Date('2026-03-11T09:30:00'),
-      channel: 'Booking.com',
+      channel: 'OTA',
       status: 'delivered',
     },
     {
@@ -754,7 +754,7 @@ export const mockMessages: Record<string, Message[]> = {
       sender: 'staff',
       content: 'Yes, all our rooms include a mini-fridge. We\'ll make sure it\'s cleared and ready for your medication when you arrive. Is there anything else we can prepare?',
       timestamp: new Date('2026-03-11T09:45:00'),
-      channel: 'Booking.com',
+      channel: 'OTA',
       status: 'delivered',
     },
     // WhatsApp: day-of arrival questions (Mar 14)
@@ -877,7 +877,7 @@ export const mockMessages: Record<string, Message[]> = {
       sender: 'guest',
       content: 'Hello, I booked via Expedia (itinerary #EXP-7291034). I need to modify my reservation to add one more night — arriving the 15th now instead of the 16th. Is that possible?',
       timestamp: new Date('2026-03-12T11:00:00'),
-      channel: 'Expedia',
+      channel: 'OTA',
       status: 'delivered',
     },
     {
@@ -886,7 +886,7 @@ export const mockMessages: Record<string, Message[]> = {
       sender: 'staff',
       content: 'Hi Liam! Since you booked through Expedia, the modification would need to go through them directly. However, I can confirm we have availability for March 15th at the same rate. Go ahead and update on Expedia and it\'ll sync on our end.',
       timestamp: new Date('2026-03-12T11:15:00'),
-      channel: 'Expedia',
+      channel: 'OTA',
       status: 'delivered',
     },
     {
@@ -895,7 +895,7 @@ export const mockMessages: Record<string, Message[]> = {
       sender: 'guest',
       content: 'Done, updated it. One more question — what are the parking options? I\'m driving up from Philly.',
       timestamp: new Date('2026-03-13T09:00:00'),
-      channel: 'Expedia',
+      channel: 'OTA',
       status: 'delivered',
     },
     {
@@ -904,7 +904,7 @@ export const mockMessages: Record<string, Message[]> = {
       sender: 'staff',
       content: 'Great! For parking we have self-parking at $25/day and valet at $35/day, both available 24/7. The self-parking garage entrance is on Oak Street, right behind the hotel.',
       timestamp: new Date('2026-03-13T09:20:00'),
-      channel: 'Expedia',
+      channel: 'OTA',
       status: 'delivered',
     },
     // SMS: day-of check-in questions (Mar 16)
