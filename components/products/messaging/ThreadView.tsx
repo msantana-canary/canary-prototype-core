@@ -103,21 +103,10 @@ export function ThreadView({
     if (selectedChannel === 'all') return messages;
     let filtered = messages.filter((m) => m.channel === selectedChannel);
     if (selectedChannel === 'Email' && emailThreads.length > 1 && selectedEmailThreadId) {
-      const emailThread = emailThreads.find((et) => et.id === selectedEmailThreadId);
-      if (emailThread) {
-        const emailMsgs = messages.filter((m) => m.channel === 'Email');
-        const threadIndex = emailThreads
-          .filter((et) => et.parentThreadId === thread.id)
-          .findIndex((et) => et.id === selectedEmailThreadId);
-        if (threadIndex === 0) {
-          filtered = emailMsgs.slice(0, 3);
-        } else if (threadIndex === 1) {
-          filtered = emailMsgs.slice(3);
-        }
-      }
+      filtered = filtered.filter((m) => m.emailThreadId === selectedEmailThreadId);
     }
     return filtered;
-  }, [messages, selectedChannel, selectedEmailThreadId, emailThreads, thread.id]);
+  }, [messages, selectedChannel, selectedEmailThreadId, emailThreads]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -358,7 +347,7 @@ export function ThreadView({
           />
         </div>
         {selectedChannel === 'Email' && emailThreads.length > 1 && (
-          <div className="px-6 pb-2">
+          <div className="px-6 pt-2 pb-2">
             <EmailThreadSelector
               emailThreads={emailThreads}
               selectedEmailThreadId={selectedEmailThreadId}

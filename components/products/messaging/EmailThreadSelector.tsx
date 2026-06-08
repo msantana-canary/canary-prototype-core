@@ -25,7 +25,7 @@ export function EmailThreadSelector({
   const currentValue = selectedEmailThreadId || emailThreads[0]?.id;
 
   return (
-    <div className="max-w-[320px]">
+    <div className="w-full">
       <CanarySelect
         options={options}
         value={currentValue}

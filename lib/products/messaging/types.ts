@@ -28,6 +28,7 @@ export interface Message {
   timestamp: Date;
   channel?: MessageChannel;
   status?: MessageStatus;
+  emailThreadId?: string;
 }
 
 /**

@@ -361,6 +361,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'Dear Mr. Smith,\n\nThank you for your reservation at The Grand Ithaca Hotel. We\'re delighted to confirm your upcoming stay:\n\n• Check-in: June 14, 2026\n• Check-out: June 17, 2026\n• Room: Deluxe Suite\n• Rate: Gold Elite Member Rate\n\nAs a Gold Elite member, you\'ll enjoy complimentary breakfast and late checkout upon request.\n\nWe look forward to welcoming you.\n\nBest regards,\nThe Grand Ithaca Hotel',
       timestamp: new Date('2026-03-10T09:00:00'),
       channel: 'Email',
+      emailThreadId: 'email-15-confirm',
       status: 'delivered',
     },
     {
@@ -370,6 +371,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'Thanks for the confirmation. Quick question — it\'s our anniversary weekend so I wanted to see if there are any special packages? Wine, flowers, that sort of thing.\n\nAlso is the rooftop restaurant open for dinner on Saturdays?\n\nThanks,\nEmerson',
       timestamp: new Date('2026-03-10T14:00:00'),
       channel: 'Email',
+      emailThreadId: 'email-15-confirm',
       status: 'delivered',
     },
     {
@@ -379,6 +381,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'Hi Emerson,\n\nCongratulations! We have a few anniversary options:\n\n• Romance Package ($150) — champagne, chocolate-covered strawberries, rose petals, and a handwritten card\n• Premium Romance ($275) — everything above plus a couples spa credit and late checkout guaranteed\n\nOur rooftop restaurant is open Saturday 5-11 PM. I\'d recommend a reservation — Saturday evenings fill up fast.\n\nShall I add either package to your booking?\n\nBest,\nTheresa Webb\nGuest Services',
       timestamp: new Date('2026-03-10T15:30:00'),
       channel: 'Email',
+      emailThreadId: 'email-15-confirm',
       status: 'delivered',
     },
     // WhatsApp: mid-March — spa booking follow-up
@@ -517,6 +520,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'Dear Ms. Smith,\n\nThank you for choosing The Grand Ithaca Hotel for your upcoming stay. We are pleased to confirm your reservation:\n\n• Check-in: March 15, 2026\n• Check-out: March 18, 2026\n• Room Type: Deluxe King (Room 153)\n• Confirmation: #GIH-2026-4821\n\nAs a Diamond Elite member, you\'ll enjoy complimentary breakfast, room upgrade (subject to availability), and express check-in.\n\nPlease let us know if you have any special requests prior to your arrival.\n\nWarm regards,\nThe Grand Ithaca Hotel',
       timestamp: new Date('2026-03-12T09:00:00'),
       channel: 'Email',
+      emailThreadId: 'email-1-confirm',
       status: 'delivered',
     },
     {
@@ -526,6 +530,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'Hi,\n\nThank you for the confirmation. I was wondering if it would be possible to get an early check-in around 11 AM? My flight arrives at 9:30.\n\nAlso, could you have the room stocked with still water and some fresh fruit? I have meetings all afternoon and won\'t have time to step out.\n\nThanks,\nEmily',
       timestamp: new Date('2026-03-12T14:22:00'),
       channel: 'Email',
+      emailThreadId: 'email-1-confirm',
       status: 'delivered',
     },
     {
@@ -535,6 +540,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'Hi Emily,\n\nWe\'ll do our best to accommodate early check-in at 11 AM — we\'ve flagged your room for priority cleaning. As a Diamond Elite member, early check-in is complimentary when available.\n\nWe\'ll have still water (Acqua Panna) and a fresh fruit plate ready in the room.\n\nSafe travels and see you Saturday!\n\nBest,\nTheresa Webb\nGuest Services',
       timestamp: new Date('2026-03-13T08:45:00'),
       channel: 'Email',
+      emailThreadId: 'email-1-confirm',
       status: 'delivered',
     },
     // SMS: Mar 15-16 mid-stay
@@ -613,6 +619,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'Dear Mr. Santana,\n\nWelcome to The Grand Ithaca Hotel! We hope you enjoy your stay in room 206.\n\nAs a reminder, our complimentary breakfast buffet is available daily from 6:30-10:30 AM in the Garden Room (2nd floor). Your room key grants you access.\n\nThis week\'s special events:\n• Sunday: Live jazz in the lobby lounge, 7-10 PM\n• Monday: Wine tasting at the rooftop bar, 6 PM ($45/person)\n• Wednesday: Chef\'s table dinner, 7:30 PM (reservation required)\n\nPlease reply if you\'d like us to reserve a spot for any of these.\n\nWarm regards,\nThe Grand Ithaca Hotel',
       timestamp: new Date('2026-03-15T08:00:00'),
       channel: 'Email',
+      emailThreadId: 'email-2-welcome',
       status: 'delivered',
     },
     {
@@ -622,6 +629,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'The wine tasting sounds great — can you put me down for 2 people on Monday?\n\nAlso, is there a dress code for the chef\'s table?\n\nThanks,\nMiguel',
       timestamp: new Date('2026-03-15T12:30:00'),
       channel: 'Email',
+      emailThreadId: 'email-2-welcome',
       status: 'delivered',
     },
     {
@@ -631,6 +639,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'Hi Miguel,\n\nYou\'re booked for the wine tasting — Monday at 6 PM, party of 2. Meet at the rooftop bar.\n\nFor the chef\'s table, it\'s smart casual. No shorts or flip-flops, but no need for a jacket. Would you like me to reserve Wednesday as well?\n\nBest,\nTheresa Webb',
       timestamp: new Date('2026-03-15T13:00:00'),
       channel: 'Email',
+      emailThreadId: 'email-2-welcome',
       status: 'delivered',
     },
     // SMS: mid-stay immediate needs
@@ -1076,6 +1085,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'Dear Ms. Al-Hassan,\n\nWelcome back to The Grand Ithaca Hotel! We are delighted to host you again.\n\nAs a Diamond Elite member, you have been upgraded to our Executive Suite (room 602). Your preferred amenities (extra pillows, sparkling water, and fresh orchids) have been arranged.\n\nYour stay details:\n• Check-in: March 7, 2026\n• Check-out: March 14, 2026\n• Room: Executive Suite 602\n\nPlease don\'t hesitate to reach out if there is anything else we can prepare.\n\nWith warm regards,\nThe Grand Ithaca Hotel',
       timestamp: new Date('2026-03-07T08:00:00'),
       channel: 'Email',
+      emailThreadId: 'email-19-welcome',
       status: 'delivered',
     },
     // SMS: room upgrade acknowledgment (Mar 7)
@@ -1124,6 +1134,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'Dear Ms. Al-Hassan,\n\nThank you for staying with us this past week. We hope you enjoyed your time at The Grand Ithaca.\n\nYour folio has been emailed separately. As a Diamond Elite member, your loyalty points for this stay (4,200 pts) will be credited within 48 hours.\n\nWe understand you\'ll be returning tomorrow for another stay — we\'re already preparing your suite!\n\nWarm regards,\nThe Grand Ithaca Hotel',
       timestamp: new Date('2026-03-14T11:00:00'),
       channel: 'Email',
+      emailThreadId: 'email-19-checkout',
       status: 'delivered',
     },
     // ---- BETWEEN STAYS: Mar 14-15 ----
@@ -1135,6 +1146,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'Thank you for the wonderful first week! Looking forward to coming back tomorrow.\n\nCould you arrange a car service from the airport again? My flight arrives at 10:45 AM on the 15th (Emirates EK 203).\n\nAlso, would it be possible to get the Presidential Suite this time? I\'ll be hosting a small dinner on Sunday evening.\n\nBest,\nFatima',
       timestamp: new Date('2026-03-14T14:00:00'),
       channel: 'Email',
+      emailThreadId: 'email-19-between',
       status: 'delivered',
     },
     {
@@ -1144,6 +1156,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'Dear Ms. Al-Hassan,\n\nAbsolutely! Here\'s what we\'ve arranged for your return:\n\n• Car service: Black car at arrivals for Emirates EK 203 (10:45 AM, March 15). Driver will have a sign.\n• Room: Presidential Suite confirmed for March 15-20\n• Same amenities as before (extra pillows, sparkling water, orchids)\n\nFor your Sunday dinner, the Presidential Suite has a dining area that seats 8. Shall I arrange catering from our kitchen, or would you prefer a restaurant reservation?\n\nSafe travels!\n\nTheresa Webb\nGuest Services',
       timestamp: new Date('2026-03-14T15:30:00'),
       channel: 'Email',
+      emailThreadId: 'email-19-between',
       status: 'delivered',
     },
     // ---- SECOND STAY: Mar 15-20 ----
@@ -1174,6 +1187,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'Hi,\n\nI\'ve decided to do the dinner at Il Ristorante Alga instead of in-suite. Could you reserve for March 17th at 7:30 PM, party of 4?\n\nOne guest has a severe nut allergy — please let the kitchen know.\n\nThank you,\nFatima Al-Hassan',
       timestamp: new Date('2026-03-16T11:00:00'),
       channel: 'Email',
+      emailThreadId: 'email-19-dinner',
       status: 'delivered',
     },
     {
@@ -1183,6 +1197,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'Hi Fatima,\n\nYour reservation at Il Ristorante Alga is confirmed:\n\n• Date: March 17, 2026\n• Time: 7:30 PM\n• Party size: 4\n• Note: Severe nut allergy communicated to the kitchen\n\nThey have reserved the corner table by the window for your party. It\'s a 5-minute walk from the hotel, or I can arrange a car.\n\nEnjoy!\n\nBest,\nTheresa Webb',
       timestamp: new Date('2026-03-16T11:45:00'),
       channel: 'Email',
+      emailThreadId: 'email-19-dinner',
       status: 'delivered',
     },
     // WhatsApp: quick pool question again (Mar 16)
