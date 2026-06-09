@@ -4,7 +4,7 @@
 > Philosophy: **consolidation ≠ compression.** Preserve verbatim, mine transcripts, navigate — never synthesize-down.
 
 ## DONE (this pass — 2026-05-12)
-- ✅ **Step 1 — Verbatim preservation.** All 18 memory files copied byte-for-byte into this folder (no rewriting). This closed the durability gap: the reasoning now lives on GitHub, not just local `~/.claude/`.
+- ✅ **Step 1 — Verbatim preservation.** All 18 memory files copied byte-for-byte into this folder (no rewriting). This closed the durability gap: the reasoning now lives on GitHub, not just local `~/.claude/`. *[Correction 2026-06-09: the first pass actually copied **17** — `project_activity_feed_architecture.md` was missed. The 2026-06-09 self-audit caught it (5 of 9 auditors flagged it) and it was **restored verbatim**; the count is now genuinely 18.]*
 - ✅ **Step 6 (partial) — pushed.** This corpus committed + pushed to `origin/demo/agent-builder`.
 
 ## STEP 2 — DONE (2026-06-08 deep mining pass)
@@ -34,3 +34,9 @@ Edit `~/.claude/…/memory/project_agent_builder_current_state.md` top block →
 
 ## Resume entry point for the PROJECT itself (when work restarts)
 Not the brain — the actual product. Parked pending Agent Knowledge capacity (~2/3 on VoIP through Aug 2026). Pickup = NEW chat-first exploration branch reusing the workflow data models + visualizer-as-artifact. See `project_agent_builder_design_direction_may2026.md`.
+
+## SELF-AUDIT — 2026-06-09 (verdict: PASS_WITH_FIXES, B+/A-)
+A fan of 9 adversarial auditors (cold-catchup ×2, fidelity-vs-transcripts ×4, consistency, completeness, code-reality) + a synthesis judge stress-tested this brain. Findings + corrections are logged in `CAPTURE.md` → **ERRATA & CORRECTIONS — 2026-06-09**; topic-file known-errors + the canonical data-model glossary are in `README.md`.
+- **Held up:** no fabricated quotes (~70+ verbatim spot-checks matched); cold-catchup reconstructed all 11 target decisions from the brain alone; code-reality confirmed essentially every technical claim against the shipped branch; anti-abridging worked (the granular reasoning is in the raw layer, not summarized away).
+- **Fixed:** restored the missing `project_activity_feed_architecture.md`; removed a fabricated "Cloudbeds" from a quoted SJ directive in GAP_SECTIONS (real names: Opera, Mews, Kips, Akita); appended fidelity errata (Notable scar tissue = Miguel not Jake; S2 May-18 meeting is unlabeled → in-meeting speaker tags are inference; genesis-prototype authorship is ambiguous, not settled; one C4 steelman speaker uncertain); added a canonical data-model glossary + a known-topic-errors list to the README.
+- **Net:** the brain is fundamentally sound and full-fidelity; the defects were housekeeping + a few attribution over-hardenings, now corrected. Safe to pick up cold via `/brain-catchup`.
