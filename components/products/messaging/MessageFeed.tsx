@@ -16,9 +16,11 @@ import { formatDateSeparator, isSameCalendarDay } from '@/lib/utils/date-helpers
 
 interface MessageFeedProps {
   messages: Message[];
+  /** Makes bubbles clickable (e.g., merged feed: click a message to switch send channel) */
+  onMessageClick?: (message: Message) => void;
 }
 
-export function MessageFeed({ messages }: MessageFeedProps) {
+export function MessageFeed({ messages, onMessageClick }: MessageFeedProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages change
@@ -53,7 +55,10 @@ export function MessageFeed({ messages }: MessageFeedProps) {
             {showDateSeparator && (
               <DateSeparator label={formatDateSeparator(new Date(message.timestamp))} />
             )}
-            <MessageBubble message={message} />
+            <MessageBubble
+              message={message}
+              onClick={onMessageClick ? () => onMessageClick(message) : undefined}
+            />
           </React.Fragment>
         );
       })}

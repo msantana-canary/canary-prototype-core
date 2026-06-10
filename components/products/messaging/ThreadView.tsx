@@ -15,13 +15,30 @@ import { GuestInfoSidebar } from './GuestInfoSidebar';
 import { EmailThreadSelector } from './EmailThreadSelector';
 import { EmailThreadList } from './EmailThreadList';
 import { UnifiedEmailFeed } from './UnifiedEmailFeed';
-import { Thread, Message, LinkedReservation, MessageChannel, ChannelSelectorVariant, EmailComposerVariant, EmailThread, ChannelSelectorPosition, EmailViewVariant } from '@/lib/products/messaging/types';
+import { Thread, Message, LinkedReservation, MessageChannel, ChannelSelectorVariant, EmailComposerVariant, EmailThread, ChannelSelectorPosition, EmailViewVariant, ChannelTabMode } from '@/lib/products/messaging/types';
 import { CanaryTabs } from '@canary-ui/components';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
 import { CanaryButton, ButtonType, ButtonSize, CanaryTag, TagSize, TagVariant } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiBedOutline, mdiCalendarOutline, mdiInformationOutline, mdiDotsVertical, mdiArrowLeft } from '@mdi/js';
+
+// Unread = guest messages on a channel with no later staff/AI reply on that same channel
+function unreadCountFor(messages: Message[], channels: MessageChannel[]): number {
+  return channels.reduce(
+    (total, ch) =>
+      total +
+      messages.filter(
+        (m) =>
+          m.channel === ch &&
+          m.sender === 'guest' &&
+          !messages.some(
+            (s) => (s.sender === 'staff' || s.sender === 'ai') && s.channel === ch && s.timestamp > m.timestamp
+          )
+      ).length,
+    0
+  );
+}
 
 interface ThreadViewProps {
   thread: Thread;
@@ -51,6 +68,7 @@ interface ThreadViewProps {
   onEmailThreadChange: (id: string | null) => void;
   channelSelectorPosition: ChannelSelectorPosition;
   emailViewVariant: EmailViewVariant;
+  channelTabMode: ChannelTabMode;
 }
 
 export function ThreadView({
@@ -81,6 +99,7 @@ export function ThreadView({
   onEmailThreadChange,
   channelSelectorPosition,
   emailViewVariant,
+  channelTabMode,
 }: ThreadViewProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -90,18 +109,24 @@ export function ThreadView({
 
   const availableChannels: MessageChannel[] = ['SMS', 'WhatsApp', 'Email', 'OTA'];
 
-  const unreadChannels = useMemo(() => {
-    const channelsWithGuestMsgs: MessageChannel[] = [];
-    for (const ch of availableChannels) {
-      const chMsgs = messages.filter((m) => m.channel === ch);
-      const lastGuestMsg = [...chMsgs].reverse().find((m) => m.sender === 'guest');
-      const lastStaffMsg = [...chMsgs].reverse().find((m) => m.sender === 'staff' || m.sender === 'ai');
-      if (lastGuestMsg && (!lastStaffMsg || lastGuestMsg.timestamp > lastStaffMsg.timestamp)) {
-        channelsWithGuestMsgs.push(ch);
-      }
-    }
-    return channelsWithGuestMsgs;
+  // Two-tab mode: Email | Messages — everything that isn't email lives in one
+  // merged chronological feed. The composer still sends via a single concrete
+  // channel; clicking any bubble switches the send channel to that bubble's.
+  const isTwoTabMessages = channelTabMode === 'two-tab' && selectedChannel !== 'Email';
+
+  const lastNonEmailChannel: MessageChannel = useMemo(() => {
+    const nonEmail = messages.filter((m) => m.channel && m.channel !== 'Email');
+    return nonEmail[nonEmail.length - 1]?.channel || 'SMS';
   }, [messages]);
+
+  // On entering a thread in two-tab mode, default the send channel to wherever
+  // the conversation last happened instead of a flat SMS default.
+  useEffect(() => {
+    if (channelTabMode === 'two-tab' && selectedChannel !== 'Email' && selectedChannel !== lastNonEmailChannel) {
+      onChannelChange(lastNonEmailChannel);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [thread.id, channelTabMode]);
 
   // Multi-thread email modes only kick in when there's more than one email thread.
   // ≤1 email thread → every variant just shows the conversation normally.
@@ -120,13 +145,14 @@ export function ThreadView({
     : undefined;
 
   const filteredMessages = useMemo(() => {
+    if (isTwoTabMessages) return messages.filter((m) => m.channel !== 'Email');
     if (selectedChannel === 'all') return messages;
     let filtered = messages.filter((m) => m.channel === selectedChannel);
     if (isMultiEmail && emailMode !== 'unified' && effectiveEmailThreadId) {
       filtered = filtered.filter((m) => m.emailThreadId === effectiveEmailThreadId);
     }
     return filtered;
-  }, [messages, selectedChannel, effectiveEmailThreadId, isMultiEmail, emailMode]);
+  }, [messages, selectedChannel, effectiveEmailThreadId, isMultiEmail, emailMode, isTwoTabMessages]);
 
   // list mode shows no composer until a thread is picked;
   // unified mode shows an inert composer until a reply target is picked
@@ -354,23 +380,48 @@ export function ThreadView({
       <div className="border-b border-gray-200 bg-white">
         <div className="px-6">
           <CanaryTabs
-            key={thread.id}
-            tabs={availableChannels.map((ch) => {
-              const unreadCount = messages.filter(
-                (m) => m.channel === ch && m.sender === 'guest' &&
-                !messages.some((s) => (s.sender === 'staff' || s.sender === 'ai') && s.channel === ch && s.timestamp > m.timestamp)
-              ).length;
-              return {
-                id: ch,
-                label: ch,
-                content: null,
-                badge: unreadCount > 0 ? unreadCount : undefined,
-              };
-            })}
+            key={`${thread.id}-${channelTabMode}`}
+            tabs={
+              channelTabMode === 'two-tab'
+                ? [
+                    {
+                      id: 'messages',
+                      label: 'Messages',
+                      content: null,
+                      badge: unreadCountFor(messages, ['SMS', 'WhatsApp', 'OTA']) || undefined,
+                    },
+                    {
+                      id: 'Email',
+                      label: 'Email',
+                      content: null,
+                      badge: unreadCountFor(messages, ['Email']) || undefined,
+                    },
+                  ]
+                : availableChannels.map((ch) => ({
+                    id: ch,
+                    label: ch,
+                    content: null,
+                    badge: unreadCountFor(messages, [ch]) || undefined,
+                  }))
+            }
             variant="text"
             size="compact"
-            defaultTab={selectedChannel === 'all' ? 'SMS' : selectedChannel}
-            onChange={(tabId) => onChannelChange(tabId as MessageChannel)}
+            defaultTab={
+              channelTabMode === 'two-tab'
+                ? selectedChannel === 'Email'
+                  ? 'Email'
+                  : 'messages'
+                : selectedChannel === 'all'
+                  ? 'SMS'
+                  : selectedChannel
+            }
+            onChange={(tabId) => {
+              if (tabId === 'messages') {
+                onChannelChange(lastNonEmailChannel);
+              } else {
+                onChannelChange(tabId as MessageChannel);
+              }
+            }}
           />
         </div>
         {emailMode === 'dropdown' && (
@@ -425,7 +476,16 @@ export function ThreadView({
           onSelectReplyTarget={onEmailThreadChange}
         />
       ) : (
-        <MessageFeed messages={filteredMessages} />
+        <MessageFeed
+          messages={filteredMessages}
+          onMessageClick={
+            isTwoTabMessages
+              ? (m) => {
+                  if (m.channel && m.channel !== selectedChannel) onChannelChange(m.channel);
+                }
+              : undefined
+          }
+        />
       )}
 
       {/* Typing Indicator */}

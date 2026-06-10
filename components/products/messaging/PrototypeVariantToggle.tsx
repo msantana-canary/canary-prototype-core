@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { InboxLayout, EmailViewVariant } from '@/lib/products/messaging/types';
+import { InboxLayout, EmailViewVariant, ChannelTabMode } from '@/lib/products/messaging/types';
 import Icon from '@mdi/react';
 import { mdiTuneVariant, mdiClose } from '@mdi/js';
 
@@ -14,6 +14,8 @@ interface PrototypeVariantToggleProps {
   onSearchVariantChange: (v: SearchVariant) => void;
   emailViewVariant: EmailViewVariant;
   onEmailViewVariantChange: (v: EmailViewVariant) => void;
+  channelTabMode: ChannelTabMode;
+  onChannelTabModeChange: (v: ChannelTabMode) => void;
 }
 
 const layoutOptions: { value: InboxLayout; label: string; desc: string }[] = [
@@ -30,6 +32,11 @@ const emailViewOptions: { value: EmailViewVariant; label: string; desc: string }
   { value: 'dropdown', label: 'Dropdown', desc: 'CanarySelect below Email tab switches threads' },
   { value: 'list', label: 'List', desc: 'Email tab opens to a thread list, click to drill in' },
   { value: 'unified', label: 'Unified', desc: 'All emails in one stream, click a bubble to pick reply target' },
+];
+
+const channelTabOptions: { value: ChannelTabMode; label: string; desc: string }[] = [
+  { value: 'channels', label: 'Per-channel', desc: 'SMS / WhatsApp / Email / OTA tabs' },
+  { value: 'two-tab', label: 'Two-tab', desc: 'Messages + Email; non-email channels interleaved chronologically' },
 ];
 
 function RadioGroup<T extends string>({
@@ -78,6 +85,8 @@ export function PrototypeVariantToggle({
   onSearchVariantChange,
   emailViewVariant,
   onEmailViewVariantChange,
+  channelTabMode,
+  onChannelTabModeChange,
 }: PrototypeVariantToggleProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -115,6 +124,13 @@ export function PrototypeVariantToggle({
                 </div>
               </>
             )}
+
+            <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
+              Channel Tabs
+            </p>
+            <div className="mb-4">
+              <RadioGroup options={channelTabOptions} value={channelTabMode} onChange={onChannelTabModeChange} />
+            </div>
 
             <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
               Email View
