@@ -362,6 +362,7 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-10T09:00:00'),
       channel: 'Email',
       emailThreadId: 'email-15-confirm',
+      isGuestJourney: true,
       status: 'delivered',
     },
     {
@@ -521,6 +522,7 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-12T09:00:00'),
       channel: 'Email',
       emailThreadId: 'email-1-confirm',
+      isGuestJourney: true,
       status: 'delivered',
     },
     {
@@ -620,6 +622,7 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-15T08:00:00'),
       channel: 'Email',
       emailThreadId: 'email-2-welcome',
+      isGuestJourney: true,
       status: 'delivered',
     },
     {
@@ -1086,6 +1089,7 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-07T08:00:00'),
       channel: 'Email',
       emailThreadId: 'email-19-welcome',
+      isGuestJourney: true,
       status: 'delivered',
     },
     // SMS: room upgrade acknowledgment (Mar 7)
@@ -1135,6 +1139,7 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-14T11:00:00'),
       channel: 'Email',
       emailThreadId: 'email-19-checkout',
+      isGuestJourney: true,
       status: 'delivered',
     },
     // ---- BETWEEN STAYS: Mar 14-15 ----

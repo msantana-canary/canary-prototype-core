@@ -14,12 +14,28 @@ import { Avatar } from './Avatar';
 
 interface MessageBubbleProps {
   message: Message;
+  /** Makes the bubble clickable (e.g., to pick it as a reply target) */
+  onClick?: () => void;
+  /** Subtle highlight for the currently selected reply target */
+  isSelected?: boolean;
+  /** Muted uppercase label inside the bubble (e.g., "GUEST JOURNEY") */
+  journeyLabel?: string;
 }
 
-export function MessageBubble({ message }: MessageBubbleProps) {
+export function MessageBubble({ message, onClick, isSelected, journeyLabel }: MessageBubbleProps) {
   const isGuest = message.sender === 'guest';
   const isAI = message.sender === 'ai';
   const formattedTime = format(message.timestamp, 'h:mm a').toUpperCase();
+
+  const clickableProps = onClick
+    ? {
+        onClick,
+        role: 'button' as const,
+        className: 'cursor-pointer transition-opacity hover:opacity-80',
+      }
+    : { className: '' };
+  // Ring instead of border so selection doesn't shift layout
+  const selectedStyle = isSelected ? { boxShadow: '0 0 0 1.5px #2858c4' } : {};
 
   // Color tokens from library
   const colorBlack1 = '#000000'; // Black text
@@ -44,9 +60,18 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
         {/* Message Bubble */}
         <div
-          className="px-4 py-2 rounded-bl-2xl rounded-br-2xl rounded-tr-2xl max-w-[70%]"
-          style={{ backgroundColor: colorBlack7 }}
+          {...clickableProps}
+          className={`px-4 py-2 rounded-bl-2xl rounded-br-2xl rounded-tr-2xl max-w-[70%] ${clickableProps.className}`}
+          style={{ backgroundColor: colorBlack7, ...selectedStyle }}
         >
+          {journeyLabel && (
+            <p
+              className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase mb-1"
+              style={{ color: colorBlack4 }}
+            >
+              {journeyLabel}
+            </p>
+          )}
           <div className="flex gap-2 items-end justify-start">
             <p
               className="flex-1 font-['Roboto',sans-serif] text-[14px] leading-[22px] whitespace-pre-wrap"
@@ -86,9 +111,19 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       <div className="flex flex-col gap-2 items-end max-w-[70%]">
         {/* Message Bubble */}
         <div
-          className="w-full px-4 py-2 rounded-bl-2xl rounded-br-2xl rounded-tl-2xl"
-          style={{ backgroundColor: colorBlueDark5 }}
+          {...clickableProps}
+          className={`w-full px-4 py-2 rounded-bl-2xl rounded-br-2xl rounded-tl-2xl ${clickableProps.className}`}
+          style={{ backgroundColor: colorBlueDark5, ...selectedStyle }}
         >
+          {/* GUEST JOURNEY label for automated sends */}
+          {journeyLabel && (
+            <p
+              className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase text-right mb-1"
+              style={{ color: colorBlack4 }}
+            >
+              {journeyLabel}
+            </p>
+          )}
           {/* CANARY label for AI messages */}
           {isAI && (
             <p

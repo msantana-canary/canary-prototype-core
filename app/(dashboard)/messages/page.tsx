@@ -40,6 +40,7 @@ export default function MessagesPage() {
     emailComposerVariant,
     channelSelectorPosition,
     inboxLayout,
+    emailViewVariant,
     selectThread,
     setAiEnabled,
     sendMessage,
@@ -67,6 +68,7 @@ export default function MessagesPage() {
     setEmailComposerVariant,
     setChannelSelectorPosition,
     setInboxLayout,
+    setEmailViewVariant,
   } = useMessagingStore();
 
   const isCompact = inboxLayout === 'compact';
@@ -260,6 +262,7 @@ export default function MessagesPage() {
                 selectedEmailThreadId={selectedEmailThreadId}
                 onEmailThreadChange={setSelectedEmailThreadId}
                 channelSelectorPosition={channelSelectorPosition}
+                emailViewVariant={emailViewVariant}
               />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500">
@@ -303,6 +306,8 @@ export default function MessagesPage() {
         onInboxLayoutChange={setInboxLayout}
         searchVariant={searchVariant}
         onSearchVariantChange={setSearchVariant}
+        emailViewVariant={emailViewVariant}
+        onEmailViewVariantChange={setEmailViewVariant}
       />
     </AppLayout>
   );

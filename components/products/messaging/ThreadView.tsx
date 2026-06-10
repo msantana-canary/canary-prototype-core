@@ -13,13 +13,15 @@ import { MessageFeed } from './MessageFeed';
 import { MessageComposer } from './MessageComposer';
 import { GuestInfoSidebar } from './GuestInfoSidebar';
 import { EmailThreadSelector } from './EmailThreadSelector';
-import { Thread, Message, LinkedReservation, MessageChannel, ChannelSelectorVariant, EmailComposerVariant, EmailThread, ChannelSelectorPosition } from '@/lib/products/messaging/types';
+import { EmailThreadList } from './EmailThreadList';
+import { UnifiedEmailFeed } from './UnifiedEmailFeed';
+import { Thread, Message, LinkedReservation, MessageChannel, ChannelSelectorVariant, EmailComposerVariant, EmailThread, ChannelSelectorPosition, EmailViewVariant } from '@/lib/products/messaging/types';
 import { CanaryTabs } from '@canary-ui/components';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
 import { CanaryButton, ButtonType, ButtonSize, CanaryTag, TagSize, TagVariant } from '@canary-ui/components';
 import Icon from '@mdi/react';
-import { mdiBedOutline, mdiCalendarOutline, mdiInformationOutline, mdiDotsVertical } from '@mdi/js';
+import { mdiBedOutline, mdiCalendarOutline, mdiInformationOutline, mdiDotsVertical, mdiArrowLeft } from '@mdi/js';
 
 interface ThreadViewProps {
   thread: Thread;
@@ -48,6 +50,7 @@ interface ThreadViewProps {
   selectedEmailThreadId: string | null;
   onEmailThreadChange: (id: string | null) => void;
   channelSelectorPosition: ChannelSelectorPosition;
+  emailViewVariant: EmailViewVariant;
 }
 
 export function ThreadView({
@@ -77,6 +80,7 @@ export function ThreadView({
   selectedEmailThreadId,
   onEmailThreadChange,
   channelSelectorPosition,
+  emailViewVariant,
 }: ThreadViewProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -99,14 +103,37 @@ export function ThreadView({
     return channelsWithGuestMsgs;
   }, [messages]);
 
+  // Multi-thread email modes only kick in when there's more than one email thread.
+  // ≤1 email thread → every variant just shows the conversation normally.
+  const isMultiEmail = selectedChannel === 'Email' && emailThreads.length > 1;
+  const emailMode: EmailViewVariant | null = isMultiEmail ? emailViewVariant : null;
+
+  // selectedEmailThreadId interpretation is per-variant:
+  // dropdown = active filter (defaults to first thread)
+  // list     = null means list-mode, set means drilled into a thread
+  // unified  = reply target (null until staff picks one)
+  const effectiveEmailThreadId =
+    emailMode === 'dropdown' ? selectedEmailThreadId || emailThreads[0]?.id || null : selectedEmailThreadId;
+
+  const selectedEmailSubject = effectiveEmailThreadId
+    ? emailThreads.find((t) => t.id === effectiveEmailThreadId)?.subject
+    : undefined;
+
   const filteredMessages = useMemo(() => {
     if (selectedChannel === 'all') return messages;
     let filtered = messages.filter((m) => m.channel === selectedChannel);
-    if (selectedChannel === 'Email' && emailThreads.length > 1 && selectedEmailThreadId) {
-      filtered = filtered.filter((m) => m.emailThreadId === selectedEmailThreadId);
+    if (isMultiEmail && emailMode !== 'unified' && effectiveEmailThreadId) {
+      filtered = filtered.filter((m) => m.emailThreadId === effectiveEmailThreadId);
     }
     return filtered;
-  }, [messages, selectedChannel, selectedEmailThreadId, emailThreads]);
+  }, [messages, selectedChannel, effectiveEmailThreadId, isMultiEmail, emailMode]);
+
+  // list mode shows no composer until a thread is picked;
+  // unified mode shows an inert composer until a reply target is picked
+  const showComposer = !(emailMode === 'list' && !selectedEmailThreadId);
+  const composerDisabled = emailMode === 'unified' && !selectedEmailThreadId;
+  const composerReplyContext =
+    emailMode === 'unified' && selectedEmailThreadId ? selectedEmailSubject : undefined;
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -346,19 +373,60 @@ export function ThreadView({
             onChange={(tabId) => onChannelChange(tabId as MessageChannel)}
           />
         </div>
-        {selectedChannel === 'Email' && emailThreads.length > 1 && (
+        {emailMode === 'dropdown' && (
           <div className="px-6 pt-2 pb-2">
             <EmailThreadSelector
               emailThreads={emailThreads}
-              selectedEmailThreadId={selectedEmailThreadId}
+              selectedEmailThreadId={effectiveEmailThreadId}
               onSelect={onEmailThreadChange}
             />
           </div>
         )}
       </div>
 
+      {/* Back to email list — list mode, drilled into a thread */}
+      {emailMode === 'list' && selectedEmailThreadId && (
+        <div className="px-6 py-3 border-b border-gray-100 flex items-center gap-2 min-w-0">
+          <button
+            onClick={() => onEmailThreadChange(null)}
+            className="flex items-center gap-1 shrink-0 hover:opacity-70 transition-opacity"
+          >
+            <Icon path={mdiArrowLeft} size={0.67} color="#2858c4" />
+            <span
+              className="font-['Roboto',sans-serif] text-[12px] leading-[18px] font-medium"
+              style={{ color: '#2858c4' }}
+            >
+              All emails
+            </span>
+          </button>
+          {selectedEmailSubject && (
+            <span
+              className="font-['Roboto',sans-serif] text-[12px] leading-[18px] truncate"
+              style={{ color: '#666666' }}
+            >
+              {selectedEmailSubject}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Messages */}
-      <MessageFeed messages={filteredMessages} />
+      {emailMode === 'list' && !selectedEmailThreadId ? (
+        <EmailThreadList
+          emailThreads={emailThreads}
+          messages={messages}
+          onSelect={onEmailThreadChange}
+        />
+      ) : emailMode === 'unified' ? (
+        <UnifiedEmailFeed
+          messages={messages}
+          emailThreads={emailThreads}
+          selectedReplyTargetId={selectedEmailThreadId}
+          onSelectReplyTarget={onEmailThreadChange}
+        />
+      ) : (
+        <MessageFeed messages={filteredMessages} />
+      )}
 
       {/* Typing Indicator */}
       {isGuestTyping && (
@@ -370,15 +438,19 @@ export function ThreadView({
       )}
 
       {/* Composer */}
-      <div className="-mt-5">
-        <MessageComposer
-          onSend={onSendMessage}
-          aiEnabled={aiEnabled}
-          onAiToggle={onAiToggle}
-          channel={selectedChannel}
-          emailComposerVariant={emailComposerVariant}
-        />
-      </div>
+      {showComposer && (
+        <div className="-mt-5">
+          <MessageComposer
+            onSend={onSendMessage}
+            aiEnabled={aiEnabled}
+            onAiToggle={onAiToggle}
+            channel={selectedChannel}
+            emailComposerVariant={emailComposerVariant}
+            disabled={composerDisabled}
+            replyContext={composerReplyContext}
+          />
+        </div>
+      )}
 
       {/* Guest Info Sidebar */}
       <GuestInfoSidebar

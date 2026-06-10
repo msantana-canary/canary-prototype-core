@@ -22,6 +22,8 @@ interface MessageComposerProps {
   onFocus?: () => void;
   channel?: MessageChannel | 'all';
   emailComposerVariant?: EmailComposerVariant;
+  /** Email reply target — renders "Replying to: {subject}" above the input */
+  replyContext?: string;
 }
 
 export function MessageComposer({
@@ -33,6 +35,7 @@ export function MessageComposer({
   onFocus,
   channel = 'SMS',
   emailComposerVariant = 'inline',
+  replyContext,
 }: MessageComposerProps) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -65,7 +68,11 @@ export function MessageComposer({
   };
 
   const channelLabel = channel === 'all' ? 'SMS' : channel;
-  const dynamicPlaceholder = isEmail ? 'Reply to this email...' : `Type ${channelLabel} message...`;
+  const dynamicPlaceholder = isEmail
+    ? disabled
+      ? 'Select an email above to choose what to reply to'
+      : 'Reply to this email...'
+    : `Type ${channelLabel} message...`;
   const sendLabel = isEmail ? 'Reply' : `Send via ${channelLabel}`;
   const isFullEmailMode = isEmail && emailComposerVariant === 'full';
 
@@ -90,6 +97,24 @@ export function MessageComposer({
             <button className="p-1 hover:bg-[#eaeef9] rounded transition-colors">
               <Icon path={mdiFormatListBulleted} size={0.58} color="#999999" />
             </button>
+          </div>
+        )}
+
+        {/* Reply target — email only */}
+        {isEmail && replyContext && (
+          <div className="px-2 pt-2 flex items-baseline gap-1 min-w-0">
+            <span
+              className="font-['Roboto',sans-serif] text-[12px] leading-[18px] shrink-0"
+              style={{ color: colorBlack3 }}
+            >
+              Replying to:
+            </span>
+            <span
+              className="font-['Roboto',sans-serif] text-[12px] leading-[18px] font-medium truncate"
+              style={{ color: colorBlack1 }}
+            >
+              {replyContext}
+            </span>
           </div>
         )}
 

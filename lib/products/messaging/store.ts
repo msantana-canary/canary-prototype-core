@@ -7,7 +7,7 @@
  */
 
 import { create } from 'zustand';
-import { Thread, Message, MessageChannel, ChannelSelectorVariant, EmailComposerVariant, ChannelSelectorPosition, InboxLayout } from './types';
+import { Thread, Message, MessageChannel, ChannelSelectorVariant, EmailComposerVariant, ChannelSelectorPosition, InboxLayout, EmailViewVariant, ChannelTabMode } from './types';
 import { mockThreads, mockMessages } from './mock-data';
 
 interface MessagingState {
@@ -31,6 +31,8 @@ interface MessagingState {
   emailComposerVariant: EmailComposerVariant;
   channelSelectorPosition: ChannelSelectorPosition;
   inboxLayout: InboxLayout;
+  emailViewVariant: EmailViewVariant;
+  channelTabMode: ChannelTabMode;
 
   // Actions
   selectThread: (threadId: string) => void;
@@ -65,6 +67,8 @@ interface MessagingState {
   setEmailComposerVariant: (variant: EmailComposerVariant) => void;
   setChannelSelectorPosition: (position: ChannelSelectorPosition) => void;
   setInboxLayout: (layout: InboxLayout) => void;
+  setEmailViewVariant: (variant: EmailViewVariant) => void;
+  setChannelTabMode: (mode: ChannelTabMode) => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set, get) => ({
@@ -86,6 +90,8 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   emailComposerVariant: 'inline' as EmailComposerVariant,
   channelSelectorPosition: 'below-header' as ChannelSelectorPosition,
   inboxLayout: 'compact' as InboxLayout,
+  emailViewVariant: 'dropdown' as EmailViewVariant,
+  channelTabMode: 'channels' as ChannelTabMode,
 
   // Select a thread — auto-open to the notified channel (SMS > WhatsApp > Email)
   selectThread: (threadId: string) => {
@@ -392,5 +398,13 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
 
   setInboxLayout: (layout: InboxLayout) => {
     set({ inboxLayout: layout });
+  },
+
+  setEmailViewVariant: (variant: EmailViewVariant) => {
+    set({ emailViewVariant: variant, selectedEmailThreadId: null });
+  },
+
+  setChannelTabMode: (mode: ChannelTabMode) => {
+    set({ channelTabMode: mode });
   },
 }));
