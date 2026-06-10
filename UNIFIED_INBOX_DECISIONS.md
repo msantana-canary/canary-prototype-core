@@ -115,3 +115,18 @@
 **Why:** V1 is reply-only per PRD. Staff are responding to guest journey emails, not composing new ones. Matches PRD spec.
 **Rejected:** "Compose email..." / "Send via Email" (implies compose-new, not reply).
 **Open:** PRD says subject should auto-fill as read-only "Re: [last subject]" — not yet implemented. Consider adding when email thread selector is refined.
+
+## OTA Channel Merge (V1)
+**Decision:** Booking.com and Expedia collapse into a single "OTA" channel/tab.
+**Why:** From the Rachel conversation, OTAs are unified first. Prototype shouldn't over-model the immediate term. Miguel: "It'll be broken up down the line but this is a prototype so we should worry about the immediate term."
+**Rejected:** Separate Booking.com and Expedia tabs (premature; crowds the tab row).
+**Open:** Will split per-OTA later in production.
+
+## Three Email-View Variants (toggleable)
+**Decision:** Email-thread display becomes a togglable prototype variant with three options — Dropdown, List→drill-in, Unified chronological. Built so the team can compare before Figma.
+**Why:** The email-thread-selection UX is the most unresolved part. Competitive research (Mobbin: Intercom/Front/Zendesk/Plain) showed NO product uses a dropdown — all use a list of threads. Rather than guess, build all three and judge live.
+**Variant 1 (Dropdown):** CanarySelect below Email tab. Built. Works but not industry-validated.
+**Variant 2 (List→drill-in):** Email tab opens to a list of threads (subject + preview + timestamp + unread dot); click opens conversation + composer; "← All emails" back link; single thread skips the list; re-entry lands on the list. Industry-standard pattern. Email is inherently a list-of-threads medium; SMS/WhatsApp/OTA are single streams — email opening to a list reinforces it's a different kind of channel (hotel-context point).
+**Variant 3 (Unified chronological):** All emails in one stream, grouped by subject headers, GJ-automated sends badged `GUEST JOURNEY`, click-any-bubble to set reply target, composer shows "Replying to: [Subject]" and is inert until a target is picked. Does NOT violate the no-mixing-channels principle — mixes subjects within one channel, not channels. GJ-marking is a hotel-specific insight (lots of guest "email" is automated GJ noise).
+**Rejected:** Picking one approach blind. Chips for the dropdown (subjects too long; would be a custom component). "All channels" merged default (Miguel: hotel channels serve distinct journey phases — that was a separate, firmly-held decision).
+**Open:** NOT YET BUILT — full build plan in CAPTURE.md (2026-06-08). Reply-target uses click-to-select (Miguel chose over per-group Reply button).
