@@ -1,5 +1,7 @@
 # Team Chat — Build Reference (load this to be the build-feedback partner)
 
+> ⚠️ **2026-06-08 — DIRECTION REVERSED to a quick-fire OVERLAY (see `TEAM_CHAT_DECISIONS.md` D22).** The push / top-header-pill / right-side-panel layout described below is SUPERSEDED. Frontend is paused. The **scope** here (lean v0 feature list, what's V1/V2) is still valid; the **layout** is not — entry is now bottom-left-ish, behavior is a content-covering overlay.
+
 > **Fresh session?** Read this + `TEAM_CHAT_DECISIONS.md` (the *why*). Then you're caught up: Miguel sends screenshots of the real build; you cross-check against the v0 checklist + locked direction below and flag what's missing or drifting. You are eyes-and-ears — review, don't rebuild.
 
 ## Locked direction (don't relitigate) — UPDATED 2026-06-04 (push, not overlay)
