@@ -37,6 +37,7 @@ const emailViewOptions: { value: EmailViewVariant; label: string; desc: string }
 const channelTabOptions: { value: ChannelTabMode; label: string; desc: string }[] = [
   { value: 'channels', label: 'Per-channel', desc: 'SMS / WhatsApp / Email / OTA tabs' },
   { value: 'two-tab', label: 'Two-tab', desc: 'Messages + Email; non-email channels interleaved chronologically' },
+  { value: 'single', label: 'Single stream', desc: 'No tabs — every channel including email in one chronological thread (Akia pattern)' },
 ];
 
 function RadioGroup<T extends string>({
