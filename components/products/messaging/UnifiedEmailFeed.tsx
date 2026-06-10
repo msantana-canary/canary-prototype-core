@@ -55,19 +55,35 @@ export function UnifiedEmailFeed({
     );
   }
 
+  // Focus-on-select: once a reply target is picked, the other threads recede
+  // so the chosen conversation reads as one continuous thread through the
+  // interleave. No dimming while browsing (no target yet).
+  const isDimmed = (emailThreadId?: string) =>
+    !!selectedReplyTargetId && emailThreadId !== selectedReplyTargetId;
+
   return (
     <div className="flex-1 overflow-y-auto p-6">
       {emailMessages.map((message, index) => {
         const prev = index > 0 ? emailMessages[index - 1] : null;
         const startsNewGroup = !prev || prev.emailThreadId !== message.emailThreadId;
         const subject = (message.emailThreadId && subjectById[message.emailThreadId]) || 'No subject';
+        const dimmed = isDimmed(message.emailThreadId);
 
         return (
           <React.Fragment key={message.id}>
             {startsNewGroup && (
-              <div className={`flex items-center gap-3 ${index === 0 ? 'pb-3' : 'pt-4 pb-3'}`}>
+              <div
+                role="button"
+                onClick={
+                  message.emailThreadId
+                    ? () => onSelectReplyTarget(message.emailThreadId!)
+                    : undefined
+                }
+                className={`flex items-center gap-3 cursor-pointer transition-opacity group ${index === 0 ? 'pb-3' : 'pt-4 pb-3'}`}
+                style={{ opacity: dimmed ? 0.5 : 1 }}
+              >
                 <p
-                  className="font-['Roboto',sans-serif] text-[12px] leading-[18px] font-medium truncate"
+                  className="font-['Roboto',sans-serif] text-[12px] leading-[18px] font-medium truncate group-hover:underline"
                   style={{ color: '#666666' }}
                 >
                   {subject}
@@ -81,16 +97,18 @@ export function UnifiedEmailFeed({
                 </span>
               </div>
             )}
-            <MessageBubble
-              message={message}
-              journeyLabel={message.isGuestJourney ? 'Guest Journey' : undefined}
-              isSelected={!!message.emailThreadId && message.emailThreadId === selectedReplyTargetId}
-              onClick={
-                message.emailThreadId
-                  ? () => onSelectReplyTarget(message.emailThreadId!)
-                  : undefined
-              }
-            />
+            <div className="transition-opacity" style={{ opacity: dimmed ? 0.5 : 1 }}>
+              <MessageBubble
+                message={message}
+                journeyLabel={message.isGuestJourney ? 'Guest Journey' : undefined}
+                isSelected={!!message.emailThreadId && message.emailThreadId === selectedReplyTargetId}
+                onClick={
+                  message.emailThreadId
+                    ? () => onSelectReplyTarget(message.emailThreadId!)
+                    : undefined
+                }
+              />
+            </div>
           </React.Fragment>
         );
       })}

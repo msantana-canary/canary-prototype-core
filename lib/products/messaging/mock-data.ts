@@ -265,8 +265,134 @@ export const mockThreads: Thread[] = [
  * Mock messages - organized by thread ID
  */
 export const mockMessages: Record<string, Message[]> = {
-  // ===== JOHN SMITH (thread 14) — Group coordinator, SMS + WhatsApp =====
+  // ===== JOHN SMITH (thread 14) — Group coordinator, SMS + WhatsApp + Email =====
+  // Three email threads deliberately INTERWOVEN in time (Mar 10-14) — the
+  // stress case for the unified email view (subjects alternate chronologically).
   '14': [
+    // J1: Room block confirmation (GJ) — Mar 10, 11, 13
+    {
+      id: 'm14-e1',
+      threadId: '14',
+      sender: 'staff',
+      content: 'Dear Mr. Smith,\n\nYour group room block at The Grand Ithaca Hotel is confirmed:\n\n• Confirmation: #GRP-2026-118\n• Rooms: 4\n• Check-in: March 14, 2026\n• Check-out: March 17, 2026\n\nPlease reply with your rooming list so we can assign each reservation.\n\nWarm regards,\nThe Grand Ithaca Hotel',
+      timestamp: new Date('2026-03-10T09:00:00'),
+      channel: 'Email',
+      emailThreadId: 'email-14-roomblock',
+      isGuestJourney: true,
+      status: 'delivered',
+    },
+    {
+      id: 'm14-e2',
+      threadId: '14',
+      sender: 'guest',
+      content: 'Thanks! Rooming list: myself (John Smith), James Brady, Ethan Parker, and Liam Carter. Can you put each reservation under their name?\n\nBest,\nJohn',
+      timestamp: new Date('2026-03-11T08:30:00'),
+      channel: 'Email',
+      emailThreadId: 'email-14-roomblock',
+      status: 'delivered',
+    },
+    // J2: Direct billing — Mar 11, 12, 13
+    {
+      id: 'm14-e6',
+      threadId: '14',
+      sender: 'guest',
+      content: 'Hi — separate question. We\'d like to set up direct billing to Meridian Consulting for all four rooms. What do you need from us?\n\nJohn',
+      timestamp: new Date('2026-03-11T09:45:00'),
+      channel: 'Email',
+      emailThreadId: 'email-14-billing',
+      status: 'delivered',
+    },
+    {
+      id: 'm14-e3',
+      threadId: '14',
+      sender: 'staff',
+      content: 'Hi John,\n\nAll four reservations are now assigned:\n\n• John Smith\n• James Brady\n• Ethan Parker\n• Liam Carter\n\nEach guest will check in under their own name.\n\nBest,\nTheresa Webb\nGuest Services',
+      timestamp: new Date('2026-03-11T14:00:00'),
+      channel: 'Email',
+      emailThreadId: 'email-14-roomblock',
+      status: 'delivered',
+    },
+    {
+      id: 'm14-e7',
+      threadId: '14',
+      sender: 'staff',
+      content: 'Hi John,\n\nFor direct billing we need a completed credit authorization form from Meridian Consulting, ideally 48 hours before arrival. I\'ve attached the form — accounting will confirm once it\'s processed.\n\nBest,\nTheresa Webb',
+      timestamp: new Date('2026-03-12T09:30:00'),
+      channel: 'Email',
+      emailThreadId: 'email-14-billing',
+      status: 'delivered',
+    },
+    // J3: Meeting room — Mar 12, 14
+    {
+      id: 'm14-e9',
+      threadId: '14',
+      sender: 'guest',
+      content: 'One more thing — we need a small meeting room Saturday morning (March 15), 9–11 AM, for the four of us. Ideally with a screen we can plug a laptop into.\n\nJohn',
+      timestamp: new Date('2026-03-12T11:00:00'),
+      channel: 'Email',
+      emailThreadId: 'email-14-meeting',
+      status: 'delivered',
+    },
+    {
+      id: 'm14-e10',
+      threadId: '14',
+      sender: 'staff',
+      content: 'Hi John,\n\nBoardroom B is available March 15, 9–11 AM. It seats 8 and has a 65" screen with HDMI. Coffee service is optional at $40.\n\nShall I book it?\n\nBest,\nTheresa Webb',
+      timestamp: new Date('2026-03-12T13:30:00'),
+      channel: 'Email',
+      emailThreadId: 'email-14-meeting',
+      status: 'delivered',
+    },
+    {
+      id: 'm14-e4',
+      threadId: '14',
+      sender: 'guest',
+      content: 'Update on the room block — we\'ll have two rental cars with us. Can you arrange parking for both?\n\nJohn',
+      timestamp: new Date('2026-03-13T10:00:00'),
+      channel: 'Email',
+      emailThreadId: 'email-14-roomblock',
+      status: 'delivered',
+    },
+    {
+      id: 'm14-e5',
+      threadId: '14',
+      sender: 'staff',
+      content: 'Hi John,\n\nTwo parking spots are reserved for your group ($35/night each, added to the master folio). Just give the plate numbers at check-in.\n\nBest,\nTheresa Webb',
+      timestamp: new Date('2026-03-13T11:15:00'),
+      channel: 'Email',
+      emailThreadId: 'email-14-roomblock',
+      status: 'delivered',
+    },
+    {
+      id: 'm14-e8',
+      threadId: '14',
+      sender: 'guest',
+      content: 'Form submitted to accounting this afternoon — can you confirm it went through?\n\nJohn',
+      timestamp: new Date('2026-03-13T16:30:00'),
+      channel: 'Email',
+      emailThreadId: 'email-14-billing',
+      status: 'delivered',
+    },
+    {
+      id: 'm14-e11',
+      threadId: '14',
+      sender: 'guest',
+      content: 'Boardroom B confirmed, and yes to the coffee service please.\n\nJohn',
+      timestamp: new Date('2026-03-14T08:00:00'),
+      channel: 'Email',
+      emailThreadId: 'email-14-meeting',
+      status: 'delivered',
+    },
+    {
+      id: 'm14-e12',
+      threadId: '14',
+      sender: 'staff',
+      content: 'Booked! Boardroom B, March 15, 9–11 AM with coffee service for four. You\'re all set.\n\nBest,\nTheresa Webb',
+      timestamp: new Date('2026-03-14T09:00:00'),
+      channel: 'Email',
+      emailThreadId: 'email-14-meeting',
+      status: 'delivered',
+    },
     {
       id: 'm100',
       threadId: '14',
@@ -1564,6 +1690,21 @@ export const mockMessages: Record<string, Message[]> = {
 };
 
 export const mockEmailThreads: EmailThread[] = [
+  {
+    id: 'email-14-roomblock',
+    subject: 'Group Room Block Confirmation — Smith Party (4 Rooms)',
+    parentThreadId: '14',
+  },
+  {
+    id: 'email-14-billing',
+    subject: 'Direct Billing Setup — Meridian Consulting',
+    parentThreadId: '14',
+  },
+  {
+    id: 'email-14-meeting',
+    subject: 'Meeting Room — Saturday Morning Review Session',
+    parentThreadId: '14',
+  },
   {
     id: 'email-1-confirm',
     subject: 'Reservation Confirmation #GIH-2026-4821',
