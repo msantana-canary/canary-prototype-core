@@ -114,38 +114,23 @@ export function ThreadView({
   // channel; clicking any bubble switches the send channel to that bubble's.
   const isTwoTabMessages = channelTabMode === 'two-tab' && selectedChannel !== 'Email';
 
-  // Single-stream mode: no tabs at all — every channel including email in one
-  // chronological thread (the Akia/Intercom pattern). Email bubbles carry their
-  // subject inline; clicking any bubble sets the reply target / send channel.
-  const isSingleStream = channelTabMode === 'single';
-
   const lastNonEmailChannel: MessageChannel = useMemo(() => {
     const nonEmail = messages.filter((m) => m.channel && m.channel !== 'Email');
     return nonEmail[nonEmail.length - 1]?.channel || 'SMS';
   }, [messages]);
 
-  // On entering a thread in merged modes, default the send channel to wherever
+  // On entering a thread in two-tab mode, default the send channel to wherever
   // the conversation last happened instead of a flat SMS default.
   useEffect(() => {
     if (channelTabMode === 'two-tab' && selectedChannel !== 'Email' && selectedChannel !== lastNonEmailChannel) {
       onChannelChange(lastNonEmailChannel);
-    }
-    if (channelTabMode === 'single') {
-      const last = messages[messages.length - 1];
-      if (last?.channel && last.channel !== selectedChannel) {
-        onChannelChange(last.channel);
-      }
-      if (last?.channel === 'Email' && last.emailThreadId) {
-        onEmailThreadChange(last.emailThreadId);
-      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thread.id, channelTabMode]);
 
   // Multi-thread email modes only kick in when there's more than one email thread.
   // ≤1 email thread → every variant just shows the conversation normally.
-  // Single-stream mode bypasses the email views entirely — emails live inline.
-  const isMultiEmail = !isSingleStream && selectedChannel === 'Email' && emailThreads.length > 1;
+  const isMultiEmail = selectedChannel === 'Email' && emailThreads.length > 1;
   const emailMode: EmailViewVariant | null = isMultiEmail ? emailViewVariant : null;
 
   // selectedEmailThreadId interpretation is per-variant:
@@ -160,7 +145,6 @@ export function ThreadView({
     : undefined;
 
   const filteredMessages = useMemo(() => {
-    if (isSingleStream) return messages;
     if (isTwoTabMessages) return messages.filter((m) => m.channel !== 'Email');
     if (selectedChannel === 'all') return messages;
     let filtered = messages.filter((m) => m.channel === selectedChannel);
@@ -168,17 +152,14 @@ export function ThreadView({
       filtered = filtered.filter((m) => m.emailThreadId === effectiveEmailThreadId);
     }
     return filtered;
-  }, [messages, selectedChannel, effectiveEmailThreadId, isMultiEmail, emailMode, isTwoTabMessages, isSingleStream]);
+  }, [messages, selectedChannel, effectiveEmailThreadId, isMultiEmail, emailMode, isTwoTabMessages]);
 
   // list mode shows no composer until a thread is picked;
-  // unified/single modes show an inert composer until an email reply target is picked
+  // unified mode shows an inert composer until a reply target is picked
   const showComposer = !(emailMode === 'list' && !selectedEmailThreadId);
-  const composerDisabled =
-    (emailMode === 'unified' || (isSingleStream && selectedChannel === 'Email')) && !selectedEmailThreadId;
+  const composerDisabled = emailMode === 'unified' && !selectedEmailThreadId;
   const composerReplyContext =
-    (emailMode === 'unified' || (isSingleStream && selectedChannel === 'Email')) && selectedEmailThreadId
-      ? selectedEmailSubject
-      : undefined;
+    emailMode === 'unified' && selectedEmailThreadId ? selectedEmailSubject : undefined;
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -395,10 +376,8 @@ export function ThreadView({
         </div>
       </div>
 
-      {/* Channel Tabs — text underline style, part of the header unit.
-          Single-stream mode has nothing to switch, so no tab row at all. */}
+      {/* Channel Tabs — text underline style, part of the header unit */}
       <div className="border-b border-gray-200 bg-white">
-        {!isSingleStream && (
         <div className="px-6">
           <CanaryTabs
             key={`${thread.id}-${channelTabMode}`}
@@ -445,7 +424,6 @@ export function ThreadView({
             }}
           />
         </div>
-        )}
         {emailMode === 'dropdown' && (
           <div className="px-6 pt-2 pb-2">
             <EmailThreadSelector
@@ -501,39 +479,10 @@ export function ThreadView({
         <MessageFeed
           messages={filteredMessages}
           onMessageClick={
-            isSingleStream
+            isTwoTabMessages
               ? (m) => {
-                  if (!m.channel) return;
-                  if (m.channel === 'Email') {
-                    if (selectedChannel !== 'Email') onChannelChange('Email');
-                    if (m.emailThreadId) onEmailThreadChange(m.emailThreadId);
-                  } else if (m.channel !== selectedChannel) {
-                    onChannelChange(m.channel);
-                  }
+                  if (m.channel && m.channel !== selectedChannel) onChannelChange(m.channel);
                 }
-              : isTwoTabMessages
-                ? (m) => {
-                    if (m.channel && m.channel !== selectedChannel) onChannelChange(m.channel);
-                  }
-                : undefined
-          }
-          getMessageLabel={
-            isSingleStream
-              ? (m) => {
-                  if (m.channel !== 'Email') return undefined;
-                  const subject = emailThreads.find((t) => t.id === m.emailThreadId)?.subject;
-                  if (!subject) return m.isGuestJourney ? 'Guest Journey' : undefined;
-                  return m.isGuestJourney ? `Guest Journey — ${subject}` : subject;
-                }
-              : undefined
-          }
-          isMessageSelected={
-            isSingleStream
-              ? (m) =>
-                  selectedChannel === 'Email' &&
-                  m.channel === 'Email' &&
-                  !!m.emailThreadId &&
-                  m.emailThreadId === selectedEmailThreadId
               : undefined
           }
         />

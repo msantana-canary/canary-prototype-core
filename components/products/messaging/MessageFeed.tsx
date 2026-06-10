@@ -18,13 +18,9 @@ interface MessageFeedProps {
   messages: Message[];
   /** Makes bubbles clickable (e.g., merged feed: click a message to switch send channel) */
   onMessageClick?: (message: Message) => void;
-  /** Muted label inside a bubble (e.g., email subject, "Guest Journey") */
-  getMessageLabel?: (message: Message) => string | undefined;
-  /** Subtle ring on bubbles that are the current reply target */
-  isMessageSelected?: (message: Message) => boolean;
 }
 
-export function MessageFeed({ messages, onMessageClick, getMessageLabel, isMessageSelected }: MessageFeedProps) {
+export function MessageFeed({ messages, onMessageClick }: MessageFeedProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages change
@@ -62,8 +58,6 @@ export function MessageFeed({ messages, onMessageClick, getMessageLabel, isMessa
             <MessageBubble
               message={message}
               onClick={onMessageClick ? () => onMessageClick(message) : undefined}
-              journeyLabel={getMessageLabel?.(message)}
-              isSelected={isMessageSelected?.(message)}
             />
           </React.Fragment>
         );

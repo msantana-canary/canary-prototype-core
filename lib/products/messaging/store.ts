@@ -130,9 +130,6 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
 
     const selectedCh = get().selectedChannel;
     const channel: MessageChannel = selectedCh === 'all' ? 'SMS' : selectedCh;
-    // Email replies stay associated with the thread being replied to,
-    // so they group under the right subject in unified/single views
-    const emailThreadId = channel === 'Email' ? get().selectedEmailThreadId || undefined : undefined;
     const newMessage: Message = {
       id: `m${Date.now()}`,
       threadId,
@@ -140,7 +137,6 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
       content,
       timestamp: new Date(),
       channel,
-      emailThreadId,
       status: 'delivered',
     };
 

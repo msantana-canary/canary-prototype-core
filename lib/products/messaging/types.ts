@@ -18,7 +18,7 @@ export type EmailComposerVariant = 'inline' | 'full';
 export type ChannelSelectorPosition = 'below-header' | 'above-composer';
 export type InboxLayout = 'standard' | 'compact';
 export type EmailViewVariant = 'dropdown' | 'list' | 'unified';
-export type ChannelTabMode = 'channels' | 'two-tab' | 'single';
+export type ChannelTabMode = 'channels' | 'two-tab';
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'failed';
 export type ThreadStatus = 'inbox' | 'archived' | 'blocked';
 
