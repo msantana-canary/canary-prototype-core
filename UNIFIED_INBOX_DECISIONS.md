@@ -146,4 +146,19 @@
 **Why:** The meeting's open question — "do we organize the threads chronologically or the emails chronologically… is it constantly breaking up?" — could not be evaluated on sequential mock data. Per-bubble dimming at selection time addresses the thrash exactly when the user commits to a conversation, without permanent color-coding (rejected before: "doesn't need to be too obvious").
 **Superseded misbuild (same day):** An all-channels-in-one "Single stream" mode (email interleaved with SMS/WhatsApp/OTA, no tabs) was built on a misreading of this ask and reverted at Miguel's direction (commits 11e3be25 → reverted cf8b1a87). One piece was salvaged deliberately: sent email replies now carry the reply target's emailThreadId, fixing subject-less replies in the unified view.
 **Rejected:** Per-bubble subject labels (redundant within runs; noisier than headers + dimming). Thread-grouped ordering (violates the chronological requirement; collapses into the List variant). Permanent per-thread color accents.
-**Open:** Does focus-on-select rescue the unified view for multi-thread guests, or does John's 8-headers-for-12-messages stream argue for List when threads interleave? Judge live with Rachel.
+**Open:** ANSWERED same day — see Email View Verdict below. The stress test did its job: Jake's interleave objection was visible within minutes of looking at John's thread.
+
+## Email View Verdict: Unified Rejected, List Front-Runner (group review, 2026-06-10)
+**Decision:** After Jake + Rachel reviewed the live prototype (Slack, ~2:30 PM), the **Unified chronological email view is rejected**. **List→drill-in is the front-runner**, not yet finalized.
+**Why Unified died (four stacked reasons):**
+1. **Miguel's principled kill — email is context-based, not chronological.** "Email threads are not read in a chronological message by message thing, they're CONTEXT based… chronological order is irrelevant, convo context is in email." Chronology is a *messaging-channel* property — this is the Honda Civic/BMW distinction applied one level deeper, and it strengthens the email-as-separate-channel argument.
+2. **Jake — scroll cost:** "I'd have to scroll so much to find other threads."
+3. **Jake — pattern break:** interleaved A→B→A forces skipping over thread B to follow thread A; "the other two mimic how people already think about email. That'd break a big pattern." / "List looks the most like email — if it ain't broke don't fix."
+4. **Rachel — implementation risk:** multiple convos in one stream "might also cause more bugs too."
+**Why List over Dropdown:** Rachel: "one less click to look at all of ur threads." Jake's only pro-dropdown point (port the last-message preview into the dropdown) still hides thread inventory + unread state behind a click — the exact dropdown weakness flagged at Design Jam June 2 — and Mobbin research found 0/7 products using a dropdown. List also carries the hotel-context rationale: email opening to a list reinforces it's a different kind of channel.
+**Rejected:** Unified (above). Dropdown-with-preview (Jake's patch — keeps the hide-behind-a-click problem; noted in case it resurfaces).
+**Open:**
+- **PENDING: show or hide the Unified variant to SJ tomorrow** — team to decide; prototype toggle stays as-is (all three views demoable) until they call it. No default flip yet.
+- List not formally locked — Miguel hasn't declared final; Jake also accepts dropdown.
+- **CC question (Jake):** what happens when a guest CCs someone — reply-all behavior, thread participants, what staff see. Joked away in Slack but it's a real spec gap → belongs in DSN-1775 / PRD.
+- Jake's List polish ideas from yesterday's look: table-like framing, red dot for unanswered emails (dot already built).
