@@ -2,10 +2,10 @@
  * EmailThreadDropdown Component
  *
  * "Dropdown rich" email-view variant — Jake's pretty-and-simple hybrid.
- * Collapsed it reads like a compact CanarySelect; open, it shows the same
- * rich rows as the List view (subject + last-message preview + timestamp +
- * unread dot), so thread inventory and unread state are visible the moment
- * it opens.
+ * The trigger is a full-bleed row in the header unit (not a select-style
+ * control): current subject + unread badge + chevron. Opening it drops a
+ * full-width panel with the List view's row anatomy (subject + last-message
+ * preview + timestamp + unread dot).
  */
 
 'use client';
@@ -22,6 +22,8 @@ interface EmailThreadDropdownProps {
   messages: Message[];
   selectedEmailThreadId: string | null;
   onSelect: (emailThreadId: string | null) => void;
+  /** Demo control: render the latest thread as unread */
+  forceUnreadLatest?: boolean;
 }
 
 export function EmailThreadDropdown({
@@ -29,6 +31,7 @@ export function EmailThreadDropdown({
   messages,
   selectedEmailThreadId,
   onSelect,
+  forceUnreadLatest = false,
 }: EmailThreadDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -37,12 +40,11 @@ export function EmailThreadDropdown({
   const colorBlack1 = '#000000';
   const colorBlack3 = '#666666';
   const colorBlack4 = '#999999';
-  const colorBlack6 = '#e5e5e5';
   const colorPink = '#E40046';
 
   const rows = useMemo(
-    () => deriveEmailThreadRows(emailThreads, messages),
-    [emailThreads, messages]
+    () => deriveEmailThreadRows(emailThreads, messages, forceUnreadLatest),
+    [emailThreads, messages, forceUnreadLatest]
   );
 
   const selected = emailThreads.find((t) => t.id === selectedEmailThreadId) || emailThreads[0];
@@ -62,12 +64,19 @@ export function EmailThreadDropdown({
   if (emailThreads.length <= 1) return null;
 
   return (
-    <div ref={containerRef} className="relative w-full">
-      {/* Trigger — reads like a compact CanarySelect */}
+    <div ref={containerRef} className="relative w-full border-t border-gray-100">
+      <style>{`
+        @keyframes emailThreadPanelIn {
+          from { opacity: 0; transform: translateY(-6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
+      {/* Trigger — full-bleed row, part of the header unit */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2 px-3 h-8 rounded bg-white text-left"
-        style={{ border: `1px solid ${isOpen ? '#2858c4' : colorBlack6}` }}
+        className="w-full flex items-center gap-2 px-6 py-2 text-left hover:bg-gray-50 transition-colors"
+        style={{ backgroundColor: isOpen ? '#fafafa' : undefined }}
       >
         <span
           className="flex-1 font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate"
@@ -83,12 +92,20 @@ export function EmailThreadDropdown({
             {unreadCount}
           </span>
         )}
-        <Icon path={mdiChevronDown} size={0.67} color={colorBlack3} className="shrink-0" />
+        <span
+          className="shrink-0 transition-transform duration-200"
+          style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        >
+          <Icon path={mdiChevronDown} size={0.67} color={colorBlack3} />
+        </span>
       </button>
 
-      {/* Popover — List-view row anatomy */}
+      {/* Panel — full-width, drops out of the row */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50 max-h-[320px] overflow-y-auto">
+        <div
+          className="absolute left-0 right-0 top-full bg-white shadow-lg border-b border-gray-200 rounded-b-lg py-1 z-50 max-h-[320px] overflow-y-auto"
+          style={{ animation: 'emailThreadPanelIn 160ms ease-out' }}
+        >
           {rows.map(({ thread, lastMessage, isUnread }) => (
             <button
               key={thread.id}
@@ -96,7 +113,7 @@ export function EmailThreadDropdown({
                 onSelect(thread.id);
                 setIsOpen(false);
               }}
-              className="w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors flex items-start gap-2"
+              className="w-full text-left px-6 py-2 hover:bg-gray-50 transition-colors flex items-start gap-2"
               style={{
                 backgroundColor: thread.id === selected?.id ? '#eaeef9' : undefined,
               }}

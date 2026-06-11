@@ -70,6 +70,7 @@ interface ThreadViewProps {
   channelSelectorPosition: ChannelSelectorPosition;
   emailViewVariant: EmailViewVariant;
   channelTabMode: ChannelTabMode;
+  simulateUnreadEmail: boolean;
 }
 
 export function ThreadView({
@@ -101,6 +102,7 @@ export function ThreadView({
   channelSelectorPosition,
   emailViewVariant,
   channelTabMode,
+  simulateUnreadEmail,
 }: ThreadViewProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -397,14 +399,17 @@ export function ThreadView({
                       id: 'Email',
                       label: 'Email',
                       content: null,
-                      badge: unreadCountFor(messages, ['Email']) || undefined,
+                      badge:
+                        (unreadCountFor(messages, ['Email']) + (simulateUnreadEmail ? 1 : 0)) || undefined,
                     },
                   ]
                 : availableChannels.map((ch) => ({
                     id: ch,
                     label: ch,
                     content: null,
-                    badge: unreadCountFor(messages, [ch]) || undefined,
+                    badge:
+                      (unreadCountFor(messages, [ch]) + (simulateUnreadEmail && ch === 'Email' ? 1 : 0)) ||
+                      undefined,
                   }))
             }
             variant="text"
@@ -437,14 +442,13 @@ export function ThreadView({
           </div>
         )}
         {emailMode === 'dropdown-rich' && (
-          <div className="px-6 pt-2 pb-2">
-            <EmailThreadDropdown
-              emailThreads={emailThreads}
-              messages={messages}
-              selectedEmailThreadId={effectiveEmailThreadId}
-              onSelect={onEmailThreadChange}
-            />
-          </div>
+          <EmailThreadDropdown
+            emailThreads={emailThreads}
+            messages={messages}
+            selectedEmailThreadId={effectiveEmailThreadId}
+            onSelect={onEmailThreadChange}
+            forceUnreadLatest={simulateUnreadEmail}
+          />
         )}
       </div>
 
@@ -480,6 +484,7 @@ export function ThreadView({
           emailThreads={emailThreads}
           messages={messages}
           onSelect={onEmailThreadChange}
+          forceUnreadLatest={simulateUnreadEmail}
         />
       ) : emailMode === 'unified' ? (
         <UnifiedEmailFeed

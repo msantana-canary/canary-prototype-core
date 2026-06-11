@@ -16,6 +16,8 @@ interface EmailThreadListProps {
   emailThreads: EmailThread[];
   messages: Message[];
   onSelect: (emailThreadId: string) => void;
+  /** Demo control: render the latest thread as unread */
+  forceUnreadLatest?: boolean;
 }
 
 export interface EmailThreadRow {
@@ -25,11 +27,16 @@ export interface EmailThreadRow {
 }
 
 /** Per-thread last message + unread state, reverse-chron by last activity.
- *  Shared by the List view and the rich dropdown. */
-export function deriveEmailThreadRows(emailThreads: EmailThread[], messages: Message[]): EmailThreadRow[] {
+ *  Shared by the List view and the rich dropdown.
+ *  forceUnreadLatest is a demo control: render the latest thread as unread. */
+export function deriveEmailThreadRows(
+  emailThreads: EmailThread[],
+  messages: Message[],
+  forceUnreadLatest = false
+): EmailThreadRow[] {
   const emailMessages = messages.filter((m) => m.channel === 'Email');
 
-  return emailThreads
+  const rows = emailThreads
     .map((thread) => {
       const threadMessages = emailMessages.filter((m) => m.emailThreadId === thread.id);
       const lastMessage = threadMessages[threadMessages.length - 1] || null;
@@ -42,9 +49,14 @@ export function deriveEmailThreadRows(emailThreads: EmailThread[], messages: Mes
       const bTime = b.lastMessage?.timestamp.getTime() || 0;
       return bTime - aTime;
     });
+
+  if (forceUnreadLatest && rows.length > 0) {
+    rows[0] = { ...rows[0], isUnread: true };
+  }
+  return rows;
 }
 
-export function EmailThreadList({ emailThreads, messages, onSelect }: EmailThreadListProps) {
+export function EmailThreadList({ emailThreads, messages, onSelect, forceUnreadLatest = false }: EmailThreadListProps) {
   // Color tokens
   const colorBlack1 = '#000000';
   const colorBlack3 = '#666666';
@@ -52,8 +64,8 @@ export function EmailThreadList({ emailThreads, messages, onSelect }: EmailThrea
   const colorPink = '#E40046';
 
   const rows: EmailThreadRow[] = useMemo(
-    () => deriveEmailThreadRows(emailThreads, messages),
-    [emailThreads, messages]
+    () => deriveEmailThreadRows(emailThreads, messages, forceUnreadLatest),
+    [emailThreads, messages, forceUnreadLatest]
   );
 
   return (

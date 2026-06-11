@@ -33,6 +33,7 @@ interface MessagingState {
   inboxLayout: InboxLayout;
   emailViewVariant: EmailViewVariant;
   channelTabMode: ChannelTabMode;
+  simulateUnreadEmail: boolean;
 
   // Actions
   selectThread: (threadId: string) => void;
@@ -69,6 +70,7 @@ interface MessagingState {
   setInboxLayout: (layout: InboxLayout) => void;
   setEmailViewVariant: (variant: EmailViewVariant) => void;
   setChannelTabMode: (mode: ChannelTabMode) => void;
+  setSimulateUnreadEmail: (on: boolean) => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set, get) => ({
@@ -92,6 +94,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   inboxLayout: 'compact' as InboxLayout,
   emailViewVariant: 'dropdown' as EmailViewVariant,
   channelTabMode: 'channels' as ChannelTabMode,
+  simulateUnreadEmail: false,
 
   // Select a thread — auto-open to the notified channel (SMS > WhatsApp > Email)
   selectThread: (threadId: string) => {
@@ -410,5 +413,9 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
 
   setChannelTabMode: (mode: ChannelTabMode) => {
     set({ channelTabMode: mode });
+  },
+
+  setSimulateUnreadEmail: (on: boolean) => {
+    set({ simulateUnreadEmail: on });
   },
 }));

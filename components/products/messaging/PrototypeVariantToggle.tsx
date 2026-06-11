@@ -16,6 +16,8 @@ interface PrototypeVariantToggleProps {
   onEmailViewVariantChange: (v: EmailViewVariant) => void;
   channelTabMode: ChannelTabMode;
   onChannelTabModeChange: (v: ChannelTabMode) => void;
+  simulateUnreadEmail: boolean;
+  onSimulateUnreadEmailChange: (on: boolean) => void;
 }
 
 const layoutOptions: { value: InboxLayout; label: string; desc: string }[] = [
@@ -89,6 +91,8 @@ export function PrototypeVariantToggle({
   onEmailViewVariantChange,
   channelTabMode,
   onChannelTabModeChange,
+  simulateUnreadEmail,
+  onSimulateUnreadEmailChange,
 }: PrototypeVariantToggleProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -137,7 +141,37 @@ export function PrototypeVariantToggle({
             <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
               Email View
             </p>
-            <RadioGroup options={emailViewOptions} value={emailViewVariant} onChange={onEmailViewVariantChange} />
+            <div className="mb-4">
+              <RadioGroup options={emailViewOptions} value={emailViewVariant} onChange={onEmailViewVariantChange} />
+            </div>
+
+            <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
+              Demo Data
+            </p>
+            <button
+              onClick={() => onSimulateUnreadEmailChange(!simulateUnreadEmail)}
+              className="flex items-center justify-between gap-3 w-full px-3 py-2 rounded-lg text-left transition-colors"
+              style={{
+                backgroundColor: simulateUnreadEmail ? '#eaeef9' : '#fafafa',
+                border: simulateUnreadEmail ? '1px solid #2858c4' : '1px solid transparent',
+              }}
+            >
+              <div>
+                <p className="font-['Roboto',sans-serif] text-xs font-medium text-black">Unread email</p>
+                <p className="font-['Roboto',sans-serif] text-[10px] text-gray-500">
+                  Marks the latest email thread unread (badge + dot)
+                </p>
+              </div>
+              <div
+                className="w-8 h-[18px] rounded-full relative shrink-0 transition-colors"
+                style={{ backgroundColor: simulateUnreadEmail ? '#2858c4' : '#cccccc' }}
+              >
+                <div
+                  className="absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white transition-all"
+                  style={{ left: simulateUnreadEmail ? 16 : 2 }}
+                />
+              </div>
+            </button>
           </div>
         </div>
       )}

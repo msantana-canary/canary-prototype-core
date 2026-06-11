@@ -42,6 +42,7 @@ export default function MessagesPage() {
     inboxLayout,
     emailViewVariant,
     channelTabMode,
+    simulateUnreadEmail,
     selectThread,
     setAiEnabled,
     sendMessage,
@@ -71,6 +72,7 @@ export default function MessagesPage() {
     setInboxLayout,
     setEmailViewVariant,
     setChannelTabMode,
+    setSimulateUnreadEmail,
   } = useMessagingStore();
 
   const isCompact = inboxLayout === 'compact';
@@ -266,6 +268,7 @@ export default function MessagesPage() {
                 channelSelectorPosition={channelSelectorPosition}
                 emailViewVariant={emailViewVariant}
                 channelTabMode={channelTabMode}
+                simulateUnreadEmail={simulateUnreadEmail}
               />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500">
@@ -313,6 +316,8 @@ export default function MessagesPage() {
         onEmailViewVariantChange={setEmailViewVariant}
         channelTabMode={channelTabMode}
         onChannelTabModeChange={setChannelTabMode}
+        simulateUnreadEmail={simulateUnreadEmail}
+        onSimulateUnreadEmailChange={setSimulateUnreadEmail}
       />
     </AppLayout>
   );
