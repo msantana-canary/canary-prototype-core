@@ -170,3 +170,24 @@
 **Rejected:** Replacing the plain dropdown outright (no fallback in the room). Skipping the hybrid (leaves Jake's idea untested on the one day SJ is looking).
 **Open:** SJ's reaction today decides its fate. If List still wins, the rich rows port over anyway — they ARE the List rows in a popover, so nothing is wasted. Demo defaults: per-channel tabs + plain Dropdown.
 **Polish round (Miguel, same day — "I love it" + 3 tweaks):** (1) trigger is a full-bleed row in the header unit, not a select-style control — panel drops full-width beneath it; (2) 160ms ease-out open animation + chevron rotation; (3) "Demo Data → Unread email" toggle in the variant panel marks the latest email thread unread across the rich dropdown (badge + dot), List view, and Email tab badge — lets the unread treatment be shown on demand in the room. Side-effect of the demo toggle: the plain Dropdown shows NO unread affordance with it on — live illustration of the dropdown weakness flagged at Design Jam.
+
+## Email Goes Top-Level (SJ pivot, 2026-06-11 design review)
+**Decision:** Email leaves the messaging surface entirely. It becomes its **own top-level tab** alongside Conversations and Broadcasts — NOT a channel tab nested under a guest thread. Within it, email is organized **by thread, like Gmail — not by guest**; the guest is attached via a side panel. Proposed shape: **three-panel layout** — thread list → conversation → associated guest (with a jump link to their DMs in Conversations). Rachel is designing this as a new prototype.
+**Why — SJ's dilution argument (10:30 review, he joined early):**
+- Only **~5–6% of reservations** actively use guest messaging. Web-chat customers already receive more web chats than guest messages. Add email and it likely becomes the **highest-volume inbound channel** — pushing guest messages (the intimate, paying-guest channel, one of Canary's fastest-growing products) to the bottom of the list. Staff stop finding value in guest messaging if the inbox is dominated by email.
+- **"Unified is a positive word"** — stated preference for a unified inbox doesn't reflect real behavior; if people truly wanted everything in one place, a winning product would already exist (his Notion/Slack/Gmail portal test).
+- Email is also uniquely spam-susceptible; web chat is always a real inquiry about the hotel's most important thing — a booking.
+**Why this is NOT a full loop back to the PRD** (Rachel: "that's what we had at the beginning, no?" — "you loop around the track"): the Email-Is-A-Different-Vehicle principle (Honda Civic/BMW) won so completely it got promoted from channel-tab level to top-level surface. Miguel's framing in the room: stop shoehorning email features into the messaging layout — Conversations = fast/instant, Email = slow/async; a fully email-first design. **The Guest-First Thread Model survives untouched for instant channels** — SJ's argument evicted email, not the unified guest view. And the List paradigm (yesterday's verdict winner) becomes the new tab's left pane — the EmailThreadList row anatomy ports directly.
+**Technical decisions made in the room:**
+- **Auto-link guests by actual sender address ONLY** — never a self-reported email field (Rachel's anti-spoofing rule, same principle as phone-number auto-linking). Personal-vs-work email edge case acknowledged; shared phone number helps deduplicate.
+- **Keep it simple for V1:** no inbox/blocked/archived categorization for email.
+- **Search:** both content and guest search; pair with the Q3 messaging content-search work.
+**Superseded by this:** the email-inside-messaging surface — Channel Selector at Thread Level (for email), Three Email-View Variants, Dropdown Rich, and the Email half of Two-Tab Channel Mode are superseded as email's home (the thread-row/drill-in UX ports to the new surface). The 2:30 demo defaults discussed earlier today are moot.
+**Open / validation gates:**
+- SJ to validate his own assumption: what % of inbound emails are actually guest-related.
+- Team to ask **~3 users who actively use both web chat and messaging** whether they want them combined — leading question framed the *opposite* way (SJ's own methodology). Terry/Monica candidates; Mitsis explicitly a bad pick.
+- Whether **web chat stays under Conversations** is open.
+- Rachel designing the top-level email prototype; old prototype to be sent to Jake.
+- "Conversations" may need relabeling ("Messages and Email" / fast-vs-slow framing floated, mostly in jest).
+- PRD + eng design doc now stale in a NEW direction (they said separate tabs *under* messaging; reality is now separate *surface*).
+- Status: direction logged, prototype untouched — Miguel deciding next steps later.
