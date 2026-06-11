@@ -13,6 +13,7 @@ import { MessageFeed } from './MessageFeed';
 import { MessageComposer } from './MessageComposer';
 import { GuestInfoSidebar } from './GuestInfoSidebar';
 import { EmailThreadSelector } from './EmailThreadSelector';
+import { EmailThreadDropdown } from './EmailThreadDropdown';
 import { EmailThreadList } from './EmailThreadList';
 import { UnifiedEmailFeed } from './UnifiedEmailFeed';
 import { Thread, Message, LinkedReservation, MessageChannel, ChannelSelectorVariant, EmailComposerVariant, EmailThread, ChannelSelectorPosition, EmailViewVariant, ChannelTabMode } from '@/lib/products/messaging/types';
@@ -134,11 +135,13 @@ export function ThreadView({
   const emailMode: EmailViewVariant | null = isMultiEmail ? emailViewVariant : null;
 
   // selectedEmailThreadId interpretation is per-variant:
-  // dropdown = active filter (defaults to first thread)
+  // dropdown / dropdown-rich = active filter (defaults to first thread)
   // list     = null means list-mode, set means drilled into a thread
   // unified  = reply target (null until staff picks one)
   const effectiveEmailThreadId =
-    emailMode === 'dropdown' ? selectedEmailThreadId || emailThreads[0]?.id || null : selectedEmailThreadId;
+    emailMode === 'dropdown' || emailMode === 'dropdown-rich'
+      ? selectedEmailThreadId || emailThreads[0]?.id || null
+      : selectedEmailThreadId;
 
   const selectedEmailSubject = effectiveEmailThreadId
     ? emailThreads.find((t) => t.id === effectiveEmailThreadId)?.subject
@@ -428,6 +431,16 @@ export function ThreadView({
           <div className="px-6 pt-2 pb-2">
             <EmailThreadSelector
               emailThreads={emailThreads}
+              selectedEmailThreadId={effectiveEmailThreadId}
+              onSelect={onEmailThreadChange}
+            />
+          </div>
+        )}
+        {emailMode === 'dropdown-rich' && (
+          <div className="px-6 pt-2 pb-2">
+            <EmailThreadDropdown
+              emailThreads={emailThreads}
+              messages={messages}
               selectedEmailThreadId={effectiveEmailThreadId}
               onSelect={onEmailThreadChange}
             />

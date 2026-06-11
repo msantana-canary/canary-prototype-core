@@ -28,10 +28,12 @@ const searchOptions: { value: SearchVariant; label: string; desc: string }[] = [
   { value: 'takeover', label: 'Takeover', desc: 'Search replaces Row 1 controls' },
 ];
 
+// Unified was cut after the 2026-06-10 group review ("Unified sux so get it out")
+// — code stays dormant, just unreachable from this panel.
 const emailViewOptions: { value: EmailViewVariant; label: string; desc: string }[] = [
   { value: 'dropdown', label: 'Dropdown', desc: 'CanarySelect below Email tab switches threads' },
+  { value: 'dropdown-rich', label: 'Dropdown rich', desc: 'Select-style trigger, opens to List-style rows (preview + unread dots)' },
   { value: 'list', label: 'List', desc: 'Email tab opens to a thread list, click to drill in' },
-  { value: 'unified', label: 'Unified', desc: 'All emails in one stream, click a bubble to pick reply target' },
 ];
 
 const channelTabOptions: { value: ChannelTabMode; label: string; desc: string }[] = [

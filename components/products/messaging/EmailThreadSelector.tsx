@@ -18,7 +18,8 @@ export function EmailThreadSelector({
   if (emailThreads.length <= 1) return null;
 
   const options = emailThreads.map((t) => ({
-    label: `Re: ${t.subject}`,
+    // Don't double-prefix subjects that already start with "Re:"
+    label: t.subject.startsWith('Re:') ? t.subject : `Re: ${t.subject}`,
     value: t.id,
   }));
 

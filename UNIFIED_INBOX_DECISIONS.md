@@ -158,7 +158,14 @@
 **Why List over Dropdown:** Rachel: "one less click to look at all of ur threads." Jake's only pro-dropdown point (port the last-message preview into the dropdown) still hides thread inventory + unread state behind a click — the exact dropdown weakness flagged at Design Jam June 2 — and Mobbin research found 0/7 products using a dropdown. List also carries the hotel-context rationale: email opening to a list reinforces it's a different kind of channel.
 **Rejected:** Unified (above). Dropdown-with-preview (Jake's patch — keeps the hide-behind-a-click problem; noted in case it resurfaces).
 **Open:**
-- **PENDING: show or hide the Unified variant to SJ tomorrow** — team to decide; prototype toggle stays as-is (all three views demoable) until they call it. No default flip yet.
-- List not formally locked — Miguel hasn't declared final; Jake also accepts dropdown.
+- ~~PENDING: show or hide the Unified variant to SJ tomorrow~~ — RESOLVED 2026-06-11: Miguel: "Unified sux so get it out." Removed from the variant panel before the SJ demo (code dormant, not deleted).
+- List not formally locked — Miguel hasn't declared final; Jake also accepts dropdown. New contender: Dropdown Rich (below).
 - **CC question (Jake):** what happens when a guest CCs someone — reply-all behavior, thread participants, what staff see. Joked away in Slack but it's a real spec gap → belongs in DSN-1775 / PRD.
 - Jake's List polish ideas from yesterday's look: table-like framing, red dot for unanswered emails (dot already built).
+
+## Dropdown Rich: Jake's Pretty-and-Simple Hybrid (built for the SJ demo, 2026-06-11)
+**Decision:** Third email-view toggle option, **Dropdown rich** — collapsed it reads like a compact CanarySelect (one line, current subject, chevron, small unread-count badge); open, it shows the List view's exact row anatomy (subject + last-message preview + timestamp + unread dot, reverse-chron, current selection highlighted). Selection semantics identical to plain Dropdown (filters the feed, defaults to first thread). Unified simultaneously pulled from the panel per Miguel's call.
+**Why:** Jake (Slack, morning of SJ demo): "what if we made the dropdown slightly prettier to merge pretty & simple?" — Miguel's framing of the bet: a new pattern either gets pinned ("that's not in our system") or greenlit. Built as a *toggle* rather than a replacement so the choice happens in the room: open with the safe plain dropdown (demo default), flip to rich if SJ pins on ugly/simple. SJ concedes to prototypes — carrying both is predict-and-prepare. The "not in our system" exposure is shared with the channel tabs, which already need Amanda's formal component proposal.
+**Also fixed:** plain dropdown's "Re: Re:" double-prefix (guards subjects already starting with "Re:").
+**Rejected:** Replacing the plain dropdown outright (no fallback in the room). Skipping the hybrid (leaves Jake's idea untested on the one day SJ is looking).
+**Open:** SJ's reaction today decides its fate. If List still wins, the rich rows port over anyway — they ARE the List rows in a popover, so nothing is wasted. Demo defaults: per-channel tabs + plain Dropdown.

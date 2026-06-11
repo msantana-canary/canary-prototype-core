@@ -18,10 +18,30 @@ interface EmailThreadListProps {
   onSelect: (emailThreadId: string) => void;
 }
 
-interface ThreadRow {
+export interface EmailThreadRow {
   thread: EmailThread;
   lastMessage: Message | null;
   isUnread: boolean;
+}
+
+/** Per-thread last message + unread state, reverse-chron by last activity.
+ *  Shared by the List view and the rich dropdown. */
+export function deriveEmailThreadRows(emailThreads: EmailThread[], messages: Message[]): EmailThreadRow[] {
+  const emailMessages = messages.filter((m) => m.channel === 'Email');
+
+  return emailThreads
+    .map((thread) => {
+      const threadMessages = emailMessages.filter((m) => m.emailThreadId === thread.id);
+      const lastMessage = threadMessages[threadMessages.length - 1] || null;
+      // Unread = last message in the thread is from the guest with no later staff/AI reply
+      const isUnread = !!lastMessage && lastMessage.sender === 'guest';
+      return { thread, lastMessage, isUnread };
+    })
+    .sort((a, b) => {
+      const aTime = a.lastMessage?.timestamp.getTime() || 0;
+      const bTime = b.lastMessage?.timestamp.getTime() || 0;
+      return bTime - aTime;
+    });
 }
 
 export function EmailThreadList({ emailThreads, messages, onSelect }: EmailThreadListProps) {
@@ -31,23 +51,10 @@ export function EmailThreadList({ emailThreads, messages, onSelect }: EmailThrea
   const colorBlack4 = '#999999';
   const colorPink = '#E40046';
 
-  const rows: ThreadRow[] = useMemo(() => {
-    const emailMessages = messages.filter((m) => m.channel === 'Email');
-
-    return emailThreads
-      .map((thread) => {
-        const threadMessages = emailMessages.filter((m) => m.emailThreadId === thread.id);
-        const lastMessage = threadMessages[threadMessages.length - 1] || null;
-        // Unread = last message in the thread is from the guest with no later staff/AI reply
-        const isUnread = !!lastMessage && lastMessage.sender === 'guest';
-        return { thread, lastMessage, isUnread };
-      })
-      .sort((a, b) => {
-        const aTime = a.lastMessage?.timestamp.getTime() || 0;
-        const bTime = b.lastMessage?.timestamp.getTime() || 0;
-        return bTime - aTime;
-      });
-  }, [emailThreads, messages]);
+  const rows: EmailThreadRow[] = useMemo(
+    () => deriveEmailThreadRows(emailThreads, messages),
+    [emailThreads, messages]
+  );
 
   return (
     <div className="flex-1 overflow-y-auto">
