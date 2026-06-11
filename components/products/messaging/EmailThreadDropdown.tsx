@@ -103,7 +103,7 @@ export function EmailThreadDropdown({
       {/* Panel — full-width, drops out of the row */}
       {isOpen && (
         <div
-          className="absolute left-0 right-0 top-full bg-white shadow-lg border-b border-gray-200 rounded-b-lg py-1 z-50 max-h-[320px] overflow-y-auto"
+          className="absolute left-0 right-0 top-full bg-white shadow-lg border-b border-gray-100 rounded-b-lg py-1 z-50 max-h-[320px] overflow-y-auto"
           style={{ animation: 'emailThreadPanelIn 160ms ease-out' }}
         >
           {rows.map(({ thread, lastMessage, isUnread }) => (
