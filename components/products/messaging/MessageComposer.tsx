@@ -24,6 +24,8 @@ interface MessageComposerProps {
   emailComposerVariant?: EmailComposerVariant;
   /** Email reply target — renders "Replying to: {subject}" above the input */
   replyContext?: string;
+  /** Email-surface mode: attachment only, no AI toggle, no send caret */
+  simpleToolbar?: boolean;
 }
 
 export function MessageComposer({
@@ -36,6 +38,7 @@ export function MessageComposer({
   channel = 'SMS',
   emailComposerVariant = 'inline',
   replyContext,
+  simpleToolbar = false,
 }: MessageComposerProps) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -158,47 +161,54 @@ export function MessageComposer({
               </span>
             </button>
 
-            {/* Translate Button */}
-            <button className="composer-icon-btn p-1.5 hover:bg-[#eaeef9] rounded transition-colors">
-              <span className="icon-wrapper">
-                <Icon path={mdiTranslate} size={0.83} />
-              </span>
-            </button>
+            {/* Email surface keeps attachments only — everything else is messaging tooling */}
+            {!simpleToolbar && (
+              <>
+                {/* Translate Button */}
+                <button className="composer-icon-btn p-1.5 hover:bg-[#eaeef9] rounded transition-colors">
+                  <span className="icon-wrapper">
+                    <Icon path={mdiTranslate} size={0.83} />
+                  </span>
+                </button>
 
-            {/* List/Template Button */}
-            <button className="composer-icon-btn p-1.5 hover:bg-[#eaeef9] rounded transition-colors">
-              <span className="icon-wrapper">
-                <Icon path={mdiFormatListBulleted} size={0.83} />
-              </span>
-            </button>
+                {/* List/Template Button */}
+                <button className="composer-icon-btn p-1.5 hover:bg-[#eaeef9] rounded transition-colors">
+                  <span className="icon-wrapper">
+                    <Icon path={mdiFormatListBulleted} size={0.83} />
+                  </span>
+                </button>
 
-            {/* Room Service Button */}
-            <button className="composer-icon-btn p-1.5 hover:bg-[#eaeef9] rounded transition-colors">
-              <span className="icon-wrapper">
-                <Icon path={mdiRoomServiceOutline} size={0.83} />
-              </span>
-            </button>
+                {/* Room Service Button */}
+                <button className="composer-icon-btn p-1.5 hover:bg-[#eaeef9] rounded transition-colors">
+                  <span className="icon-wrapper">
+                    <Icon path={mdiRoomServiceOutline} size={0.83} />
+                  </span>
+                </button>
+              </>
+            )}
           </div>
 
           {/* Right: AI Toggle + Send Buttons */}
           <div className="flex gap-2 items-center">
             {/* AI Toggle */}
-            <div
-              className="flex items-center gap-2 px-2 py-1 rounded-full"
-              style={{ backgroundColor: colorBlack7 }}
-            >
-              <CanarySwitch
-                checked={aiEnabled}
-                onChange={onAiToggle || (() => {})}
-                label=""
-              />
-              <span
-                className="font-['Roboto',sans-serif] font-medium text-[12px] leading-[18px]"
-                style={{ color: colorBlack1 }}
+            {!simpleToolbar && (
+              <div
+                className="flex items-center gap-2 px-2 py-1 rounded-full"
+                style={{ backgroundColor: colorBlack7 }}
               >
-                AI
-              </span>
-            </div>
+                <CanarySwitch
+                  checked={aiEnabled}
+                  onChange={onAiToggle || (() => {})}
+                  label=""
+                />
+                <span
+                  className="font-['Roboto',sans-serif] font-medium text-[12px] leading-[18px]"
+                  style={{ color: colorBlack1 }}
+                >
+                  AI
+                </span>
+              </div>
+            )}
 
             {/* Send Button Container - 2px gap between buttons */}
             <div className="flex items-center gap-0.5">
@@ -218,16 +228,18 @@ export function MessageComposer({
               </button>
 
               {/* Dropdown Button */}
-              <button
-                onClick={() => console.log('Open dropdown')}
-                className="w-8 h-8 rounded flex items-center justify-center transition-opacity hover:opacity-80"
-                style={{
-                  backgroundColor: colorBlueDark1,
-                  color: colorWhite,
-                }}
-              >
-                <Icon path={mdiUnfoldMoreHorizontal} size={0.83} color={colorWhite} />
-              </button>
+              {!simpleToolbar && (
+                <button
+                  onClick={() => console.log('Open dropdown')}
+                  className="w-8 h-8 rounded flex items-center justify-center transition-opacity hover:opacity-80"
+                  style={{
+                    backgroundColor: colorBlueDark1,
+                    color: colorWhite,
+                  }}
+                >
+                  <Icon path={mdiUnfoldMoreHorizontal} size={0.83} color={colorWhite} />
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -152,9 +152,9 @@ export function EmailThreadRead({ row, onOpenConversation, onSend }: EmailThread
         <div ref={endRef} />
       </div>
 
-      {/* Reply-only composer — we are not rebuilding Outlook */}
+      {/* Reply-only composer, simple toolbar: attachments yes, messaging tooling no */}
       <div className="shrink-0 -mt-5">
-        <MessageComposer onSend={onSend} channel="Email" />
+        <MessageComposer onSend={onSend} channel="Email" simpleToolbar />
       </div>
     </div>
   );

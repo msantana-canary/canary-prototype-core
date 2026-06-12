@@ -13,10 +13,10 @@
 
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { CanarySelect, InputSize } from '@canary-ui/components';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { CanarySelect, CanaryInputSearch, InputSize, colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
-import { mdiMagnify } from '@mdi/js';
+import { mdiMagnify, mdiClose } from '@mdi/js';
 import { format } from 'date-fns';
 import { EmailThread, Message } from '@/lib/products/messaging/types';
 import { mockEmailThreads } from '@/lib/products/messaging/mock-data';
@@ -48,6 +48,17 @@ export function EmailView({ simulateUnreadEmail, onOpenConversation }: EmailView
   const { messages, threads, addMessage } = useMessagingStore();
   const [mailbox, setMailbox] = useState<Mailbox>('inbox');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isSearchOpen) {
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    } else {
+      setSearchQuery('');
+    }
+  }, [isSearchOpen]);
 
   // Color tokens
   const colorBlack1 = '#000000';
@@ -101,7 +112,22 @@ export function EmailView({ simulateUnreadEmail, onOpenConversation }: EmailView
   }, [rows, simulateUnreadEmail]);
 
   const sentRows = useMemo(() => rows.filter((r) => !r.hasInbound), [rows]);
-  const visibleRows = mailbox === 'inbox' ? inboxRows : sentRows;
+
+  // Search both ways — content AND guest/sender (6/11 review: "search by
+  // content, not by guests, because emails can be broad. Both.")
+  const visibleRows = useMemo(() => {
+    const base = mailbox === 'inbox' ? inboxRows : sentRows;
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return base;
+    return base.filter(
+      (r) =>
+        r.thread.subject.toLowerCase().includes(q) ||
+        r.guest?.name.toLowerCase().includes(q) ||
+        r.thread.senderName?.toLowerCase().includes(q) ||
+        r.thread.senderEmail?.toLowerCase().includes(q) ||
+        r.messages.some((m) => m.content.toLowerCase().includes(q))
+    );
+  }, [mailbox, inboxRows, sentRows, searchQuery]);
 
   // Keep a valid selection: first row of the active mailbox
   useEffect(() => {
@@ -137,26 +163,53 @@ export function EmailView({ simulateUnreadEmail, onOpenConversation }: EmailView
     <div className="flex h-full">
       {/* Left — thread list */}
       <div className="w-[320px] border-r border-gray-200 flex flex-col">
-        {/* Compact header: the Inbox/Sent direction split + search placeholder */}
-        <div className="px-3 py-2 border-b border-gray-200 flex items-center gap-1.5 shrink-0">
-          <div className="w-[150px]">
-            <CanarySelect
-              options={[
-                { label: `Inbox (${inboxRows.length})`, value: 'inbox' },
-                { label: `Sent (${sentRows.length})`, value: 'sent' },
-              ]}
-              value={mailbox}
-              onChange={(e) => setMailbox(e.target.value as Mailbox)}
-              size={InputSize.COMPACT}
-            />
+        {/* Compact header — same anatomy + metrics as Conversations' CompactInboxHeader */}
+        <div className="border-b border-gray-200 bg-white shrink-0">
+          <div className="flex items-center justify-between px-4 pb-3 pt-4">
+            <div className="flex-1 max-w-[140px]">
+              <CanarySelect
+                options={[
+                  { label: `Inbox (${inboxRows.length})`, value: 'inbox' },
+                  { label: `Sent (${sentRows.length})`, value: 'sent' },
+                ]}
+                value={mailbox}
+                onChange={(e) => setMailbox(e.target.value as Mailbox)}
+                size={InputSize.COMPACT}
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                aria-label="Search emails"
+                className="flex h-8 w-8 items-center justify-center rounded transition-opacity hover:opacity-80"
+                style={{ backgroundColor: '#EAEEF9' }}
+              >
+                <Icon path={mdiMagnify} size={0.75} color={colors.colorBlueDark1} />
+              </button>
+            </div>
           </div>
-          <div className="flex-1" />
-          <button
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            title="Search (paired with Q3 content search)"
-          >
-            <Icon path={mdiMagnify} size={0.75} color={colorBlack3} />
-          </button>
+
+          {/* Slide-down search — content + guest/sender */}
+          {isSearchOpen && (
+            <div className="px-4 pb-3 flex items-center gap-2">
+              <div className="flex-1">
+                <CanaryInputSearch
+                  ref={searchInputRef}
+                  placeholder="Search emails..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  size={InputSize.COMPACT}
+                />
+              </div>
+              <button
+                onClick={() => setIsSearchOpen(false)}
+                aria-label="Close search"
+                className="flex h-6 w-6 items-center justify-center rounded transition-opacity hover:opacity-80"
+              >
+                <Icon path={mdiClose} size={0.6} color={colorBlack3} />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Rows */}
