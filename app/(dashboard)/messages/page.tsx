@@ -16,7 +16,6 @@ import { LinkedReservation } from '@/lib/products/messaging/types';
 import { LinkReservationModal } from '@/components/products/messaging/LinkReservationModal';
 import { generateGuestResponse, generateStaffResponse } from '@/lib/products/messaging/services/claude-api';
 import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
-import { getEmailThreadsForThread } from '@/lib/products/messaging/mock-data';
 import { EmailView } from '@/components/products/messaging/email/EmailView';
 
 export default function MessagesPage() {
@@ -36,13 +35,7 @@ export default function MessagesPage() {
     currentView,
     searchQuery,
     selectedChannel,
-    selectedEmailThreadId,
-    channelSelectorVariant,
-    emailComposerVariant,
-    channelSelectorPosition,
     inboxLayout,
-    emailViewVariant,
-    channelTabMode,
     simulateUnreadEmail,
     selectThread,
     setAiEnabled,
@@ -66,10 +59,6 @@ export default function MessagesPage() {
     linkReservation,
     unlinkReservation,
     setSelectedChannel,
-    setSelectedEmailThreadId,
-    setChannelSelectorVariant,
-    setEmailComposerVariant,
-    setChannelSelectorPosition,
     setInboxLayout,
     setSimulateUnreadEmail,
   } = useMessagingStore();
@@ -106,11 +95,6 @@ export default function MessagesPage() {
   const selectedReservation = primaryLinked?.reservation || null;
 
   const selectedMessages = selectedThreadId ? messages[selectedThreadId] || [] : [];
-
-  const emailThreads = useMemo(() => {
-    if (!selectedThreadId) return [];
-    return getEmailThreadsForThread(selectedThreadId);
-  }, [selectedThreadId]);
 
   const filteredThreads = useMemo(() => {
     let filtered = threads.filter((t) => t.status === currentView);
@@ -259,15 +243,6 @@ export default function MessagesPage() {
                 typingThreadId={typingThreadId}
                 selectedChannel={selectedChannel}
                 onChannelChange={setSelectedChannel}
-                channelSelectorVariant={channelSelectorVariant}
-                emailComposerVariant={emailComposerVariant}
-                emailThreads={emailThreads}
-                selectedEmailThreadId={selectedEmailThreadId}
-                onEmailThreadChange={setSelectedEmailThreadId}
-                channelSelectorPosition={channelSelectorPosition}
-                emailViewVariant={emailViewVariant}
-                channelTabMode={channelTabMode}
-                simulateUnreadEmail={simulateUnreadEmail}
               />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500">
