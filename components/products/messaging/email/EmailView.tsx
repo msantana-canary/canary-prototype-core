@@ -16,7 +16,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CanarySelect, CanaryInputSearch, InputSize, colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
-import { mdiMagnify, mdiClose } from '@mdi/js';
+import { mdiMagnify, mdiClose, mdiBedOutline } from '@mdi/js';
 import { format } from 'date-fns';
 import { EmailThread, Message } from '@/lib/products/messaging/types';
 import { mockEmailThreads } from '@/lib/products/messaging/mock-data';
@@ -68,8 +68,12 @@ export function EmailView({ simulateUnreadEmail, onOpenConversation }: EmailView
 
   const rows: EmailRow[] = useMemo(() => {
     const derived = mockEmailThreads.map((thread) => {
-      const sourceKey = thread.parentThreadId ?? thread.id;
-      const msgs = (messages[sourceKey] || [])
+      // Messages may live under the parent messaging thread (legacy linked
+      // threads) or under the email thread's own key (standalone/GJ sends)
+      const msgs = [
+        ...(thread.parentThreadId ? messages[thread.parentThreadId] || [] : []),
+        ...(messages[thread.id] || []),
+      ]
         .filter((m) => m.channel === 'Email' && m.emailThreadId === thread.id)
         .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
       const lastMessage = msgs[msgs.length - 1] || null;
@@ -233,11 +237,23 @@ export function EmailView({ simulateUnreadEmail, onOpenConversation }: EmailView
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline justify-between gap-2">
                     <p
-                      className="font-['Roboto',sans-serif] text-[13px] leading-[20px] truncate"
+                      className="flex-1 min-w-0 font-['Roboto',sans-serif] text-[13px] leading-[20px] truncate"
                       style={{ color: colorBlack1, fontWeight: row.isUnread ? 600 : 500 }}
                     >
                       {senderLabel(row)}
                     </p>
+                    {/* Reservation-connected signal: bed + room */}
+                    {row.reservation?.room && (
+                      <span className="flex items-center gap-0.5 shrink-0 self-center">
+                        <Icon path={mdiBedOutline} size={0.5} color={colorBlack3} />
+                        <span
+                          className="font-['Roboto',sans-serif] text-[11px] leading-[16px]"
+                          style={{ color: colorBlack3 }}
+                        >
+                          {row.reservation.room.split(' ')[0]}
+                        </span>
+                      </span>
+                    )}
                     {row.lastMessage && (
                       <span
                         className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase shrink-0"
