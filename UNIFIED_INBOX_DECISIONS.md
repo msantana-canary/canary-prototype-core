@@ -203,3 +203,9 @@
 - **Deliberately absent:** compose button (reply-only V1 — not rebuilding Outlook), folders beyond the direction split, rich text. Search icon is a non-functional placeholder pairing with Q3 content search.
 - Conversations stripped to SMS/WhatsApp/OTA; variant panel pruned (email-view + channel-tab sections removed; "unread" demo toggle now simulates on the Email tab's Inbox).
 **Open:** 3-panel + guest side panel (suspended, revisit); auto-select opens most recent Inbox thread (no auto-open-unread yet); web-chat-under-Conversations question pending the user validation gates; staff "bump" send in a Sent thread keeps it in Sent (correct but worth a beat in review).
+
+## Conversations Loses Channel Tabs (2026-06-12)
+**Decision:** No channel tabs inside Conversations on the email-top-level branch. One chronological stream of SMS/WhatsApp/OTA per guest — matching production, where instant messaging is already unified ("we already have that, so we don't have to build more" — Rachel/Miguel 6/10). Composer auto-targets wherever the conversation last happened; clicking any bubble switches the send channel. Variant chrome (Inbox Layout standard/compact + search variants) deliberately KEPT — the compact header now demos on both the Conversations and Email surfaces.
+**Why:** The channel-tab work was the *splitting* experiment, and the split lost twice — once to the unified-instant reality of production, once to the SJ pivot that removed the channel (email) that most needed separating. The frozen unified-inbox branch URL holds every tab iteration for comparison.
+**Rejected (parked, not killed):** Jake's thread-list channel filter ("filter your thread list on different channels") — the only remaining channel-navigation concept; has a natural home in the compact header's filter icon if it returns.
+**Open:** None for this branch.
