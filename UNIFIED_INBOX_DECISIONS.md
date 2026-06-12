@@ -202,6 +202,7 @@
 - **CC display-only, guest-side** (wedding inquirer CCs her partner) — plants Jake's CC question in the UI without designing the answer.
 - **Deliberately absent:** compose button (reply-only V1 — not rebuilding Outlook), folders beyond the direction split, rich text. Search icon is a non-functional placeholder pairing with Q3 content search.
 - Conversations stripped to SMS/WhatsApp/OTA; variant panel pruned (email-view + channel-tab sections removed; "unread" demo toggle now simulates on the Email tab's Inbox).
+- **Polish round (same day):** email composer simplified to attachment + Reply (AI/translate/templates/caret are messaging tooling — stripped on the email surface only); list header brought to exact CompactInboxHeader metrics; **search made functional** — slide-down input filtering BOTH content and guest/sender per the 6/11 "Both" decision (subject, body, guest name, sender name/email).
 **Open:** 3-panel + guest side panel (suspended, revisit); auto-select opens most recent Inbox thread (no auto-open-unread yet); web-chat-under-Conversations question pending the user validation gates; staff "bump" send in a Sent thread keeps it in Sent (correct but worth a beat in review).
 
 ## Conversations Loses Channel Tabs (2026-06-12)
