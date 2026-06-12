@@ -191,3 +191,15 @@
 - "Conversations" may need relabeling ("Messages and Email" / fast-vs-slow framing floated, mostly in jest).
 - PRD + eng design doc now stale in a NEW direction (they said separate tabs *under* messaging; reality is now separate *surface*).
 - Status: direction logged, prototype untouched — Miguel deciding next steps later.
+
+## Email Surface V1 (built 2026-06-12, branch prototype/email-top-level)
+**Decision:** The top-level Email tab, built bare/simple — **two panes, 3-panel suspended** (guest panel deferred; linked guest lives as a compact strip in the thread header instead). New branch + worktree; the unified-inbox branch/URL is frozen as the historical prototype.
+**Shape:**
+- **Inbox/Sent direction split, not triage** (the inbound-vs-outbound discussion): Inbox = threads with ≥1 inbound; Sent = outbound-only (GJ machine output + unanswered staff sends). A guest reply *promotes* Sent → Inbox. Rationale: one mixed list recreates SJ's dilution argument in miniature (GJ sends go to every acknowledged reservation; replies come from few), and hiding outbound kills audit + the only proactive workflow reply-only V1 has. Lives in the **compact header** (CanarySelect dropdown + collapsed search icon) — the messaging compact-header pattern, introduced to a second surface exactly as Miguel's "wedge" framing intended.
+- **Counts as the SJ readout:** dropdown reads `Inbox (11) / Sent (4)`; within Inbox, linked rows show guest names, unlinked show raw senders (8 vs 3 in mock) — the "% of inbound that's guest-related" question made visible, no chart.
+- **Read pane = Gmail register, NOT bubbles** (Miguel's spec from the 6/11 review: "delineated by lines… like Gmail"). Flat full-width email blocks per team-chat's FlatMessage anatomy, hairline-separated. Email should *feel* slower than Conversations on sight.
+- **Auto-link by sender address**: linked threads carry guest strip (name + room/dates + "Open conversation" jump into Conversations). GJ threads always linked (GJ only sends to acknowledged reservations — Miguel, to verify in production code). Manual linking skipped for V1.
+- **CC display-only, guest-side** (wedding inquirer CCs her partner) — plants Jake's CC question in the UI without designing the answer.
+- **Deliberately absent:** compose button (reply-only V1 — not rebuilding Outlook), folders beyond the direction split, rich text. Search icon is a non-functional placeholder pairing with Q3 content search.
+- Conversations stripped to SMS/WhatsApp/OTA; variant panel pruned (email-view + channel-tab sections removed; "unread" demo toggle now simulates on the Email tab's Inbox).
+**Open:** 3-panel + guest side panel (suspended, revisit); auto-select opens most recent Inbox thread (no auto-open-unread yet); web-chat-under-Conversations question pending the user validation gates; staff "bump" send in a Sent thread keeps it in Sent (correct but worth a beat in review).
