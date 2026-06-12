@@ -951,6 +951,18 @@ export const mockMessages: Record<string, Message[]> = {
       channel: 'SMS',
       status: 'delivered',
     },
+    // Email: GJ upsell, outbound-only (lives in the Email tab's Sent view)
+    {
+      id: 'm3-e1',
+      threadId: '3',
+      sender: 'staff',
+      content: 'Dear Ms. Simmons,\n\nYour stay is coming up! Make it special with a few add-ons:\n\n• Spa day pass — $65\n• Guaranteed late checkout (2 PM) — $30\n• Welcome wine & cheese board — $45\n\nReply to this email or tap the link in your check-in invite to add any of these to your stay.\n\nWarm regards,\nThe Grand Ithaca Hotel',
+      timestamp: new Date('2026-03-13T10:00:00'),
+      channel: 'Email',
+      emailThreadId: 'email-3-upsell',
+      isGuestJourney: true,
+      status: 'delivered',
+    },
   ],
 
   // ===== MARCO (thread 4) — Simple SMS =====
@@ -1562,6 +1574,18 @@ export const mockMessages: Record<string, Message[]> = {
       channel: 'SMS',
       status: 'delivered',
     },
+    // Email: GJ checkout receipt, outbound-only (Email tab's Sent view)
+    {
+      id: 'm27-e1',
+      threadId: '27',
+      sender: 'staff',
+      content: 'Dear Ms. Patel,\n\nThank you for staying with us. Your receipt is below:\n\n• Room 331, 3 nights — $567.00\n• Breakfast package — included\n• Taxes & fees — $79.38\n• Total charged — $646.38\n\nWe hope to welcome you back soon!\n\nThe Grand Ithaca Hotel',
+      timestamp: new Date('2026-03-16T11:00:00'),
+      channel: 'Email',
+      emailThreadId: 'email-27-receipt',
+      isGuestJourney: true,
+      status: 'delivered',
+    },
   ],
 
   // ===== SARAH MARTINEZ (thread 10) — Archived =====
@@ -1687,9 +1711,100 @@ export const mockMessages: Record<string, Message[]> = {
       status: 'delivered',
     },
   ],
+
+  // ===== UNLINKED EMAIL THREADS (Email tab only — no messaging thread) =====
+  // Keyed by emailThreadId. 'guest' sender = the external party.
+  'email-u-wedding': [
+    {
+      id: 'mew-1',
+      threadId: 'email-u-wedding',
+      sender: 'guest',
+      content: 'Hello,\n\nMy fiancé and I are planning our wedding for October 17–19, 2026 and are looking at Ithaca venues. Could you tell me about room block options for roughly 30 guests, and whether you have a space for a welcome reception on the Friday evening?\n\nThank you!\nSophia Reyes',
+      timestamp: new Date('2026-03-15T09:20:00'),
+      channel: 'Email',
+      emailThreadId: 'email-u-wedding',
+      cc: 'daniel.alvarez@gmail.com',
+      status: 'delivered',
+    },
+    {
+      id: 'mew-2',
+      threadId: 'email-u-wedding',
+      sender: 'staff',
+      content: 'Hi Sophia,\n\nCongratulations! We\'d love to host your group. For 30 guests we offer a courtesy room block (10+ rooms) with a group rate, and our Garden Room is available for welcome receptions of up to 50.\n\nWould you like to schedule a call this week to walk through dates and pricing?\n\nBest,\nTheresa Webb\nGuest Services',
+      timestamp: new Date('2026-03-15T14:05:00'),
+      channel: 'Email',
+      emailThreadId: 'email-u-wedding',
+      status: 'delivered',
+    },
+    {
+      id: 'mew-3',
+      threadId: 'email-u-wedding',
+      sender: 'guest',
+      content: 'That sounds wonderful! Thursday afternoon works best for us — anytime after 2 PM. Also, is the Garden Room wheelchair accessible? My grandmother will be joining.\n\nSophia',
+      timestamp: new Date('2026-03-17T08:45:00'),
+      channel: 'Email',
+      emailThreadId: 'email-u-wedding',
+      cc: 'daniel.alvarez@gmail.com',
+      status: 'delivered',
+    },
+  ],
+  'email-u-vendor': [
+    {
+      id: 'mev-1',
+      threadId: 'email-u-vendor',
+      sender: 'guest',
+      content: 'Hello,\n\nPlease find attached Invoice #8841 for May linen service, totaling $2,340.00. Payment is due within 30 days.\n\nNote: our rates will increase 4% starting July 1. Updated rate sheet to follow.\n\nRegards,\nCrisp Linen Co. Billing',
+      timestamp: new Date('2026-03-16T07:30:00'),
+      channel: 'Email',
+      emailThreadId: 'email-u-vendor',
+      status: 'delivered',
+    },
+  ],
+  'email-u-promo': [
+    {
+      id: 'mep-1',
+      threadId: 'email-u-promo',
+      sender: 'guest',
+      content: '🔥 48 HOURS ONLY — Refresh your lobby for less!\n\nUp to 40% off commercial seating, planters, and accent lighting. Trusted by 2,000+ hotels.\n\nShop the sale → hotelsupplypro.com/flash\n\nUnsubscribe | Manage preferences',
+      timestamp: new Date('2026-03-13T06:15:00'),
+      channel: 'Email',
+      emailThreadId: 'email-u-promo',
+      status: 'delivered',
+    },
+  ],
 };
 
 export const mockEmailThreads: EmailThread[] = [
+  // Unlinked external senders (no reservation / messaging thread)
+  {
+    id: 'email-u-wedding',
+    subject: 'Wedding Room Block Inquiry — October 2026',
+    senderEmail: 'sophia.reyes@gmail.com',
+    senderName: 'Sophia Reyes',
+  },
+  {
+    id: 'email-u-vendor',
+    subject: 'Invoice #8841 — May Linen Service',
+    senderEmail: 'billing@crisplinenco.com',
+    senderName: 'Crisp Linen Co.',
+  },
+  {
+    id: 'email-u-promo',
+    subject: '48-Hour Flash Sale — Lobby Furniture Refresh',
+    senderEmail: 'deals@hotelsupplypro.com',
+    senderName: 'HotelSupply Pro',
+  },
+  // GJ-only outbound (linked — GJ only sends to acknowledged reservations)
+  {
+    id: 'email-3-upsell',
+    subject: 'Upgrade Your Stay — Spa & Late Checkout Offers',
+    parentThreadId: '3',
+  },
+  {
+    id: 'email-27-receipt',
+    subject: 'Your Receipt — The Grand Ithaca Hotel',
+    parentThreadId: '27',
+  },
   {
     id: 'email-14-roomblock',
     subject: 'Group Room Block Confirmation — Smith Party (4 Rooms)',

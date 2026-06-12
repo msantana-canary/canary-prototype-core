@@ -70,4 +70,4 @@ export interface BroadcastMessage {
   filterSnapshot?: BroadcastMessageFilterSnapshot;
 }
 
-export type MainNavTab = 'conversations' | 'broadcast' | 'ai-answers';
+export type MainNavTab = 'conversations' | 'broadcast' | 'email' | 'ai-answers';

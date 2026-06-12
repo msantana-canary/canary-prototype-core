@@ -10,7 +10,7 @@
 
 import React, { useState } from 'react';
 import Icon from '@mdi/react';
-import { mdiMessageProcessing, mdiVideoInputAntenna, mdiLayersOutline } from '@mdi/js';
+import { mdiMessageProcessing, mdiVideoInputAntenna, mdiEmailOutline, mdiLayersOutline } from '@mdi/js';
 import { CanarySelect, InputSize } from '@canary-ui/components';
 import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
 
@@ -32,6 +32,11 @@ export function MainNav({ activeTab, onTabChange }: MainNavProps) {
       id: 'broadcast' as const,
       label: 'Broadcast',
       icon: mdiVideoInputAntenna,
+    },
+    {
+      id: 'email' as const,
+      label: 'Email',
+      icon: mdiEmailOutline,
     },
     {
       id: 'ai-answers' as const,

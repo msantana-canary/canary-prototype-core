@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { InboxLayout, EmailViewVariant, ChannelTabMode } from '@/lib/products/messaging/types';
+import { InboxLayout } from '@/lib/products/messaging/types';
 import Icon from '@mdi/react';
 import { mdiTuneVariant, mdiClose } from '@mdi/js';
 
@@ -12,10 +12,6 @@ interface PrototypeVariantToggleProps {
   onInboxLayoutChange: (v: InboxLayout) => void;
   searchVariant: SearchVariant;
   onSearchVariantChange: (v: SearchVariant) => void;
-  emailViewVariant: EmailViewVariant;
-  onEmailViewVariantChange: (v: EmailViewVariant) => void;
-  channelTabMode: ChannelTabMode;
-  onChannelTabModeChange: (v: ChannelTabMode) => void;
   simulateUnreadEmail: boolean;
   onSimulateUnreadEmailChange: (on: boolean) => void;
 }
@@ -30,19 +26,8 @@ const searchOptions: { value: SearchVariant; label: string; desc: string }[] = [
   { value: 'takeover', label: 'Takeover', desc: 'Search replaces Row 1 controls' },
 ];
 
-// Unified was cut after the 2026-06-10 group review ("Unified sux so get it out")
-// — code stays dormant, just unreachable from this panel.
-const emailViewOptions: { value: EmailViewVariant; label: string; desc: string }[] = [
-  { value: 'dropdown', label: 'Dropdown', desc: 'CanarySelect below Email tab switches threads' },
-  { value: 'dropdown-rich', label: 'Dropdown rich', desc: 'Select-style trigger, opens to List-style rows (preview + unread dots)' },
-  { value: 'list', label: 'List', desc: 'Email tab opens to a thread list, click to drill in' },
-];
-
-const channelTabOptions: { value: ChannelTabMode; label: string; desc: string }[] = [
-  { value: 'channels', label: 'Per-channel', desc: 'SMS / WhatsApp / Email / OTA tabs' },
-  { value: 'two-tab', label: 'Two-tab', desc: 'Messages + Email; non-email channels interleaved chronologically' },
-];
-
+// Email left the messaging surface entirely on this branch (SJ pivot,
+// 2026-06-11) — the email-view / channel-tab variant sections are gone with it.
 function RadioGroup<T extends string>({
   options,
   value,
@@ -87,10 +72,6 @@ export function PrototypeVariantToggle({
   onInboxLayoutChange,
   searchVariant,
   onSearchVariantChange,
-  emailViewVariant,
-  onEmailViewVariantChange,
-  channelTabMode,
-  onChannelTabModeChange,
   simulateUnreadEmail,
   onSimulateUnreadEmailChange,
 }: PrototypeVariantToggleProps) {
@@ -132,20 +113,6 @@ export function PrototypeVariantToggle({
             )}
 
             <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
-              Channel Tabs
-            </p>
-            <div className="mb-4">
-              <RadioGroup options={channelTabOptions} value={channelTabMode} onChange={onChannelTabModeChange} />
-            </div>
-
-            <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
-              Email View
-            </p>
-            <div className="mb-4">
-              <RadioGroup options={emailViewOptions} value={emailViewVariant} onChange={onEmailViewVariantChange} />
-            </div>
-
-            <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
               Demo Data
             </p>
             <button
@@ -159,7 +126,7 @@ export function PrototypeVariantToggle({
               <div>
                 <p className="font-['Roboto',sans-serif] text-xs font-medium text-black">Unread email</p>
                 <p className="font-['Roboto',sans-serif] text-[10px] text-gray-500">
-                  Marks the latest email thread unread (badge + dot)
+                  Marks the latest Inbox thread unread (Email tab)
                 </p>
               </div>
               <div

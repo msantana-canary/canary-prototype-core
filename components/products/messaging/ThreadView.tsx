@@ -110,7 +110,8 @@ export function ThreadView({
 
   const isGuestTyping = typingThreadId === thread.id;
 
-  const availableChannels: MessageChannel[] = ['SMS', 'WhatsApp', 'Email', 'OTA'];
+  // Email left the messaging surface (SJ pivot 2026-06-11) — it lives in the top-level Email tab now
+  const availableChannels: MessageChannel[] = ['SMS', 'WhatsApp', 'OTA'];
 
   // Two-tab mode: Email | Messages — everything that isn't email lives in one
   // merged chronological feed. The composer still sends via a single concrete

@@ -106,7 +106,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
       const guestMsgs = msgs.filter((m) => m.sender === 'guest');
       if (guestMsgs.length > 0) {
         const lastGuestChannel = guestMsgs[guestMsgs.length - 1].channel;
-        const priority: MessageChannel[] = ['SMS', 'WhatsApp', 'Email'];
+        const priority: MessageChannel[] = ['SMS', 'WhatsApp'];
         const unreadChannels = new Set(guestMsgs.slice(-5).map((m) => m.channel).filter(Boolean));
         channel = priority.find((c) => unreadChannels.has(c)) || 'SMS';
       }

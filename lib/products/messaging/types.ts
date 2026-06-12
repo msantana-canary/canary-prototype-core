@@ -10,7 +10,12 @@ export type MessageChannel = 'SMS' | 'WhatsApp' | 'Email' | 'OTA' | 'Web';
 export interface EmailThread {
   id: string;
   subject: string;
-  parentThreadId: string;
+  /** Messaging thread this email thread is linked to (auto-link by sender address).
+   *  Absent = unlinked external sender (vendor, inquiry, spam). */
+  parentThreadId?: string;
+  /** Sender identity for unlinked threads */
+  senderEmail?: string;
+  senderName?: string;
 }
 
 export type ChannelSelectorVariant = 'pills' | 'dropdown' | 'icon-tabs';
@@ -32,6 +37,8 @@ export interface Message {
   status?: MessageStatus;
   emailThreadId?: string;
   isGuestJourney?: boolean;
+  /** Display-only CC line (guest-side CC — hotel never CCs in V1) */
+  cc?: string;
 }
 
 /**

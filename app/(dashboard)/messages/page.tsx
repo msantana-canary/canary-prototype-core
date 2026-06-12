@@ -17,6 +17,7 @@ import { LinkReservationModal } from '@/components/products/messaging/LinkReserv
 import { generateGuestResponse, generateStaffResponse } from '@/lib/products/messaging/services/claude-api';
 import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
 import { getEmailThreadsForThread } from '@/lib/products/messaging/mock-data';
+import { EmailView } from '@/components/products/messaging/email/EmailView';
 
 export default function MessagesPage() {
   const [activeTab, setActiveTab] = useState<MainNavTab>('conversations');
@@ -70,8 +71,6 @@ export default function MessagesPage() {
     setEmailComposerVariant,
     setChannelSelectorPosition,
     setInboxLayout,
-    setEmailViewVariant,
-    setChannelTabMode,
     setSimulateUnreadEmail,
   } = useMessagingStore();
 
@@ -283,6 +282,16 @@ export default function MessagesPage() {
         <BroadcastView />
       )}
 
+      {activeTab === 'email' && (
+        <EmailView
+          simulateUnreadEmail={simulateUnreadEmail}
+          onOpenConversation={(threadId) => {
+            setActiveTab('conversations');
+            selectThread(threadId);
+          }}
+        />
+      )}
+
       {activeTab === 'ai-answers' && (
         <div className="flex items-center justify-center h-full text-gray-400">
           AI Answers coming soon
@@ -312,10 +321,6 @@ export default function MessagesPage() {
         onInboxLayoutChange={setInboxLayout}
         searchVariant={searchVariant}
         onSearchVariantChange={setSearchVariant}
-        emailViewVariant={emailViewVariant}
-        onEmailViewVariantChange={setEmailViewVariant}
-        channelTabMode={channelTabMode}
-        onChannelTabModeChange={setChannelTabMode}
         simulateUnreadEmail={simulateUnreadEmail}
         onSimulateUnreadEmailChange={setSimulateUnreadEmail}
       />
