@@ -81,10 +81,6 @@ export function EmailInfoSidebar() {
 
   const isDrawer = infoPanelStyle === 'drawer';
 
-  // PUSH: in-flow third column, only mounted while open (EmailSurface renders us
-  // unconditionally; we bail here so flex layout never sees a closed panel).
-  if (!isDrawer && !isInfoOpen) return null;
-
   return (
     <div
       className={
@@ -95,16 +91,48 @@ export function EmailInfoSidebar() {
             `fixed right-0 flex flex-col overflow-y-auto transition-transform duration-300 ease-in-out shadow-lg ${
               isInfoOpen ? 'translate-x-0' : 'translate-x-full'
             }`
-          : 'shrink-0 flex flex-col overflow-y-auto rounded-[12px] h-full'
+          : // PUSH: always-mounted wrapper whose WIDTH animates 0↔360 on the same
+            // 200ms curve as the thread list's 434→334 collapse, so panel, list
+            // and thread view move as one coordinated motion. (Mounting at full
+            // width made the thread view double-snap — janky.)
+            'shrink-0 h-full overflow-hidden'
       }
-      style={{
-        width: isDrawer ? 400 : 360,
-        backgroundColor: isDrawer ? colors.colorBlack8 : colors.colorWhite,
-        ...(isDrawer
-          ? { top: 52, height: 'calc(100vh - 52px)', zIndex: 40 }
-          : { border: `1px solid ${colors.colorBlack6}` }),
-      }}
+      style={
+        isDrawer
+          ? {
+              width: 400,
+              backgroundColor: colors.colorBlack8,
+              top: 52,
+              height: 'calc(100vh - 52px)',
+              zIndex: 40,
+            }
+          : {
+              width: isInfoOpen ? 360 : 0,
+              // A 0-width flex child still contributes a flex gap; cancel it
+              // while closed so the closed layout is identical to no-panel.
+              marginLeft: isInfoOpen ? 0 : -16,
+              transition: 'width 200ms ease-out, margin-left 200ms ease-out',
+            }
+      }
     >
+      <div
+        className={
+          isDrawer
+            ? 'flex flex-col'
+            : 'flex flex-col overflow-y-auto rounded-[12px] h-full'
+        }
+        style={
+          isDrawer
+            ? undefined
+            : {
+                // Fixed inner width: the wrapper clips during the animation but
+                // the content never reflows/squishes mid-flight.
+                width: 360,
+                backgroundColor: colors.colorWhite,
+                border: `1px solid ${colors.colorBlack6}`,
+              }
+        }
+      >
       <div className="p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -329,6 +357,7 @@ export function EmailInfoSidebar() {
             Open conversation
           </span>
         </button>
+      </div>
       </div>
     </div>
   );
