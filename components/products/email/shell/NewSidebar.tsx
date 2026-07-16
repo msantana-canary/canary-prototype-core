@@ -16,17 +16,17 @@ import { useRouter } from 'next/navigation';
 import Icon from '@mdi/react';
 import { colors } from '@canary-ui/components';
 import {
-  mdiMessageOutline,
+  mdiMessageProcessingOutline,
   mdiEmailOutline,
   mdiPhoneOutline,
-  mdiTagOutline,
   mdiSilverwareForkKnife,
-  mdiLoginVariant,
-  mdiLogoutVariant,
+  mdiLogin,
+  mdiLogout,
   mdiCashMultiple,
-  mdiCreditCardOutline,
-  mdiFileDocumentOutline,
-  mdiAccountGroupOutline,
+  mdiCurrencyUsd,
+  mdiShieldCheckOutline,
+  mdiFileSign,
+  mdiAccountBoxOutline,
   mdiAccountMultipleOutline,
   mdiCogOutline,
   mdiHelpCircleOutline,
@@ -74,16 +74,20 @@ function SidebarNavItem({ item }: { item: NavItem }) {
         cursor: isActive ? 'default' : 'pointer',
       }}
     >
-      <Icon
-        path={item.icon}
-        size={0.83}
-        color={isActive ? colors.colorBlack1 : colors.colorWhite}
-      />
+      {/* Library CanarySidebar parity: 24px icons, inactive at 50% opacity,
+          active icon + label in the rail navy (#375492) on the white pill,
+          label always font-normal — only color changes with state. */}
+      <span style={{ opacity: isActive ? 1 : 0.5 }} className="shrink-0 flex items-center">
+        <Icon
+          path={item.icon}
+          size={1}
+          color={isActive ? shellTokens.sidebarBg : colors.colorWhite}
+        />
+      </span>
       <span
-        className="flex-1 font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate"
+        className="flex-1 font-['Roboto',sans-serif] text-[14px] leading-[22px] font-normal truncate"
         style={{
-          color: isActive ? colors.colorBlack1 : colors.colorWhite,
-          fontWeight: isActive ? 500 : 400,
+          color: isActive ? shellTokens.sidebarBg : colors.colorWhite,
         }}
       >
         {item.label}
@@ -109,25 +113,26 @@ export function NewSidebar() {
   const router = useRouter();
 
   const groups: NavItem[][] = [
-    // Communications
+    // Communications — icon set matches the REAL product sidebarTabs (library dist),
+    // not AI_REFERENCE.md (stale) and not the Figma's placeholder assets.
     [
-      { id: 'messages', label: 'Messages', icon: mdiMessageOutline, onClick: () => router.push('/messages') },
+      { id: 'messages', label: 'Messages', icon: mdiMessageProcessingOutline, onClick: () => router.push('/messages') },
       { id: 'email', label: 'Email', icon: mdiEmailOutline, badge: 4, active: true },
       { id: 'calls', label: 'Calls', icon: mdiPhoneOutline, onClick: () => router.push('/calls') },
     ],
     // Guest Management
     [
-      { id: 'upsells', label: 'Upsells', icon: mdiTagOutline },
+      { id: 'upsells', label: 'Upsells', icon: mdiCashMultiple },
       { id: 'fnb', label: 'F&B', icon: mdiSilverwareForkKnife },
-      { id: 'checkin', label: 'Check-in', icon: mdiLoginVariant, onClick: () => router.push('/check-in') },
-      { id: 'checkout', label: 'Checkout', icon: mdiLogoutVariant, onClick: () => router.push('/checkout') },
-      { id: 'tips', label: 'Digital Tips', icon: mdiCashMultiple },
+      { id: 'checkin', label: 'Check-in', icon: mdiLogin, onClick: () => router.push('/check-in') },
+      { id: 'checkout', label: 'Checkout', icon: mdiLogout, onClick: () => router.push('/checkout') },
+      { id: 'tips', label: 'Digital Tips', icon: mdiCurrencyUsd },
     ],
     // Records
     [
-      { id: 'authorizations', label: 'Authorizations', icon: mdiCreditCardOutline },
-      { id: 'contracts', label: 'Contracts', icon: mdiFileDocumentOutline },
-      { id: 'clients', label: 'Clients on File', icon: mdiAccountGroupOutline },
+      { id: 'authorizations', label: 'Authorizations', icon: mdiShieldCheckOutline },
+      { id: 'contracts', label: 'Contracts', icon: mdiFileSign },
+      { id: 'clients', label: 'Clients on File', icon: mdiAccountBoxOutline },
     ],
   ];
 
@@ -203,7 +208,7 @@ export function NewSidebar() {
               backgroundColor: shellTokens.teamChatPill,
             }}
           >
-            <Icon path={mdiAccountMultipleOutline} size={0.83} color={colors.colorWhite} />
+            <Icon path={mdiAccountMultipleOutline} size={1} color={colors.colorWhite} />
             <span
               className="flex-1 font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate"
               style={{ color: colors.colorWhite }}

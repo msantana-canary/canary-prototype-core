@@ -182,9 +182,11 @@ export function EmailThreadView() {
         </div>
       </div>
 
-      {/* Message feed — bottom-anchored */}
-      <div className="flex-1 overflow-y-auto flex flex-col justify-end" style={{ paddingTop: 16 }}>
-        <div className="flex flex-col">
+      {/* Message feed — bottom-anchored via mt-auto on the inner column.
+          NOT justify-end on the scroll container: that breaks scrolling
+          (overflowing content above the fold becomes unreachable). */}
+      <div className="flex-1 overflow-y-auto flex flex-col" style={{ paddingTop: 16 }}>
+        <div className="flex flex-col mt-auto">
           {dayGroups.map((group) => (
             <div key={group.key} className="flex flex-col">
               {/* Date divider (Figma): full-width hairline + left-aligned label */}

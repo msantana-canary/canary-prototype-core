@@ -71,7 +71,7 @@ export function EmailThreadListItem({ thread, isSelected = false, onClick }: Ema
         <div className="flex items-center justify-between gap-2">
           <span
             className="font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate"
-            style={{ color: colors.colorBlack1, fontWeight: thread.isUnread ? 700 : 500 }}
+            style={{ color: colors.colorBlack1, fontWeight: 500 }}
           >
             {thread.senderName}
           </span>
@@ -86,18 +86,33 @@ export function EmailThreadListItem({ thread, isSelected = false, onClick }: Ema
         {/* Subject */}
         <span
           className="font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate"
-          style={{ color: colors.colorBlack1, fontWeight: thread.isUnread ? 500 : 400 }}
+          style={{ color: colors.colorBlack1, fontWeight: 400 }}
         >
           {thread.subject}
         </span>
 
-        {/* Preview */}
-        <span
-          className="font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate"
-          style={{ color: colors.colorBlack3 }}
-        >
-          {thread.preview}
-        </span>
+        {/* Preview + unread dot — messaging ThreadListItem convention:
+            unread = pink dot + preview goes black/medium; dot renders
+            transparent when read so the row layout never shifts. */}
+        <div className="flex items-center gap-2">
+          <span
+            className="flex-1 font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate"
+            style={{
+              color: thread.isUnread ? colors.colorBlack1 : colors.colorBlack3,
+              fontWeight: thread.isUnread ? 500 : 400,
+            }}
+          >
+            {thread.preview}
+          </span>
+          <span
+            className="rounded-full shrink-0"
+            style={{
+              width: 10,
+              height: 10,
+              backgroundColor: thread.isUnread ? colors.colorPink1 : 'transparent',
+            }}
+          />
+        </div>
       </div>
     </div>
   );
