@@ -43,43 +43,47 @@ interface NavItem {
   active?: boolean;
 }
 
+/**
+ * Interaction affordances mirror the library's CanarySidebar item state machine
+ * (hover/focus = white 5% overlay, press = white 15%, 200ms transition, real
+ * <button> semantics with keyboard focus). Values are adapted from the dark
+ * navy rail rather than the library's overlay divs — see shellTokens.
+ */
 function SidebarNavItem({ item }: { item: NavItem }) {
-  const interactive = item.active || !!item.onClick;
+  const isActive = !!item.active;
 
   return (
-    <div
-      onClick={item.active ? undefined : item.onClick}
-      className="flex items-center gap-2 rounded-[6px] transition-colors"
+    <button
+      type="button"
+      onClick={isActive ? undefined : item.onClick}
+      aria-current={isActive ? 'page' : undefined}
+      className={[
+        "flex items-center gap-2 rounded-[6px] text-left appearance-none border-0",
+        "transition-colors duration-200 focus:outline-none",
+        isActive
+          ? ''
+          : 'hover:bg-[rgba(255,255,255,0.05)] focus-visible:bg-[rgba(255,255,255,0.08)] active:bg-[rgba(255,255,255,0.15)] focus-visible:ring-1 focus-visible:ring-white/30',
+      ].join(' ')}
       style={{
         width: 216,
         paddingLeft: 12,
         paddingRight: 12,
         paddingTop: 8,
         paddingBottom: 8,
-        backgroundColor: item.active ? colors.colorWhite : 'transparent',
-        cursor: interactive && !item.active ? 'pointer' : 'default',
-      }}
-      onMouseEnter={(e) => {
-        if (!item.active && item.onClick) {
-          e.currentTarget.style.backgroundColor = shellTokens.navHover;
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!item.active) {
-          e.currentTarget.style.backgroundColor = 'transparent';
-        }
+        backgroundColor: isActive ? colors.colorWhite : 'transparent',
+        cursor: isActive ? 'default' : 'pointer',
       }}
     >
       <Icon
         path={item.icon}
         size={0.83}
-        color={item.active ? colors.colorBlack1 : colors.colorWhite}
+        color={isActive ? colors.colorBlack1 : colors.colorWhite}
       />
       <span
         className="flex-1 font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate"
         style={{
-          color: item.active ? colors.colorBlack1 : colors.colorWhite,
-          fontWeight: item.active ? 500 : 400,
+          color: isActive ? colors.colorBlack1 : colors.colorWhite,
+          fontWeight: isActive ? 500 : 400,
         }}
       >
         {item.label}
@@ -97,7 +101,7 @@ function SidebarNavItem({ item }: { item: NavItem }) {
           {item.badge}
         </span>
       )}
-    </div>
+    </button>
   );
 }
 
@@ -109,14 +113,14 @@ export function NewSidebar() {
     [
       { id: 'messages', label: 'Messages', icon: mdiMessageOutline, onClick: () => router.push('/messages') },
       { id: 'email', label: 'Email', icon: mdiEmailOutline, badge: 4, active: true },
-      { id: 'calls', label: 'Calls', icon: mdiPhoneOutline },
+      { id: 'calls', label: 'Calls', icon: mdiPhoneOutline, onClick: () => router.push('/calls') },
     ],
     // Guest Management
     [
       { id: 'upsells', label: 'Upsells', icon: mdiTagOutline },
       { id: 'fnb', label: 'F&B', icon: mdiSilverwareForkKnife },
-      { id: 'checkin', label: 'Check-in', icon: mdiLoginVariant },
-      { id: 'checkout', label: 'Checkout', icon: mdiLogoutVariant },
+      { id: 'checkin', label: 'Check-in', icon: mdiLoginVariant, onClick: () => router.push('/check-in') },
+      { id: 'checkout', label: 'Checkout', icon: mdiLogoutVariant, onClick: () => router.push('/checkout') },
       { id: 'tips', label: 'Digital Tips', icon: mdiCashMultiple },
     ],
     // Records
@@ -186,10 +190,11 @@ export function NewSidebar() {
           style={{ width: 135, height: 34, opacity: 0.2, objectFit: 'contain' }}
         />
 
-        {/* Team Chat pill */}
+        {/* Team Chat pill — no route, but full interaction affordance */}
         <div style={{ width: 216 }}>
-          <div
-            className="flex items-center gap-2 rounded-[6px]"
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-[6px] w-full text-left appearance-none border-0 cursor-pointer transition-opacity duration-200 hover:opacity-90 active:opacity-80 focus:outline-none focus-visible:ring-1 focus-visible:ring-white/30"
             style={{
               paddingLeft: 12,
               paddingRight: 12,
@@ -211,7 +216,7 @@ export function NewSidebar() {
             >
               4
             </span>
-          </div>
+          </button>
         </div>
 
         {/* User row */}
@@ -239,8 +244,12 @@ export function NewSidebar() {
               Theresa
             </span>
           </div>
-          {/* Settings cell */}
-          <div className="flex flex-col items-center justify-center gap-1" style={{ width: 72, paddingTop: 12, paddingBottom: 12 }}>
+          {/* Settings cell — no route, but full interaction affordance */}
+          <button
+            type="button"
+            className="flex flex-col items-center justify-center gap-1 appearance-none border-0 bg-transparent cursor-pointer transition-colors duration-200 hover:bg-[rgba(255,255,255,0.05)] active:bg-[rgba(255,255,255,0.15)] focus:outline-none focus-visible:ring-1 focus-visible:ring-white/30 focus-visible:ring-inset"
+            style={{ width: 72, paddingTop: 12, paddingBottom: 12 }}
+          >
             <Icon path={mdiCogOutline} size={0.83} color={colors.colorWhite} />
             <span
               className="font-['Roboto',sans-serif] text-[12px] leading-[18px]"
@@ -248,9 +257,13 @@ export function NewSidebar() {
             >
               Settings
             </span>
-          </div>
-          {/* Support cell */}
-          <div className="flex flex-col items-center justify-center gap-1" style={{ width: 72, paddingTop: 12, paddingBottom: 12 }}>
+          </button>
+          {/* Support cell — no route, but full interaction affordance */}
+          <button
+            type="button"
+            className="flex flex-col items-center justify-center gap-1 appearance-none border-0 bg-transparent cursor-pointer transition-colors duration-200 hover:bg-[rgba(255,255,255,0.05)] active:bg-[rgba(255,255,255,0.15)] focus:outline-none focus-visible:ring-1 focus-visible:ring-white/30 focus-visible:ring-inset"
+            style={{ width: 72, paddingTop: 12, paddingBottom: 12 }}
+          >
             <Icon path={mdiHelpCircleOutline} size={0.83} color={colors.colorWhite} />
             <span
               className="font-['Roboto',sans-serif] text-[12px] leading-[18px]"
@@ -258,7 +271,7 @@ export function NewSidebar() {
             >
               Support
             </span>
-          </div>
+          </button>
         </div>
       </div>
     </div>

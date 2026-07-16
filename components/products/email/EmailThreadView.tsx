@@ -18,6 +18,7 @@ import { colors, CanaryTag, TagSize } from '@canary-ui/components';
 import { getGuest } from '@/lib/core/data';
 import { useEmailStore } from '@/lib/products/email/store';
 import { EmailMessage, EmailThread } from '@/lib/products/email/types';
+import { formatDayDivider, startOfDay } from '@/lib/products/email/date-utils';
 import { EmailComposer } from './EmailComposer';
 
 const STAFF_NAME = 'Theresa Webb';
@@ -103,6 +104,18 @@ export function EmailThreadView() {
   const thread = threads.find((t) => t.id === selectedThreadId);
   const messages = selectedThreadId ? messagesByThread[selectedThreadId] ?? [] : [];
 
+  // Group messages by calendar day (messages are stored chronologically ascending).
+  const dayGroups: { key: number; label: string; items: EmailMessage[] }[] = [];
+  for (const m of messages) {
+    const dayKey = startOfDay(m.sentAt).getTime();
+    const last = dayGroups[dayGroups.length - 1];
+    if (last && last.key === dayKey) {
+      last.items.push(m);
+    } else {
+      dayGroups.push({ key: dayKey, label: formatDayDivider(m.sentAt), items: [m] });
+    }
+  }
+
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -142,10 +155,10 @@ export function EmailThreadView() {
             </span>
           </div>
           <div className="flex flex-col min-w-0" style={{ paddingLeft: 8 }}>
-            <span className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px] truncate" style={{ color: colors.colorBlack1 }}>
+            <span className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] truncate" style={{ color: colors.colorBlack1 }}>
               {thread.senderName} - {thread.senderEmail}
             </span>
-            <span className="font-['Roboto',sans-serif] text-[16px] leading-[24px] truncate" style={{ color: colors.colorBlack1 }}>
+            <span className="font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate" style={{ color: colors.colorBlack1 }}>
               {thread.subject}
             </span>
           </div>
@@ -172,14 +185,19 @@ export function EmailThreadView() {
       {/* Message feed — bottom-anchored */}
       <div className="flex-1 overflow-y-auto flex flex-col justify-end" style={{ paddingTop: 16 }}>
         <div className="flex flex-col">
-          {/* TODAY divider */}
-          <div className="flex items-center justify-center" style={{ height: 30 }}>
-            <span className="font-['Roboto',sans-serif] font-medium text-[10px] leading-[16px] uppercase" style={{ color: colors.colorBlack1 }}>
-              Today
-            </span>
-          </div>
-          {messages.map((m) => (
-            <MessageBlock key={m.id} message={m} thread={thread} />
+          {dayGroups.map((group) => (
+            <div key={group.key} className="flex flex-col">
+              {/* Date divider (Figma): full-width hairline + left-aligned label */}
+              <div className="w-full" style={{ height: 1, backgroundColor: colors.colorBlack6 }} />
+              <div style={{ paddingLeft: 16, paddingRight: 16, paddingTop: 8, paddingBottom: 4 }}>
+                <span className="font-['Roboto',sans-serif] font-medium text-[10px] leading-[16px] uppercase" style={{ color: colors.colorBlack1 }}>
+                  {group.label}
+                </span>
+              </div>
+              {group.items.map((m) => (
+                <MessageBlock key={m.id} message={m} thread={thread} />
+              ))}
+            </div>
           ))}
           <div ref={endRef} />
         </div>

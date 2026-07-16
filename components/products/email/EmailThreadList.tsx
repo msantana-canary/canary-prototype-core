@@ -39,7 +39,9 @@ export function EmailThreadList() {
         t.subject.toLowerCase().includes(query) ||
         t.preview.toLowerCase().includes(query)
       );
-    });
+    })
+    // Newest activity first; re-sorts automatically when a reply bumps lastActivityAt.
+    .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
 
   return (
     <div className="flex flex-col gap-4 min-h-0" style={{ width: 434 }}>

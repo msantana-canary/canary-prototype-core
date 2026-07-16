@@ -10,9 +10,9 @@
 'use client';
 
 import React from 'react';
-import { format } from 'date-fns';
 import { colors } from '@canary-ui/components';
 import { EmailThread } from '@/lib/products/email/types';
+import { formatThreadListDate } from '@/lib/products/email/date-utils';
 
 interface EmailThreadListItemProps {
   thread: EmailThread;
@@ -31,7 +31,7 @@ function initialsOf(name: string): string {
 }
 
 export function EmailThreadListItem({ thread, isSelected = false, onClick }: EmailThreadListItemProps) {
-  const date = format(thread.lastActivityAt, 'MMM d').toUpperCase();
+  const date = formatThreadListDate(thread.lastActivityAt);
 
   return (
     <div

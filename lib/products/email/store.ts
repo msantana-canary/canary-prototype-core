@@ -30,6 +30,13 @@ interface EmailState {
 
 const STAFF_NAME = 'Theresa Webb';
 
+/** Threads in a view, newest activity first (mirrors the list's sort). */
+function threadsInViewByRecency(threads: EmailThread[], view: EmailView): EmailThread[] {
+  return threads
+    .filter((t) => t.status === view)
+    .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
+}
+
 export const useEmailStore = create<EmailState>((set, get) => ({
   // Initial state — default to the featured Emily thread (matches Figma open state)
   threads: mockThreads,
@@ -51,7 +58,7 @@ export const useEmailStore = create<EmailState>((set, get) => ({
 
   setView: (view: EmailView) => {
     // Select the most recent thread in the target view (or none if empty)
-    const threadsInView = get().threads.filter((t) => t.status === view);
+    const threadsInView = threadsInViewByRecency(get().threads, view);
     set({
       view,
       selectedThreadId: threadsInView.length > 0 ? threadsInView[0].id : null,
@@ -77,7 +84,7 @@ export const useEmailStore = create<EmailState>((set, get) => ({
     // After archiving, select the next inbox thread (if we're on the inbox view)
     const { view } = get();
     if (view === 'inbox') {
-      const inboxThreads = get().threads.filter((t) => t.status === 'inbox');
+      const inboxThreads = threadsInViewByRecency(get().threads, 'inbox');
       set({ selectedThreadId: inboxThreads.length > 0 ? inboxThreads[0].id : null });
     }
   },

@@ -21,6 +21,7 @@ interface EmailComposerProps {
 
 export function EmailComposer({ onSend, placeholder = 'Reply to this email...' }: EmailComposerProps) {
   const [message, setMessage] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const canSend = message.trim().length > 0;
@@ -51,17 +52,23 @@ export function EmailComposer({ onSend, placeholder = 'Reply to this email...' }
 
   return (
     <div style={{ padding: 16 }}>
+      {/* Focus-within border matches the messaging composer's focus affordance */}
       <div
-        className="rounded-[12px] overflow-hidden"
-        style={{ backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack6}` }}
+        className="rounded-[12px] overflow-hidden transition-all"
+        style={{
+          backgroundColor: colors.colorWhite,
+          border: `1px solid ${isFocused ? colors.colorBlueDark1 : colors.colorBlack6}`,
+        }}
       >
-        {/* Input row */}
-        <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 12, paddingBottom: 12 }}>
+        {/* Input row — 8px rhythm matches messaging's p-2 */}
+        <div style={{ padding: 8 }}>
           <textarea
             ref={textareaRef}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             placeholder={placeholder}
             rows={1}
             className="w-full resize-none border-0 outline-none font-['Roboto',sans-serif] text-[14px] leading-[22px] placeholder:text-[#666666]"
@@ -75,7 +82,7 @@ export function EmailComposer({ onSend, placeholder = 'Reply to this email...' }
         {/* Toolbar */}
         <div className="flex items-center justify-between" style={{ padding: 8 }}>
           <button
-            className="rounded-[4px] transition-colors hover:bg-[#eaeef9]"
+            className="rounded-[4px] transition-colors hover:bg-[#eaeef9] active:bg-[#dbe3f5] cursor-pointer"
             style={{ padding: 6 }}
             aria-label="Attach file"
           >
@@ -85,7 +92,7 @@ export function EmailComposer({ onSend, placeholder = 'Reply to this email...' }
           <button
             onClick={handleSend}
             disabled={!canSend}
-            className="flex items-center justify-center rounded-[6px] font-['Roboto',sans-serif] font-medium text-[12px] transition-colors"
+            className={`flex items-center justify-center rounded-[6px] font-['Roboto',sans-serif] font-medium text-[12px] transition-all ${canSend ? 'hover:opacity-90 active:opacity-80' : ''}`}
             style={{
               height: 32,
               paddingLeft: 16,
