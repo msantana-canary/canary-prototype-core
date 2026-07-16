@@ -24,6 +24,12 @@ export interface EmailMessage {
   staffName?: string; // outbound only
 }
 
+/** A named email participant (used for the Info sidebar's CC row). */
+export interface EmailParticipant {
+  name: string;
+  email: string;
+}
+
 export interface EmailThread {
   id: string;
   senderName: string; // From display name — what list + header show
@@ -34,4 +40,13 @@ export interface EmailThread {
   isUnread: boolean;
   lastActivityAt: Date;
   preview: string; // one-line list preview (verbatim from Figma)
+  /**
+   * CC recipients on the thread, if any. Modeled at the THREAD level (not
+   * per-message): the Email Info sidebar's Participants section is display-only
+   * and a thread's participant set is stable across its messages, so a single
+   * thread-level list is simpler than reconciling per-message CCs. Optional —
+   * most threads have no CC; Nina Ashford's thread CCs her partner (guest-side)
+   * so the Participants CC row has something to show.
+   */
+  cc?: EmailParticipant[];
 }

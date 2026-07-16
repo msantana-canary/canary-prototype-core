@@ -169,7 +169,31 @@ Emily
 ```
 Give 2–3 of the other threads a short multi-message history (inbound + a staff reply) so clicking around feels alive; keep bodies consistent with their previews. Seed one archived thread so the Archived tab isn't empty.
 
-## Phase 2 (do NOT build yet — logged for scope)
+## Phase 2a — Email Info Sidebar (SPECCED 2026-07-16, build now)
+
+Port Messaging's info sidebar (`components/products/messaging/GuestInfoSidebar.tsx` — read it first,
+match its width/section anatomy/typography idiom) into Email as a push panel (NOT a popup — SJ + Wenjun
+steer, 7/07). Toggled by the thread header's info icon (already built, currently inert); icon gets a
+pressed/active state while open; panel is a third column that pushes the thread view narrower.
+
+Content model — what carries over from Messaging vs what's email-native:
+1. **Email identity block (email-native, top):** sender display name + email address, and the auto-link
+   mapping made inspectable: sender → linked canonical guest with an AUTO-LINKED badge (auto-link is BY
+   sender address — Rachel's anti-spoofing rule). Unlinked threads (Rebecca Nolan) show the raw sender
+   + a "No linked guest" state instead.
+2. **Participants (email-native):** From / To / CC rows, display-only. This PLANTS the answer to Jake's
+   CC question (DSN-1775 spec gap) as designed UI. Give ONE thread a CC (e.g. Nina Ashford CCs her
+   partner) so the section has something to show.
+3. **Linked Reservation (ported):** messaging's Linked Reservations pattern — same table/list anatomy +
+   AUTO-LINKED badge (do NOT redesign the table; its shape is a settled cross-project decision). Room,
+   dates, status from canonical reservation data via the linked guest.
+4. **Assignment (ported):** Assign Staff or Department — email triage needs owners at least as much as SMS.
+5. **Scheduled Guest Journey Messages (ported):** upcoming GJ sends for the linked guest + "View channel
+   statuses" link (ties into Rachel's scheduled-messages delivery-status work).
+6. **Cross-channel jump (email-native):** "Open conversation" → routes to /messages (the June V1 guest-strip
+   affordance, relocated here).
+Deliberately OUT of v1: Call History (voice noise on an email surface), Service Tasks (defer until asked).
+
+## Phase 2b (do NOT build yet — logged for scope)
 - AI draft-reply moment (Copilot pill → draft appears in composer) — Rachel's future-sell ask.
-- Reservation info affordance (info icon → sidebar panel, NOT popup — SJ/Wenjun steer). Sidebar contents TBD w/ Rachel.
-- CC display, unlinked-sender states, New message compose flow.
+- Unlinked-sender manual linking, New message compose flow.

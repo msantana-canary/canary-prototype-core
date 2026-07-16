@@ -18,6 +18,7 @@ interface EmailState {
   view: EmailView;
   searchQuery: string;
   draft: string;
+  isInfoOpen: boolean;
 
   // Actions
   selectThread: (threadId: string) => void;
@@ -26,9 +27,14 @@ interface EmailState {
   setDraft: (draft: string) => void;
   archiveThread: (threadId: string) => void;
   sendReply: (threadId: string, body: string) => void;
+  toggleInfo: () => void;
+  setInfoOpen: (open: boolean) => void;
 }
 
 const STAFF_NAME = 'Theresa Webb';
+
+/** The thread auto-opened in the read pane on first load (matches Figma open state). */
+const INITIAL_SELECTED_THREAD_ID = 'email-emily';
 
 /** Threads in a view, newest activity first (mirrors the list's sort). */
 function threadsInViewByRecency(threads: EmailThread[], view: EmailView): EmailThread[] {
@@ -37,33 +43,48 @@ function threadsInViewByRecency(threads: EmailThread[], view: EmailView): EmailT
     .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
 }
 
+/**
+ * Mark a single thread read. Selecting a thread opens it in the read pane, and
+ * the invariant is "the open thread is never unread" — so this is applied both
+ * on selectThread AND to the initial state's auto-selected thread. Marking read
+ * happens at the store level, never by editing the thread's mock flag.
+ */
+function markThreadRead(threads: EmailThread[], threadId: string | null): EmailThread[] {
+  if (!threadId) return threads;
+  return threads.map((t) => (t.id === threadId ? { ...t, isUnread: false } : t));
+}
+
 export const useEmailStore = create<EmailState>((set, get) => ({
-  // Initial state — default to the featured Emily thread (matches Figma open state)
-  threads: mockThreads,
+  // Initial state — default to the featured Emily thread (matches Figma open state).
+  // The auto-selected thread is marked read the same way selectThread does, so
+  // the list never shows an unread dot on the thread that's already open.
+  threads: markThreadRead(mockThreads, INITIAL_SELECTED_THREAD_ID),
   messages: mockMessages,
-  selectedThreadId: 'email-emily',
+  selectedThreadId: INITIAL_SELECTED_THREAD_ID,
   view: 'inbox',
   searchQuery: '',
   draft: '',
+  isInfoOpen: false,
 
   selectThread: (threadId: string) => {
     set((state) => ({
       selectedThreadId: threadId,
       draft: '',
-      threads: state.threads.map((t) =>
-        t.id === threadId ? { ...t, isUnread: false } : t
-      ),
+      threads: markThreadRead(state.threads, threadId),
     }));
   },
 
   setView: (view: EmailView) => {
     // Select the most recent thread in the target view (or none if empty)
     const threadsInView = threadsInViewByRecency(get().threads, view);
-    set({
+    const nextSelectedId = threadsInView.length > 0 ? threadsInView[0].id : null;
+    set((state) => ({
       view,
-      selectedThreadId: threadsInView.length > 0 ? threadsInView[0].id : null,
+      selectedThreadId: nextSelectedId,
       draft: '',
-    });
+      // Keep the "open thread is never unread" invariant across view switches.
+      threads: markThreadRead(state.threads, nextSelectedId),
+    }));
   },
 
   setSearch: (query: string) => {
@@ -114,5 +135,13 @@ export const useEmailStore = create<EmailState>((set, get) => ({
       ),
       draft: '',
     }));
+  },
+
+  toggleInfo: () => {
+    set((state) => ({ isInfoOpen: !state.isInfoOpen }));
+  },
+
+  setInfoOpen: (open: boolean) => {
+    set({ isInfoOpen: open });
   },
 }));

@@ -33,6 +33,7 @@ import {
   mdiUnfoldMoreHorizontal,
 } from '@mdi/js';
 import { shellTokens } from './shell-tokens';
+import { useEmailStore } from '@/lib/products/email/store';
 
 interface NavItem {
   id: string;
@@ -70,17 +71,22 @@ function SidebarNavItem({ item }: { item: NavItem }) {
         paddingRight: 12,
         paddingTop: 8,
         paddingBottom: 8,
-        backgroundColor: isActive ? colors.colorWhite : 'transparent',
+        // Only the active (white pill) item gets an inline background. Inactive
+        // items intentionally get NO inline background so the Tailwind
+        // hover/active/focus-visible classes above actually paint — an inline
+        // `backgroundColor: transparent` was overriding them (the dead-hover bug).
+        ...(isActive ? { backgroundColor: colors.colorWhite } : {}),
         cursor: isActive ? 'default' : 'pointer',
       }}
     >
-      {/* Library CanarySidebar parity: 24px icons, inactive at 50% opacity,
-          active icon + label in the rail navy (#375492) on the white pill,
-          label always font-normal — only color changes with state. */}
+      {/* Library CanarySidebar parity: 20×20 icons (size 0.83 — Figma-measured;
+          24px puffed rows to 40px), inactive at 50% opacity, active icon + label
+          in the rail navy (#375492) on the white pill, label always font-normal
+          — only color changes with state. */}
       <span style={{ opacity: isActive ? 1 : 0.5 }} className="shrink-0 flex items-center">
         <Icon
           path={item.icon}
-          size={1}
+          size={0.83}
           color={isActive ? shellTokens.sidebarBg : colors.colorWhite}
         />
       </span>
@@ -112,12 +118,19 @@ function SidebarNavItem({ item }: { item: NavItem }) {
 export function NewSidebar() {
   const router = useRouter();
 
+  // Derive the Email nav badge from the store's unread inbox count (mirrors the
+  // legacy dashboard's addBadge idiom in app/(dashboard)/layout.tsx). Undefined
+  // when zero so the badge disappears — no more hardcoded `4`.
+  const unreadInboxCount = useEmailStore(
+    (s) => s.threads.filter((t) => t.isUnread && t.status === 'inbox').length
+  );
+
   const groups: NavItem[][] = [
     // Communications — icon set matches the REAL product sidebarTabs (library dist),
     // not AI_REFERENCE.md (stale) and not the Figma's placeholder assets.
     [
       { id: 'messages', label: 'Messages', icon: mdiMessageProcessingOutline, onClick: () => router.push('/messages') },
-      { id: 'email', label: 'Email', icon: mdiEmailOutline, badge: 4, active: true },
+      { id: 'email', label: 'Email', icon: mdiEmailOutline, badge: unreadInboxCount > 0 ? unreadInboxCount : undefined, active: true },
       { id: 'calls', label: 'Calls', icon: mdiPhoneOutline, onClick: () => router.push('/calls') },
     ],
     // Guest Management
@@ -141,10 +154,10 @@ export function NewSidebar() {
       className="flex flex-col shrink-0 h-full"
       style={{ width: 240, backgroundColor: shellTokens.sidebarBg }}
     >
-      {/* Hotel selector */}
+      {/* Hotel selector — fixed 52px total height (Figma-measured), px-12 */}
       <div
-        className="flex items-center gap-2"
-        style={{ paddingLeft: 12, paddingRight: 12, paddingTop: 16, paddingBottom: 16 }}
+        className="flex items-center gap-2 shrink-0"
+        style={{ height: 52, paddingLeft: 12, paddingRight: 12 }}
       >
         <div className="flex-1 min-w-0 truncate whitespace-nowrap">
           <span
@@ -208,7 +221,7 @@ export function NewSidebar() {
               backgroundColor: shellTokens.teamChatPill,
             }}
           >
-            <Icon path={mdiAccountMultipleOutline} size={1} color={colors.colorWhite} />
+            <Icon path={mdiAccountMultipleOutline} size={0.83} color={colors.colorWhite} />
             <span
               className="flex-1 font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate"
               style={{ color: colors.colorWhite }}

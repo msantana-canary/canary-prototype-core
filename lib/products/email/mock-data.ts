@@ -139,6 +139,9 @@ export const mockThreads: EmailThread[] = [
     status: 'inbox',
     isUnread: true,
     lastActivityAt: dayAt(1, 13, 10),
+    // CC's her partner (guest-side) so the Info sidebar's Participants CC row
+    // has real data — this plants the answer to Jake's DSN-1775 CC question.
+    cc: [{ name: 'David Ashford', email: 'david.ashford@outlook.com' }],
     preview:
       'Hi, thank you for the lovely note! It’s our 10th anniversary — would it be possible to have a bottle of champagne waiting in the room when we arrive?',
   },

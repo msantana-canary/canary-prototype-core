@@ -15,10 +15,12 @@ import { colors } from '@canary-ui/components';
 import { useEmailStore } from '@/lib/products/email/store';
 import { EmailThreadList } from './EmailThreadList';
 import { EmailThreadView } from './EmailThreadView';
+import { EmailInfoSidebar } from './EmailInfoSidebar';
 
 export function EmailSurface() {
   const searchQuery = useEmailStore((s) => s.searchQuery);
   const setSearch = useEmailStore((s) => s.setSearch);
+  const isInfoOpen = useEmailStore((s) => s.isInfoOpen);
 
   return (
     <div className="flex flex-col flex-1 min-h-0" style={{ backgroundColor: colors.colorBlack8 }}>
@@ -63,6 +65,8 @@ export function EmailSurface() {
       <div className="flex flex-1 gap-4 min-h-0" style={{ paddingLeft: 24, paddingRight: 24, paddingBottom: 24 }}>
         <EmailThreadList />
         <EmailThreadView />
+        {/* Info panel — third column, pushes the thread view narrower when open */}
+        {isInfoOpen && <EmailInfoSidebar />}
       </div>
     </div>
   );

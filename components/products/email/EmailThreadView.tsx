@@ -100,6 +100,8 @@ export function EmailThreadView() {
   const selectedThreadId = useEmailStore((s) => s.selectedThreadId);
   const archiveThread = useEmailStore((s) => s.archiveThread);
   const sendReply = useEmailStore((s) => s.sendReply);
+  const isInfoOpen = useEmailStore((s) => s.isInfoOpen);
+  const toggleInfo = useEmailStore((s) => s.toggleInfo);
 
   const thread = threads.find((t) => t.id === selectedThreadId);
   const messages = selectedThreadId ? messagesByThread[selectedThreadId] ?? [] : [];
@@ -124,7 +126,7 @@ export function EmailThreadView() {
   if (!thread) {
     return (
       <div
-        className="flex-1 flex items-center justify-center rounded-[12px]"
+        className="flex-1 min-w-0 flex items-center justify-center rounded-[12px]"
         style={{ backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack6}` }}
       >
         <p className="font-['Roboto',sans-serif] text-[14px]" style={{ color: colors.colorBlack4 }}>
@@ -136,7 +138,7 @@ export function EmailThreadView() {
 
   return (
     <div
-      className="group flex-1 flex flex-col h-full overflow-clip rounded-[12px]"
+      className="group flex-1 min-w-0 flex flex-col h-full overflow-clip rounded-[12px]"
       style={{ backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack6}` }}
     >
       {/* Header */}
@@ -164,8 +166,14 @@ export function EmailThreadView() {
           </div>
         </div>
 
-        {/* Right: action group — hidden by default, revealed on thread-view hover */}
-        <div className="flex items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Right: action group — hidden by default, revealed on thread-view hover.
+            Stays visible while the Info panel is open so the pressed info button
+            (its active affordance) remains on screen. */}
+        <div
+          className={`flex items-center gap-2 shrink-0 transition-opacity ${
+            isInfoOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}
+        >
           <button
             onClick={() => archiveThread(thread.id)}
             className="flex items-center justify-center rounded-[6px] font-['Roboto',sans-serif] font-medium text-[14px] transition-opacity hover:opacity-80"
@@ -173,8 +181,25 @@ export function EmailThreadView() {
           >
             Archive
           </button>
-          <button className="rounded-[4px] hover:bg-[#f0f0f0] transition-colors" style={{ padding: 10 }} aria-label="Info">
-            <Icon path={mdiInformationOutline} size={0.83} color={colors.colorBlack3} />
+          <button
+            onClick={toggleInfo}
+            aria-label="Info"
+            aria-pressed={isInfoOpen}
+            className={`rounded-[4px] transition-colors ${isInfoOpen ? '' : 'hover:bg-[#f0f0f0]'}`}
+            style={{
+              padding: 10,
+              cursor: 'pointer',
+              // Only set an inline bg when pressed (open); leave it unset when
+              // closed so the hover class can paint (same inline-override lesson
+              // as the sidebar hover bug).
+              ...(isInfoOpen ? { backgroundColor: colors.colorBlueDark5 } : {}),
+            }}
+          >
+            <Icon
+              path={mdiInformationOutline}
+              size={0.83}
+              color={isInfoOpen ? colors.colorBlueDark1 : colors.colorBlack3}
+            />
           </button>
           <button className="rounded-[4px] hover:bg-[#f0f0f0] transition-colors" style={{ padding: 10 }} aria-label="More">
             <Icon path={mdiDotsHorizontal} size={0.83} color={colors.colorBlack3} />
