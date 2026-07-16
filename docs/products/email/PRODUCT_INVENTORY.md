@@ -200,15 +200,15 @@ The star of the fork. A review card that sits ABOVE the composer inside `EmailTh
 - **Grounding chips** (the differentiator): below the draft body, muted source chips showing what the reply is grounded in — the linked reservation (`Reservation · Room N · dates`, from canonical `getGuestReservations`), the guest's loyalty tier (from `getGuest().statusTag`), and one static property-policy chip per thread (from `ai-drafts.ts`, e.g. "Policy · Luggage storage", "Folio · Nov 21 charge"). Unlinked threads (Rebecca) show no reservation/tier chip — only the policy chip.
 - **Footer actions:** **Use draft** (primary — lands the text in the composer) · **Shorten** (directed transform → the scripted ~2-sentence variant; disabled once short) · **Regenerate** (cycles the two full variants).
 - **Generating state:** ~1.2s "Drafting a reply…" with shimmering gray placeholder lines (`.email-draft-shimmer-line` in `globals.css`, pure CSS). Transforms (Regenerate/Shorten/restore) use a ~0.8s shimmer.
-- **`AiDraftPrompt`** (same file): the on-demand cold-start affordance — the card chrome collapsed to a single "Draft a reply" row that generates on click.
+- **`AiOrbButton`** (same file): the on-demand / re-summon affordance — an animated "Siri-orb" pill (gradient border + a rotating/breathing CSS orb + gradient "Draft a reply" label) that lives in the composer toolbar **immediately left of Send**. Self-gating: shown whenever the open thread is draft-eligible and no live card is on screen (status undefined / `dismissed` / `used`); hidden when a card is `ready`; stays visible in a disabled "Drafting…" state while `generating` (the orb doubles as the loading indicator). Orb CSS is in `globals.css` (`.ai-orb*`).
 
 ### Draft lifecycle & eligibility
 
 - A thread is **DRAFT-ELIGIBLE** when its most recent message is inbound (guest awaiting a reply). The card only renders for eligible threads.
-- **Auto mode** (default): selecting an eligible thread with no cached draft → generating → draft. Cached per thread (`no re-shimmer on revisit`). When a **simulated inbound arrives on the OPEN thread**, the card force-regenerates for the new message — the demo money shot (simulate → arrival → shimmer → draft).
-- **On-demand mode:** no auto shimmer; the `AiDraftPrompt` row generates on click.
-- **Use draft** → text lands in the composer (editable), card → `used` (disappears).
-- **Dismiss (X)** → card → `dismissed`; a "Draft with AI" affordance appears in the composer toolbar (left of Send-side, next to the paperclip) to re-summon it.
+- **On-demand mode** (default): no auto shimmer; the composer's **Draft a reply** orb generates on click. Clicking maps to the right store action for the current state — `generateDraft` (no entry) · `restoreDraft` (`dismissed`) · `forceGenerateDraft` (`used`). When a **simulated inbound arrives on the OPEN thread**, the card force-drafts for the new message — the demo money shot fires in on-demand too (explicit presenter action, not ambient auto-drafting).
+- **Auto mode:** selecting an eligible thread with no cached draft → generating → draft. Cached per thread (`no re-shimmer on revisit`). When a **simulated inbound arrives on the OPEN thread**, the card force-regenerates for the new message. Switching **to on-demand** clears any live (`generating`/`ready`) cards so the orb takes over; `used`/`dismissed` history is kept.
+- **Use draft** → text lands in the composer (editable), card → `used` (disappears); the orb returns for re-summon.
+- **Dismiss (X)** → card → `dismissed`; the composer's orb re-summons it (`restoreDraft`).
 
 ### Draft-application mechanism (composer hand-off)
 
@@ -226,7 +226,7 @@ Hand-authored (no live LLM, deterministic demo). Keyed by thread ID; covers ever
 
 ### Prototype toggle & New message
 
-- `PrototypeVariantToggle` gains an **"AI drafts"** radio group (Auto / On demand; default Auto).
+- `PrototypeVariantToggle` gains an **"AI drafts"** radio group (Auto / On demand; **default On demand**).
 - The **New message** button returns right of the search field in `EmailSurface` (no "FUTURE" tag — this branch is the future). No-op click.
 
 ### Copilot pill stays hidden — by design

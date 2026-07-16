@@ -20,7 +20,7 @@ import { useEmailStore } from '@/lib/products/email/store';
 import { EmailMessage, EmailThread } from '@/lib/products/email/types';
 import { formatDayDivider, startOfDay } from '@/lib/products/email/date-utils';
 import { EmailComposer } from './EmailComposer';
-import { AiDraftCard, AiDraftPrompt } from './AiDraftCard';
+import { AiDraftCard } from './AiDraftCard';
 
 const STAFF_NAME = 'Theresa Webb';
 
@@ -105,7 +105,6 @@ export function EmailThreadView() {
   const toggleInfo = useEmailStore((s) => s.toggleInfo);
   const generateDraft = useEmailStore((s) => s.generateDraft);
   const aiDraftTrigger = useEmailStore((s) => s.aiDraftTrigger);
-  const aiDrafts = useEmailStore((s) => s.aiDrafts);
 
   const thread = threads.find((t) => t.id === selectedThreadId);
   const messages = selectedThreadId ? messagesByThread[selectedThreadId] ?? [] : [];
@@ -114,7 +113,6 @@ export function EmailThreadView() {
   // is awaiting a reply). The AI draft card only appears for eligible threads.
   const lastMessage = messages[messages.length - 1];
   const isEligible = lastMessage?.direction === 'inbound';
-  const aiDraftEntry = thread ? aiDrafts[thread.id] : undefined;
 
   // Group messages by calendar day (messages are stored chronologically ascending).
   const dayGroups: { key: number; label: string; items: EmailMessage[] }[] = [];
@@ -246,12 +244,10 @@ export function EmailThreadView() {
 
       {/* AI suggested-reply card + composer */}
       <div className="shrink-0">
-        {/* The card renders itself only while generating/ready; the prompt is the
-            on-demand cold-start affordance (hidden once an entry exists). */}
+        {/* The card renders itself only while generating/ready. The on-demand /
+            re-summon affordance is the AiOrbButton inside the composer toolbar
+            (self-gating), so nothing extra is needed here. */}
         {isEligible && <AiDraftCard threadId={thread.id} />}
-        {isEligible && aiDraftTrigger === 'on-demand' && !aiDraftEntry && (
-          <AiDraftPrompt threadId={thread.id} />
-        )}
         <EmailComposer threadId={thread.id} onSend={(content) => sendReply(thread.id, content)} />
       </div>
     </div>

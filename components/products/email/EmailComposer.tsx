@@ -11,10 +11,10 @@
 
 import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import Icon from '@mdi/react';
-import { mdiPaperclip, mdiWaveform } from '@mdi/js';
+import { mdiPaperclip } from '@mdi/js';
 import { colors } from '@canary-ui/components';
 import { useEmailStore } from '@/lib/products/email/store';
-import { shellTokens } from './shell/shell-tokens';
+import { AiOrbButton } from './AiDraftCard';
 
 interface EmailComposerProps {
   /** The thread this composer replies to — scopes draft application + reset. */
@@ -35,8 +35,6 @@ export function EmailComposer({ threadId, onSend, placeholder = 'Reply to this e
   // draft is editable after it lands). `appliedSeq` persists across thread
   // switches so revisiting a thread never re-injects an old draft.
   const draftApplication = useEmailStore((s) => s.draftApplication);
-  const draftStatus = useEmailStore((s) => s.aiDrafts[threadId]?.status);
-  const restoreDraft = useEmailStore((s) => s.restoreDraft);
   const appliedSeq = useRef(0);
 
   const canSend = message.trim().length > 0;
@@ -129,41 +127,28 @@ export function EmailComposer({ threadId, onSend, placeholder = 'Reply to this e
             >
               <Icon path={mdiPaperclip} size={0.83} color={colors.colorBlack3} />
             </button>
-
-            {/* Re-summon a dismissed AI draft. Only present once the suggested-
-                reply card has been dismissed for this thread. */}
-            {draftStatus === 'dismissed' && (
-              <button
-                onClick={() => restoreDraft(threadId)}
-                className="flex items-center gap-1 rounded-[4px] transition-colors hover:bg-[#eaeef9] cursor-pointer"
-                style={{ paddingLeft: 6, paddingRight: 8, paddingTop: 5, paddingBottom: 5 }}
-              >
-                <Icon path={mdiWaveform} size={0.7} color={shellTokens.copilotBorder} />
-                <span
-                  className="font-['Roboto',sans-serif] font-medium text-[12px] leading-[16px]"
-                  style={{ color: colors.colorBlueDark1 }}
-                >
-                  Draft with AI
-                </span>
-              </button>
-            )}
           </div>
 
-          <button
-            onClick={handleSend}
-            disabled={!canSend}
-            className={`flex items-center justify-center rounded-[6px] font-['Roboto',sans-serif] font-medium text-[12px] transition-all ${canSend ? 'hover:opacity-90 active:opacity-80' : ''}`}
-            style={{
-              height: 32,
-              paddingLeft: 16,
-              paddingRight: 16,
-              backgroundColor: canSend ? colors.colorBlueDark1 : colors.colorBlack5,
-              color: colors.colorWhite,
-              cursor: canSend ? 'pointer' : 'not-allowed',
-            }}
-          >
-            Send
-          </button>
+          {/* Right cluster: the animated "Draft a reply" orb sits immediately
+              left of Send (self-gating on eligibility + draft state). */}
+          <div className="flex items-center gap-2">
+            <AiOrbButton threadId={threadId} />
+            <button
+              onClick={handleSend}
+              disabled={!canSend}
+              className={`flex items-center justify-center rounded-[6px] font-['Roboto',sans-serif] font-medium text-[12px] transition-all ${canSend ? 'hover:opacity-90 active:opacity-80' : ''}`}
+              style={{
+                height: 32,
+                paddingLeft: 16,
+                paddingRight: 16,
+                backgroundColor: canSend ? colors.colorBlueDark1 : colors.colorBlack5,
+                color: colors.colorWhite,
+                cursor: canSend ? 'pointer' : 'not-allowed',
+              }}
+            >
+              Send
+            </button>
+          </div>
         </div>
       </div>
     </div>

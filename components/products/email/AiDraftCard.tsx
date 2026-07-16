@@ -17,8 +17,10 @@
  * canonical data) plus one static property-policy chip (from ai-drafts.ts).
  * That source-citation trust cue is what a generic email client can't do.
  *
- * `AiDraftPrompt` is the on-demand cold-start affordance: the same card chrome
- * collapsed to a single "Draft a reply" row that generates on click.
+ * `AiOrbButton` is the on-demand / re-summon affordance: an animated "Siri-orb"
+ * pill that lives in the composer toolbar immediately left of Send. It shows
+ * whenever the open thread is draft-eligible and no live card is on screen, and
+ * clicking it kicks off (or restores/regenerates) a draft.
  */
 
 'use client';
@@ -220,32 +222,91 @@ export function AiDraftCard({ threadId }: { threadId: string }) {
 }
 
 /**
- * AiDraftPrompt — on-demand cold-start affordance. Same card chrome collapsed
- * to a single "Draft a reply" row; clicking generates the draft. Shown above
- * the composer in on-demand mode when no draft exists yet for the thread.
+ * The animated "Siri orb" — an 18px living gradient blob. Two stacked layers so
+ * rotation (the conic base) and the glassy highlight move independently; the
+ * whole orb breathes. All motion + timing lives in globals.css (`.ai-orb*`).
  */
-export function AiDraftPrompt({ threadId }: { threadId: string }) {
-  const generateDraft = useEmailStore((s) => s.generateDraft);
+function AiOrb({ generating }: { generating: boolean }) {
   return (
-    <div style={{ paddingLeft: 16, paddingRight: 16, paddingTop: 16, paddingBottom: 0 }}>
-      <button
-        onClick={() => generateDraft(threadId)}
-        className="w-full flex items-center gap-2 rounded-[12px] transition-colors hover:brightness-[0.99] cursor-pointer"
+    <span className="ai-orb" aria-hidden="true">
+      <span className={`ai-orb-spin${generating ? ' is-fast' : ''}`} />
+      <span className="ai-orb-glow" />
+    </span>
+  );
+}
+
+/**
+ * AiOrbButton — the on-demand / re-summon affordance. A gradient-bordered pill
+ * (padding-hack border so the radius is honored) carrying the orb + a gradient
+ * "Draft a reply" label, living in the composer toolbar immediately left of
+ * Send.
+ *
+ * Visibility: shown whenever the thread is DRAFT-ELIGIBLE (latest message
+ * inbound) and no live card is on screen — i.e. status is undefined / 'dismissed'
+ * / 'used'. Hidden when a card is 'ready'. During 'generating' it stays visible
+ * in a disabled "Drafting…" state (the orb is the loading indicator) while the
+ * shimmer card also shows above the composer.
+ *
+ * Click → the right store action for the current state:
+ *   - no entry   → generateDraft (fresh cache-guarded generate)
+ *   - 'dismissed' → restoreDraft (bring the dismissed card back)
+ *   - 'used'      → forceGenerateDraft (fresh draft — the prior was consumed)
+ */
+export function AiOrbButton({ threadId }: { threadId: string }) {
+  const status = useEmailStore((s) => s.aiDrafts[threadId]?.status);
+  const messages = useEmailStore((s) => s.messages[threadId] ?? []);
+  const generateDraft = useEmailStore((s) => s.generateDraft);
+  const restoreDraft = useEmailStore((s) => s.restoreDraft);
+  const forceGenerateDraft = useEmailStore((s) => s.forceGenerateDraft);
+
+  // Eligible when the most recent message is inbound (guest awaiting a reply).
+  const lastMessage = messages[messages.length - 1];
+  const isEligible = lastMessage?.direction === 'inbound';
+
+  // Nothing to draft for this thread, not eligible, or a live card owns the
+  // screen ('ready') → no button.
+  if (!isEligible || !getDraft(threadId) || status === 'ready') return null;
+
+  const generating = status === 'generating';
+
+  const handleClick = () => {
+    if (generating) return;
+    if (!status) generateDraft(threadId);
+    else if (status === 'dismissed') restoreDraft(threadId);
+    else forceGenerateDraft(threadId); // 'used'
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={generating}
+      aria-label={generating ? 'Drafting a reply' : 'Draft a reply'}
+      className={`ai-orb-btn rounded-full transition-all ${
+        generating ? '' : 'hover:-translate-y-px hover:shadow-sm'
+      }`}
+      style={{
+        // 1px gradient border via padding-hack (border-image ignores radius).
+        padding: 1,
+        background: 'linear-gradient(90deg, #465FF5, #8E4FD6, #DB3535)',
+        cursor: generating ? 'default' : 'pointer',
+      }}
+    >
+      <span
+        className="flex items-center rounded-full"
         style={{
-          border: `1px solid ${shellTokens.copilotBorder}`,
+          height: 30,
+          paddingLeft: 12,
+          paddingRight: 12,
+          gap: 8,
           backgroundColor: colors.colorWhite,
-          backgroundImage: shellTokens.copilotTint,
-          paddingLeft: 14,
-          paddingRight: 14,
-          paddingTop: 10,
-          paddingBottom: 10,
         }}
       >
-        <Icon path={mdiWaveform} size={16 / 24} color={shellTokens.copilotBorder} />
+        <AiOrb generating={generating} />
         <span className={`${GRADIENT_TEXT} font-['Roboto',sans-serif] font-medium text-[12px] leading-[18px]`}>
-          Draft a reply
+          {generating ? 'Drafting…' : 'Draft a reply'}
         </span>
-      </button>
-    </div>
+      </span>
+    </button>
   );
 }

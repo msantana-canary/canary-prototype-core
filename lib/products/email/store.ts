@@ -232,7 +232,10 @@ export const useEmailStore = create<EmailState>((set, get) => ({
   infoPanelStyle: 'push',
   inboundQueueIndex: 0,
   aiDrafts: {},
-  aiDraftTrigger: 'auto',
+  // On-demand is the default: the staff summons a draft from the composer's
+  // "Draft a reply" orb. Auto (draft-on-arrival) is the aggressive minority the
+  // prototype toggle can flip to for a live in-the-room comparison.
+  aiDraftTrigger: 'on-demand',
   draftApplication: null,
 
   selectThread: (threadId: string) => {
@@ -346,17 +349,12 @@ export const useEmailStore = create<EmailState>((set, get) => ({
         ),
       }));
 
-      // Money shot: a reply landing on the OPEN thread re-drafts a suggested
-      // reply for the just-arrived message. Refresh when auto-drafting, or when
-      // a draft card is already on screen for this thread (so on-demand still
-      // updates a visible card but doesn't pop one unbidden).
-      const replyDraft = get().aiDrafts[threadId];
-      if (
-        threadId === selectedThreadId &&
-        (get().aiDraftTrigger === 'auto' ||
-          replyDraft?.status === 'ready' ||
-          replyDraft?.status === 'generating')
-      ) {
+      // Money shot: a reply landing on the OPEN thread force-drafts a suggested
+      // reply for the just-arrived message. "Simulate incoming email" is an
+      // explicit presenter action (not ambient auto-drafting), so this fires in
+      // BOTH trigger modes — including on-demand, where an ordinary arrival
+      // would never pop a card unbidden.
+      if (threadId === selectedThreadId) {
         get().forceGenerateDraft(threadId);
       }
       return;
@@ -556,6 +554,26 @@ export const useEmailStore = create<EmailState>((set, get) => ({
   },
 
   setAiDraftTrigger: (trigger: AiDraftTrigger) => {
+    // Switching TO on-demand should cleanly remove any auto-generated cards so
+    // the composer orb takes over: drop every 'generating'/'ready' entry (and
+    // bump its token so an in-flight timer can't resurrect it). 'used' and
+    // 'dismissed' entries are user history — keep them. Switching TO auto needs
+    // no clearing; EmailThreadView's auto-draft effect (aiDraftTrigger is in its
+    // deps) regenerates for the open thread.
+    if (trigger === 'on-demand') {
+      set((state) => {
+        const next: Record<string, AiDraftEntry> = {};
+        for (const [threadId, entry] of Object.entries(state.aiDrafts)) {
+          if (entry.status === 'generating' || entry.status === 'ready') {
+            bumpDraftToken(threadId); // cancel any in-flight completion timer
+            continue; // drop the live entry
+          }
+          next[threadId] = entry; // keep 'used' / 'dismissed' history
+        }
+        return { aiDraftTrigger: trigger, aiDrafts: next };
+      });
+      return;
+    }
     set({ aiDraftTrigger: trigger });
   },
 }));
