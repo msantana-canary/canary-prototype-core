@@ -26,16 +26,13 @@ export function EmailThreadList() {
   const selectedThreadId = useEmailStore((s) => s.selectedThreadId);
   const setView = useEmailStore((s) => s.setView);
   const selectThread = useEmailStore((s) => s.selectThread);
-  const isInfoOpen = useEmailStore((s) => s.isInfoOpen);
-  const infoPanelStyle = useEmailStore((s) => s.infoPanelStyle);
 
-  // When the info panel is open in PUSH mode it takes a third column, so the
-  // left column gives up 100px (434 → 334) to keep the thread view readable.
-  // Drawer mode slides the panel over from the screen edge; column stays 434.
-  // (A permanent-334 variant was trialed 2026-07-16 and rejected: the closed
-  // state balloons the thread view's line length and truncates subjects.)
-  const collapsed = isInfoOpen && infoPanelStyle === 'push';
-  const columnWidth = collapsed ? 334 : 434;
+  // Fixed 330px column (Miguel, 7/16 final call — resurrecting his earlier
+  // "smaller from the get-go" instinct, rounded to 330). No collapse dance:
+  // the list never moves; the info panel's open/close only affects the thread
+  // view. History: 434↔334 animated collapse and a permanent-334 were both
+  // trialed the same day; fixed-330 won for layout stability.
+  const columnWidth = 330;
 
   const query = searchQuery.trim().toLowerCase();
 
@@ -56,7 +53,7 @@ export function EmailThreadList() {
   return (
     <div
       className="flex flex-col gap-4 min-h-0 shrink-0"
-      style={{ width: columnWidth, transition: 'width 200ms ease-out' }}
+      style={{ width: columnWidth }}
     >
       {/* Segmented control */}
       <div
