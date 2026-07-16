@@ -187,6 +187,54 @@ These are deliberately absent from this baseline (`demo/email-channel`). AI-forw
 
 ---
 
+## 4a. AI Features (this fork — `demo/email-channel-ai`)
+
+> This branch is the AI fork of the frozen baseline: the "future sell" build for a churn-risk customer. The agreed AI stance is **draft-only, never auto-send** — AI writes a reply into a review card; staff review/edit/Send. Everything in §4 above is deliberately absent from the baseline but present here, EXCEPT the top-bar Copilot pill, which stays hidden (see below).
+
+### The AI draft-reply card — `components/products/email/AiDraftCard.tsx`
+
+The star of the fork. A review card that sits ABOVE the composer inside `EmailThreadView`, carrying the AI visual language on this build (electric-blue `#465FF5` border, faint `shellTokens.copilotTint` over white, gradient "Suggested reply" label with the `mdiWaveform` icon).
+
+- **Title copy:** "Suggested reply" (not "Copilot suggested reply") — verb-honest, hotelier-readable, and avoids over-claiming a persistent-assistant surface that's deliberately hidden here.
+- **Micro-reassurance line:** "Review before sending — nothing is sent automatically." (small/muted) makes the never-auto-send promise legible.
+- **Grounding chips** (the differentiator): below the draft body, muted source chips showing what the reply is grounded in — the linked reservation (`Reservation · Room N · dates`, from canonical `getGuestReservations`), the guest's loyalty tier (from `getGuest().statusTag`), and one static property-policy chip per thread (from `ai-drafts.ts`, e.g. "Policy · Luggage storage", "Folio · Nov 21 charge"). Unlinked threads (Rebecca) show no reservation/tier chip — only the policy chip.
+- **Footer actions:** **Use draft** (primary — lands the text in the composer) · **Shorten** (directed transform → the scripted ~2-sentence variant; disabled once short) · **Regenerate** (cycles the two full variants).
+- **Generating state:** ~1.2s "Drafting a reply…" with shimmering gray placeholder lines (`.email-draft-shimmer-line` in `globals.css`, pure CSS). Transforms (Regenerate/Shorten/restore) use a ~0.8s shimmer.
+- **`AiDraftPrompt`** (same file): the on-demand cold-start affordance — the card chrome collapsed to a single "Draft a reply" row that generates on click.
+
+### Draft lifecycle & eligibility
+
+- A thread is **DRAFT-ELIGIBLE** when its most recent message is inbound (guest awaiting a reply). The card only renders for eligible threads.
+- **Auto mode** (default): selecting an eligible thread with no cached draft → generating → draft. Cached per thread (`no re-shimmer on revisit`). When a **simulated inbound arrives on the OPEN thread**, the card force-regenerates for the new message — the demo money shot (simulate → arrival → shimmer → draft).
+- **On-demand mode:** no auto shimmer; the `AiDraftPrompt` row generates on click.
+- **Use draft** → text lands in the composer (editable), card → `used` (disappears).
+- **Dismiss (X)** → card → `dismissed`; a "Draft with AI" affordance appears in the composer toolbar (left of Send-side, next to the paperclip) to re-summon it.
+
+### Draft-application mechanism (composer hand-off)
+
+`EmailComposer` stays locally stateful (its own typed text). "Use draft" fires a one-shot store signal `draftApplication: { threadId, text, seq }`; the composer applies it when the signal targets its `threadId` and the monotonic `seq` is newer than the last it applied (an `appliedSeq` ref that persists across thread switches, so revisiting a thread never re-injects an old draft). The composer also resets its text on `threadId` change. This lands the draft **and enables Send** without lifting composer state into the store.
+
+### Store additions — `lib/products/email/store.ts`
+
+- State: `aiDrafts: Record<string, { variantIndex; isShort; status: 'generating'|'ready'|'dismissed'|'used' }>` · `aiDraftTrigger: 'auto'|'on-demand'` · `draftApplication` signal.
+- Actions: `generateDraft` (cache-guarded) · `forceGenerateDraft` (re-shimmer over a cached entry; used by simulate on the open thread) · `regenerateDraft` (cycles variants) · `shortenDraft` · `dismissDraft` · `restoreDraft` · `useDraft` · `setAiDraftTrigger`.
+- Timers are `setTimeout` inside actions, guarded by a module-level per-thread generation token so a superseding click never gets clobbered by an earlier timer.
+
+### Scripted content — `lib/products/email/ai-drafts.ts`
+
+Hand-authored (no live LLM, deterministic demo). Keyed by thread ID; covers every inbox thread AND the three simulate beats (`email-sarah` bag-storage follow-up, new `email-sim-sophia` shuttle request, `email-brooklyn` $45 escalation). Each entry: two full `variants` (staff voice, sign-off "Theresa", specific to the guest's actual question), a `short` variant, and a static `policyChip`.
+
+### Prototype toggle & New message
+
+- `PrototypeVariantToggle` gains an **"AI drafts"** radio group (Auto / On demand; default Auto).
+- The **New message** button returns right of the search field in `EmailSurface` (no "FUTURE" tag — this branch is the future). No-op click.
+
+### Copilot pill stays hidden — by design
+
+`NewTopBar.tsx` keeps `SHOW_COPILOT = false` on this fork (the designer calls it a secret feature). The AI visual language lives in the draft card instead, not the top bar.
+
+---
+
 ## 5. Component Map
 
 ```

@@ -11,20 +11,60 @@
 
 import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import Icon from '@mdi/react';
-import { mdiPaperclip } from '@mdi/js';
+import { mdiPaperclip, mdiWaveform } from '@mdi/js';
 import { colors } from '@canary-ui/components';
+import { useEmailStore } from '@/lib/products/email/store';
+import { shellTokens } from './shell/shell-tokens';
 
 interface EmailComposerProps {
+  /** The thread this composer replies to — scopes draft application + reset. */
+  threadId: string;
   onSend: (content: string) => void;
   placeholder?: string;
 }
 
-export function EmailComposer({ onSend, placeholder = 'Reply to this email...' }: EmailComposerProps) {
+export function EmailComposer({ threadId, onSend, placeholder = 'Reply to this email...' }: EmailComposerProps) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // AI draft application: the "Use draft" button fires a one-shot store signal
+  // (threadId + text + monotonic seq). We inject the text into local state when
+  // the signal targets THIS thread and its seq is newer than the last we
+  // applied — a clean hand-off that leaves the composer locally stateful (the
+  // draft is editable after it lands). `appliedSeq` persists across thread
+  // switches so revisiting a thread never re-injects an old draft.
+  const draftApplication = useEmailStore((s) => s.draftApplication);
+  const draftStatus = useEmailStore((s) => s.aiDrafts[threadId]?.status);
+  const restoreDraft = useEmailStore((s) => s.restoreDraft);
+  const appliedSeq = useRef(0);
+
   const canSend = message.trim().length > 0;
+
+  // Reset the draft when switching threads (each thread gets its own reply).
+  useEffect(() => {
+    setMessage('');
+  }, [threadId]);
+
+  // Apply an incoming draft signal targeting this thread.
+  useEffect(() => {
+    if (
+      draftApplication &&
+      draftApplication.threadId === threadId &&
+      draftApplication.seq > appliedSeq.current
+    ) {
+      appliedSeq.current = draftApplication.seq;
+      setMessage(draftApplication.text);
+      // Focus at the end so staff can immediately edit/send.
+      requestAnimationFrame(() => {
+        const el = textareaRef.current;
+        if (el) {
+          el.focus();
+          el.setSelectionRange(el.value.length, el.value.length);
+        }
+      });
+    }
+  }, [draftApplication, threadId]);
 
   // Auto-grow the textarea
   useEffect(() => {
@@ -81,13 +121,33 @@ export function EmailComposer({ onSend, placeholder = 'Reply to this email...' }
 
         {/* Toolbar */}
         <div className="flex items-center justify-between" style={{ padding: 8 }}>
-          <button
-            className="rounded-[4px] transition-colors hover:bg-[#eaeef9] active:bg-[#dbe3f5] cursor-pointer"
-            style={{ padding: 6 }}
-            aria-label="Attach file"
-          >
-            <Icon path={mdiPaperclip} size={0.83} color={colors.colorBlack3} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              className="rounded-[4px] transition-colors hover:bg-[#eaeef9] active:bg-[#dbe3f5] cursor-pointer"
+              style={{ padding: 6 }}
+              aria-label="Attach file"
+            >
+              <Icon path={mdiPaperclip} size={0.83} color={colors.colorBlack3} />
+            </button>
+
+            {/* Re-summon a dismissed AI draft. Only present once the suggested-
+                reply card has been dismissed for this thread. */}
+            {draftStatus === 'dismissed' && (
+              <button
+                onClick={() => restoreDraft(threadId)}
+                className="flex items-center gap-1 rounded-[4px] transition-colors hover:bg-[#eaeef9] cursor-pointer"
+                style={{ paddingLeft: 6, paddingRight: 8, paddingTop: 5, paddingBottom: 5 }}
+              >
+                <Icon path={mdiWaveform} size={0.7} color={shellTokens.copilotBorder} />
+                <span
+                  className="font-['Roboto',sans-serif] font-medium text-[12px] leading-[16px]"
+                  style={{ color: colors.colorBlueDark1 }}
+                >
+                  Draft with AI
+                </span>
+              </button>
+            )}
+          </div>
 
           <button
             onClick={handleSend}

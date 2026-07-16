@@ -51,8 +51,21 @@ export function EmailSurface() {
           />
         </div>
 
-        {/* New message compose is OUT of MVP (7/16 eng sync) — removed from this
-            baseline branch entirely; it returns on the AI-features fork. */}
+        {/* New message — returns on the AI fork (this branch IS the future, so
+            no "FUTURE" tag). No-op click for now; compose flow is out of scope. */}
+        <button
+          onClick={() => {}}
+          className="flex items-center justify-center rounded-[6px] font-['Roboto',sans-serif] font-medium text-[14px] shrink-0 transition-opacity hover:opacity-90 active:opacity-80 cursor-pointer"
+          style={{
+            height: 40,
+            paddingLeft: 16,
+            paddingRight: 16,
+            backgroundColor: colors.colorBlueDark1,
+            color: colors.colorWhite,
+          }}
+        >
+          New message
+        </button>
       </div>
 
       {/* Body */}

@@ -9,6 +9,7 @@
 import { create } from 'zustand';
 import { EmailThread, EmailMessage, EmailView } from './types';
 import { mockThreads, mockMessages } from './mock-data';
+import { getDraft } from './ai-drafts';
 
 /** How the Email Details panel presents: pushes a third column vs. floats over. */
 // 'drawer' = Messaging's actual GuestInfoSidebar mechanic: fixed drawer sliding
@@ -16,6 +17,68 @@ import { mockThreads, mockMessages } from './mock-data';
 // currently works in our existing product"). NOT a floating overlay card —
 // that variant was built 7/16 and rejected same-day.
 export type InfoPanelStyle = 'push' | 'drawer';
+
+// --- AI draft-reply state ---------------------------------------------------
+// The AI fork's star: Copilot auto-drafts a reply for a thread awaiting one.
+// Never auto-sends — the draft lives in a review card above the composer.
+export type AiDraftStatus = 'generating' | 'ready' | 'dismissed' | 'used';
+
+/**
+ * Per-thread draft state.
+ *  - `variantIndex` — which of the two full variants is showing (Regenerate cycles).
+ *  - `isShort`      — showing the ~2-sentence Shorten transform instead of a full variant.
+ *  - `status`       — position in the draft lifecycle.
+ */
+export interface AiDraftEntry {
+  variantIndex: number;
+  isShort: boolean;
+  status: AiDraftStatus;
+}
+
+/**
+ * When the draft is generated: 'auto' shimmers a draft the moment a thread is
+ * eligible (drafts on arrival — the demo money shot); 'on-demand' waits for the
+ * staff to click "Draft a reply". Industry default is on-demand; auto is the
+ * aggressive minority — the toggle lets the team compare live in the room.
+ */
+export type AiDraftTrigger = 'auto' | 'on-demand';
+
+/**
+ * A one-shot signal that pushes draft text into the (locally-stateful)
+ * composer. The composer applies it when `threadId` matches its thread and
+ * `seq` is newer than the last it applied — a clean lift-free hand-off that
+ * keeps the composer's own typing state intact. See EmailComposer.
+ */
+export interface DraftApplicationSignal {
+  threadId: string;
+  text: string;
+  seq: number;
+}
+
+/** Generating timings: first draft feels considered; transforms feel snappy. */
+const DRAFT_GEN_MS = 1200;
+const DRAFT_TRANSFORM_MS = 800;
+
+/**
+ * Per-thread generation token. Every (re)generate bumps the thread's token;
+ * a scheduled completion only commits if its captured token is still current.
+ * Guards against stale timers from rapid Regenerate/Shorten/dismiss clicks.
+ * Module-level (not React/Zustand state) — it's a scheduling guard, not UI.
+ */
+const draftGenToken = new Map<string, number>();
+function bumpDraftToken(threadId: string): number {
+  const next = (draftGenToken.get(threadId) ?? 0) + 1;
+  draftGenToken.set(threadId, next);
+  return next;
+}
+
+/** Resolve the text a draft entry currently displays (short vs. full variant). */
+export function draftTextFor(threadId: string, entry: AiDraftEntry | undefined): string | null {
+  const draft = getDraft(threadId);
+  if (!draft || !entry) return null;
+  if (entry.isShort) return draft.short;
+  return draft.variants[entry.variantIndex] ?? draft.variants[0];
+}
 
 interface EmailState {
   // State
@@ -30,6 +93,14 @@ interface EmailState {
   /** How far through the scripted inbound-email demo queue we are (see INBOUND_SCRIPT). */
   inboundQueueIndex: number;
 
+  // AI draft-reply state
+  /** Per-thread AI draft state, keyed by threadId. Absent = never generated. */
+  aiDrafts: Record<string, AiDraftEntry>;
+  /** Auto-draft-on-arrival vs. draft-on-demand (prototype toggle). */
+  aiDraftTrigger: AiDraftTrigger;
+  /** One-shot signal handing draft text to the composer (see DraftApplicationSignal). */
+  draftApplication: DraftApplicationSignal | null;
+
   // Actions
   selectThread: (threadId: string) => void;
   setView: (view: EmailView) => void;
@@ -42,6 +113,24 @@ interface EmailState {
   setInfoPanelStyle: (style: InfoPanelStyle) => void;
   /** Deliver the next scripted inbound email (demo control). No-op when exhausted. */
   simulateInboundEmail: () => void;
+
+  // AI draft-reply actions
+  /** Cached generate: shimmer → first draft. No-op if the thread already has an entry. */
+  generateDraft: (threadId: string) => void;
+  /** Forced generate: re-shimmer → fresh first draft even over an existing entry (demo money shot). */
+  forceGenerateDraft: (threadId: string) => void;
+  /** Regenerate: brief shimmer → the OTHER full variant (cycles the two). */
+  regenerateDraft: (threadId: string) => void;
+  /** Shorten: brief shimmer → the ~2-sentence variant (directed transform). */
+  shortenDraft: (threadId: string) => void;
+  /** Dismiss the card for a thread (re-summonable from the composer toolbar). */
+  dismissDraft: (threadId: string) => void;
+  /** Bring a dismissed draft back: brief shimmer → current variant. */
+  restoreDraft: (threadId: string) => void;
+  /** Accept the draft: push its text to the composer and mark the card 'used'. */
+  useDraft: (threadId: string) => void;
+  /** Switch auto/on-demand draft trigger (prototype toggle). */
+  setAiDraftTrigger: (trigger: AiDraftTrigger) => void;
 }
 
 const STAFF_NAME = 'Theresa Webb';
@@ -142,6 +231,9 @@ export const useEmailStore = create<EmailState>((set, get) => ({
   isInfoOpen: false,
   infoPanelStyle: 'push',
   inboundQueueIndex: 0,
+  aiDrafts: {},
+  aiDraftTrigger: 'auto',
+  draftApplication: null,
 
   selectThread: (threadId: string) => {
     set((state) => ({
@@ -253,6 +345,20 @@ export const useEmailStore = create<EmailState>((set, get) => ({
             : t
         ),
       }));
+
+      // Money shot: a reply landing on the OPEN thread re-drafts a suggested
+      // reply for the just-arrived message. Refresh when auto-drafting, or when
+      // a draft card is already on screen for this thread (so on-demand still
+      // updates a visible card but doesn't pop one unbidden).
+      const replyDraft = get().aiDrafts[threadId];
+      if (
+        threadId === selectedThreadId &&
+        (get().aiDraftTrigger === 'auto' ||
+          replyDraft?.status === 'ready' ||
+          replyDraft?.status === 'generating')
+      ) {
+        get().forceGenerateDraft(threadId);
+      }
       return;
     }
 
@@ -290,5 +396,166 @@ export const useEmailStore = create<EmailState>((set, get) => ({
 
   setInfoPanelStyle: (style: InfoPanelStyle) => {
     set({ infoPanelStyle: style });
+  },
+
+  // --- AI draft-reply actions ----------------------------------------------
+  // Timers live in the actions (setTimeout); each schedules a completion that
+  // only commits if its captured token is still the thread's current token AND
+  // the entry is still 'generating' — so a superseding click never gets
+  // clobbered by an earlier timer.
+
+  generateDraft: (threadId: string) => {
+    if (!getDraft(threadId)) return; // no scripted content for this thread
+    if (get().aiDrafts[threadId]) return; // cache — no re-shimmer on revisit
+    const token = bumpDraftToken(threadId);
+    set((state) => ({
+      aiDrafts: {
+        ...state.aiDrafts,
+        [threadId]: { variantIndex: 0, isShort: false, status: 'generating' },
+      },
+    }));
+    setTimeout(() => {
+      if (draftGenToken.get(threadId) !== token) return;
+      set((state) => {
+        const cur = state.aiDrafts[threadId];
+        if (!cur || cur.status !== 'generating') return {};
+        return { aiDrafts: { ...state.aiDrafts, [threadId]: { ...cur, status: 'ready' } } };
+      });
+    }, DRAFT_GEN_MS);
+  },
+
+  forceGenerateDraft: (threadId: string) => {
+    if (!getDraft(threadId)) return;
+    const token = bumpDraftToken(threadId);
+    // Reset to a fresh first draft (variant 0), re-shimmering even over a
+    // cached entry — used when a new inbound arrives on the open thread.
+    set((state) => ({
+      aiDrafts: {
+        ...state.aiDrafts,
+        [threadId]: { variantIndex: 0, isShort: false, status: 'generating' },
+      },
+    }));
+    setTimeout(() => {
+      if (draftGenToken.get(threadId) !== token) return;
+      set((state) => {
+        const cur = state.aiDrafts[threadId];
+        if (!cur || cur.status !== 'generating') return {};
+        return { aiDrafts: { ...state.aiDrafts, [threadId]: { ...cur, status: 'ready' } } };
+      });
+    }, DRAFT_GEN_MS);
+  },
+
+  regenerateDraft: (threadId: string) => {
+    const draft = getDraft(threadId);
+    if (!draft) return;
+    const cur = get().aiDrafts[threadId];
+    const nextIndex = ((cur?.variantIndex ?? 0) + 1) % draft.variants.length;
+    const token = bumpDraftToken(threadId);
+    // Keep showing the current variant during the shimmer; flip on completion.
+    set((state) => ({
+      aiDrafts: {
+        ...state.aiDrafts,
+        [threadId]: { variantIndex: cur?.variantIndex ?? 0, isShort: false, status: 'generating' },
+      },
+    }));
+    setTimeout(() => {
+      if (draftGenToken.get(threadId) !== token) return;
+      set((state) => {
+        const c = state.aiDrafts[threadId];
+        if (!c || c.status !== 'generating') return {};
+        return {
+          aiDrafts: {
+            ...state.aiDrafts,
+            [threadId]: { variantIndex: nextIndex, isShort: false, status: 'ready' },
+          },
+        };
+      });
+    }, DRAFT_TRANSFORM_MS);
+  },
+
+  shortenDraft: (threadId: string) => {
+    const draft = getDraft(threadId);
+    if (!draft) return;
+    const cur = get().aiDrafts[threadId];
+    const token = bumpDraftToken(threadId);
+    set((state) => ({
+      aiDrafts: {
+        ...state.aiDrafts,
+        [threadId]: { variantIndex: cur?.variantIndex ?? 0, isShort: false, status: 'generating' },
+      },
+    }));
+    setTimeout(() => {
+      if (draftGenToken.get(threadId) !== token) return;
+      set((state) => {
+        const c = state.aiDrafts[threadId];
+        if (!c || c.status !== 'generating') return {};
+        return {
+          aiDrafts: {
+            ...state.aiDrafts,
+            [threadId]: { variantIndex: c.variantIndex, isShort: true, status: 'ready' },
+          },
+        };
+      });
+    }, DRAFT_TRANSFORM_MS);
+  },
+
+  dismissDraft: (threadId: string) => {
+    bumpDraftToken(threadId); // cancel any in-flight generation
+    set((state) => {
+      const cur = state.aiDrafts[threadId];
+      return {
+        aiDrafts: {
+          ...state.aiDrafts,
+          [threadId]: {
+            variantIndex: cur?.variantIndex ?? 0,
+            isShort: cur?.isShort ?? false,
+            status: 'dismissed',
+          },
+        },
+      };
+    });
+  },
+
+  restoreDraft: (threadId: string) => {
+    if (!getDraft(threadId)) return;
+    const cur = get().aiDrafts[threadId];
+    const token = bumpDraftToken(threadId);
+    set((state) => ({
+      aiDrafts: {
+        ...state.aiDrafts,
+        [threadId]: {
+          variantIndex: cur?.variantIndex ?? 0,
+          isShort: cur?.isShort ?? false,
+          status: 'generating',
+        },
+      },
+    }));
+    setTimeout(() => {
+      if (draftGenToken.get(threadId) !== token) return;
+      set((state) => {
+        const c = state.aiDrafts[threadId];
+        if (!c || c.status !== 'generating') return {};
+        return { aiDrafts: { ...state.aiDrafts, [threadId]: { ...c, status: 'ready' } } };
+      });
+    }, DRAFT_TRANSFORM_MS);
+  },
+
+  useDraft: (threadId: string) => {
+    const cur = get().aiDrafts[threadId];
+    const text = draftTextFor(threadId, cur);
+    if (!cur || text == null) return;
+    bumpDraftToken(threadId); // cancel any in-flight generation
+    set((state) => ({
+      aiDrafts: { ...state.aiDrafts, [threadId]: { ...cur, status: 'used' } },
+      draftApplication: {
+        threadId,
+        text,
+        seq: (state.draftApplication?.seq ?? 0) + 1,
+      },
+    }));
+  },
+
+  setAiDraftTrigger: (trigger: AiDraftTrigger) => {
+    set({ aiDraftTrigger: trigger });
   },
 }));

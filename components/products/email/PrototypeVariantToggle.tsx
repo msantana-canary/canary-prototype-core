@@ -15,11 +15,16 @@ import React, { useState } from 'react';
 import Icon from '@mdi/react';
 import { mdiTuneVariant, mdiClose, mdiInboxArrowDownOutline } from '@mdi/js';
 import { useEmailStore, INBOUND_QUEUE_LENGTH } from '@/lib/products/email/store';
-import type { InfoPanelStyle } from '@/lib/products/email/store';
+import type { InfoPanelStyle, AiDraftTrigger } from '@/lib/products/email/store';
 
 const OPTIONS: { value: InfoPanelStyle; label: string; desc: string }[] = [
   { value: 'push', label: 'Push', desc: 'Panel is a third column; thread list collapses' },
   { value: 'drawer', label: 'Drawer', desc: 'Slides in from the right edge, like Messaging' },
+];
+
+const AI_DRAFT_OPTIONS: { value: AiDraftTrigger; label: string; desc: string }[] = [
+  { value: 'auto', label: 'Auto', desc: 'Drafts a reply on arrival (the demo money shot)' },
+  { value: 'on-demand', label: 'On demand', desc: 'Staff clicks "Draft a reply" to generate' },
 ];
 
 export function PrototypeVariantToggle() {
@@ -28,6 +33,8 @@ export function PrototypeVariantToggle() {
   const setInfoPanelStyle = useEmailStore((s) => s.setInfoPanelStyle);
   const simulateInboundEmail = useEmailStore((s) => s.simulateInboundEmail);
   const inboundQueueIndex = useEmailStore((s) => s.inboundQueueIndex);
+  const aiDraftTrigger = useEmailStore((s) => s.aiDraftTrigger);
+  const setAiDraftTrigger = useEmailStore((s) => s.setAiDraftTrigger);
 
   const inboundRemaining = INBOUND_QUEUE_LENGTH - inboundQueueIndex;
   const inboundExhausted = inboundRemaining <= 0;
@@ -91,6 +98,46 @@ export function PrototypeVariantToggle() {
                   </button>
                 );
               })}
+            </div>
+
+            {/* AI DRAFTS — auto-on-arrival vs. draft-on-demand */}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
+                AI drafts
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {AI_DRAFT_OPTIONS.map((opt) => {
+                  const active = aiDraftTrigger === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => setAiDraftTrigger(opt.value)}
+                      className="flex items-start gap-3 px-3 py-2 rounded-lg text-left transition-colors"
+                      style={{
+                        backgroundColor: active ? '#eaeef9' : '#fafafa',
+                        border: active ? '1px solid #2858c4' : '1px solid transparent',
+                      }}
+                    >
+                      <div
+                        className="w-4 h-4 rounded-full border-2 mt-0.5 shrink-0 flex items-center justify-center"
+                        style={{ borderColor: active ? '#2858c4' : '#cccccc' }}
+                      >
+                        {active && (
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#2858c4' }} />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-['Roboto',sans-serif] text-xs font-medium text-black">
+                          {opt.label}
+                        </p>
+                        <p className="font-['Roboto',sans-serif] text-[10px] text-gray-500">
+                          {opt.desc}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* DEMO — live-driven controls for a presenter (Rachel) */}
