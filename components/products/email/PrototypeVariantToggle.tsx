@@ -13,7 +13,7 @@
 
 import React, { useState } from 'react';
 import Icon from '@mdi/react';
-import { mdiTuneVariant, mdiClose, mdiInboxArrowDownOutline } from '@mdi/js';
+import { mdiTuneVariant, mdiClose, mdiInboxArrowDownOutline, mdiCheck } from '@mdi/js';
 import { useEmailStore, INBOUND_QUEUE_LENGTH } from '@/lib/products/email/store';
 import type { InfoPanelStyle, AiDraftTrigger } from '@/lib/products/email/store';
 
@@ -35,6 +35,8 @@ export function PrototypeVariantToggle() {
   const inboundQueueIndex = useEmailStore((s) => s.inboundQueueIndex);
   const aiDraftTrigger = useEmailStore((s) => s.aiDraftTrigger);
   const setAiDraftTrigger = useEmailStore((s) => s.setAiDraftTrigger);
+  const showIntentActions = useEmailStore((s) => s.showIntentActions);
+  const setShowIntentActions = useEmailStore((s) => s.setShowIntentActions);
 
   const inboundRemaining = INBOUND_QUEUE_LENGTH - inboundQueueIndex;
   const inboundExhausted = inboundRemaining <= 0;
@@ -138,6 +140,41 @@ export function PrototypeVariantToggle() {
                   );
                 })}
               </div>
+            </div>
+
+            {/* AI ACTIONS — detected-intent → suggested-action row (default OFF) */}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
+                AI actions
+              </p>
+              <button
+                onClick={() => setShowIntentActions(!showIntentActions)}
+                className="flex items-start gap-3 w-full px-3 py-2 rounded-lg text-left transition-colors"
+                style={{
+                  backgroundColor: showIntentActions ? '#eaeef9' : '#fafafa',
+                  border: showIntentActions ? '1px solid #2858c4' : '1px solid transparent',
+                }}
+                role="switch"
+                aria-checked={showIntentActions}
+              >
+                <div
+                  className="w-4 h-4 rounded-[4px] border-2 mt-0.5 shrink-0 flex items-center justify-center"
+                  style={{
+                    borderColor: showIntentActions ? '#2858c4' : '#cccccc',
+                    backgroundColor: showIntentActions ? '#2858c4' : 'transparent',
+                  }}
+                >
+                  {showIntentActions && <Icon path={mdiCheck} size={0.5} color="#ffffff" />}
+                </div>
+                <div>
+                  <p className="font-['Roboto',sans-serif] text-xs font-medium text-black">
+                    Intent actions
+                  </p>
+                  <p className="font-['Roboto',sans-serif] text-[10px] text-gray-500">
+                    Suggest a next action from the detected guest intent
+                  </p>
+                </div>
+              </button>
             </div>
 
             {/* DEMO — live-driven controls for a presenter (Rachel) */}

@@ -45,6 +45,19 @@ export interface PolicyChip {
   icon: string;
 }
 
+/**
+ * A detected-intent → suggested-action pair, surfaced (behind a default-off
+ * prototype toggle) as one extra row on the draft card: a muted intent label +
+ * a compact action button the staff can take alongside sending the reply.
+ * Optional — only authored for threads with an obvious next action.
+ */
+export interface IntentAction {
+  /** Short muted label naming the detected guest intent. */
+  intent: string;
+  /** The action button copy (the thing the staff would do). */
+  action: string;
+}
+
 export interface AiDraft {
   /** Two full drafts — "Regenerate" cycles between them. */
   variants: readonly [string, string];
@@ -52,6 +65,8 @@ export interface AiDraft {
   short: string;
   /** Static grounding chip naming the policy/record behind the reply. */
   policyChip: PolicyChip;
+  /** Optional detected-intent → suggested-action (prototype, default-off toggle). */
+  intentAction?: IntentAction;
 }
 
 const DRAFTS: Record<string, AiDraft> = {
@@ -86,6 +101,7 @@ const DRAFTS: Record<string, AiDraft> = {
     short:
       "Hi Brooklyn — apologies for the trouble; the $45 was a housekeeping charge added in error. I'm removing it today and you'll have a corrected folio tonight.\n\nTheresa",
     policyChip: { label: 'Folio · Nov 21 charge', icon: mdiReceiptTextOutline },
+    intentAction: { intent: 'Billing dispute', action: 'Create folio adjustment task' },
   },
 
   // Kristin — high floor / city view for husband's birthday
@@ -119,6 +135,7 @@ const DRAFTS: Record<string, AiDraft> = {
     short:
       "Hi Sarah — of course, we'll hold your bags at the front desk after checkout until your evening flight. Your late checkout is set too!\n\nTheresa",
     policyChip: { label: 'Policy · Luggage storage', icon: mdiBagSuitcaseOutline },
+    intentAction: { intent: 'Late checkout requested', action: 'Offer Late Checkout · $40' },
   },
 
   // James — two room-service charges on the same night; duplicate check
@@ -152,6 +169,7 @@ const DRAFTS: Record<string, AiDraft> = {
     short:
       'Hi Nina — happy 10th anniversary! We’ll have a bottle of champagne waiting in your room when you arrive.\n\nTheresa',
     policyChip: { label: 'Amenity · Champagne', icon: mdiGlassCocktail },
+    intentAction: { intent: 'Anniversary celebration', action: 'Add champagne amenity task' },
   },
 
   // Hannah — move couples massage 2pm -> 4pm
@@ -218,6 +236,7 @@ const DRAFTS: Record<string, AiDraft> = {
     short:
       "Hi Sophia — our shuttle runs every 30 minutes from Terminal B; with your 3pm landing, I've booked you on the 3:30pm pickup. See you on the 22nd!\n\nTheresa",
     policyChip: { label: 'Policy · Airport shuttle', icon: mdiCarOutline },
+    intentAction: { intent: 'Airport shuttle request', action: 'Book 3:30 PM shuttle' },
   },
 };
 

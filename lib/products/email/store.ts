@@ -33,6 +33,14 @@ export interface AiDraftEntry {
   variantIndex: number;
   isShort: boolean;
   status: AiDraftStatus;
+  /**
+   * Local thumbs feedback on the CURRENT draft variant. Mutually exclusive
+   * up/down; clicking the selected one clears it. Naturally cleared whenever
+   * the entry is rebuilt (Regenerate/Shorten/(re)generate) since the variant
+   * changed — those actions construct a fresh entry without a feedback field.
+   * Purely local prototype signal — no network.
+   */
+  feedback?: 'up' | 'down';
 }
 
 /**
@@ -100,6 +108,10 @@ interface EmailState {
   aiDraftTrigger: AiDraftTrigger;
   /** One-shot signal handing draft text to the composer (see DraftApplicationSignal). */
   draftApplication: DraftApplicationSignal | null;
+  /** Prototype toggle (DEFAULT OFF): show the detected-intent → suggested-action row on eligible draft cards. */
+  showIntentActions: boolean;
+  /** Per-thread "action taken" flag for the intent-action button (local; flips to an Added state). */
+  intentActionsDone: Record<string, boolean>;
 
   // Actions
   selectThread: (threadId: string) => void;
@@ -131,6 +143,12 @@ interface EmailState {
   useDraft: (threadId: string) => void;
   /** Switch auto/on-demand draft trigger (prototype toggle). */
   setAiDraftTrigger: (trigger: AiDraftTrigger) => void;
+  /** Set/toggle thumbs feedback on the current draft variant (mutually exclusive; re-click clears). */
+  setDraftFeedback: (threadId: string, feedback: 'up' | 'down') => void;
+  /** Toggle the intent-action prototype feature on/off. */
+  setShowIntentActions: (show: boolean) => void;
+  /** Mark a thread's suggested intent action as taken (flips the button to Added). */
+  markIntentActionDone: (threadId: string) => void;
 }
 
 const STAFF_NAME = 'Theresa Webb';
@@ -237,6 +255,10 @@ export const useEmailStore = create<EmailState>((set, get) => ({
   // prototype toggle can flip to for a live in-the-room comparison.
   aiDraftTrigger: 'on-demand',
   draftApplication: null,
+  // Intent → suggested action is a lukewarm exploration: default OFF, flipped on
+  // from the prototype toggle's "AI actions" section for a live in-room look.
+  showIntentActions: false,
+  intentActionsDone: {},
 
   selectThread: (threadId: string) => {
     set((state) => ({
@@ -575,5 +597,25 @@ export const useEmailStore = create<EmailState>((set, get) => ({
       return;
     }
     set({ aiDraftTrigger: trigger });
+  },
+
+  setDraftFeedback: (threadId: string, feedback: 'up' | 'down') => {
+    set((state) => {
+      const cur = state.aiDrafts[threadId];
+      if (!cur) return {};
+      // Mutually exclusive: re-clicking the selected thumb clears it.
+      const next = cur.feedback === feedback ? undefined : feedback;
+      return { aiDrafts: { ...state.aiDrafts, [threadId]: { ...cur, feedback: next } } };
+    });
+  },
+
+  setShowIntentActions: (show: boolean) => {
+    set({ showIntentActions: show });
+  },
+
+  markIntentActionDone: (threadId: string) => {
+    set((state) => ({
+      intentActionsDone: { ...state.intentActionsDone, [threadId]: true },
+    }));
   },
 }));

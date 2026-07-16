@@ -198,7 +198,8 @@ The star of the fork. A review card that sits ABOVE the composer inside `EmailTh
 - **Title copy:** "Suggested reply" (not "Copilot suggested reply") — verb-honest, hotelier-readable, and avoids over-claiming a persistent-assistant surface that's deliberately hidden here.
 - **Micro-reassurance line:** "Review before sending — nothing is sent automatically." (small/muted) makes the never-auto-send promise legible.
 - **Grounding chips** (the differentiator): below the draft body, muted source chips showing what the reply is grounded in — the linked reservation (`Reservation · Room N · dates`, from canonical `getGuestReservations`), the guest's loyalty tier (from `getGuest().statusTag`), and one static property-policy chip per thread (from `ai-drafts.ts`, e.g. "Policy · Luggage storage", "Folio · Nov 21 charge"). Unlinked threads (Rebecca) show no reservation/tier chip — only the policy chip.
-- **Footer actions:** **Use draft** (primary — lands the text in the composer) · **Shorten** (directed transform → the scripted ~2-sentence variant; disabled once short) · **Regenerate** (cycles the two full variants).
+- **Footer actions:** **Use draft** (primary — lands the text in the composer) · **Shorten** (directed transform → the scripted ~2-sentence variant; disabled once short) · **Regenerate** (cycles the two full variants). **Thumbs up/down** (right-aligned, `mdiThumbUpOutline`/`mdiThumbDownOutline`, messaging-feedback style): mutually exclusive per draft variant — re-clicking the selected thumb clears it; selected = `colorBlueDark1` icon on a `colorBlueDark5` (rounded-4) chip. Purely local (`entry.feedback: 'up' | 'down'`), cleared automatically on Regenerate/Shorten (the variant changed). Thumbs-down reveals a muted one-line note under the footer — *"Thanks — Theresa's edits teach the AI your voice."* — tying the signal to the voice-learning story. No network.
+- **Detected intent → suggested action** (prototype, **default-off** toggle — see below): when the *Intent actions* toggle is ON, eligible `ready` cards with an authored `intentAction` show ONE extra row between the grounding chips and the footer: a `mdiLightningBoltOutline` glyph + muted intent label (Medium 11) + `→` + a compact outline action button (1px `#465FF5` border, rounded-6). Clicking flips it locally (per thread) to an *Added* checkmark chip (`mdiCheck` on `colorBlueDark5`). Authored for four threads only — Sarah (late checkout → "Offer Late Checkout · $40"), Nina (anniversary → "Add champagne amenity task"), Brooklyn (billing dispute → "Create folio adjustment task"), Sophia (shuttle → "Book 3:30 PM shuttle"); all other cards show nothing.
 - **Generating state:** ~1.2s "Drafting a reply…" with shimmering gray placeholder lines (`.email-draft-shimmer-line` in `globals.css`, pure CSS). Transforms (Regenerate/Shorten/restore) use a ~0.8s shimmer.
 - **`AiOrbButton`** (same file): the on-demand / re-summon affordance — an animated "Siri-orb" pill (gradient border + a rotating/breathing CSS orb + gradient "Draft a reply" label) that lives in the composer toolbar **immediately left of Send**. Self-gating: shown whenever the open thread is draft-eligible and no live card is on screen (status undefined / `dismissed` / `used`); hidden when a card is `ready`; stays visible in a disabled "Drafting…" state while `generating` (the orb doubles as the loading indicator). Orb CSS is in `globals.css` (`.ai-orb*`).
 
@@ -216,8 +217,9 @@ The star of the fork. A review card that sits ABOVE the composer inside `EmailTh
 
 ### Store additions — `lib/products/email/store.ts`
 
-- State: `aiDrafts: Record<string, { variantIndex; isShort; status: 'generating'|'ready'|'dismissed'|'used' }>` · `aiDraftTrigger: 'auto'|'on-demand'` · `draftApplication` signal.
-- Actions: `generateDraft` (cache-guarded) · `forceGenerateDraft` (re-shimmer over a cached entry; used by simulate on the open thread) · `regenerateDraft` (cycles variants) · `shortenDraft` · `dismissDraft` · `restoreDraft` · `useDraft` · `setAiDraftTrigger`.
+- State: `aiDrafts: Record<string, { variantIndex; isShort; status: 'generating'|'ready'|'dismissed'|'used'; feedback?: 'up'|'down' }>` · `aiDraftTrigger: 'auto'|'on-demand'` · `draftApplication` signal · `showIntentActions: boolean` (default `false`) · `intentActionsDone: Record<string, boolean>`.
+- Actions: `generateDraft` (cache-guarded) · `forceGenerateDraft` (re-shimmer over a cached entry; used by simulate on the open thread) · `regenerateDraft` (cycles variants) · `shortenDraft` · `dismissDraft` · `restoreDraft` · `useDraft` · `setAiDraftTrigger` · `setDraftFeedback` (mutually-exclusive thumbs toggle) · `setShowIntentActions` · `markIntentActionDone`.
+- `feedback` lives on the draft entry so it clears for free when the entry is rebuilt (Regenerate/Shorten/(re)generate construct a fresh entry with no feedback field). `intentAction` lives on the scripted `AiDraft` in `ai-drafts.ts` (four threads only).
 - Timers are `setTimeout` inside actions, guarded by a module-level per-thread generation token so a superseding click never gets clobbered by an earlier timer.
 
 ### Scripted content — `lib/products/email/ai-drafts.ts`
@@ -226,7 +228,7 @@ Hand-authored (no live LLM, deterministic demo). Keyed by thread ID; covers ever
 
 ### Prototype toggle & New message
 
-- `PrototypeVariantToggle` gains an **"AI drafts"** radio group (Auto / On demand; **default On demand**).
+- `PrototypeVariantToggle` gains an **"AI drafts"** radio group (Auto / On demand; **default On demand**) and an **"AI actions"** section with a single **Intent actions** checkbox (**default OFF**) that flips `showIntentActions` — the cheap in-room switch for the lukewarm detected-intent → suggested-action exploration.
 - The **New message** button returns right of the search field in `EmailSurface` (no "FUTURE" tag — this branch is the future). No-op click.
 
 ### Copilot pill stays hidden — by design

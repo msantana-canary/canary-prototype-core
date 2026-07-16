@@ -35,6 +35,10 @@ import {
   mdiStarOutline,
   mdiBedOutline,
   mdiCalendarBlankOutline,
+  mdiThumbUpOutline,
+  mdiThumbDownOutline,
+  mdiLightningBoltOutline,
+  mdiCheck,
 } from '@mdi/js';
 import { colors } from '@canary-ui/components';
 import { getGuest, getGuestReservations } from '@/lib/core/data';
@@ -76,6 +80,37 @@ function GroundingChip({ icon, label }: { icon: string; label: string }) {
   );
 }
 
+/** One small messaging-style thumbs feedback button (selected = blue on tint). */
+function ThumbButton({
+  icon,
+  selected,
+  onClick,
+  label,
+}: {
+  icon: string;
+  selected: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      aria-pressed={selected}
+      className={`flex items-center justify-center rounded-[4px] transition-colors cursor-pointer${
+        selected ? '' : ' hover:bg-[#f0f0f0]'
+      }`}
+      style={{
+        padding: 5,
+        backgroundColor: selected ? colors.colorBlueDark5 : 'transparent',
+      }}
+    >
+      <Icon path={icon} size={16 / 24} color={selected ? colors.colorBlueDark1 : colors.colorBlack3} />
+    </button>
+  );
+}
+
 export function AiDraftCard({ threadId }: { threadId: string }) {
   const entry = useEmailStore((s) => s.aiDrafts[threadId]);
   const threads = useEmailStore((s) => s.threads);
@@ -83,6 +118,10 @@ export function AiDraftCard({ threadId }: { threadId: string }) {
   const regenerateDraft = useEmailStore((s) => s.regenerateDraft);
   const shortenDraft = useEmailStore((s) => s.shortenDraft);
   const dismissDraft = useEmailStore((s) => s.dismissDraft);
+  const setDraftFeedback = useEmailStore((s) => s.setDraftFeedback);
+  const showIntentActions = useEmailStore((s) => s.showIntentActions);
+  const intentActionDone = useEmailStore((s) => !!s.intentActionsDone[threadId]);
+  const markIntentActionDone = useEmailStore((s) => s.markIntentActionDone);
 
   const draft = getDraft(threadId);
   // Only render while the card is live. dismissed/used → nothing (the composer
@@ -184,6 +223,62 @@ export function AiDraftCard({ threadId }: { threadId: string }) {
               <GroundingChip icon={draft.policyChip.icon} label={draft.policyChip.label} />
             </div>
 
+            {/* Detected intent → suggested action (prototype, default-off toggle).
+                One extra row: muted intent label + arrow + a compact action button
+                that flips to an Added checkmark state once taken. */}
+            {showIntentActions && draft.intentAction && (
+              <div
+                className="email-draft-reveal-chips flex items-center gap-2 flex-wrap"
+                style={{ paddingLeft: 16, paddingRight: 16, paddingTop: 10 }}
+              >
+                <Icon path={mdiLightningBoltOutline} size={13 / 24} color={colors.colorBlueDark1} />
+                <span
+                  className="font-['Roboto',sans-serif] font-medium text-[11px] leading-[16px]"
+                  style={{ color: colors.colorBlack3 }}
+                >
+                  {draft.intentAction.intent}
+                </span>
+                <span
+                  className="font-['Roboto',sans-serif] text-[11px] leading-[16px]"
+                  style={{ color: colors.colorBlack3 }}
+                >
+                  →
+                </span>
+                {intentActionDone ? (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-[6px] font-['Roboto',sans-serif] font-medium text-[11px] leading-[16px]"
+                    style={{
+                      paddingLeft: 10,
+                      paddingRight: 10,
+                      paddingTop: 5,
+                      paddingBottom: 5,
+                      backgroundColor: colors.colorBlueDark5,
+                      color: colors.colorBlueDark1,
+                    }}
+                  >
+                    <Icon path={mdiCheck} size={13 / 24} color={colors.colorBlueDark1} />
+                    Added
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => markIntentActionDone(threadId)}
+                    className="inline-flex items-center rounded-[6px] font-['Roboto',sans-serif] font-medium text-[11px] leading-[16px] transition-colors cursor-pointer hover:bg-[#eaeef9]"
+                    style={{
+                      paddingLeft: 10,
+                      paddingRight: 10,
+                      paddingTop: 5,
+                      paddingBottom: 5,
+                      border: `1px solid ${shellTokens.copilotBorder}`,
+                      color: colors.colorBlueDark1,
+                    }}
+                  >
+                    {draft.intentAction.action}
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Footer actions */}
             <div
               className="email-draft-reveal-footer flex items-center gap-2"
@@ -219,7 +314,34 @@ export function AiDraftCard({ threadId }: { threadId: string }) {
                 <Icon path={mdiRefresh} size={0.62} color={colors.colorBlueDark1} />
                 Regenerate
               </button>
+
+              {/* Thumbs feedback — right-aligned, mutually exclusive per variant */}
+              <span className="flex-1" />
+              <div className="flex items-center gap-0.5">
+                <ThumbButton
+                  icon={mdiThumbUpOutline}
+                  selected={entry.feedback === 'up'}
+                  onClick={() => setDraftFeedback(threadId, 'up')}
+                  label="Good draft"
+                />
+                <ThumbButton
+                  icon={mdiThumbDownOutline}
+                  selected={entry.feedback === 'down'}
+                  onClick={() => setDraftFeedback(threadId, 'down')}
+                  label="Needs work"
+                />
+              </div>
             </div>
+
+            {/* Thumbs-down ties feedback to the voice-learning story */}
+            {entry.feedback === 'down' && (
+              <p
+                className="font-['Roboto',sans-serif] text-[11px] leading-[16px]"
+                style={{ color: colors.colorBlack3, paddingLeft: 16, paddingRight: 16, paddingBottom: 12 }}
+              >
+                Thanks — Theresa&rsquo;s edits teach the AI your voice.
+              </p>
+            )}
           </>
         )}
       </div>
