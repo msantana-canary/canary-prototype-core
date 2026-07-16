@@ -15,6 +15,11 @@ import { colors } from '@canary-ui/components';
 import { mdiWaveform, mdiChartBoxOutline, mdiChevronRight } from '@mdi/js';
 import { shellTokens } from './shell-tokens';
 
+// Hidden on the baseline per Miguel (7/16): the top bar is "product name +
+// Insights only" for now — Copilot is AI-forward material. The AI fork flips
+// this to true to bring the pill back.
+const SHOW_COPILOT = false;
+
 export function NewTopBar() {
   return (
     <div
@@ -36,6 +41,7 @@ export function NewTopBar() {
       </span>
 
       {/* Center: Copilot pill (centered inside the bar, which already sits right of the sidebar) */}
+      {SHOW_COPILOT && (
       <div className="absolute left-1/2 -translate-x-1/2">
         <div
           className="flex items-center gap-2 rounded-full"
@@ -58,6 +64,7 @@ export function NewTopBar() {
           </span>
         </div>
       </div>
+      )}
 
       {/* Right: Insights + guest messages today */}
       <div className="flex items-center gap-3">

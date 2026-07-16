@@ -31,8 +31,9 @@ export function EmailThreadList() {
 
   // When the info panel is open in PUSH mode it takes a third column, so the
   // left column gives up 100px (434 → 334) to keep the thread view readable.
-  // Drawer mode slides the panel over from the screen edge, so the left column stays full width.
-  // Rows already truncate (name) / whitespace-nowrap (date), so 334 is safe.
+  // Drawer mode slides the panel over from the screen edge; column stays 434.
+  // (A permanent-334 variant was trialed 2026-07-16 and rejected: the closed
+  // state balloons the thread view's line length and truncates subjects.)
   const collapsed = isInfoOpen && infoPanelStyle === 'push';
   const columnWidth = collapsed ? 334 : 434;
 
