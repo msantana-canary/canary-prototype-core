@@ -106,10 +106,16 @@ export function AiDraftCard({ threadId }: { threadId: string }) {
       )}–${shortDate(reservation.checkOutDate)}`
     : null;
 
+  // Re-mount key: changes on generating→ready, Regenerate (variantIndex) and
+  // Shorten (isShort), so the completion glow + reveal animations re-fire each
+  // time a fresh draft becomes ready.
+  const revealKey = `${entry.status}-${entry.variantIndex}-${entry.isShort ? 's' : 'f'}`;
+
   return (
     <div style={{ paddingLeft: 16, paddingRight: 16, paddingTop: 16, paddingBottom: 0 }}>
       <div
-        className="rounded-[12px] overflow-hidden"
+        key={revealKey}
+        className={`rounded-[12px] overflow-hidden${generating ? '' : ' email-draft-complete'}`}
         style={{
           border: `1px solid ${shellTokens.copilotBorder}`,
           backgroundColor: colors.colorWhite,
@@ -149,7 +155,7 @@ export function AiDraftCard({ threadId }: { threadId: string }) {
           <>
             {/* Micro-reassurance — makes the never-auto-send promise legible */}
             <p
-              className="font-['Roboto',sans-serif] text-[10px] leading-[15px]"
+              className="email-draft-reveal font-['Roboto',sans-serif] text-[10px] leading-[15px]"
               style={{ color: colors.colorBlack3, paddingLeft: 16, paddingRight: 16, paddingTop: 2 }}
             >
               Review before sending — nothing is sent automatically.
@@ -157,7 +163,7 @@ export function AiDraftCard({ threadId }: { threadId: string }) {
 
             {/* Draft body */}
             <p
-              className="font-['Roboto',sans-serif] text-[14px] leading-[22px] whitespace-pre-wrap"
+              className="email-draft-reveal font-['Roboto',sans-serif] text-[14px] leading-[22px] whitespace-pre-wrap"
               style={{ color: colors.colorBlack1, paddingLeft: 16, paddingRight: 16, paddingTop: 8 }}
             >
               {text}
@@ -165,7 +171,7 @@ export function AiDraftCard({ threadId }: { threadId: string }) {
 
             {/* Grounding chips — what the draft is grounded in */}
             <div
-              className="flex flex-wrap items-center gap-1.5"
+              className="email-draft-reveal-chips flex flex-wrap items-center gap-1.5"
               style={{ paddingLeft: 16, paddingRight: 16, paddingTop: 10 }}
             >
               {reservationChipLabel && (
@@ -180,7 +186,7 @@ export function AiDraftCard({ threadId }: { threadId: string }) {
 
             {/* Footer actions */}
             <div
-              className="flex items-center gap-2"
+              className="email-draft-reveal-footer flex items-center gap-2"
               style={{ paddingLeft: 16, paddingRight: 16, paddingTop: 14, paddingBottom: 14 }}
             >
               <button
@@ -222,15 +228,20 @@ export function AiDraftCard({ threadId }: { threadId: string }) {
 }
 
 /**
- * The animated "Siri orb" — an 18px living gradient blob. Two stacked layers so
- * rotation (the conic base) and the glassy highlight move independently; the
- * whole orb breathes. All motion + timing lives in globals.css (`.ai-orb*`).
+ * The animated "Siri orb" — an 18px living gradient blob. A dim indigo ground,
+ * three screen-blended color petals (cyan / magenta / violet) that drift, scale,
+ * and morph independently at incommensurate speeds, and a pulsing white core.
+ * All motion + timing lives in globals.css (`.ai-orb*`); `generating` just lowers
+ * `--orb-speed` via `.is-generating` to speed the whole composition up.
  */
 function AiOrb({ generating }: { generating: boolean }) {
   return (
-    <span className="ai-orb" aria-hidden="true">
-      <span className={`ai-orb-spin${generating ? ' is-fast' : ''}`} />
-      <span className="ai-orb-glow" />
+    <span className={`ai-orb${generating ? ' is-generating' : ''}`} aria-hidden="true">
+      <span className="ai-orb-base" />
+      <span className="ai-orb-petal ai-orb-a" />
+      <span className="ai-orb-petal ai-orb-b" />
+      <span className="ai-orb-petal ai-orb-c" />
+      <span className="ai-orb-core" />
     </span>
   );
 }
