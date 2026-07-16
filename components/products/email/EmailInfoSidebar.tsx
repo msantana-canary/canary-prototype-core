@@ -1,10 +1,11 @@
 /**
  * EmailInfoSidebar — Email Channel (Phase 2a)
  *
- * A PORT of Messaging's GuestInfoSidebar into the Email surface, rendered as a
- * push panel (third body column) rather than an overlay — SJ + Wenjun steer,
- * 7/07. Toggled by the thread header's info icon (which shows a pressed/active
- * state while open); the thread view shrinks to make room.
+ * A PORT of Messaging's GuestInfoSidebar into the Email surface. Two styles,
+ * chosen via the prototype toggle: PUSH (third body column; thread list
+ * collapses 434→334) or DRAWER (Messaging's actual mechanic — fixed to the
+ * right screen edge, translate-x slide-in). Toggled by the thread header's
+ * info icon (pressed/active state while open).
  *
  * Reused Messaging idioms (visual parity is deliberate — this is a sibling
  * product's panel, not a new invention):
@@ -69,6 +70,8 @@ export function EmailInfoSidebar() {
   const threads = useEmailStore((s) => s.threads);
   const selectedThreadId = useEmailStore((s) => s.selectedThreadId);
   const setInfoOpen = useEmailStore((s) => s.setInfoOpen);
+  const infoPanelStyle = useEmailStore((s) => s.infoPanelStyle);
+  const isInfoOpen = useEmailStore((s) => s.isInfoOpen);
 
   const thread = threads.find((t) => t.id === selectedThreadId);
   if (!thread) return null;
@@ -76,13 +79,30 @@ export function EmailInfoSidebar() {
   const guest = thread.linkedGuestId ? getGuest(thread.linkedGuestId) : undefined;
   const reservations = guest ? getGuestReservations(guest.id) : [];
 
+  const isDrawer = infoPanelStyle === 'drawer';
+
+  // PUSH: in-flow third column, only mounted while open (EmailSurface renders us
+  // unconditionally; we bail here so flex layout never sees a closed panel).
+  if (!isDrawer && !isInfoOpen) return null;
+
   return (
     <div
-      className="shrink-0 flex flex-col h-full overflow-y-auto rounded-[12px]"
+      className={
+        isDrawer
+          ? // DRAWER: Messaging's GuestInfoSidebar mechanic verbatim — fixed to the
+            // right SCREEN edge below the 52px top bar, slides in via translate-x
+            // (300ms ease-in-out), shadow-lg, always mounted so the slide animates.
+            `fixed right-0 flex flex-col overflow-y-auto transition-transform duration-300 ease-in-out shadow-lg ${
+              isInfoOpen ? 'translate-x-0' : 'translate-x-full'
+            }`
+          : 'shrink-0 flex flex-col overflow-y-auto rounded-[12px] h-full'
+      }
       style={{
-        width: 360,
-        backgroundColor: colors.colorWhite,
-        border: `1px solid ${colors.colorBlack6}`,
+        width: isDrawer ? 400 : 360,
+        backgroundColor: isDrawer ? colors.colorBlack8 : colors.colorWhite,
+        ...(isDrawer
+          ? { top: 52, height: 'calc(100vh - 52px)', zIndex: 40 }
+          : { border: `1px solid ${colors.colorBlack6}` }),
       }}
     >
       <div className="p-6">

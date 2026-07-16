@@ -10,6 +10,13 @@ import { create } from 'zustand';
 import { EmailThread, EmailMessage, EmailView } from './types';
 import { mockThreads, mockMessages } from './mock-data';
 
+/** How the Email Details panel presents: pushes a third column vs. floats over. */
+// 'drawer' = Messaging's actual GuestInfoSidebar mechanic: fixed drawer sliding
+// in from the right screen edge (Miguel's reference for "how the sidebar
+// currently works in our existing product"). NOT a floating overlay card —
+// that variant was built 7/16 and rejected same-day.
+export type InfoPanelStyle = 'push' | 'drawer';
+
 interface EmailState {
   // State
   threads: EmailThread[];
@@ -19,6 +26,7 @@ interface EmailState {
   searchQuery: string;
   draft: string;
   isInfoOpen: boolean;
+  infoPanelStyle: InfoPanelStyle;
 
   // Actions
   selectThread: (threadId: string) => void;
@@ -29,12 +37,10 @@ interface EmailState {
   sendReply: (threadId: string, body: string) => void;
   toggleInfo: () => void;
   setInfoOpen: (open: boolean) => void;
+  setInfoPanelStyle: (style: InfoPanelStyle) => void;
 }
 
 const STAFF_NAME = 'Theresa Webb';
-
-/** The thread auto-opened in the read pane on first load (matches Figma open state). */
-const INITIAL_SELECTED_THREAD_ID = 'email-emily';
 
 /** Threads in a view, newest activity first (mirrors the list's sort). */
 function threadsInViewByRecency(threads: EmailThread[], view: EmailView): EmailThread[] {
@@ -42,6 +48,15 @@ function threadsInViewByRecency(threads: EmailThread[], view: EmailView): EmailT
     .filter((t) => t.status === view)
     .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
 }
+
+/**
+ * The thread auto-opened in the read pane on first load: the most recent inbox
+ * thread — the same one the sorted list renders on top. Derived (no hardcoded
+ * id) so the open thread always matches the list's first row even if mock data
+ * changes. Null only if the inbox is empty.
+ */
+const INITIAL_SELECTED_THREAD_ID: string | null =
+  threadsInViewByRecency(mockThreads, 'inbox')[0]?.id ?? null;
 
 /**
  * Mark a single thread read. Selecting a thread opens it in the read pane, and
@@ -55,7 +70,7 @@ function markThreadRead(threads: EmailThread[], threadId: string | null): EmailT
 }
 
 export const useEmailStore = create<EmailState>((set, get) => ({
-  // Initial state — default to the featured Emily thread (matches Figma open state).
+  // Initial state — auto-open the most recent inbox thread (the list's top row).
   // The auto-selected thread is marked read the same way selectThread does, so
   // the list never shows an unread dot on the thread that's already open.
   threads: markThreadRead(mockThreads, INITIAL_SELECTED_THREAD_ID),
@@ -65,6 +80,7 @@ export const useEmailStore = create<EmailState>((set, get) => ({
   searchQuery: '',
   draft: '',
   isInfoOpen: false,
+  infoPanelStyle: 'push',
 
   selectThread: (threadId: string) => {
     set((state) => ({
@@ -143,5 +159,9 @@ export const useEmailStore = create<EmailState>((set, get) => ({
 
   setInfoOpen: (open: boolean) => {
     set({ isInfoOpen: open });
+  },
+
+  setInfoPanelStyle: (style: InfoPanelStyle) => {
+    set({ infoPanelStyle: style });
   },
 }));

@@ -26,6 +26,15 @@ export function EmailThreadList() {
   const selectedThreadId = useEmailStore((s) => s.selectedThreadId);
   const setView = useEmailStore((s) => s.setView);
   const selectThread = useEmailStore((s) => s.selectThread);
+  const isInfoOpen = useEmailStore((s) => s.isInfoOpen);
+  const infoPanelStyle = useEmailStore((s) => s.infoPanelStyle);
+
+  // When the info panel is open in PUSH mode it takes a third column, so the
+  // left column gives up 100px (434 → 334) to keep the thread view readable.
+  // Drawer mode slides the panel over from the screen edge, so the left column stays full width.
+  // Rows already truncate (name) / whitespace-nowrap (date), so 334 is safe.
+  const collapsed = isInfoOpen && infoPanelStyle === 'push';
+  const columnWidth = collapsed ? 334 : 434;
 
   const query = searchQuery.trim().toLowerCase();
 
@@ -44,7 +53,10 @@ export function EmailThreadList() {
     .sort((a, b) => b.lastActivityAt.getTime() - a.lastActivityAt.getTime());
 
   return (
-    <div className="flex flex-col gap-4 min-h-0" style={{ width: 434 }}>
+    <div
+      className="flex flex-col gap-4 min-h-0 shrink-0"
+      style={{ width: columnWidth, transition: 'width 200ms ease-out' }}
+    >
       {/* Segmented control */}
       <div
         className="flex gap-1 rounded-[6px] shrink-0"
