@@ -241,6 +241,7 @@ function AiOrb({ generating }: { generating: boolean }) {
       <span className="ai-orb-petal ai-orb-a" />
       <span className="ai-orb-petal ai-orb-b" />
       <span className="ai-orb-petal ai-orb-c" />
+      <span className="ai-orb-petal ai-orb-d" />
       <span className="ai-orb-core" />
     </span>
   );
