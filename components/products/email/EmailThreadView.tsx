@@ -13,7 +13,7 @@
 import React, { useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import Icon from '@mdi/react';
-import { mdiInformationOutline, mdiDotsHorizontal } from '@mdi/js';
+import { mdiInformationOutline } from '@mdi/js';
 import { colors, CanaryTag, TagSize } from '@canary-ui/components';
 import { getGuest } from '@/lib/core/data';
 import { useEmailStore } from '@/lib/products/email/store';
@@ -166,14 +166,11 @@ export function EmailThreadView() {
           </div>
         </div>
 
-        {/* Right: action group — hidden by default, revealed on thread-view hover.
-            Stays visible while the Info panel is open so the pressed info button
-            (its active affordance) remains on screen. */}
-        <div
-          className={`flex items-center gap-2 shrink-0 transition-opacity ${
-            isInfoOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-          }`}
-        >
+        {/* Right: action group — always visible (matches messaging's persistent
+            header actions; the Figma's opacity-0 was a state artifact and
+            hover-reveal killed discoverability). Kebab dropped until there's a
+            menu to put in it. */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => archiveThread(thread.id)}
             className="flex items-center justify-center rounded-[6px] font-['Roboto',sans-serif] font-medium text-[14px] transition-opacity hover:opacity-80"
@@ -200,9 +197,6 @@ export function EmailThreadView() {
               size={0.83}
               color={isInfoOpen ? colors.colorBlueDark1 : colors.colorBlack3}
             />
-          </button>
-          <button className="rounded-[4px] hover:bg-[#f0f0f0] transition-colors" style={{ padding: 10 }} aria-label="More">
-            <Icon path={mdiDotsHorizontal} size={0.83} color={colors.colorBlack3} />
           </button>
         </div>
       </div>
