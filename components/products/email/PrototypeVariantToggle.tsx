@@ -13,8 +13,8 @@
 
 import React, { useState } from 'react';
 import Icon from '@mdi/react';
-import { mdiTuneVariant, mdiClose } from '@mdi/js';
-import { useEmailStore } from '@/lib/products/email/store';
+import { mdiTuneVariant, mdiClose, mdiInboxArrowDownOutline } from '@mdi/js';
+import { useEmailStore, INBOUND_QUEUE_LENGTH } from '@/lib/products/email/store';
 import type { InfoPanelStyle } from '@/lib/products/email/store';
 
 const OPTIONS: { value: InfoPanelStyle; label: string; desc: string }[] = [
@@ -26,6 +26,11 @@ export function PrototypeVariantToggle() {
   const [isOpen, setIsOpen] = useState(false);
   const infoPanelStyle = useEmailStore((s) => s.infoPanelStyle);
   const setInfoPanelStyle = useEmailStore((s) => s.setInfoPanelStyle);
+  const simulateInboundEmail = useEmailStore((s) => s.simulateInboundEmail);
+  const inboundQueueIndex = useEmailStore((s) => s.inboundQueueIndex);
+
+  const inboundRemaining = INBOUND_QUEUE_LENGTH - inboundQueueIndex;
+  const inboundExhausted = inboundRemaining <= 0;
 
   return (
     <div className="fixed bottom-6 right-6 z-[100]">
@@ -86,6 +91,40 @@ export function PrototypeVariantToggle() {
                   </button>
                 );
               })}
+            </div>
+
+            {/* DEMO — live-driven controls for a presenter (Rachel) */}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
+                Demo
+              </p>
+              <button
+                onClick={simulateInboundEmail}
+                disabled={inboundExhausted}
+                className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left transition-colors"
+                style={{
+                  backgroundColor: '#fafafa',
+                  border: '1px solid #e5e5e5',
+                  cursor: inboundExhausted ? 'not-allowed' : 'pointer',
+                  opacity: inboundExhausted ? 0.5 : 1,
+                }}
+                title={
+                  inboundExhausted
+                    ? 'No more scripted emails — reload to reset'
+                    : 'Deliver the next scripted inbound email'
+                }
+              >
+                <Icon path={mdiInboxArrowDownOutline} size={0.72} color="#465a63" />
+                <span className="flex-1 font-['Roboto',sans-serif] text-xs font-medium text-black">
+                  Simulate incoming email
+                </span>
+                <span
+                  className="font-['Roboto',sans-serif] text-[10px] font-medium tabular-nums"
+                  style={{ color: inboundExhausted ? '#cc4b4b' : '#666666' }}
+                >
+                  {inboundExhausted ? 'none left' : `${inboundRemaining} left`}
+                </span>
+              </button>
             </div>
           </div>
         </div>

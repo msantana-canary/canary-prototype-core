@@ -27,6 +27,8 @@ interface EmailState {
   draft: string;
   isInfoOpen: boolean;
   infoPanelStyle: InfoPanelStyle;
+  /** How far through the scripted inbound-email demo queue we are (see INBOUND_SCRIPT). */
+  inboundQueueIndex: number;
 
   // Actions
   selectThread: (threadId: string) => void;
@@ -38,9 +40,67 @@ interface EmailState {
   toggleInfo: () => void;
   setInfoOpen: (open: boolean) => void;
   setInfoPanelStyle: (style: InfoPanelStyle) => void;
+  /** Deliver the next scripted inbound email (demo control). No-op when exhausted. */
+  simulateInboundEmail: () => void;
 }
 
 const STAFF_NAME = 'Theresa Webb';
+
+// --- Simulate-incoming-email demo queue ------------------------------------
+// Lets a presenter (Rachel) drive live inbound arrivals during a demo: each
+// press of the "Simulate incoming email" control delivers the NEXT scripted
+// item. The queue does NOT cycle — it stops when exhausted (the button
+// disables and shows a "0 left" state), so a demo can't accidentally replay
+// the same beats. Reset only on a full page reload.
+
+/** A scripted inbound: either a reply to an existing thread, or a brand-new thread. */
+type ScriptedInbound =
+  | { kind: 'reply'; threadId: string; body: string }
+  | {
+      kind: 'new-thread';
+      thread: Pick<EmailThread, 'id' | 'senderName' | 'senderEmail' | 'subject' | 'linkedGuestId'>;
+      body: string;
+    };
+
+const INBOUND_SCRIPT: ScriptedInbound[] = [
+  // 1. Reply to Sarah Martinez's existing late-checkout thread — a thank-you
+  //    with one follow-up. Bumps the thread to the top of the list.
+  {
+    kind: 'reply',
+    threadId: 'email-sarah',
+    body: 'Amazing — thank you so much! And could we also store our bags at the front desk after checkout, until our evening flight?\n\nSarah',
+  },
+  // 2. A brand-new inbound thread from a fresh sender, auto-linked to a
+  //    canonical guest not used elsewhere in the inbox (Sophia Anderson,
+  //    GOLD ELITE). Lands at the top, unread, badge bumps.
+  {
+    kind: 'new-thread',
+    thread: {
+      id: 'email-sim-sophia',
+      senderName: 'Sophia Anderson',
+      senderEmail: 'sophia.anderson@gmail.com',
+      subject: 'Re: Your upcoming stay at The Statler — Nov 22',
+      linkedGuestId: 'guest-sophia',
+    },
+    body: "Hi there,\n\nWe're really looking forward to our stay! Would it be possible to arrange an airport shuttle for our arrival on the 22nd? Our flight lands around 3pm.\n\nThank you,\nSophia",
+  },
+  // 3. A second reply — the escalation beat on Brooklyn Carter's billing
+  //    dispute. Pressure without being rude; good for the "unread and waiting"
+  //    demo moment.
+  {
+    kind: 'reply',
+    threadId: 'email-brooklyn',
+    body: "Sorry to push — could I get an update today? I'm submitting my expenses tonight and need to know whether the $45 will be removed.\n\nBrooklyn",
+  },
+];
+
+/** Total scripted inbound items — exposed so the demo control can show "N left". */
+export const INBOUND_QUEUE_LENGTH = INBOUND_SCRIPT.length;
+
+/** One-line list preview from a multi-paragraph body (collapse whitespace). */
+function previewOf(body: string): string {
+  return body.replace(/\s+/g, ' ').trim();
+}
 
 /** Threads in a view, newest activity first (mirrors the list's sort). */
 function threadsInViewByRecency(threads: EmailThread[], view: EmailView): EmailThread[] {
@@ -81,6 +141,7 @@ export const useEmailStore = create<EmailState>((set, get) => ({
   draft: '',
   isInfoOpen: false,
   infoPanelStyle: 'push',
+  inboundQueueIndex: 0,
 
   selectThread: (threadId: string) => {
     set((state) => ({
@@ -150,6 +211,72 @@ export const useEmailStore = create<EmailState>((set, get) => ({
           : t
       ),
       draft: '',
+    }));
+  },
+
+  simulateInboundEmail: () => {
+    const { inboundQueueIndex, selectedThreadId } = get();
+    if (inboundQueueIndex >= INBOUND_SCRIPT.length) return; // queue exhausted — no-op
+
+    const item = INBOUND_SCRIPT[inboundQueueIndex];
+    const now = new Date();
+
+    if (item.kind === 'reply') {
+      const { threadId } = item;
+      const newMessage: EmailMessage = {
+        id: `em-${threadId}-sim-${now.getTime()}`,
+        threadId,
+        direction: 'inbound',
+        body: item.body,
+        sentAt: now,
+      };
+
+      set((state) => ({
+        inboundQueueIndex: state.inboundQueueIndex + 1,
+        messages: {
+          ...state.messages,
+          [threadId]: [...(state.messages[threadId] || []), newMessage],
+        },
+        threads: state.threads.map((t) =>
+          t.id === threadId
+            ? {
+                ...t,
+                // A reply always lands the thread back in the inbox (in case it
+                // had been archived) and bumps it to the top of the list.
+                status: 'inbox',
+                lastActivityAt: now,
+                preview: previewOf(item.body),
+                // Respect the "open thread is never unread" invariant: only mark
+                // unread if the arriving thread isn't the one already open.
+                isUnread: threadId !== selectedThreadId,
+              }
+            : t
+        ),
+      }));
+      return;
+    }
+
+    // kind === 'new-thread' — a brand-new inbound arrives at the top, unread.
+    const { thread, body } = item;
+    const newThread: EmailThread = {
+      ...thread,
+      status: 'inbox',
+      isUnread: true, // never the open thread on arrival
+      lastActivityAt: now,
+      preview: previewOf(body),
+    };
+    const newMessage: EmailMessage = {
+      id: `em-${thread.id}-sim-${now.getTime()}`,
+      threadId: thread.id,
+      direction: 'inbound',
+      body,
+      sentAt: now,
+    };
+
+    set((state) => ({
+      inboundQueueIndex: state.inboundQueueIndex + 1,
+      threads: [...state.threads, newThread],
+      messages: { ...state.messages, [thread.id]: [newMessage] },
     }));
   },
 
