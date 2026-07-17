@@ -64,17 +64,18 @@
   /* Contain the screen blending to the orb: the petals blend against the dark
      base below them, not against the white pill behind the whole orb. */
   isolation: isolate;
+  box-shadow: inset 0 0 3px rgba(122, 92, 255, 0.45), inset 0 -1px 2px rgba(216, 56, 142, 0.3);
   --orb-speed: 1;
 }
-/* Deep near-black indigo ground at FULL opacity. This is what makes the orb
-   work: a tiny dark glowing sphere pops against the white pill, and the vivid
-   screen-blended wisps glow off the dark ground instead of fogging out against
-   white. (A light/subtle base at 18px liquefies the blurred layers into gray.) */
+/* Light pearl ground — white → lavender → pink-violet rim, reflecting the AI
+   palette used across the surface (copilot tint, gradient labels). Ribbons sit
+   on it with NORMAL blending at high saturation (screen-blend on a light ground
+   is what caused the original gray-pearl wash-out). */
 .ai-orb-base {
   position: absolute;
   inset: 0;
   border-radius: 9999px;
-  background: radial-gradient(circle at 50% 45%, #2a1e63 0%, #120e33 78%);
+  background: radial-gradient(circle at 38% 32%, #ffffff 0%, #efe4ff 42%, #e7cdf8 72%, #d9b4f0 100%);
 }
 /* The color wisps — elongated RIBBONS centered on the orb that rotate through
    the core, sweeping arcs across the whole sphere (Siri's organicness comes
@@ -83,7 +84,8 @@
 .ai-orb-petal {
   position: absolute;
   filter: blur(0.6px);
-  mix-blend-mode: screen;
+  mix-blend-mode: normal;
+  opacity: 0.82;
   will-change: transform, border-radius;
 }
 /* Ribbon A — cyan, broad sweep. */
@@ -122,10 +124,10 @@
    the bright heart the wisps swirl around. */
 .ai-orb-core {
   position: absolute;
-  width: 48%;
-  height: 48%;
-  left: 26%;
-  top: 26%;
+  width: 54%;
+  height: 54%;
+  left: 23%;
+  top: 23%;
   border-radius: 9999px;
   background: radial-gradient(circle, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0) 62%);
   filter: blur(0.3px);
