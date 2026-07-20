@@ -30,12 +30,19 @@ export function Avatar({ src, initials, size = 'medium', className = '' }: Avata
   };
 
   if (src) {
+    // The avatar PNGs are pre-cropped CIRCLES with transparent corners, so
+    // border-radius alone can't square them. Scale the image ~1.45x inside a
+    // clipped square container: the visible crop comes from inside the circle
+    // (its inscribed square), which reads as a true rounded-8 square avatar.
     return (
-      <img
-        src={src}
-        alt={initials}
-        className={`${sizeClasses[size]} rounded-[8px] object-cover ${className}`}
-      />
+      <div className={`${sizeClasses[size]} rounded-[8px] overflow-clip shrink-0 ${className}`} style={{ backgroundColor: colors.colorBlack6 }}>
+        <img
+          src={src}
+          alt={initials}
+          className="w-full h-full object-cover"
+          style={{ transform: 'scale(1.45)' }}
+        />
+      </div>
     );
   }
 
