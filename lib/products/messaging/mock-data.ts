@@ -54,8 +54,8 @@ export const mockThreads: Thread[] = [
     id: '2',
     contactNumber: '+15005550013',
     linkedReservationIds: ['res-miguel-nov'],
-    lastMessage: 'Can I have extra face towels to the room please?',
-    lastMessageAt: new Date('2026-03-16T10:04:00'),
+    lastMessage: "Of course — I'll have extra face towels sent up to your room right away.",
+    lastMessageAt: new Date('2026-03-16T10:07:00'),
     isUnread: true,
     status: 'inbox',
     isFlagged: true,
@@ -434,6 +434,17 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-16T10:04:00'),
       channel: 'SMS',
       status: 'delivered',
+    },
+    // Failed outbound — exercises the production "Failed to send" treatment
+    // (red row + alert icon + Learn more) in MessageBubble.
+    {
+      id: 'm5b',
+      threadId: '2',
+      sender: 'staff',
+      content: "Of course — I'll have extra face towels sent up to your room right away.",
+      timestamp: new Date('2026-03-16T10:07:00'),
+      channel: 'SMS',
+      status: 'failed',
     },
   ],
   // Brooklyn's conversation
