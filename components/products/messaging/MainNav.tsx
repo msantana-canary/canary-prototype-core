@@ -1,7 +1,7 @@
 /**
  * MainNav Component — REDESIGN (Figma "Messaging" frame 29:2099, node 29:2101)
  *
- * White 64px bar with text tabs (Conversations / Broadcast / AI answers):
+ * White 64px bar with text tabs (Conversations / Broadcast):
  * 16px Medium labels, 4px flush-bottom underline on the active tab, no icons.
  * Right side: "Online hours" caption + a tonal status pill (green dot +
  * "Online" + caret) that opens a small Online/Offline/Away menu.
@@ -41,7 +41,6 @@ export function MainNav({ activeTab, onTabChange }: { activeTab: MainNavTab; onT
   const segments = [
     { id: 'conversations' as const, label: 'Conversations' },
     { id: 'broadcast' as const, label: 'Broadcast' },
-    { id: 'ai-answers' as const, label: 'AI answers' },
   ];
 
   const status = STATUS_META[onlineStatus];

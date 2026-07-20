@@ -31,7 +31,8 @@ New data affordance: `Thread.isFlagged` (flag replaces the unread dot in the row
 - **Chain of thoughts** (the AI reasoning checklist in the frame) — was a visual conceptualization; the real treatment puts AI thinking in a sidebar. Separate design pass.
 - **Copilot** anything — not touched in this exercise.
 - **Filters panel / flag flow / assignment scoping** — Filters row is a visual placeholder; assignments will live in Filters.
-- **Broadcast + AI answers** redesign — after the main surface is right.
+- **Broadcast** redesign — after the main surface is right.
+- **AI answers** tab removed 2026-07-20 — capability moved into Settings as Knowledge Base (per Miguel), tab is redundant on the messaging surface. Gone from the nav, the `MainNavTab` type, and the page.
 - AI-message thumbs/info feedback row — dropped to match the frame; revisit if it's missed.
 - Translate composer tool — replaced by emoji per the frame; flag if translation needs a home.
 

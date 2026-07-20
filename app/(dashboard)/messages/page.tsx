@@ -5,7 +5,7 @@
  *
  * Main entry point for the Messaging product.
  * Uses the canonical data layer and messaging-specific components.
- * Supports tab switching between Conversations, Broadcast, and AI Answers.
+ * Supports tab switching between Conversations and Broadcast.
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
@@ -278,12 +278,6 @@ export default function MessagesPage() {
 
       {activeTab === 'broadcast' && (
         <BroadcastView />
-      )}
-
-      {activeTab === 'ai-answers' && (
-        <div className="flex items-center justify-center h-full text-gray-400">
-          AI Answers coming soon
-        </div>
       )}
 
       {/* Link Reservation Modal */}
