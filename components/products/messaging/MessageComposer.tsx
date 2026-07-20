@@ -3,12 +3,12 @@
  *
  * Quiet card register: white rounded-12 container with a colorBlack6 border
  * (blue focus-within — the Figma draws no focus state, so the product's focus
- * treatment carries over). Toolbar: emoji / attachment / templates / concierge
- * ghost icon buttons; gray rounded-6 AI-switch pill; 32px "Send via SMS"
+ * treatment carries over). Toolbar: emoji / attachment / translate / templates /
+ * concierge ghost icon buttons; gray rounded-6 AI-switch pill; 32px "Send via SMS"
  * split button (left/right-only radii, 1px seam).
  *
- * vs old build: emoji replaces Translate (per the Figma — Translate presumably
- * returns via a future toolbar pass), border was #666 rounded-4.
+ * vs old build: emoji added ahead of Translate (per the Figma); border was
+ * #666 rounded-4.
  */
 
 'use client';
@@ -19,6 +19,7 @@ import Icon from '@mdi/react';
 import {
   mdiEmoticonOutline,
   mdiPaperclip,
+  mdiTranslate,
   mdiFormatListBulleted,
   mdiRoomServiceOutline,
   mdiUnfoldMoreHorizontal,
@@ -65,6 +66,7 @@ export function MessageComposer({
   const toolIcons = [
     { path: mdiEmoticonOutline, label: 'Emoji' },
     { path: mdiPaperclip, label: 'Attach file' },
+    { path: mdiTranslate, label: 'Translate' },
     { path: mdiFormatListBulleted, label: 'Templates' },
     { path: mdiRoomServiceOutline, label: 'Service requests' },
   ];
@@ -121,7 +123,7 @@ export function MessageComposer({
           <div className="flex gap-3 items-center">
             <div
               className="flex items-center rounded-[6px] self-stretch"
-              style={{ backgroundColor: colors.colorBlack7, paddingLeft: 8, paddingRight: 16, paddingTop: 4, paddingBottom: 4 }}
+              style={{ backgroundColor: colors.colorBlack7, gap: 8, paddingLeft: 8, paddingRight: 16, paddingTop: 4, paddingBottom: 4 }}
             >
               <CanarySwitch
                 checked={aiEnabled}
