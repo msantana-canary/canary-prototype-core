@@ -39,6 +39,7 @@ import { reservations } from '@/lib/core/data/reservations';
 import { BroadcastGuestEntry, GuestSegment } from '@/lib/products/messaging/broadcast-types';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
+import { Avatar } from '../Avatar';
 
 const segmentLabels: Record<GuestSegment, string> = {
   expecting: 'Expecting',
@@ -48,23 +49,6 @@ const segmentLabels: Record<GuestSegment, string> = {
 };
 
 const segmentOrder: GuestSegment[] = ['expecting', 'checked-in', 'departing', 'checked-out'];
-
-function GuestAvatar({ initials, size = 40 }: { initials: string; size?: number }) {
-  return (
-    <div
-      className="rounded-full flex items-center justify-center shrink-0 font-medium font-['Roboto',sans-serif]"
-      style={{
-        width: size,
-        height: size,
-        backgroundColor: '#e5e7eb',
-        color: '#6b7280',
-        fontSize: size * 0.3,
-      }}
-    >
-      {initials}
-    </div>
-  );
-}
 
 function ContactDetailsPopover({ guest, reservation }: { guest: Guest; reservation?: Reservation }) {
   const roomDisplay = reservation
@@ -180,7 +164,7 @@ function GuestItem({
       </div>
 
       {/* Avatar */}
-      <GuestAvatar initials={guest.initials} />
+      <Avatar initials={guest.initials} size="medium" />
 
       {/* Name + Room */}
       <div className="flex-1 min-w-0">

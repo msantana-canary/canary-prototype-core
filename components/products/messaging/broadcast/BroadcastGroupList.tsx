@@ -33,7 +33,7 @@ function CustomGroupIcon({ isSelected }: { isSelected: boolean }) {
       style={{
         width: 40,
         height: 40,
-        borderRadius: 50,
+        borderRadius: 8,
         padding: 10,
         backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#cccccc',
         marginRight: -8,

@@ -32,7 +32,7 @@ export function BroadcastThread() {
         <div className="flex items-center gap-3">
           {/* Group Icon */}
           <div
-            className="w-10 h-10 rounded-full flex items-center justify-center"
+            className="w-10 h-10 rounded-[8px] flex items-center justify-center"
             style={{ backgroundColor: '#eaeef9' }}
           >
             <Icon path={mdiAccountGroupOutline} size={0.83} color="#2858c4" />
