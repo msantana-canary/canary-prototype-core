@@ -121,6 +121,20 @@ export function ThreadView({
               <h2 className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px] truncate" style={{ color: colors.colorBlack1 }}>
                 {guest?.name || thread.contactNumber}
               </h2>
+              {/* Loyalty tier — moved here from message blocks (Miguel 2026-07-20).
+                  Renders in the thread list row and thread header only. */}
+              {guest?.statusTag && (
+                <CanaryTag
+                  label={guest.statusTag.label}
+                  size={TagSize.COMPACT}
+                  variant={TagVariant.FILLED}
+                  uppercase
+                  customColor={{
+                    backgroundColor: guest.statusTag.color,
+                    fontColor: guest.statusTag.textColor || 'white',
+                  }}
+                />
+              )}
               {thread.status === 'archived' && (
                 <CanaryTag
                   label="Archived"
