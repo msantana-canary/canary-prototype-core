@@ -18,7 +18,7 @@ import { Thread } from '@/lib/products/messaging/types';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
 import { format } from 'date-fns';
-import { colors } from '@canary-ui/components';
+import { colors, CanaryTag, TagSize } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiBedOutline, mdiRoomServiceOutline, mdiFlag } from '@mdi/js';
 
@@ -48,8 +48,9 @@ export function ThreadListItem({
 
   // Note: canonical room strings already carry reservation status where
   // relevant ("112 (RESERVED)") — the Figma's plain-text status treatment.
-  // guest.statusTag is the LOYALTY tier and belongs on message blocks, not here.
+  // guest.statusTag is the LOYALTY tier — shown as a tag beside the name.
   const room = reservation?.room;
+  const loyalty = guest?.statusTag;
   const requestCount = reservation?.requestCount;
 
   return (
@@ -74,14 +75,29 @@ export function ThreadListItem({
 
       {/* Content */}
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* Name + Timestamp */}
-        <div className="flex items-center justify-between gap-2">
+        {/* Name + loyalty tier + Timestamp */}
+        <div className="flex items-center gap-2">
           <p
-            className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] truncate flex-1 min-w-0"
+            className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] truncate min-w-0 shrink"
             style={{ color: colors.colorBlack1 }}
           >
             {guestName}
           </p>
+          {loyalty && (
+            <span className="shrink-0">
+              <CanaryTag
+                label={loyalty.label}
+                size={TagSize.COMPACT}
+                uppercase
+                customColor={{
+                  backgroundColor: colors.colorBlack6,
+                  borderColor: colors.colorBlack5,
+                  fontColor: colors.colorBlack1,
+                }}
+              />
+            </span>
+          )}
+          <span className="flex-1" />
           <span
             className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase whitespace-nowrap shrink-0"
             style={{ color: colors.colorBlack3 }}
