@@ -6,6 +6,49 @@
 > (the Figma's navy 240px rail + 52px header are the new AppShell, deliberately NOT built here;
 > that lands as a component-level fix later).
 
+## Sidebar v2 — grouped cards (2026-07-20)
+
+The Conversation Details sidebar (`GuestInfoSidebar`) is reframed as a **verification aid**:
+"did the guest-journey messages send, and on which stay did something break?"
+
+- **Phone-grouping rule (load-bearing):** stays are grouped by the **auto-link fact**
+  (guest phone === thread phone) — **NEVER by asserted person identity**. Sudarshan's identity
+  constraint is respected: Canary can't tell two humans sharing a phone from one human with a
+  nickname, so names are **never collapsed across stays**. On a stay row the guest name renders
+  **only if it differs** from the card-header name (the shared-phone edge).
+- **Linked Reservations moved to the TOP** — it's the star of the panel now. Section order is
+  (1) Linked Reservations, (2) Assignment, (3) Service Tasks, (4) Call History.
+- **Contact Number card removed** — the phone folds into the **primary card** as its anchor
+  (phone icon + number under the guest name).
+- **Cards, not a table.** One **PRIMARY card** holds *all* auto-linked stays: header = current
+  guest name + green **AUTO-LINKED** outline tag (`CanaryTag` OUTLINE/SUCCESS/COMPACT, the
+  provenance signal) + the thread phone; body = one **stay row** per auto-linked reservation,
+  sorted **in-house → upcoming (soonest first) → past (most recent first)**. Dates are the most
+  prominent field (the disambiguator); room shows when in-house; a small 10px uppercase state
+  label (IN-HOUSE / UPCOMING / PAST) derives from `reservation.status`. Auto-linked stays have
+  **no unlink** — they're facts, production hard-blocks it. Each manually-linked entry gets its
+  own **SECONDARY card** with a gray "Linked by staff" caption (the assertion signal) and a kebab
+  → "Unlink reservation" (wired to the existing `onUnlinkReservation` flow).
+- **GJ scheduled-message status line** (per stay row, visual-only): a small mock map
+  `gjMessageStatus` in `lib/products/messaging/mock-data.ts` keyed by reservation id
+  (`{delivered, failed, scheduled}`). **Failures are the loudest thing in the card** — `failed > 0`
+  renders a **red** line (`colorRed1` #E40046) with an alert icon: "N message(s) failed to send"
+  ("something went wrong" is the #1 triage signal). Otherwise a quiet 12px `colorBlack3` line:
+  "✓ D delivered · S scheduled". **No click behavior / detail modal yet — deferred to a later pass.**
+- **440px both mechanics:** the push wrapper animates width 0↔440; the drawer is fixed 440 (both
+  bumped from 360/400). The push/drawer `PrototypeVariantToggle` behavior is unchanged.
+- **Demo data — the "Johnny" scenario (thread '14'):** John Smith (`guest-john-s`) now has **three**
+  auto-linked stays — a past solo work trip (`res-john-feb-past`, Feb 3–5, checked-out), the current
+  in-house stay (`res-john-jul`, Jul 13–15, room 504), and a future stay (`res-john-sep`, Sep 22–25,
+  upcoming). Same guest = same phone (+16507665555) → all three auto-link. James Brady / Ethan Parker
+  / Liam Carter remain manually-linked secondary cards. `res-john-jul` carries `failed: 1` so the red
+  state is demoable. New reservations are **additions only** to `lib/core/data/reservations.ts` (no
+  existing entries modified — safe for other products' typecheck).
+
+> ⚠ Vestigial note carried from v1: the "Auto-linked badge" rationale predates the badge's own
+> removal in the row list; here AUTO-LINKED lives on the primary card header as provenance, not in
+> thread rows.
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |
