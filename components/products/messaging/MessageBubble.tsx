@@ -17,7 +17,7 @@ import React from 'react';
 import { Message } from '@/lib/products/messaging/types';
 import { Guest } from '@/lib/core/types/guest';
 import { format } from 'date-fns';
-import { colors, CanaryTag, TagSize } from '@canary-ui/components';
+import { colors, CanaryTag, TagSize, TagVariant } from '@canary-ui/components';
 import { Avatar } from './Avatar';
 
 const STAFF_NAME = 'Theresa Webb';
@@ -74,11 +74,11 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
             <CanaryTag
               label={statusTag.label}
               size={TagSize.COMPACT}
+              variant={TagVariant.FILLED}
               uppercase
               customColor={{
-                backgroundColor: colors.colorBlack6,
-                borderColor: colors.colorBlack5,
-                fontColor: colors.colorBlack1,
+                backgroundColor: statusTag.color,
+                fontColor: statusTag.textColor || 'white',
               }}
             />
           )}

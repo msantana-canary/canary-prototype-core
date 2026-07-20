@@ -18,7 +18,7 @@ import { Thread } from '@/lib/products/messaging/types';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
 import { format } from 'date-fns';
-import { colors, CanaryTag, TagSize } from '@canary-ui/components';
+import { colors, CanaryTag, TagSize, TagVariant } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiBedOutline, mdiRoomServiceOutline, mdiFlag } from '@mdi/js';
 
@@ -88,11 +88,11 @@ export function ThreadListItem({
               <CanaryTag
                 label={loyalty.label}
                 size={TagSize.COMPACT}
+                variant={TagVariant.FILLED}
                 uppercase
                 customColor={{
-                  backgroundColor: colors.colorBlack6,
-                  borderColor: colors.colorBlack5,
-                  fontColor: colors.colorBlack1,
+                  backgroundColor: loyalty.color,
+                  fontColor: loyalty.textColor || 'white',
                 }}
               />
             </span>
