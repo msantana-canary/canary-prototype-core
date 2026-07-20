@@ -7,6 +7,26 @@
 import { Thread, Message } from './types';
 
 /**
+ * Guest-Journey scheduled-message delivery status, keyed by reservation id.
+ *
+ * VISUAL-ONLY mock for the Conversation Details sidebar's per-stay status line
+ * (the panel is a verification aid). Failures are the loudest signal — a stay
+ * with `failed > 0` renders a red "N message(s) failed to send" line; otherwise
+ * a quiet "✓ D delivered · S scheduled" line. No detail modal yet.
+ *
+ * Covers every reservation on thread '14' (the "Johnny" scenario); res-john-jul
+ * (the in-house stay) carries a failure so the red state is demoable.
+ */
+export const gjMessageStatus: Record<string, { delivered: number; failed: number; scheduled: number }> = {
+  'res-john-jul': { delivered: 4, failed: 1, scheduled: 2 },
+  'res-john-feb-past': { delivered: 6, failed: 0, scheduled: 0 },
+  'res-john-sep': { delivered: 0, failed: 0, scheduled: 3 },
+  'res-james-jul': { delivered: 2, failed: 0, scheduled: 2 },
+  'res-ethan-jul': { delivered: 3, failed: 0, scheduled: 1 },
+  'res-liam-aug': { delivered: 1, failed: 0, scheduled: 4 },
+};
+
+/**
  * Mock threads - link to canonical guest and reservation IDs
  */
 export const mockThreads: Thread[] = [
@@ -14,7 +34,10 @@ export const mockThreads: Thread[] = [
   {
     id: '14',
     contactNumber: '+16507665555',
-    linkedReservationIds: ['res-john-jul', 'res-james-jul', 'res-ethan-jul', 'res-liam-aug'],
+    // John Smith (guest-john-s) is auto-linked across three stays — a past solo
+    // work trip, the current in-house stay, and a future stay (all same phone).
+    // James Brady / Ethan Parker / Liam Carter are manually linked (different phones).
+    linkedReservationIds: ['res-john-jul', 'res-john-feb-past', 'res-john-sep', 'res-james-jul', 'res-ethan-jul', 'res-liam-aug'],
     lastMessage: "Here are some nearby restaurant recommendations: Ithaca Ale House, Komonz Grill, MIX, Red's Place, and Chili's Grill & Bar. The hotel also recommends Il Ristorante Alga, Coltivare, Moosewood Restaurant, and Gola Osteria. Let me know if you need more assistance!",
     lastMessageAt: new Date('2026-03-16T10:04:00'),
     isUnread: true,

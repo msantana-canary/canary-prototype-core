@@ -422,6 +422,31 @@ export const reservations: Record<string, Reservation> = {
     checkInStatus: 'Not Started',
     checkOutStatus: 'Not Started',
   },
+  // John Smith's multi-stay history (thread '14' "Johnny" scenario). Same
+  // guest-john-s → same phone (+16507665555) → all auto-link to the thread.
+  // Past solo work trip (checked out) + a future stay (upcoming). ADDITIONS
+  // only — existing res-john-jul (the in-house stay) is unchanged.
+  'res-john-feb-past': {
+    id: 'res-john-feb-past',
+    guestId: 'guest-john-s',
+    room: '212',
+    checkInDate: 'Feb. 3, 2026',
+    checkOutDate: 'Feb. 5, 2026',
+    confirmationCode: 'JS2F8PASTWK',
+    status: 'checked-out',
+    checkInStatus: 'Completed',
+    checkOutStatus: 'Completed',
+  },
+  'res-john-sep': {
+    id: 'res-john-sep',
+    guestId: 'guest-john-s',
+    checkInDate: 'Sep. 22, 2026',
+    checkOutDate: 'Sep. 25, 2026',
+    confirmationCode: 'JS9S4FUTURE',
+    status: 'upcoming',
+    checkInStatus: 'Not Started',
+    checkOutStatus: 'Not Started',
+  },
 
   // ===== March 2026 Reservations (Broadcast era) =====
 
