@@ -1,8 +1,15 @@
 /**
- * ThreadListItem Component
+ * ThreadListItem Component — REDESIGN (Figma "Messaging" frame 29:2099, "Guest" rows)
  *
- * Displays a single thread preview in the conversation list.
- * Shows guest info, last message, timestamp, and indicators.
+ * Row anatomy: 32px rounded-8 avatar · name (14 Medium) + time (10 uppercase) ·
+ * room line (bed icon + number, "(RESERVED)"-style status as plain text, and a
+ * concierge request-count chip) · preview (14 Regular colorBlack3) with a
+ * trailing flag icon (flagged threads) or the pink unread dot.
+ *
+ * Selection = soft colorBlueDark5 fill + colorBlueDark3 border + rounded-6
+ * (was: solid blue with white text). Unread = dot only — the row background
+ * no longer tints (the old unread tint is now the SELECTED treatment, and the
+ * pink dot was already the settled unread signal).
  */
 
 import React from 'react';
@@ -11,9 +18,9 @@ import { Thread } from '@/lib/products/messaging/types';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
 import { format } from 'date-fns';
-import { CanaryTag, TagSize, TagVariant } from '@canary-ui/components';
+import { colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
-import { mdiBedOutline, mdiRoomServiceOutline } from '@mdi/js';
+import { mdiBedOutline, mdiRoomServiceOutline, mdiFlag } from '@mdi/js';
 
 interface ThreadListItemProps {
   thread: Thread;
@@ -39,137 +46,94 @@ export function ThreadListItem({
   const firstName = guest ? guestName.split(' ')[0] : thread.contactNumber;
   const initials = guest?.initials || '';
 
-  // Get room from reservation
+  // Note: canonical room strings already carry reservation status where
+  // relevant ("112 (RESERVED)") — the Figma's plain-text status treatment.
+  // guest.statusTag is the LOYALTY tier and belongs on message blocks, not here.
   const room = reservation?.room;
-
-  // Get status tag from guest
-  const statusTag = guest?.statusTag;
-
-  // Get request count from reservation
   const requestCount = reservation?.requestCount;
-
-  // Color tokens from library
-  const selectedBg = '#2858c4'; // colorBlueDark1
-  const unreadBg = '#eaeef9'; // colorBlueDark5
-  const readBg = '#f9fafb'; // neutral-50
-  const unreadDot = '#f16682'; // colorPink1
-  const selectedTextLight = '#93abe1'; // colorBlueDark3
 
   return (
     <div
       onClick={onClick}
-      className={`
-        px-6 py-4 cursor-pointer border-b border-neutral-200 transition-colors
-        ${isSelected ? '' : 'hover:bg-neutral-100'}
-      `}
+      className={`flex items-start gap-3 cursor-pointer rounded-[6px] transition-colors shrink-0 ${
+        isSelected ? '' : 'hover:bg-[#f9fafb]'
+      }`}
       style={{
-        backgroundColor: isSelected ? selectedBg : thread.isUnread ? unreadBg : readBg,
+        paddingLeft: 12,
+        paddingRight: 12,
+        paddingTop: 8,
+        paddingBottom: 8,
+        backgroundColor: isSelected ? colors.colorBlueDark5 : 'transparent',
+        border: `1px solid ${isSelected ? colors.colorBlueDark3 : 'transparent'}`,
       }}
     >
-      <div className="flex gap-2">
-        {/* Avatar */}
-        <div className="pt-1">
-          <Avatar
-            src={guest?.avatar}
-            initials={initials}
-            size="medium"
-          />
+      {/* Avatar */}
+      <div className="pt-1 shrink-0">
+        <Avatar src={guest?.avatar} initials={initials} size="small" />
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Name + Timestamp */}
+        <div className="flex items-center justify-between gap-2">
+          <p
+            className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] truncate flex-1 min-w-0"
+            style={{ color: colors.colorBlack1 }}
+          >
+            {guestName}
+          </p>
+          <span
+            className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase whitespace-nowrap shrink-0"
+            style={{ color: colors.colorBlack3 }}
+          >
+            {formattedTime}
+          </span>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0 flex flex-col gap-1">
-          {/* Name + Timestamp */}
-          <div className="flex items-center justify-between gap-2">
-            <p
-              className="font-['Roboto',sans-serif] font-medium text-sm leading-[22px] truncate flex-1 min-w-0"
-              style={{ color: isSelected ? '#FFFFFF' : '#000000' }}
-            >
-              {guestName}
-            </p>
-            <span
-              className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase whitespace-nowrap shrink-0"
-              style={{ color: isSelected ? selectedTextLight : '#666666' }}
-            >
-              {formattedTime}
-            </span>
+        {/* Room + status (plain text, not a tag) + request count */}
+        {(room || (requestCount && requestCount > 0)) && (
+          <div className="flex items-center gap-3">
+            {room && (
+              <div className="flex items-center gap-1">
+                <Icon path={mdiBedOutline} size={0.67} color={colors.colorBlack3} />
+                <span
+                  className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase"
+                  style={{ color: colors.colorBlack3 }}
+                >
+                  {room}
+                </span>
+              </div>
+            )}
+            {requestCount && requestCount > 0 ? (
+              <div className="flex items-center gap-1">
+                <Icon path={mdiRoomServiceOutline} size={0.67} color={colors.colorBlack3} />
+                <span
+                  className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase"
+                  style={{ color: colors.colorBlack3 }}
+                >
+                  {requestCount}
+                </span>
+              </div>
+            ) : null}
           </div>
+        )}
 
-          {/* Status Tag + Room + Request Count */}
-          {(statusTag || room || (requestCount && requestCount > 0)) && (
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Status Tag */}
-              {statusTag && (
-                <CanaryTag
-                  label={statusTag.label}
-                  size={TagSize.COMPACT}
-                  variant={TagVariant.FILLED}
-                  customColor={{
-                    backgroundColor: statusTag.color,
-                    fontColor: statusTag.textColor || 'white',
-                  }}
-                />
-              )}
-
-              {/* Room Number */}
-              {room && (
-                <div className="flex items-center gap-1">
-                  <Icon
-                    path={mdiBedOutline}
-                    size={0.67}
-                    color={isSelected ? '#FFFFFF' : '#000000'}
-                  />
-                  <span
-                    className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase"
-                    style={{ color: isSelected ? '#FFFFFF' : '#000000' }}
-                  >
-                    {room}
-                  </span>
-                </div>
-              )}
-
-              {/* Request Count */}
-              {requestCount && requestCount > 0 && (
-                <div className="flex items-center gap-1">
-                  <Icon
-                    path={mdiRoomServiceOutline}
-                    size={0.67}
-                    color={isSelected ? '#FFFFFF' : '#000000'}
-                  />
-                  <span
-                    className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase"
-                    style={{ color: isSelected ? '#FFFFFF' : '#000000' }}
-                  >
-                    {requestCount}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Message Preview + Unread Indicator */}
-          <div className="flex items-center gap-2">
-            <p
-              className={`flex-1 font-['Roboto',sans-serif] text-xs leading-[18px] truncate ${
-                isTyping ? 'italic' : thread.isUnread && !isSelected ? 'font-medium' : 'font-normal'
-              }`}
-              style={{
-                color: isSelected
-                  ? '#FFFFFF'
-                  : thread.isUnread
-                  ? '#000000'
-                  : '#666666',
-              }}
-            >
-              {isTyping ? `${firstName} is typing...` : thread.lastMessage}
-            </p>
-            {/* Unread Dot */}
+        {/* Preview + flag/unread indicator */}
+        <div className="flex items-center gap-2">
+          <p
+            className={`flex-1 min-w-0 font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate ${isTyping ? 'italic' : ''}`}
+            style={{ color: colors.colorBlack3 }}
+          >
+            {isTyping ? `${firstName} is typing...` : thread.lastMessage}
+          </p>
+          {thread.isFlagged ? (
+            <Icon path={mdiFlag} size={0.83} color="#E40046" className="shrink-0" />
+          ) : (
             <div
               className="w-[10px] h-[10px] rounded-full shrink-0"
-              style={{
-                backgroundColor: thread.isUnread ? unreadDot : 'transparent',
-              }}
+              style={{ backgroundColor: thread.isUnread ? colors.colorPink1 : 'transparent' }}
             />
-          </div>
+          )}
         </div>
       </div>
     </div>

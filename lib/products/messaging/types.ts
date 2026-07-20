@@ -36,6 +36,7 @@ export interface Thread {
   lastMessageAt: Date;
   isUnread: boolean;
   status: ThreadStatus;
+  isFlagged?: boolean;              // Priority flag (redesign) — flag replaces the unread dot in the row
 }
 
 export type ThreadFilter = 'inbox' | 'archived' | 'blocked';

@@ -1,8 +1,18 @@
 /**
- * GuestInfoSidebar Component
+ * GuestInfoSidebar Component — REDESIGN: dual mechanic
  *
- * Right sidebar displaying conversation details: contact number,
- * linked reservations (collapsible table), service tasks, and call history.
+ * Conversation details: contact number, assignment, linked reservations
+ * (collapsible table — settled anatomy, NOT redesigned), service tasks,
+ * call history.
+ *
+ * Two panel styles, chosen via the PrototypeVariantToggle (the open design
+ * question is whether a push column can carry messaging's info density or the
+ * current product's overlay drawer remains right):
+ *  - PUSH: a third body column; the wrapper's width animates 0↔360 so list,
+ *    thread and panel move as one. White rounded-12 card, matching the
+ *    redesign's modular-card canvas.
+ *  - DRAWER: the current product's mechanic verbatim — fixed to the right
+ *    screen edge below the 56px shell header, translate-x slide-in, 400px.
  */
 
 'use client';
@@ -43,28 +53,55 @@ interface GuestInfoSidebarProps {
   onClose: () => void;
   onOpenLinkModal?: () => void;
   onUnlinkReservation?: (reservationId: string) => void;
+  /** PUSH = third body column; DRAWER = current product's fixed slide-in. */
+  panelStyle?: 'push' | 'drawer';
 }
 
-export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, onClose, onOpenLinkModal, onUnlinkReservation }: GuestInfoSidebarProps) {
+export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, onClose, onOpenLinkModal, onUnlinkReservation, panelStyle = 'drawer' }: GuestInfoSidebarProps) {
   const [expandedResId, setExpandedResId] = useState<string | null>(null);
 
   const toggleExpand = (resId: string) => {
     setExpandedResId((prev) => (prev === resId ? null : resId));
   };
 
+  const isDrawer = panelStyle === 'drawer';
+
   return (
     <div
-      className={`fixed right-0 top-[56px] overflow-y-auto transition-transform duration-300 ease-in-out shadow-lg ${
-        isOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}
-      style={{
-        width: '400px',
-        height: 'calc(100vh - 56px)',
-        backgroundColor: colors.colorBlack8,
-        zIndex: 40
-      }}
+      className={
+        isDrawer
+          ? // DRAWER: current product mechanic — fixed right edge below the 56px
+            // shell header, translate-x slide-in, always mounted so it animates.
+            `fixed right-0 top-[56px] overflow-y-auto transition-transform duration-300 ease-in-out shadow-lg ${
+              isOpen ? 'translate-x-0' : 'translate-x-full'
+            }`
+          : // PUSH: always-mounted wrapper whose WIDTH animates 0↔360; a 0-width
+            // flex child still contributes a flex gap, so cancel it while closed.
+            'shrink-0 h-full overflow-hidden'
+      }
+      style={
+        isDrawer
+          ? {
+              width: '400px',
+              height: 'calc(100vh - 56px)',
+              backgroundColor: colors.colorBlack8,
+              zIndex: 40,
+            }
+          : {
+              width: isOpen ? 360 : 0,
+              marginLeft: isOpen ? 0 : -16,
+              transition: 'width 200ms ease-out, margin-left 200ms ease-out',
+            }
+      }
     >
-      <div className="p-6">
+      <div
+        className={isDrawer ? 'p-6' : 'p-6 h-full overflow-y-auto rounded-[12px]'}
+        style={
+          isDrawer
+            ? undefined
+            : { width: 360, backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack6}` }
+        }
+      >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-['Roboto',sans-serif] font-medium text-[18px] leading-[27px]" style={{ color: colors.colorBlack1 }}>

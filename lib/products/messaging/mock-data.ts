@@ -58,6 +58,7 @@ export const mockThreads: Thread[] = [
     lastMessageAt: new Date('2026-03-16T10:04:00'),
     isUnread: true,
     status: 'inbox',
+    isFlagged: true,
   },
   {
     id: '3',
