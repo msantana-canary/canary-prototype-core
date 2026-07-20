@@ -122,7 +122,9 @@ export default function MessagesPage() {
       });
     }
 
-    return filtered;
+    // Sort by recency (newest lastMessageAt first) so the most recent thread
+    // renders at the top — also makes the auto-select-first effect land on it.
+    return [...filtered].sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
   }, [threads, currentView, searchQuery]);
 
   // Handle sending a message
