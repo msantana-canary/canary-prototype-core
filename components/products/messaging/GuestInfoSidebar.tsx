@@ -128,7 +128,7 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
         isDrawer
           ? // DRAWER: current product mechanic — fixed right edge below the 56px
             // shell header, translate-x slide-in, always mounted so it animates.
-            `fixed right-0 top-[56px] overflow-y-auto transition-transform duration-300 ease-in-out shadow-lg ${
+            `fixed right-0 top-[56px] overflow-y-auto scrollbar-invisible transition-transform duration-300 ease-in-out shadow-lg ${
               isOpen ? 'translate-x-0' : 'translate-x-full'
             }`
           : // PUSH: always-mounted wrapper whose WIDTH animates 0↔440; a 0-width
@@ -151,7 +151,7 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
       }
     >
       <div
-        className={isDrawer ? 'p-6' : 'p-6 h-full overflow-y-auto rounded-[12px]'}
+        className={isDrawer ? 'p-6' : 'p-6 h-full overflow-y-auto scrollbar-invisible rounded-[12px]'}
         style={
           isDrawer
             ? undefined
@@ -390,14 +390,42 @@ function ExpandedDetails({ reservation, guest }: { reservation: Reservation; gue
   );
 }
 
-/** Small 10px uppercase state label (IN-HOUSE / UPCOMING / PAST). */
-function StateLabel({ state }: { state: StayState }) {
+/**
+ * Column template for the primary card's stay mini-table. Fixed widths on the
+ * right three columns (state / GJ / chevron) guarantee they line up across every
+ * row even though each row is its own grid; dates take the flexible remainder so
+ * the disambiguating field breathes. Rows use px-3 (vs the header's px-4) to buy
+ * back width — content is only ~390px inside the card.
+ */
+const STAY_ROW_GRID = 'minmax(0, 1fr) 104px 78px 22px';
+
+/**
+ * GjStatusCell — the compact, in-table variant of the GJ status line. Failures
+ * are the loudest thing (red alert icon + "N failed"); otherwise a quiet gray
+ * "✓ D" delivered count, with "· S queued" appended only when messages are still
+ * scheduled. Truncates rather than wrapping so row height stays uniform.
+ */
+function GjStatusCell({ reservationId }: { reservationId: string }) {
+  const status = gjMessageStatus[reservationId];
+  if (!status) return <span />;
+
+  if (status.failed > 0) {
+    return (
+      <div className="flex items-center gap-1 min-w-0">
+        <span className="shrink-0 flex items-center">
+          <Icon path={mdiAlertCircleOutline} size={0.5} color={colors.colorRed1} />
+        </span>
+        <span className="truncate font-['Roboto',sans-serif] font-medium text-[12px] leading-[18px]" style={{ color: colors.colorRed1 }}>
+          {status.failed} failed
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <span
-      className="font-['Roboto',sans-serif] font-medium uppercase shrink-0"
-      style={{ fontSize: 10, lineHeight: '14px', letterSpacing: '0.4px', color: colors.colorBlack3 }}
-    >
-      {STATE_LABEL[state]}
+    <span className="block truncate font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack3 }}>
+      ✓ {status.delivered}
+      {status.scheduled > 0 ? ` · ${status.scheduled} queued` : ''}
     </span>
   );
 }
@@ -450,13 +478,14 @@ function PrimaryCard({
         </div>
       </div>
 
-      {/* Stay rows */}
-      <div className="divide-y" style={{ borderColor: colors.colorBlack6 }}>
-        {stays.map((lr) => (
+      {/* Stay mini-table — aligned columns, hairline dividers between rows */}
+      <div>
+        {stays.map((lr, i) => (
           <PrimaryStayRow
             key={lr.reservation.id}
             linkedReservation={lr}
             headerName={headerName}
+            isFirst={i === 0}
             isExpanded={expandedResId === lr.reservation.id}
             onToggle={() => onToggle(lr.reservation.id)}
           />
@@ -467,19 +496,30 @@ function PrimaryCard({
 }
 
 /**
- * PrimaryStayRow — one stay inside the primary card. Dates are the most-prominent
- * field (the disambiguator); room shows when in-house; a small state tag + GJ
- * status line follow. The guest name renders ONLY IF it differs from the card
- * header name (shared-phone edge — never collapse differing names).
+ * PrimaryStayRow — one stay row of the primary card's mini-table. The row is an
+ * aligned grid: (a) STAY DATES (the disambiguator, 14px Medium) with the guest
+ * name stacked beneath ONLY when it differs from the header (shared-phone rule —
+ * never collapse differing names); (c) state (IN-HOUSE / UPCOMING / PAST, with
+ * "· RM 504" appended when in-house); (d) a compact GJ status cell; (e) the
+ * expand chevron. A hairline (colorBlack6) top border divides it from the row
+ * above. The full-width detail section still expands below the row.
+ *
+ * Note: the never-collapse name (spec column b) rides in column (a) beneath the
+ * dates rather than in a permanent middle column — a dedicated name column would
+ * steal fixed width from every row for a field only shared-phone rows use, which
+ * would squeeze the dates/GJ columns the reviewer wanted to let breathe. The
+ * right-hand columns (state / GJ / chevron) stay perfectly aligned regardless.
  */
 function PrimaryStayRow({
   linkedReservation,
   headerName,
+  isFirst,
   isExpanded,
   onToggle,
 }: {
   linkedReservation: LinkedReservation;
   headerName: string;
+  isFirst: boolean;
   isExpanded: boolean;
   onToggle: () => void;
 }) {
@@ -488,53 +528,55 @@ function PrimaryStayRow({
   const isInHouse = state === 'in-house';
   const nameDiffers = guest.name !== headerName;
 
+  const stateText =
+    isInHouse && reservation.room ? `${STATE_LABEL[state]} · RM ${reservation.room}` : STATE_LABEL[state];
+
   return (
-    <div>
-      {/* Row header (clickable) */}
-      <div className="flex items-start justify-between px-4 py-3 cursor-pointer" onClick={onToggle}>
-        <div className="flex-1 min-w-0">
-          {/* Dates (most prominent) + state tag */}
-          <div className="flex items-center gap-2 flex-nowrap overflow-hidden">
-            <span className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[21px] truncate shrink" style={{ color: colors.colorBlack1 }}>
-              {reservation.checkInDate && reservation.checkOutDate
-                ? formatDateRange(reservation.checkInDate, reservation.checkOutDate)
-                : 'No dates'}
-            </span>
-            <StateLabel state={state} />
-          </div>
-
-          {/* Room when in-house */}
-          {isInHouse && reservation.room && (
-            <div className="flex items-center gap-1 mt-1">
-              <Icon path={mdiBedOutline} size={0.5} color={colors.colorBlack3} />
-              <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack3 }}>
-                Room {reservation.room}
-              </span>
-            </div>
-          )}
-
-          {/* Guest name ONLY when it differs from the card header (shared phone) */}
+    <div style={isFirst ? undefined : { borderTop: `1px solid ${colors.colorBlack6}` }}>
+      {/* Row (clickable) — aligned mini-table grid */}
+      <div
+        className="grid items-start px-3 py-3 cursor-pointer"
+        style={{ gridTemplateColumns: STAY_ROW_GRID, columnGap: 8 }}
+        onClick={onToggle}
+      >
+        {/* (a) Stay dates (+ differing name beneath) */}
+        <div className="min-w-0">
+          <span className="block truncate font-['Roboto',sans-serif] font-medium text-[14px] leading-[21px]" style={{ color: colors.colorBlack1 }}>
+            {reservation.checkInDate && reservation.checkOutDate
+              ? formatDateRange(reservation.checkInDate, reservation.checkOutDate)
+              : 'No dates'}
+          </span>
           {nameDiffers && (
-            <div className="mt-1">
-              <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack2 }}>
-                {guest.name}
-              </span>
-            </div>
+            <span className="block truncate font-['Roboto',sans-serif] text-[12px] leading-[18px] mt-0.5" style={{ color: colors.colorBlack3 }}>
+              {guest.name}
+            </span>
           )}
-
-          {/* GJ scheduled-message status line */}
-          <GjStatusLine reservationId={reservation.id} />
         </div>
 
-        {/* Chevron (no unlink — auto-linked stays are facts) */}
-        <div className="w-[28px] h-[28px] flex items-center justify-center shrink-0 ml-2">
+        {/* (c) State (+ room when in-house) */}
+        <div className="min-w-0 pt-[3px]">
+          <span
+            className="block truncate font-['Roboto',sans-serif] font-medium uppercase"
+            style={{ fontSize: 10, lineHeight: '14px', letterSpacing: '0.4px', color: colors.colorBlack3 }}
+          >
+            {stateText}
+          </span>
+        </div>
+
+        {/* (d) Compact GJ status */}
+        <div className="min-w-0 pt-[1px]">
+          <GjStatusCell reservationId={reservation.id} />
+        </div>
+
+        {/* (e) Chevron (no unlink — auto-linked stays are facts) */}
+        <div className="flex items-center justify-center" style={{ height: 20 }}>
           <Icon path={isExpanded ? mdiChevronUp : mdiChevronDown} size={0.67} color={colors.colorBlack3} />
         </div>
       </div>
 
       {/* Expanded details */}
       {isExpanded && (
-        <div className="px-4 pb-3">
+        <div className="px-3 pb-3">
           <ExpandedDetails reservation={reservation} guest={guest} />
         </div>
       )}
