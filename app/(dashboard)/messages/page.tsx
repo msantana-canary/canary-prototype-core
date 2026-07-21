@@ -13,7 +13,6 @@ import { AppLayout } from '@/components/products/messaging/AppLayout';
 import { ThreadList } from '@/components/products/messaging/ThreadList';
 import { ThreadView } from '@/components/products/messaging/ThreadView';
 import { GuestInfoSidebar } from '@/components/products/messaging/GuestInfoSidebar';
-import { PrototypeVariantToggle } from '@/components/products/messaging/PrototypeVariantToggle';
 import { ComposeHeader } from '@/components/products/messaging/ComposeHeader';
 import { UnlinkReservationModal } from '@/components/products/messaging/UnlinkReservationModal';
 import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
@@ -37,7 +36,6 @@ export default function MessagesPage() {
     composingPhoneNumber,
     typingThreadId,
     isGuestInfoOpen,
-    infoPanelStyle,
     currentView,
     searchQuery,
     selectThread,
@@ -202,65 +200,66 @@ export default function MessagesPage() {
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       onNewMessage={startNewConversation}
+      currentView={currentView}
+      onViewChange={setCurrentView}
     >
       {activeTab === 'conversations' && (
         <div
           className="flex h-full gap-4 min-h-0"
           style={{ paddingLeft: 24, paddingRight: 24, paddingBottom: 24 }}
         >
-          {/* Thread List column (434px per the Figma) */}
-          <div className="w-[434px] shrink-0 h-full">
+          {/* Thread List column — 35% of the content row (scales to any width) */}
+          <div className="min-w-0 h-full" style={{ flexBasis: '35%', flexGrow: 0, flexShrink: 1 }}>
             <ThreadList
               threads={filteredThreads}
               selectedThreadId={selectedThreadId}
               onSelectThread={selectThread}
               typingThreadId={typingThreadId}
-              currentView={currentView}
-              onViewChange={setCurrentView}
             />
           </div>
 
-          {/* Thread View card */}
-          {isComposingNew ? (
-            <div
-              className="flex-1 min-w-0 overflow-clip rounded-[12px]"
-              style={{ backgroundColor: '#ffffff', border: '1px solid #e5e5e5' }}
-            >
-              <ComposeHeader
-                composingPhoneNumber={composingPhoneNumber}
-                onComposingPhoneChange={updateComposingPhone}
-                onCreateThread={createThreadFromPhone}
-                onCancelComposing={cancelComposing}
+          {/* Thread View / Compose — 65% of the content row */}
+          <div className="min-w-0 h-full flex" style={{ flexBasis: '65%', flexGrow: 1, flexShrink: 1 }}>
+            {isComposingNew ? (
+              <div
+                className="flex-1 min-w-0 overflow-clip rounded-[12px]"
+                style={{ backgroundColor: '#ffffff', border: '1px solid #e5e5e5' }}
+              >
+                <ComposeHeader
+                  composingPhoneNumber={composingPhoneNumber}
+                  onComposingPhoneChange={updateComposingPhone}
+                  onCreateThread={createThreadFromPhone}
+                  onCancelComposing={cancelComposing}
+                />
+              </div>
+            ) : selectedThread ? (
+              <ThreadView
+                thread={selectedThread}
+                guest={selectedGuest}
+                reservation={selectedReservation}
+                messages={selectedMessages}
+                onSendMessage={handleSendMessage}
+                aiEnabled={aiEnabled}
+                onAiToggle={() => setAiEnabled(!aiEnabled)}
+                isGuestInfoOpen={isGuestInfoOpen}
+                onToggleGuestInfo={toggleGuestInfo}
+                onArchive={() => archiveThread(selectedThread.id)}
+                onBlock={() => blockThread(selectedThread.id)}
+                onUnblock={() => unblockThread(selectedThread.id)}
+                onMarkUnread={() => markThreadAsUnread(selectedThread.id)}
+                typingThreadId={typingThreadId}
               />
-            </div>
-          ) : selectedThread ? (
-            <ThreadView
-              thread={selectedThread}
-              guest={selectedGuest}
-              reservation={selectedReservation}
-              messages={selectedMessages}
-              onSendMessage={handleSendMessage}
-              aiEnabled={aiEnabled}
-              onAiToggle={() => setAiEnabled(!aiEnabled)}
-              isGuestInfoOpen={isGuestInfoOpen}
-              onToggleGuestInfo={toggleGuestInfo}
-              onArchive={() => archiveThread(selectedThread.id)}
-              onBlock={() => blockThread(selectedThread.id)}
-              onUnblock={() => unblockThread(selectedThread.id)}
-              onMarkUnread={() => markThreadAsUnread(selectedThread.id)}
-              typingThreadId={typingThreadId}
-            />
-          ) : (
-            <div
-              className="flex-1 min-w-0 flex items-center justify-center rounded-[12px] text-gray-500"
-              style={{ backgroundColor: '#ffffff', border: '1px solid #e5e5e5' }}
-            >
-              Select a conversation to start messaging
-            </div>
-          )}
+            ) : (
+              <div
+                className="flex-1 min-w-0 flex items-center justify-center rounded-[12px] text-gray-500"
+                style={{ backgroundColor: '#ffffff', border: '1px solid #e5e5e5' }}
+              >
+                Select a conversation to start messaging
+              </div>
+            )}
+          </div>
 
-          {/* Conversation Details — push column or drawer overlay, chosen via
-              the prototype toggle. Always mounted so both mechanics animate. */}
+          {/* Conversation Details — floating panel + scrim (fixed; out of flow) */}
           {selectedThread && !isComposingNew && (
             <GuestInfoSidebar
               contactNumber={selectedThread.contactNumber}
@@ -269,12 +268,8 @@ export default function MessagesPage() {
               onClose={closeGuestInfo}
               onOpenLinkModal={openLinkReservationModal}
               onUnlinkReservation={handleRequestUnlink}
-              panelStyle={infoPanelStyle}
             />
           )}
-
-          {/* Decide-in-the-room control: Push column vs current-product drawer */}
-          <PrototypeVariantToggle />
         </div>
       )}
 
