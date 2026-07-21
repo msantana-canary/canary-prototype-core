@@ -28,6 +28,122 @@ export const gjMessageStatus: Record<string, { delivered: number; failed: number
 };
 
 /**
+ * Per-reservation Guest-Journey message log — the "table in a table" data model
+ * (v4). Each entry is one GJ message with a title, a send/schedule time, and a
+ * set of delivery CHANNELS each carrying its own status. This is the detailed
+ * source of truth; the coarse `gjMessageStatus` counts above are a FALLBACK for
+ * reservations without a detailed log. The summary counts the collapsed rows +
+ * carousel red-dot rule consume are DERIVED from this via `getGjSummary`, so the
+ * two never disagree.
+ *
+ * Channel types: email / sms / whatsapp render as icons; booking / expedia render
+ * as tiny OTA letter chips. A `failed` channel is the loudest thing in the row.
+ * `sentAt` present ⇒ a sent message (channels sent/failed); `scheduledFor` ⇒ a
+ * future message (channels scheduled).
+ *
+ * Times are pre-formatted display strings ("Jul 13 · 9:00 AM"); the UI prepends
+ * "Sent " for sent messages and shows the scheduled time bare.
+ */
+export type GjChannelType = 'email' | 'sms' | 'whatsapp' | 'booking' | 'expedia';
+export type GjChannelStatus = 'sent' | 'failed' | 'scheduled';
+
+export interface GjMessageEntry {
+  title: string;
+  sentAt?: string;
+  scheduledFor?: string;
+  channels: Array<{ type: GjChannelType; status: GjChannelStatus }>;
+}
+
+export const gjMessages: Record<string, GjMessageEntry[]> = {
+  // John Smith — current in-house stay (Jul 13–15). Check-in's WhatsApp FAILED →
+  // the demoable red state (matches the old "1 failed").
+  'res-john-jul': [
+    { title: 'Booking Confirmation', sentAt: 'Jun 20 · 2:14 PM', channels: [{ type: 'email', status: 'sent' }, { type: 'booking', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Jul 11 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Jul 13 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }, { type: 'whatsapp', status: 'failed' }] },
+    { title: 'Welcome to the Hotel', sentAt: 'Jul 13 · 3:30 PM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Jul 14 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Jul 15 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // John Smith — past solo work trip (Feb 3–5). Fully delivered.
+  'res-john-feb-past': [
+    { title: 'Booking Confirmation', sentAt: 'Jan 15 · 10:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Feb 1 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Feb 3 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Post check-in', sentAt: 'Feb 3 · 4:00 PM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Check-out', sentAt: 'Feb 5 · 8:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Post-Stay Thank You', sentAt: 'Feb 6 · 11:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+  ],
+  // John Smith — future stay (Sep 22–25). Booking sent; the rest scheduled.
+  'res-john-sep': [
+    { title: 'Booking Confirmation', sentAt: 'Jul 2 · 1:00 PM', channels: [{ type: 'email', status: 'sent' }, { type: 'expedia', status: 'sent' }] },
+    { title: 'Pre-Arrival', scheduledFor: 'Sep 20 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-in', scheduledFor: 'Sep 22 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Sep 25 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+  ],
+  // Sarah Smith — her own upcoming stay on the shared phone (Nov 14–17).
+  'res-sarah-s-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Aug 30 · 3:00 PM', channels: [{ type: 'email', status: 'sent' }, { type: 'booking', status: 'sent' }] },
+    { title: 'Pre-Arrival', scheduledFor: 'Nov 12 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-in', scheduledFor: 'Nov 14 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'whatsapp', status: 'scheduled' }] },
+  ],
+  // James Brady — manually-linked (Jul 15–18).
+  'res-james-jul': [
+    { title: 'Booking Confirmation', sentAt: 'Jul 1 · 11:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'expedia', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Jul 13 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', scheduledFor: 'Jul 15 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Jul 18 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+  ],
+  // Ethan Parker — manually-linked (Jul 15–18).
+  'res-ethan-jul': [
+    { title: 'Booking Confirmation', sentAt: 'Jul 2 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Jul 13 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Welcome to the Hotel', sentAt: 'Jul 14 · 10:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Check-in', scheduledFor: 'Jul 15 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Liam Carter — manually-linked (Aug 10–13).
+  'res-liam-aug': [
+    { title: 'Booking Confirmation', sentAt: 'Jul 20 · 2:00 PM', channels: [{ type: 'email', status: 'sent' }, { type: 'booking', status: 'sent' }] },
+    { title: 'Pre-Arrival', scheduledFor: 'Aug 8 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-in', scheduledFor: 'Aug 10 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Welcome to the Hotel', scheduledFor: 'Aug 10 · 3:00 PM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Aug 13 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+  ],
+  // Emily Smith — thread '1' in-house stay (Jul 13–15), fully healthy.
+  'res-emily-jul': [
+    { title: 'Booking Confirmation', sentAt: 'Jun 25 · 10:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Jul 11 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Jul 13 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Welcome to the Hotel', sentAt: 'Jul 13 · 4:00 PM', channels: [{ type: 'email', status: 'sent' }, { type: 'whatsapp', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Jul 14 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Jul 15 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+};
+
+/**
+ * Derive the coarse {delivered, failed, scheduled} summary a reservation shows on
+ * its collapsed row / carousel dot FROM its detailed `gjMessages` log (so the two
+ * can never disagree). Counting is message-level: a sent message with any failed
+ * channel counts as failed; otherwise sent ⇒ delivered, else ⇒ scheduled. Falls
+ * back to the legacy `gjMessageStatus` map for reservations without a detail log.
+ */
+export function getGjSummary(reservationId: string): { delivered: number; failed: number; scheduled: number } | undefined {
+  const msgs = gjMessages[reservationId];
+  if (msgs && msgs.length > 0) {
+    let delivered = 0;
+    let failed = 0;
+    let scheduled = 0;
+    for (const m of msgs) {
+      if (m.channels.some((c) => c.status === 'failed')) failed++;
+      else if (m.sentAt) delivered++;
+      else scheduled++;
+    }
+    return { delivered, failed, scheduled };
+  }
+  return gjMessageStatus[reservationId];
+}
+
+/**
  * Mock threads - link to canonical guest and reservation IDs
  */
 export const mockThreads: Thread[] = [
