@@ -1,54 +1,54 @@
 /**
- * GuestInfoSidebar Component — REDESIGN v2: grouped verification cards
+ * GuestInfoSidebar Component — REDESIGN v6: card anatomy corrections
  *
- * Conversation Details is a VERIFICATION AID. Linked Reservations moves to the
- * TOP and becomes the star. Grouping rule: group by "same phone as this thread"
- * (the auto-link fact) — NEVER by asserted person identity. Names are never
- * collapsed across stays (Sudarshan's identity constraint).
+ * Conversation Details is a VERIFICATION AID. Linked Reservations is the star.
+ * Grouping rule: group by "same phone as this thread" (the auto-link fact) —
+ * NEVER by asserted person identity. Names are never collapsed across stays
+ * (Sudarshan's identity constraint).
  *
  * Section order: (1) Linked Reservations, (2) Assignment, (3) Service Tasks,
  * (4) Call History. The standalone Contact Number card is GONE — the phone folds
- * into the primary card as its anchor.
+ * into the card header.
  *
- * State-vocabulary alignment (2026-07-21): ONE state family → ONE visual channel
- * → ONE vocabulary. Provenance is now STRUCTURAL (the primary card IS the
- * phone-matched group) + a section ⓘ tooltip — the green AUTO-LINKED badge is
- * retired to match production's post-April treatment. Lifecycle is PMS-vocabulary
- * CHIPS (RESERVED / CHECKED-IN / CHECKED-OUT) derived from reservation.status;
- * the invented IN-HOUSE / UPCOMING / PAST text labels are gone; cancelled &
- * no-show reservations are hidden from the panel entirely.
+ * v6 — GUEST CARD ANATOMY (primary AND secondary share ONE structure, <GuestCard>):
+ *  - CARD HEADER: guest name (15–16px medium); second line = phone icon + number
+ *    AND (when the guest has a checked-in stay) bed icon + current room, side by
+ *    side.
+ *  - INSET SUB-TABLE ("table IN the card", not table AS the card): a bordered
+ *    (colorBlack6) rounded-[8px] container INSET within the card padding, one row
+ *    per reservation, hairline dividers. Row = [dates (14px medium) + lifecycle
+ *    chip + "RM {room}" inline BESIDE the dates, left-aligned flex] · [kebab ⋯] ·
+ *    [expand chevron]. A differing guest name (Sarah Smith on the shared phone)
+ *    renders as a second line under the dates. NO per-row GJ cells — the signal
+ *    lives in the card banner now.
+ *  - Kebab per row: staff-linked → "Unlink reservation" (wired to unlink flow);
+ *    phone-matched (auto) → a DISABLED item whose subtitle carries the production
+ *    rationale ("Can't unlink — phone number matches this conversation").
+ *  - EXPANDED row detail: the row header stays (dates + chip + RM inline, flex
+ *    left-aligned — no fixed grid columns); the detail fields (phone/email/dates/
+ *    room/confirmation/check-in/out) render below it.
+ *  - CARD-LEVEL GJ BANNER at the card bottom (replaces v5's per-stay banners): a
+ *    full-width rounded-[8px] gray-tinted box, "Guest Scheduled Messages" + chevron.
+ *    FAILURE variant when ANY of the card's reservations has failed messages: red
+ *    tint + alert icon + "N message(s) failed to send" in colorRed1. Tap → drill-in.
  *
- * Linked Reservations is CARDS, not a table:
- *  - PRIMARY CARD (always first, one) = all auto-linked entries (every stay whose
- *    guest phone matches the thread phone). Header: current guest name + thread
- *    phone (provenance is structural — this card is the phone-matched group). Body:
- *    one stay row per auto-linked reservation (sorted current → upcoming → past),
- *    each with a lifecycle chip + room, a GJ message status line, and a chevron to
- *    expand the detail fields. No unlink (facts).
- *  - SECONDARY CARDS (0+) = each manually-linked entry, with "Linked by staff"
- *    caption (the assertion-side provenance signal) + a kebab "Unlink reservation".
+ * DRILL-IN is GUEST-level (the tapped card's guest): the Scheduled Messages detail
+ * shows ALL that guest's reservations, SECTIONED per reservation (section header =
+ * compact date range + lifecycle chip in a small-caps caption register), sections
+ * in stay-sort order. Failed rows keep production's Twilio error register (code +
+ * curated line + Learn more). Subtitle under the title = the guest name.
  *
- * Panel mechanic v3 — FLOATING PANEL (replaces push/drawer):
- *  - A fixed 400px white card inset from the window edges (top 72 / right 16 /
- *    bottom 16), floating below the 56px legacy shell header, with a large soft
- *    shadow and internal invisible scroll. Slides + fades in on open (~250ms).
- *  - A subtle scrim tints the app behind it; clicking the scrim closes the panel.
+ * Panel mechanic — FLOATING PANEL: a fixed 600px white card inset from the window
+ * edges (top 72 / right 16 / bottom 16), floating below the 56px legacy shell
+ * header, large soft shadow, internal invisible scroll, slides + fades in on open.
+ * A subtle scrim tints the app behind it; clicking the scrim closes the panel. The
+ * panel navigates WITHIN ITSELF (translate-x track) into the drill-in detail — a
+ * platform primitive (future home for AI explanations).
  *
  * Linked Reservations is a one-guest-per-slide pager: slide 0 = the primary
- * phone-grouped card, slides 1+ = each staff-linked guest. The dots+arrows
- * carousel is replaced by a GUEST PAGER ("‹ 👥 N ›", the Check-in idiom) under
- * the heading; when an OFF-SCREEN guest has a failed GJ message the pager's count
- * chip goes RED (the hidden-failure signal the dots used to carry).
- *
- * v5 — PROGRESSIVE DISCLOSURE. GJ scheduled messages are ANCILLARY monitoring
- * (healthy = nearly silent, failure = unmissable). Each reservation's detail
- * block carries a two-intensity <GjBanner> (quiet gray "Scheduled messages ✓" /
- * loud red "N failed to send") instead of an inline table. Tapping it DRILLS IN:
- * the panel navigates WITHIN ITSELF (translate-x track) to a Scheduled Messages
- * detail (<DrillInView>) — back arrow returns with main-panel state preserved.
- * This internal-navigation pattern is a platform primitive (future home for AI
- * explanations). Failed message rows in the drill-in carry production's error
- * register: the raw carrier code + a curated hotelier-readable line + Learn more.
+ * phone-grouped card, slides 1+ = each staff-linked guest. The pager ("‹ 👥 N ›",
+ * the Check-in idiom) sits under the heading; when an OFF-SCREEN guest card has a
+ * failed GJ message the pager's count chip goes RED (the hidden-failure signal).
  */
 
 'use client';
@@ -57,7 +57,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { LinkedReservation } from '@/lib/products/messaging/types';
 import { gjMessages, getGjSummary } from '@/lib/products/messaging/mock-data';
 import { Reservation } from '@/lib/core/types/reservation';
-import { Guest } from '@/lib/core/types/guest';
 import { colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import {
@@ -116,9 +115,8 @@ type StayState = 'in-house' | 'upcoming' | 'past';
 
 /**
  * Derive the TEMPORAL stay state from reservation status — used ONLY for sort
- * order + the current/upcoming/past grouping (current first, then future, then
- * past). This is not a display label; lifecycle is shown via <LifecycleChip>
- * (PMS vocabulary) instead. Status is primary: checked-in → current (in-house).
+ * order (current first, then future, then past). Not a display label; lifecycle
+ * is shown via <LifecycleChip> (PMS vocabulary).
  */
 function deriveStayState(res: Reservation): StayState {
   if (res.status === 'checked-in') return 'in-house';
@@ -177,6 +175,12 @@ function sortStays(list: LinkedReservation[]): LinkedReservation[] {
   });
 }
 
+/** A drilled-in card: the guest name that headers the card + its reservations. */
+interface DrillTarget {
+  guestName: string;
+  stays: LinkedReservation[];
+}
+
 interface GuestInfoSidebarProps {
   contactNumber: string;
   linkedReservations: LinkedReservation[];
@@ -191,14 +195,14 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
   const [expandedResId, setExpandedResId] = useState<string | null>(null);
   // Which guest card (pager position) is currently visible.
   const [activeSlide, setActiveSlide] = useState(0);
-  // Drill-in: which reservation's Scheduled Messages detail is open. `null` =
-  // main panel state; a resId = the panel has navigated into itself (the
-  // internal-navigation platform pattern). The main pane's state is preserved.
-  const [drillInResId, setDrillInResId] = useState<string | null>(null);
-  // Hold the last drilled reservation so the drill pane keeps its content while
-  // sliding back out (drillInResId goes null the instant Back is pressed).
-  const lastDrillRef = useRef<string | null>(null);
-  if (drillInResId) lastDrillRef.current = drillInResId;
+  // Drill-in: the GUEST-level Scheduled Messages detail for a tapped card.
+  // `null` = main panel; a DrillTarget = the panel has navigated into itself.
+  const [drillTarget, setDrillTarget] = useState<DrillTarget | null>(null);
+  // Hold the last drilled card so the drill pane keeps its content while sliding
+  // back out (drillTarget goes null the instant Back is pressed).
+  const lastDrillRef = useRef<DrillTarget | null>(null);
+  if (drillTarget) lastDrillRef.current = drillTarget;
+  const activeDrill = drillTarget ?? lastDrillRef.current;
 
   const toggleExpand = (resId: string) => {
     setExpandedResId((prev) => (prev === resId ? null : resId));
@@ -214,37 +218,33 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
   const autoLinked = sortStays(visibleLinked.filter((lr) => lr.isAutoLinked));
   const manualLinked = visibleLinked.filter((lr) => !lr.isAutoLinked);
 
-  const hasFailure = (resId: string) => (getGjSummary(resId)?.failed ?? 0) > 0;
+  const cardFailed = (stays: LinkedReservation[]) =>
+    stays.reduce((sum, lr) => sum + (getGjSummary(lr.reservation.id)?.failed ?? 0), 0);
 
-  // Reservation lookup for the drill-in view (subtitle + table both need it).
-  const entryById: Record<string, LinkedReservation> = {};
-  visibleLinked.forEach((lr) => {
-    entryById[lr.reservation.id] = lr;
-  });
-  const drillEntry = entryById[drillInResId ?? lastDrillRef.current ?? ''];
-
-  // v4 default: the CURRENT (in-house) auto-linked stay opens expanded — its full
-  // detail block + nested GJ table is the thing staff want to see first.
+  // v4 default: the CURRENT (in-house) auto-linked stay opens expanded.
   const defaultExpandedResId =
     autoLinked.find((lr) => deriveStayState(lr.reservation) === 'in-house')?.reservation.id ??
     autoLinked[0]?.reservation.id ??
     null;
 
-  // Carousel slides: slide 0 = the primary phone-grouped card (all auto-linked
+  // Pager slides: slide 0 = the primary phone-grouped card (all auto-linked
   // stays); slides 1+ = each staff-linked guest card. `hasFailure` lets a HIDDEN
-  // slide's dot render red so a failed GJ message stays loud even off-screen.
+  // slide's count chip render red so a failed GJ message stays loud off-screen.
   const slides: { key: string; hasFailure: boolean; node: React.ReactNode }[] = [];
   if (autoLinked.length > 0) {
+    const headerName = autoLinked[0]?.guest.name ?? '';
     slides.push({
       key: 'primary',
-      hasFailure: autoLinked.some((lr) => hasFailure(lr.reservation.id)),
+      hasFailure: cardFailed(autoLinked) > 0,
       node: (
-        <PrimaryCard
-          contactNumber={contactNumber}
+        <GuestCard
+          headerName={headerName}
+          headerPhone={contactNumber}
           stays={autoLinked}
           expandedResId={expandedResId}
           onToggle={toggleExpand}
-          onDrillIn={setDrillInResId}
+          onDrillIn={setDrillTarget}
+          onUnlink={onUnlinkReservation}
         />
       ),
     });
@@ -252,14 +252,16 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
   manualLinked.forEach((lr) => {
     slides.push({
       key: lr.reservation.id,
-      hasFailure: hasFailure(lr.reservation.id),
+      hasFailure: cardFailed([lr]) > 0,
       node: (
-        <SecondaryCard
-          linkedReservation={lr}
-          isExpanded={expandedResId === lr.reservation.id}
-          onToggle={() => toggleExpand(lr.reservation.id)}
+        <GuestCard
+          headerName={lr.guest.name}
+          headerPhone={lr.guest.phone || ''}
+          stays={[lr]}
+          expandedResId={expandedResId}
+          onToggle={toggleExpand}
+          onDrillIn={setDrillTarget}
           onUnlink={onUnlinkReservation}
-          onDrillIn={setDrillInResId}
         />
       ),
     });
@@ -271,11 +273,11 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
   useEffect(() => {
     setActiveSlide(0);
     setExpandedResId(defaultExpandedResId);
-    setDrillInResId(null);
+    setDrillTarget(null);
   }, [slideKey, defaultExpandedResId]);
   const activeIndex = Math.min(activeSlide, Math.max(0, slides.length - 1));
   // Any OFF-SCREEN guest card with a failed GJ message → the pager count chip
-  // goes red (the hidden-failure signal the carousel dots used to carry).
+  // goes red (the hidden-failure signal).
   const hiddenFailure = slides.some((s, i) => i !== activeIndex && s.hasFailure);
 
   return (
@@ -294,8 +296,7 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
         }}
       />
 
-      {/* Floating Conversation Details panel — fixed, inset from the window edges,
-          floating below the 56px legacy shell header. Slides + fades in on open. */}
+      {/* Floating Conversation Details panel */}
       <div
         className={`fixed overflow-hidden transition-[transform,opacity] duration-[250ms] ease-in-out ${
           isOpen ? 'translate-x-0 opacity-100' : 'translate-x-6 opacity-0 pointer-events-none'
@@ -312,12 +313,10 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
           zIndex: 40,
         }}
       >
-        {/* Internal-navigation track: the panel slides between its MAIN state and
-            a per-reservation DRILL-IN detail (the platform pattern — future home
-            for AI explanations). translateX(-100%) reveals the drill-in pane. */}
+        {/* Internal-navigation track: MAIN state ↔ GUEST-level DRILL-IN detail. */}
         <div
           className="flex h-full transition-transform duration-[250ms] ease-in-out"
-          style={{ transform: drillInResId ? 'translateX(-100%)' : 'translateX(0)' }}
+          style={{ transform: drillTarget ? 'translateX(-100%)' : 'translateX(0)' }}
         >
         {/* MAIN PANE */}
         <div className="w-full h-full shrink-0 overflow-y-auto scrollbar-invisible">
@@ -342,8 +341,7 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
                 <h3 className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px]" style={{ color: colors.colorBlack1 }}>
                   Linked Reservations
                 </h3>
-                {/* Provenance is now structural + this tooltip — the AUTO-LINKED
-                    badge is retired (production's post-April treatment). */}
+                {/* Provenance is structural + this tooltip — no AUTO-LINKED badge. */}
                 <span
                   className="flex items-center cursor-help"
                   title="Reservations link automatically when the guest's phone number in your PMS matches this conversation. If it's missing, check the phone number in your PMS, or search & link a reservation manually here."
@@ -370,11 +368,7 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
               </p>
             ) : (
               <div>
-                {/* Guest pager — the idiom carried from Check-in's multi-guest
-                    control ("‹ 👥 N ›"). Left-aligned under the heading; arrows
-                    disable at the ends (no wrap). The count chip renders RED when
-                    an OFF-SCREEN guest has a failed GJ message — the hidden-failure
-                    signal the carousel dots used to carry. */}
+                {/* Guest pager — Check-in's multi-guest idiom ("‹ 👥 N ›"). */}
                 {slides.length > 1 && (
                   <div className="flex items-center gap-1 mb-3" style={{ height: 28 }}>
                     <button
@@ -479,14 +473,14 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
         </div>
         </div>
         </div>
-        {/* DRILL-IN PANE — Scheduled Messages detail for one reservation */}
+        {/* DRILL-IN PANE — GUEST-level Scheduled Messages detail */}
         <div className="w-full h-full shrink-0 overflow-y-auto scrollbar-invisible">
           <div className="p-6">
-            {drillEntry && (
+            {activeDrill && (
               <DrillInView
-                reservation={drillEntry.reservation}
-                guest={drillEntry.guest}
-                onBack={() => setDrillInResId(null)}
+                guestName={activeDrill.guestName}
+                stays={activeDrill.stays}
+                onBack={() => setDrillTarget(null)}
               />
             )}
           </div>
@@ -494,35 +488,6 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
         </div>
       </div>
     </>
-  );
-}
-
-/**
- * GjStatusLine — one-line Guest-Journey scheduled-message status (visual-only).
- * Failures are the LOUDEST thing in the card (red + alert icon); otherwise a
- * quiet gray delivered/scheduled line.
- */
-function GjStatusLine({ reservationId }: { reservationId: string }) {
-  const status = getGjSummary(reservationId);
-  if (!status) return null;
-
-  if (status.failed > 0) {
-    return (
-      <div className="flex items-center gap-1 mt-1.5">
-        <Icon path={mdiAlertCircleOutline} size={0.55} color={colors.colorRed1} />
-        <span className="font-['Roboto',sans-serif] font-medium text-[12px] leading-[18px]" style={{ color: colors.colorRed1 }}>
-          {status.failed} message{status.failed > 1 ? 's' : ''} failed to send
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-1.5">
-      <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack3 }}>
-        ✓ {status.delivered} delivered · {status.scheduled} scheduled
-      </span>
-    </div>
   );
 }
 
@@ -569,19 +534,26 @@ function ChannelIcon({ type, status }: { type: 'email' | 'sms' | 'whatsapp' | 'b
 }
 
 /**
- * GjMessagesTable — the "table in a table": the reservation's guest-journey
- * message log, rendered INSIDE the detail block. A rounded-8, colorBlack6-bordered
- * container of hairline-divided rows. Each row = one GJ message: title (left) +
- * right-aligned timestamp caption ("Sent Jul 11 · 9:00 AM" for sent, bare time for
- * scheduled), with a row of channel icons beneath. Any failed channel turns that
- * row's caption red + adds an alert icon — failures stay the loudest thing.
+ * GjMessagesTable — a reservation's guest-journey message log, rendered inside a
+ * drill-in section. A rounded-8, colorBlack6-bordered container of hairline-divided
+ * rows. Each row = one GJ message: title (left) + right-aligned timestamp caption,
+ * with a row of channel icons beneath. Any failed channel turns that row's caption
+ * red + adds an alert icon, and appends production's error register.
  */
 function GjMessagesTable({ reservationId }: { reservationId: string }) {
   const msgs = gjMessages[reservationId];
-  if (!msgs || msgs.length === 0) return null;
+  if (!msgs || msgs.length === 0) {
+    return (
+      <div className="rounded-[8px] px-3 py-4 text-center" style={{ border: `1px solid ${colors.colorBlack6}` }}>
+        <span className="font-['Roboto',sans-serif] text-[13px] leading-[18px]" style={{ color: colors.colorBlack3 }}>
+          No scheduled messages
+        </span>
+      </div>
+    );
+  }
 
   return (
-    <div className="mt-3 rounded-[8px] overflow-hidden" style={{ border: `1px solid ${colors.colorBlack6}` }}>
+    <div className="rounded-[8px] overflow-hidden" style={{ border: `1px solid ${colors.colorBlack6}` }}>
       {msgs.map((m, i) => {
         const failed = m.channels.some((c) => c.status === 'failed');
         const timestamp = m.sentAt ? `Sent ${m.sentAt}` : m.scheduledFor ?? '';
@@ -613,9 +585,7 @@ function GjMessagesTable({ reservationId }: { reservationId: string }) {
 
             {/* Error register — one block per failed channel. Mirrors production's
                 MessageErrorDetailsModal: the raw carrier code + a curated,
-                hotelier-readable line + a Learn-more link into the Twilio docs.
-                Hotels can't fix a carrier failure, but the on-screen code saves
-                Canary support the investigation. */}
+                hotelier-readable line + a Learn-more link into the Twilio docs. */}
             {m.channels
               .filter((c) => c.status === 'failed' && c.errorCode)
               .map((c, j) => (
@@ -649,18 +619,19 @@ function GjMessagesTable({ reservationId }: { reservationId: string }) {
 }
 
 /**
- * ExpandedDetails — the settled detail fields (email, confirmation, check-in/out
- * status, etc.) followed by the reservation's nested GJ messages table. Reused
- * verbatim by both primary stay rows and secondary cards.
+ * ExpandedRowDetail — the settled detail fields (phone, email, dates, room,
+ * confirmation, check-in/out status) for one reservation, rendered below the row
+ * header when a stay row is expanded. No GJ table here anymore — GJ monitoring is
+ * card-level (the banner + drill-in).
  */
-function ExpandedDetails({ reservation, guest, onDrillIn }: { reservation: Reservation; guest: Guest; onDrillIn: (resId: string) => void }) {
+function ExpandedRowDetail({ reservation, phone, email }: { reservation: Reservation; phone?: string; email?: string }) {
   return (
     <div className="pt-2 space-y-2.5">
       {/* Phone */}
       <div className="flex items-center gap-3">
         <Icon path={mdiPhoneOutline} size={0.67} color={colors.colorBlack1} />
         <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack1 }}>
-          {guest.phone || 'No number assigned'}
+          {phone || 'No number assigned'}
         </span>
       </div>
 
@@ -668,7 +639,7 @@ function ExpandedDetails({ reservation, guest, onDrillIn }: { reservation: Reser
       <div className="flex items-center gap-3">
         <Icon path={mdiEmailOutline} size={0.67} color={colors.colorBlack1} />
         <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack1 }}>
-          {guest.email || 'No email assigned'}
+          {email || 'No email assigned'}
         </span>
       </div>
 
@@ -727,51 +698,187 @@ function ExpandedDetails({ reservation, guest, onDrillIn }: { reservation: Reser
           </button>
         )}
       </div>
-
-      {/* GJ scheduled-messages banner — two intensities (healthy silent / failure
-          loud). Tap → drill into the Scheduled Messages detail for this stay. */}
-      <GjBanner reservationId={reservation.id} onClick={() => onDrillIn(reservation.id)} />
     </div>
   );
 }
 
 /**
- * GjBanner — the compact, tappable one-line summary of a reservation's
- * guest-journey scheduled messages. GJ is ANCILLARY monitoring: healthy = nearly
- * silent, failure = unmissable. Two intensities:
- *  - HEALTHY: quiet gray "Scheduled messages ✓" with a chevron-right affordance.
- *  - FAILURE: promoted red banner (subtle red tint bg) + alert icon + "N message(s)
- *    failed to send" in colorRed1 medium — the loudest element in the card.
- * Both variants tap through to the drill-in Scheduled Messages detail.
+ * StayRowKebab — the per-row ⋯ menu. For a staff-linked reservation it offers
+ * "Unlink reservation" (wired to the existing unlink flow). For a phone-matched
+ * (auto-linked) reservation the item renders DISABLED, carrying the production
+ * rationale as its subtitle — a fact can't be unlinked.
  */
-function GjBanner({ reservationId, onClick }: { reservationId: string; onClick: () => void }) {
-  const status = getGjSummary(reservationId);
-  if (!status) return null;
-  const failed = status.failed > 0;
+function StayRowKebab({ reservation, isAutoLinked, onUnlink }: { reservation: Reservation; isAutoLinked: boolean; onUnlink?: (reservationId: string) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        menuRef.current &&
+        btnRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        !btnRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className="relative">
+      <button
+        ref={btnRef}
+        aria-label="Reservation actions"
+        className="w-[28px] h-[28px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen((v) => !v);
+        }}
+      >
+        <Icon path={mdiDotsHorizontal} size={0.67} color={colors.colorBlack3} />
+      </button>
+
+      {isOpen && (
+        <div
+          ref={menuRef}
+          className="absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
+          style={{ width: 232 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {isAutoLinked ? (
+            <div className="px-4 py-2 cursor-not-allowed" style={{ opacity: 0.6 }}>
+              <p className="font-['Roboto',sans-serif] text-sm" style={{ color: colors.colorBlack3 }}>
+                Unlink reservation
+              </p>
+              <p className="font-['Roboto',sans-serif] text-[11px] leading-[15px] mt-0.5" style={{ color: colors.colorBlack4 }}>
+                Can&apos;t unlink — phone number matches this conversation
+              </p>
+            </div>
+          ) : (
+            <button
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
+              style={{ color: colors.colorRed1 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                onUnlink?.(reservation.id);
+              }}
+            >
+              Unlink reservation
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * StayRow — one row of a card's inset sub-table. The row header (dates + lifecycle
+ * chip + "RM {room}" inline, left-aligned flex; differing guest name stacked
+ * beneath) stays rendered whether collapsed or expanded — expanding just appends
+ * the detail fields below it. Right side = per-row kebab + expand chevron.
+ */
+function StayRow({
+  linkedReservation,
+  headerName,
+  isFirst,
+  isExpanded,
+  onToggle,
+  onUnlink,
+}: {
+  linkedReservation: LinkedReservation;
+  headerName: string;
+  isFirst: boolean;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onUnlink?: (reservationId: string) => void;
+}) {
+  const { reservation, guest, isAutoLinked } = linkedReservation;
+  const nameDiffers = guest.name !== headerName;
+
+  return (
+    <div style={isFirst ? undefined : { borderTop: `1px solid ${colors.colorBlack6}` }}>
+      {/* Row header (clickable) — flex, left-aligned, no fixed grid columns */}
+      <div className="flex items-start gap-2 px-3 py-3 cursor-pointer" onClick={onToggle}>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[21px]" style={{ color: colors.colorBlack1 }}>
+              {reservation.checkInDate && reservation.checkOutDate
+                ? formatCompactDateRange(reservation.checkInDate, reservation.checkOutDate)
+                : 'No dates'}
+            </span>
+            <LifecycleChip status={reservation.status} />
+            {reservation.room && (
+              <span
+                className="font-['Roboto',sans-serif] text-[12px] leading-[18px] whitespace-nowrap"
+                style={{ color: colors.colorBlack3 }}
+              >
+                RM {reservation.room}
+              </span>
+            )}
+          </div>
+          {nameDiffers && (
+            <span className="block truncate font-['Roboto',sans-serif] text-[12px] leading-[18px] mt-0.5" style={{ color: colors.colorBlack3 }}>
+              {guest.name}
+            </span>
+          )}
+        </div>
+
+        {/* Right side: kebab + chevron */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          <StayRowKebab reservation={reservation} isAutoLinked={isAutoLinked} onUnlink={onUnlink} />
+          <div className="w-[28px] h-[28px] flex items-center justify-center">
+            <Icon path={isExpanded ? mdiChevronUp : mdiChevronDown} size={0.67} color={colors.colorBlack3} />
+          </div>
+        </div>
+      </div>
+
+      {/* Expanded detail fields */}
+      {isExpanded && (
+        <div className="px-3 pb-3">
+          <ExpandedRowDetail reservation={reservation} phone={guest.phone} email={guest.email} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * GuestCardBanner — the CARD-LEVEL guest-journey banner at the card bottom. A
+ * full-width rounded-8 gray-tinted box: "Guest Scheduled Messages" + chevron-right.
+ * FAILURE variant when ANY of the card's reservations has failed messages: red
+ * tint + alert icon + "N message(s) failed to send" in colorRed1. Tap → drill-in.
+ */
+function GuestCardBanner({ failedCount, onClick }: { failedCount: number; onClick: () => void }) {
+  const failed = failedCount > 0;
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-2 mt-1.5 rounded-[6px] transition-colors text-left"
+      className="w-full flex items-center gap-2 mt-3 rounded-[8px] transition-opacity hover:opacity-90 text-left"
       style={{
-        padding: failed ? '8px 10px' : '6px 8px',
-        backgroundColor: failed ? 'rgba(228,0,70,0.06)' : 'transparent',
+        padding: '10px 12px',
+        backgroundColor: failed ? 'rgba(228,0,70,0.06)' : '#f4f5f6',
       }}
     >
       {failed ? (
         <>
-          <Icon path={mdiAlertCircleOutline} size={0.6} color={colors.colorRed1} />
-          <span className="flex-1 font-['Roboto',sans-serif] font-medium text-[13px] leading-[18px]" style={{ color: colors.colorRed1 }}>
-            {status.failed} message{status.failed > 1 ? 's' : ''} failed to send
+          <Icon path={mdiAlertCircleOutline} size={0.7} color={colors.colorRed1} />
+          <span className="flex-1 font-['Roboto',sans-serif] font-medium text-[14px] leading-[20px]" style={{ color: colors.colorRed1 }}>
+            {failedCount} message{failedCount > 1 ? 's' : ''} failed to send
           </span>
-          <Icon path={mdiChevronRight} size={0.7} color={colors.colorRed1} />
+          <Icon path={mdiChevronRight} size={0.75} color={colors.colorRed1} />
         </>
       ) : (
         <>
-          <span className="flex-1 font-['Roboto',sans-serif] text-[13px] leading-[18px]" style={{ color: colors.colorBlack3 }}>
-            Scheduled messages ✓
+          <span className="flex-1 font-['Roboto',sans-serif] font-medium text-[14px] leading-[20px]" style={{ color: colors.colorBlack1 }}>
+            Guest Scheduled Messages
           </span>
-          <Icon path={mdiChevronRight} size={0.7} color={colors.colorBlack3} />
+          <Icon path={mdiChevronRight} size={0.75} color={colors.colorBlack2} />
         </>
       )}
     </button>
@@ -779,12 +886,97 @@ function GjBanner({ reservationId, onClick }: { reservationId: string; onClick: 
 }
 
 /**
- * DrillInView — the internal-navigation detail: the panel has slid to a
- * per-reservation "Scheduled messages" view. Back arrow returns to the main panel
- * (whose state is preserved). Content = the full-width GJ messages table, with
- * failed rows carrying production's error register (carrier code + curated line).
+ * GuestCard — ONE anatomy for both the primary phone-grouped card and each
+ * staff-linked card. Header (name + phone + current room), an inset sub-table of
+ * stay rows, and a card-level GJ banner. Provenance is structural (primary = the
+ * phone-matched group) + per-row kebab rules (auto rows hard-block unlink).
  */
-function DrillInView({ reservation, guest, onBack }: { reservation: Reservation; guest: Guest; onBack: () => void }) {
+function GuestCard({
+  headerName,
+  headerPhone,
+  stays,
+  expandedResId,
+  onToggle,
+  onDrillIn,
+  onUnlink,
+}: {
+  headerName: string;
+  headerPhone: string;
+  stays: LinkedReservation[];
+  expandedResId: string | null;
+  onToggle: (resId: string) => void;
+  onDrillIn: (target: DrillTarget) => void;
+  onUnlink?: (reservationId: string) => void;
+}) {
+  // Header room = the current (checked-in) stay's room, when the guest has one.
+  const checkedInStay = stays.find((lr) => lr.reservation.status === 'checked-in');
+  const headerRoom = checkedInStay?.reservation.room;
+  const failedCount = stays.reduce((sum, lr) => sum + (getGjSummary(lr.reservation.id)?.failed ?? 0), 0);
+
+  return (
+    <div
+      className="rounded-[8px]"
+      style={{ backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack6}` }}
+    >
+      {/* Card header — name, then phone + current room side by side */}
+      <div className="px-4 pt-3 pb-2.5">
+        <span className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px] block truncate" style={{ color: colors.colorBlack1 }}>
+          {headerName}
+        </span>
+        <div className="flex items-center gap-4 mt-1 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <Icon path={mdiPhoneOutline} size={0.6} color={colors.colorBlack2} />
+            <span className="font-['Roboto',sans-serif] text-[14px] leading-[21px]" style={{ color: colors.colorBlack2 }}>
+              {headerPhone || 'No number'}
+            </span>
+          </div>
+          {headerRoom && (
+            <div className="flex items-center gap-1.5">
+              <Icon path={mdiBedOutline} size={0.6} color={colors.colorBlack2} />
+              <span className="font-['Roboto',sans-serif] text-[14px] leading-[21px]" style={{ color: colors.colorBlack2 }}>
+                {headerRoom}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Card body: inset sub-table + card-level GJ banner */}
+      <div className="px-4 pb-4">
+        {/* INSET SUB-TABLE — a table IN the card */}
+        <div className="rounded-[8px] overflow-hidden" style={{ border: `1px solid ${colors.colorBlack6}` }}>
+          {stays.map((lr, i) => (
+            <StayRow
+              key={lr.reservation.id}
+              linkedReservation={lr}
+              headerName={headerName}
+              isFirst={i === 0}
+              isExpanded={expandedResId === lr.reservation.id}
+              onToggle={() => onToggle(lr.reservation.id)}
+              onUnlink={onUnlink}
+            />
+          ))}
+        </div>
+
+        {/* CARD-LEVEL GJ BANNER */}
+        <GuestCardBanner
+          failedCount={failedCount}
+          onClick={() => onDrillIn({ guestName: headerName, stays })}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * DrillInView — the internal-navigation, GUEST-level Scheduled Messages detail.
+ * Back arrow returns to the main panel (state preserved). The view shows ALL the
+ * tapped card's reservations, SECTIONED per reservation (section header = compact
+ * date range + lifecycle chip, small-caps caption register), in stay-sort order.
+ * Failed rows carry production's error register (carrier code + curated line).
+ */
+function DrillInView({ guestName, stays, onBack }: { guestName: string; stays: LinkedReservation[]; onBack: () => void }) {
+  const sorted = sortStays(stays);
   return (
     <div>
       <div className="flex items-start gap-2 mb-5">
@@ -800,393 +992,30 @@ function DrillInView({ reservation, guest, onBack }: { reservation: Reservation;
             Scheduled messages
           </h2>
           <p className="font-['Roboto',sans-serif] text-[13px] leading-[18px]" style={{ color: colors.colorBlack3 }}>
-            {guest.name}
-            {reservation.checkInDate && reservation.checkOutDate
-              ? ` · ${formatCompactDateRange(reservation.checkInDate, reservation.checkOutDate)}`
-              : ''}
+            {guestName}
           </p>
         </div>
       </div>
-      <GjMessagesTable reservationId={reservation.id} />
-    </div>
-  );
-}
 
-/**
- * Column template for the primary card's stay mini-table. Fixed widths on the
- * right three columns (lifecycle chip + room / GJ / chevron) guarantee they line
- * up across every row even though each row is its own grid; dates take the
- * flexible remainder so the disambiguating field breathes. Widened at 600px so
- * the chip ("CHECKED-IN") + room ("RM 504") + GJ status ("✓ 1 sent · 3
- * scheduled") all fit without truncation. Rows use px-3 (vs the header's px-4).
- */
-const STAY_ROW_GRID = 'minmax(0, 1fr) 140px 148px 22px';
-
-/**
- * GjStatusCell — the compact, in-table variant of the GJ status line. Failures
- * are the loudest thing (red alert icon + "N failed"); otherwise a quiet gray
- * "✓ N sent" count, with "· N scheduled" appended only when messages are still
- * pending. Copy spelled out (hotelier-readable — "✓ 1 · 3 queued" failed the
- * designer's own read test). Truncates rather than wrapping.
- */
-function GjStatusCell({ reservationId }: { reservationId: string }) {
-  const status = getGjSummary(reservationId);
-  if (!status) return <span />;
-
-  if (status.failed > 0) {
-    return (
-      <div className="flex items-center gap-1 min-w-0">
-        <span className="shrink-0 flex items-center">
-          <Icon path={mdiAlertCircleOutline} size={0.5} color={colors.colorRed1} />
-        </span>
-        <span className="truncate font-['Roboto',sans-serif] font-medium text-[12px] leading-[18px]" style={{ color: colors.colorRed1 }}>
-          {status.failed} failed
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <span className="block truncate font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack3 }}>
-      ✓ {status.delivered} sent
-      {status.scheduled > 0 ? ` · ${status.scheduled} scheduled` : ''}
-    </span>
-  );
-}
-
-/**
- * PrimaryCard — one card holding ALL auto-linked stays. The header carries the
- * current guest name and the thread phone (the card's anchor). Provenance is
- * STRUCTURAL — this card IS the phone-matched group — so the AUTO-LINKED badge is
- * retired; the "how did these link?" explanation lives in the section ⓘ tooltip.
- *
- * v4 disclosure model — "current open, next collapsed, link for the rest":
- *  - stays[0] (the CURRENT in-house stay, pre-sorted first) is expanded by default
- *    via the shared `expandedResId` — a full detail block + nested GJ table.
- *  - stays[1] (the NEXT reservation) is a COLLAPSED row; expanding shows the same
- *    detail-block anatomy.
- *  - everything else (further-future + past) hides behind a "View N more
- *    reservations" text link that reveals them as collapsed rows.
- * All rows share the same anatomy — only their default open/hidden state differs.
- */
-function PrimaryCard({
-  contactNumber,
-  stays,
-  expandedResId,
-  onToggle,
-  onDrillIn,
-}: {
-  contactNumber: string;
-  stays: LinkedReservation[];
-  expandedResId: string | null;
-  onToggle: (resId: string) => void;
-  onDrillIn: (resId: string) => void;
-}) {
-  // Header name = the most-current stay's guest (stays are pre-sorted).
-  const headerName = stays[0]?.guest.name ?? '';
-
-  // Default state grouping is re-derived from reservation.status: current
-  // (checked-in) + upcoming (reserved) stays stay visible; PAST (checked-out)
-  // stays hide behind the "View N more reservations" link. Stays are pre-sorted
-  // (current → upcoming → past), so the visible set is a contiguous prefix.
-  const alwaysVisible = stays.filter((lr) => lr.reservation.status !== 'checked-out');
-  const rest = stays.filter((lr) => lr.reservation.status === 'checked-out');
-  const [showRest, setShowRest] = useState(false);
-  const visibleStays = showRest ? [...alwaysVisible, ...rest] : alwaysVisible;
-
-  return (
-    <div
-      className="rounded-[8px] overflow-hidden"
-      style={{ backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack6}` }}
-    >
-      {/* Card header — guest name, then the anchor phone. Provenance is
-          structural (this card is the phone-matched group), so no badge. */}
-      <div className="px-4 pt-3 pb-2.5" style={{ borderBottom: `1px solid ${colors.colorBlack6}` }}>
-        <div className="flex items-center gap-2 flex-nowrap overflow-hidden">
-          <span className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px] truncate shrink" style={{ color: colors.colorBlack1 }}>
-            {headerName}
-          </span>
-        </div>
-        {/* Thread phone — the card's anchor, displayed prominently */}
-        <div className="flex items-center gap-1.5 mt-1">
-          <Icon path={mdiPhoneOutline} size={0.6} color={colors.colorBlack2} />
-          <span className="font-['Roboto',sans-serif] text-[14px] leading-[21px]" style={{ color: colors.colorBlack2 }}>
-            {contactNumber}
-          </span>
-        </div>
-      </div>
-
-      {/* Stays — current (open) + next (collapsed) + revealed rest */}
-      <div>
-        {visibleStays.map((lr, i) => (
-          <PrimaryStayRow
-            key={lr.reservation.id}
-            linkedReservation={lr}
-            headerName={headerName}
-            isFirst={i === 0}
-            isExpanded={expandedResId === lr.reservation.id}
-            onToggle={() => onToggle(lr.reservation.id)}
-            onDrillIn={onDrillIn}
-          />
+      <div className="space-y-5">
+        {sorted.map((lr) => (
+          <div key={lr.reservation.id}>
+            {/* Section header — small-caps caption: date range + lifecycle chip */}
+            <div className="flex items-center gap-2 mb-2">
+              <span
+                className="font-['Roboto',sans-serif] font-medium uppercase"
+                style={{ fontSize: 11, letterSpacing: '0.4px', color: colors.colorBlack3 }}
+              >
+                {lr.reservation.checkInDate && lr.reservation.checkOutDate
+                  ? formatCompactDateRange(lr.reservation.checkInDate, lr.reservation.checkOutDate)
+                  : 'No dates'}
+              </span>
+              <LifecycleChip status={lr.reservation.status} />
+            </div>
+            <GjMessagesTable reservationId={lr.reservation.id} />
+          </div>
         ))}
       </div>
-
-      {/* Reveal / hide the remaining reservations in place */}
-      {rest.length > 0 && (
-        <div className="px-3 py-2.5" style={{ borderTop: `1px solid ${colors.colorBlack6}` }}>
-          <button
-            onClick={() => setShowRest((v) => !v)}
-            className="font-['Roboto',sans-serif] font-medium text-[13px] leading-[18px] cursor-pointer hover:underline"
-            style={{ color: colors.colorBlueDark1 }}
-          >
-            {showRest
-              ? 'View fewer'
-              : `View ${rest.length} more reservation${rest.length > 1 ? 's' : ''}`}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * PrimaryStayRow — one stay row of the primary card's mini-table. The row is an
- * aligned grid: (a) STAY DATES (the disambiguator, 14px Medium) with the guest
- * name stacked beneath ONLY when it differs from the header (shared-phone rule —
- * never collapse differing names); (c) a PMS lifecycle CHIP (RESERVED /
- * CHECKED-IN / CHECKED-OUT) with "RM 504" as its own small text beside it when
- * checked-in; (d) a compact GJ status cell; (e) the expand chevron. A hairline
- * (colorBlack6) top border divides it from the row above. The full-width detail
- * section still expands below the row.
- *
- * Note: the never-collapse name (spec column b) rides in column (a) beneath the
- * dates rather than in a permanent middle column — a dedicated name column would
- * steal fixed width from every row for a field only shared-phone rows use, which
- * would squeeze the dates/GJ columns the reviewer wanted to let breathe. The
- * right-hand columns (chip+room / GJ / chevron) stay perfectly aligned regardless.
- */
-function PrimaryStayRow({
-  linkedReservation,
-  headerName,
-  isFirst,
-  isExpanded,
-  onToggle,
-  onDrillIn,
-}: {
-  linkedReservation: LinkedReservation;
-  headerName: string;
-  isFirst: boolean;
-  isExpanded: boolean;
-  onToggle: () => void;
-  onDrillIn: (resId: string) => void;
-}) {
-  const { reservation, guest } = linkedReservation;
-  const isCheckedIn = reservation.status === 'checked-in';
-  const nameDiffers = guest.name !== headerName;
-
-  return (
-    <div style={isFirst ? undefined : { borderTop: `1px solid ${colors.colorBlack6}` }}>
-      {/* Row (clickable) — aligned mini-table grid */}
-      <div
-        className="grid items-start px-3 py-3 cursor-pointer"
-        style={{ gridTemplateColumns: STAY_ROW_GRID, columnGap: 8 }}
-        onClick={onToggle}
-      >
-        {/* (a) Stay dates (+ differing name beneath) */}
-        <div className="min-w-0">
-          <span className="block truncate font-['Roboto',sans-serif] font-medium text-[14px] leading-[21px]" style={{ color: colors.colorBlack1 }}>
-            {reservation.checkInDate && reservation.checkOutDate
-              ? formatCompactDateRange(reservation.checkInDate, reservation.checkOutDate)
-              : 'No dates'}
-          </span>
-          {nameDiffers && (
-            <span className="block truncate font-['Roboto',sans-serif] text-[12px] leading-[18px] mt-0.5" style={{ color: colors.colorBlack3 }}>
-              {guest.name}
-            </span>
-          )}
-        </div>
-
-        {/* (c) Lifecycle chip (+ room as its own text when checked-in) */}
-        <div className="flex items-center gap-1.5 min-w-0 pt-[2px]">
-          <LifecycleChip status={reservation.status} />
-          {isCheckedIn && reservation.room && (
-            <span
-              className="font-['Roboto',sans-serif] text-[12px] leading-[18px] whitespace-nowrap"
-              style={{ color: colors.colorBlack3 }}
-            >
-              RM {reservation.room}
-            </span>
-          )}
-        </div>
-
-        {/* (d) Compact GJ status */}
-        <div className="min-w-0 pt-[1px]">
-          <GjStatusCell reservationId={reservation.id} />
-        </div>
-
-        {/* (e) Chevron (no unlink — auto-linked stays are facts) */}
-        <div className="flex items-center justify-center" style={{ height: 20 }}>
-          <Icon path={isExpanded ? mdiChevronUp : mdiChevronDown} size={0.67} color={colors.colorBlack3} />
-        </div>
-      </div>
-
-      {/* Expanded details */}
-      {isExpanded && (
-        <div className="px-3 pb-3">
-          <ExpandedDetails reservation={reservation} guest={guest} onDrillIn={onDrillIn} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * SecondaryCard — a single manually-linked reservation (a staff ASSERTION, not a
- * phone-match fact). "Linked by staff" caption is the assertion signal; the kebab
- * offers "Unlink reservation" (auto-linked stays never get this).
- */
-function SecondaryCard({
-  linkedReservation,
-  isExpanded,
-  onToggle,
-  onUnlink,
-  onDrillIn,
-}: {
-  linkedReservation: LinkedReservation;
-  isExpanded: boolean;
-  onToggle: () => void;
-  onUnlink?: (reservationId: string) => void;
-  onDrillIn: (resId: string) => void;
-}) {
-  const { reservation, guest } = linkedReservation;
-  const isInHouse = reservation.status === 'checked-in';
-
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const menuBtnRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        menuRef.current &&
-        menuBtnRef.current &&
-        !menuRef.current.contains(event.target as Node) &&
-        !menuBtnRef.current.contains(event.target as Node)
-      ) {
-        setIsMenuOpen(false);
-      }
-    };
-    if (isMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isMenuOpen]);
-
-  const handleUnlinkClick = () => {
-    setIsMenuOpen(false);
-    onUnlink?.(reservation.id);
-  };
-
-  return (
-    <div
-      className="rounded-[8px] overflow-hidden"
-      style={{ backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack6}` }}
-    >
-      {/* Header (clickable to expand) */}
-      <div className="flex items-start justify-between px-4 py-3 cursor-pointer" onClick={onToggle}>
-        <div className="flex-1 min-w-0">
-          {/* Guest name + lifecycle chip (same PMS vocabulary as primary rows) */}
-          <div className="flex items-center gap-2 overflow-hidden">
-            <span className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[21px] truncate" style={{ color: colors.colorBlack1 }}>
-              {guest.name}
-            </span>
-            <LifecycleChip status={reservation.status} />
-          </div>
-
-          {/* "Linked by staff" caption — the assertion signal */}
-          <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack3 }}>
-            Linked by staff
-          </span>
-
-          {/* Metadata: phone, then room (in-house) OR dates */}
-          {!isExpanded && (
-            <div className="flex items-center gap-3 mt-1 flex-wrap">
-              {guest.phone && (
-                <div className="flex items-center gap-1">
-                  <Icon path={mdiPhoneOutline} size={0.5} color={colors.colorBlack3} />
-                  <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack3 }}>
-                    {guest.phone}
-                  </span>
-                </div>
-              )}
-              {isInHouse && reservation.room ? (
-                <div className="flex items-center gap-1">
-                  <Icon path={mdiBedOutline} size={0.5} color={colors.colorBlack3} />
-                  <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack3 }}>
-                    Room {reservation.room}
-                  </span>
-                </div>
-              ) : (
-                reservation.checkInDate && reservation.checkOutDate && (
-                  <div className="flex items-center gap-1">
-                    <Icon path={mdiCalendarBlank} size={0.5} color={colors.colorBlack3} />
-                    <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack3 }}>
-                      {formatCompactDateRange(reservation.checkInDate, reservation.checkOutDate)}
-                    </span>
-                  </div>
-                )
-              )}
-            </div>
-          )}
-
-          {/* GJ scheduled-message status line */}
-          <GjStatusLine reservationId={reservation.id} />
-        </div>
-
-        {/* Actions: kebab (unlink) + chevron */}
-        <div className="flex items-center gap-1 shrink-0 ml-2">
-          <div className="relative">
-            <button
-              ref={menuBtnRef}
-              className="w-[28px] h-[28px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsMenuOpen(!isMenuOpen);
-              }}
-            >
-              <Icon path={mdiDotsHorizontal} size={0.67} color={colors.colorBlack3} />
-            </button>
-
-            {isMenuOpen && (
-              <div
-                ref={menuRef}
-                className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
-              >
-                <button
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
-                  style={{ color: colors.colorRed1 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleUnlinkClick();
-                  }}
-                >
-                  Unlink reservation
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="w-[28px] h-[28px] flex items-center justify-center">
-            <Icon path={isExpanded ? mdiChevronUp : mdiChevronDown} size={0.67} color={colors.colorBlack3} />
-          </div>
-        </div>
-      </div>
-
-      {/* Expanded details */}
-      {isExpanded && (
-        <div className="px-4 pb-3">
-          <ExpandedDetails reservation={reservation} guest={guest} onDrillIn={onDrillIn} />
-        </div>
-      )}
     </div>
   );
 }
