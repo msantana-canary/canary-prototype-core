@@ -16,6 +16,7 @@ import { GuestInfoSidebar } from '@/components/products/messaging/GuestInfoSideb
 import { ComposeHeader } from '@/components/products/messaging/ComposeHeader';
 import { UnlinkReservationModal } from '@/components/products/messaging/UnlinkReservationModal';
 import { PrototypeVariantToggle } from '@/components/products/messaging/PrototypeVariantToggle';
+import { ConversationControls } from '@/components/products/messaging/ConversationControls';
 import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { guests } from '@/lib/core/data/guests';
@@ -60,7 +61,12 @@ export default function MessagesPage() {
     closeLinkReservationModal,
     linkReservation,
     unlinkReservation,
+    topRowStyle,
   } = useMessagingStore();
+
+  // Compact mode moves the search + Filters + New-message controls INTO the left
+  // (thread-list) column; the conversation thread column then runs full height.
+  const isCompact = topRowStyle === 'compact';
 
   // Get the selected thread
   const selectedThread = useMemo(() => {
@@ -207,16 +213,32 @@ export default function MessagesPage() {
       {activeTab === 'conversations' && (
         <div
           className="flex h-full gap-4 min-h-0"
-          style={{ paddingLeft: 24, paddingRight: 24, paddingBottom: 24 }}
+          style={{ paddingLeft: 24, paddingRight: 24, paddingBottom: 24, paddingTop: isCompact ? 16 : 0 }}
         >
-          {/* Thread List column — 35% of the content row (scales to any width) */}
-          <div className="min-w-0 h-full" style={{ flexBasis: '35%', flexGrow: 0, flexShrink: 1 }}>
-            <ThreadList
-              threads={filteredThreads}
-              selectedThreadId={selectedThreadId}
-              onSelectThread={selectThread}
-              typingThreadId={typingThreadId}
-            />
+          {/* Thread List column — 35% of the content row (scales to any width).
+              In compact mode the search + Filters + New-message controls sit at the
+              top of THIS column (column-scoped), above the list card. */}
+          <div className="min-w-0 h-full flex flex-col gap-3" style={{ flexBasis: '35%', flexGrow: 0, flexShrink: 1 }}>
+            {isCompact && (
+              <div className="shrink-0">
+                <ConversationControls
+                  searchQuery={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  onNewMessage={startNewConversation}
+                  currentView={currentView}
+                  onViewChange={setCurrentView}
+                  compact
+                />
+              </div>
+            )}
+            <div className="flex-1 min-h-0">
+              <ThreadList
+                threads={filteredThreads}
+                selectedThreadId={selectedThreadId}
+                onSelectThread={selectThread}
+                typingThreadId={typingThreadId}
+              />
+            </div>
           </div>
 
           {/* Thread View / Compose — 65% of the content row */}
