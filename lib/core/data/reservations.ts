@@ -447,6 +447,19 @@ export const reservations: Record<string, Reservation> = {
     checkInStatus: 'Not Started',
     checkOutStatus: 'Not Started',
   },
+  // Sarah Smith's own upcoming stay, booked on John's phone (shared-phone case).
+  // Same phone as thread '14' → auto-links, but a distinct name/room/confirmation.
+  'res-sarah-s-nov': {
+    id: 'res-sarah-s-nov',
+    guestId: 'guest-sarah-s',
+    room: '618',
+    checkInDate: 'Nov. 14, 2026',
+    checkOutDate: 'Nov. 17, 2026',
+    confirmationCode: 'SS6N1SHARED',
+    status: 'upcoming',
+    checkInStatus: 'Not Started',
+    checkOutStatus: 'Not Started',
+  },
 
   // ===== March 2026 Reservations (Broadcast era) =====
 

@@ -173,6 +173,18 @@ export const guests: Record<string, Guest> = {
     email: 'johnsmith@gmail.com',
     preferredLanguage: 'English',
   },
+  // Shared-phone case: Sarah booked her own stay on John's phone (partner books
+  // on his number). Same phone (+16507665555) → auto-links to thread '14', but
+  // her name is DIFFERENT — the never-collapse-names rule renders her name on
+  // her own stay row inside the primary card.
+  'guest-sarah-s': {
+    id: 'guest-sarah-s',
+    name: 'Sarah Smith',
+    initials: 'SS',
+    phone: '+16507665555',
+    email: 'sarah.smith@gmail.com',
+    preferredLanguage: 'English',
+  },
   'guest-james-b': {
     id: 'guest-james-b',
     name: 'James Brady',
