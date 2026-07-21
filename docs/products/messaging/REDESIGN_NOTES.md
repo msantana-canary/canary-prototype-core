@@ -159,6 +159,58 @@ toggleable compact top row.
 > Check-in row), "View 2 more reservations" link, compact dates, 6px dots, and the
 > Full/Compact top-row toggle all render clean (tsc 0, no console errors).
 
+## State vocabulary alignment (2026-07-21)
+
+The load-bearing rule this pass: **ONE state family → ONE visual channel → ONE
+vocabulary.** Production screenshots are the reference for provenance + lifecycle.
+Each distinct state family in the panel now speaks through exactly one channel:
+
+- **Provenance = structure + section ⓘ tooltip.** The green **AUTO-LINKED** badge is
+  **retired** from the primary-card header (matches production's post-April
+  treatment) — provenance is now **structural**: the primary card simply *is* the
+  phone-matched group. The "how did these link?" explanation moves to a small ⓘ
+  icon (`mdiInformationOutline`, ~16px, `colorBlack3`) beside the **Linked
+  Reservations** heading, carrying production's copy verbatim as a hover tooltip:
+  *"Reservations link automatically when the guest's phone number in your PMS
+  matches this conversation. If it's missing, check the phone number in your PMS,
+  or search & link a reservation manually here."* Secondary (staff-linked) cards
+  keep their **"Linked by staff"** caption — that's the assertion-side signal.
+- **Lifecycle = PMS vocabulary chips.** The invented **IN-HOUSE / UPCOMING / PAST**
+  text labels are **deleted everywhere in the panel**. Each stay instead shows a
+  small lifecycle **chip** derived from `reservation.status`, in production's
+  vocabulary + chip register (10px uppercase, `<LifecycleChip>`): our prototype's
+  `'upcoming'` → **RESERVED** (light blue: bg `colorBlueDark5`, text
+  `colorBlueDark1`, border `colorBlueDark3`); `'checked-in'` → **CHECKED-IN** (tonal
+  green: bg `rgba(0,128,64,0.1)`, text `colorLightGreen1`); `'checked-out'` →
+  **CHECKED-OUT** (gray: bg `colorBlack7`, text `colorBlack3`). **Cancelled &
+  no-show reservations are hidden from the panel entirely** (filtered out of both
+  linked lists — matches production's April fix; filtering logic is in even though
+  no current mock data carries those statuses). **Room** shows as its own small
+  "RM {room}" text *beside* the chip (not fused into the label) for checked-in
+  stays only.
+- **Sort order unchanged, grouping re-derived from status.** Rows still sort
+  temporally (current → future by date → past). The "current + upcoming visible,
+  **View N more**" default state now derives its grouping directly from
+  `reservation.status` — `'checked-in'` + `'upcoming'` stay visible; `'checked-out'`
+  hides behind the link — instead of the old `StayState` temporal enum (which
+  survives only for the sort). Stay-row grid columns widened at 600px
+  (`minmax(0,1fr) 140px 148px 22px`) so chip + room + GJ status
+  ("✓ 1 sent · 3 scheduled") fit without truncation.
+- **Other state families unchanged, each still on its own channel:** delivery =
+  the GJ status line / nested messages table, flow status = the detail rows
+  (check-in / check-out status), loyalty = guest-level only (list row + thread
+  header).
+- Secondary cards also carry a `<LifecycleChip>` beside the guest name so the
+  lifecycle vocabulary reads identically across both card types (adaptation — the
+  task specified the primary rows; extending it to secondary cards honors the
+  one-vocabulary rule).
+
+> Verified live on :3009 — John Smith's thread shows CHECKED-IN + "RM 504" on the
+> current stay, RESERVED on both upcoming stays (incl. Sarah Smith's differing
+> name), and CHECKED-OUT on the revealed Feb past stay; the AUTO-LINKED badge is
+> gone, the ⓘ tooltip carries production's copy, and the "1 failed" signal stays
+> loud (tsc 0, no console errors).
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |
