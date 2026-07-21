@@ -25,3 +25,14 @@
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Invisible, overlay-style scrollbar — consumes NO layout width, so expanding a
+   stay's details in the Conversation Details sidebar never shifts content inward.
+   Scoped to the sidebar's scroll containers only (do NOT apply app-wide).
+   Scrolling (wheel/trackpad) still works. */
+.scrollbar-invisible {
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-invisible::-webkit-scrollbar {
+  display: none; /* WebKit (Chrome/Safari) */
+}
