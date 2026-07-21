@@ -19,9 +19,16 @@
  *  - SECONDARY CARDS (0+) = each manually-linked entry, with "Linked by staff"
  *    caption + a kebab "Unlink reservation".
  *
- * Two panel styles (PrototypeVariantToggle):
- *  - PUSH: a third body column; the wrapper's width animates 0↔440.
- *  - DRAWER: the current product's fixed right-edge slide-in, 440px.
+ * Panel mechanic v3 — FLOATING PANEL (replaces push/drawer):
+ *  - A fixed 400px white card inset from the window edges (top 72 / right 16 /
+ *    bottom 16), floating below the 56px legacy shell header, with a large soft
+ *    shadow and internal invisible scroll. Slides + fades in on open (~250ms).
+ *  - A subtle scrim tints the app behind it; clicking the scrim closes the panel.
+ *
+ * Linked Reservations is a CAROUSEL: one guest card per slide (slide 0 = the
+ * primary phone-grouped card, slides 1+ = each staff-linked guest), navigated
+ * with chevron arrows + centered dots. A hidden slide whose guest has a failed
+ * GJ message shows a RED dot so failures stay loud even off-screen.
  */
 
 'use client';
@@ -48,6 +55,8 @@ import {
   mdiOpenInNew,
   mdiChevronDown,
   mdiChevronUp,
+  mdiChevronLeft,
+  mdiChevronRight,
   mdiDotsHorizontal,
   mdiAccountMultipleOutline,
   mdiAlertCircleOutline,
@@ -104,121 +113,187 @@ interface GuestInfoSidebarProps {
   onClose: () => void;
   onOpenLinkModal?: () => void;
   onUnlinkReservation?: (reservationId: string) => void;
-  /** PUSH = third body column; DRAWER = current product's fixed slide-in. */
-  panelStyle?: 'push' | 'drawer';
 }
 
-export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, onClose, onOpenLinkModal, onUnlinkReservation, panelStyle = 'drawer' }: GuestInfoSidebarProps) {
+export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, onClose, onOpenLinkModal, onUnlinkReservation }: GuestInfoSidebarProps) {
   // Which reservation's details are expanded (shared across all cards/rows).
   const [expandedResId, setExpandedResId] = useState<string | null>(null);
+  // Which carousel slide (guest card) is currently visible.
+  const [activeSlide, setActiveSlide] = useState(0);
 
   const toggleExpand = (resId: string) => {
     setExpandedResId((prev) => (prev === resId ? null : resId));
   };
 
-  const isDrawer = panelStyle === 'drawer';
-
   // Split by the auto-link FACT (never by person identity).
   const autoLinked = sortStays(linkedReservations.filter((lr) => lr.isAutoLinked));
   const manualLinked = linkedReservations.filter((lr) => !lr.isAutoLinked);
 
-  return (
-    <div
-      className={
-        isDrawer
-          ? // DRAWER: current product mechanic — fixed right edge below the 56px
-            // shell header, translate-x slide-in, always mounted so it animates.
-            `fixed right-0 top-[56px] overflow-y-auto scrollbar-invisible transition-transform duration-300 ease-in-out shadow-lg ${
-              isOpen ? 'translate-x-0' : 'translate-x-full'
-            }`
-          : // PUSH: always-mounted wrapper whose WIDTH animates 0↔440; a 0-width
-            // flex child still contributes a flex gap, so cancel it while closed.
-            'shrink-0 h-full overflow-hidden'
-      }
-      style={
-        isDrawer
-          ? {
-              width: '440px',
-              height: 'calc(100vh - 56px)',
-              backgroundColor: colors.colorBlack8,
-              zIndex: 40,
-            }
-          : {
-              width: isOpen ? 440 : 0,
-              marginLeft: isOpen ? 0 : -16,
-              transition: 'width 200ms ease-out, margin-left 200ms ease-out',
-            }
-      }
-    >
-      <div
-        className={isDrawer ? 'p-6' : 'p-6 h-full overflow-y-auto scrollbar-invisible rounded-[12px]'}
-        style={
-          isDrawer
-            ? undefined
-            : { width: 440, backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack6}` }
-        }
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="font-['Roboto',sans-serif] font-medium text-[18px] leading-[27px]" style={{ color: colors.colorBlack1 }}>
-            Conversation Details
-          </h2>
-          <button
-            onClick={onClose}
-            className="w-[30px] h-[30px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors"
-          >
-            <Icon path={mdiClose} size={0.67} color={colors.colorBlack1} />
-          </button>
-        </div>
+  const hasFailure = (resId: string) => (gjMessageStatus[resId]?.failed ?? 0) > 0;
 
-        {/* Linked Reservations Section (top — the star) */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px]" style={{ color: colors.colorBlack1 }}>
-              Linked Reservations
-            </h3>
-            <div className="flex gap-1">
-              <button className="w-[30px] h-[30px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors">
-                <Icon path={mdiRefresh} size={0.67} color={colors.colorBlack1} />
-              </button>
-              <button
-                className="w-[30px] h-[30px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors"
-                onClick={onOpenLinkModal}
-              >
-                <Icon path={mdiPlus} size={0.67} color={colors.colorBlack1} />
-              </button>
-            </div>
+  // Carousel slides: slide 0 = the primary phone-grouped card (all auto-linked
+  // stays); slides 1+ = each staff-linked guest card. `hasFailure` lets a HIDDEN
+  // slide's dot render red so a failed GJ message stays loud even off-screen.
+  const slides: { key: string; hasFailure: boolean; node: React.ReactNode }[] = [];
+  if (autoLinked.length > 0) {
+    slides.push({
+      key: 'primary',
+      hasFailure: autoLinked.some((lr) => hasFailure(lr.reservation.id)),
+      node: (
+        <PrimaryCard
+          contactNumber={contactNumber}
+          stays={autoLinked}
+          expandedResId={expandedResId}
+          onToggle={toggleExpand}
+        />
+      ),
+    });
+  }
+  manualLinked.forEach((lr) => {
+    slides.push({
+      key: lr.reservation.id,
+      hasFailure: hasFailure(lr.reservation.id),
+      node: (
+        <SecondaryCard
+          linkedReservation={lr}
+          isExpanded={expandedResId === lr.reservation.id}
+          onToggle={() => toggleExpand(lr.reservation.id)}
+          onUnlink={onUnlinkReservation}
+        />
+      ),
+    });
+  });
+
+  // Reset to the first slide whenever the set of linked reservations changes
+  // (i.e. the user switched threads).
+  const slideKey = slides.map((s) => s.key).join('|');
+  useEffect(() => {
+    setActiveSlide(0);
+  }, [slideKey]);
+  const activeIndex = Math.min(activeSlide, Math.max(0, slides.length - 1));
+
+  return (
+    <>
+      {/* Scrim — subtle tint over the app behind the panel; click closes. */}
+      <div
+        aria-hidden
+        onClick={onClose}
+        className="fixed left-0 right-0 bottom-0 transition-opacity duration-[250ms] ease-in-out"
+        style={{
+          top: 56,
+          backgroundColor: 'rgba(0,0,0,0.10)',
+          opacity: isOpen ? 1 : 0,
+          pointerEvents: isOpen ? 'auto' : 'none',
+          zIndex: 39,
+        }}
+      />
+
+      {/* Floating Conversation Details panel — fixed, inset from the window edges,
+          floating below the 56px legacy shell header. Slides + fades in on open. */}
+      <div
+        className={`fixed overflow-y-auto scrollbar-invisible transition-[transform,opacity] duration-[250ms] ease-in-out ${
+          isOpen ? 'translate-x-0 opacity-100' : 'translate-x-6 opacity-0 pointer-events-none'
+        }`}
+        style={{
+          top: 72,
+          right: 16,
+          bottom: 16,
+          width: 400,
+          backgroundColor: colors.colorWhite,
+          border: `1px solid ${colors.colorBlack6}`,
+          borderRadius: 12,
+          boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
+          zIndex: 40,
+        }}
+      >
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-['Roboto',sans-serif] font-medium text-[18px] leading-[27px]" style={{ color: colors.colorBlack1 }}>
+              Conversation Details
+            </h2>
+            <button
+              onClick={onClose}
+              className="w-[30px] h-[30px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors"
+            >
+              <Icon path={mdiClose} size={0.67} color={colors.colorBlack1} />
+            </button>
           </div>
 
-          {linkedReservations.length === 0 ? (
-            <p className="font-['Roboto',sans-serif] text-[14px] leading-[21px] text-center py-2" style={{ color: colors.colorBlack3 }}>
-              No linked reservations
-            </p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {/* PRIMARY CARD — all auto-linked stays (the phone-match fact) */}
-              {autoLinked.length > 0 && (
-                <PrimaryCard
-                  contactNumber={contactNumber}
-                  stays={autoLinked}
-                  expandedResId={expandedResId}
-                  onToggle={toggleExpand}
-                />
-              )}
-
-              {/* SECONDARY CARDS — one per manually-linked entry (staff assertion) */}
-              {manualLinked.map((lr) => (
-                <SecondaryCard
-                  key={lr.reservation.id}
-                  linkedReservation={lr}
-                  isExpanded={expandedResId === lr.reservation.id}
-                  onToggle={() => toggleExpand(lr.reservation.id)}
-                  onUnlink={onUnlinkReservation}
-                />
-              ))}
+          {/* Linked Reservations Section (top — the star) */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px]" style={{ color: colors.colorBlack1 }}>
+                Linked Reservations
+              </h3>
+              <div className="flex gap-1">
+                <button className="w-[30px] h-[30px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors">
+                  <Icon path={mdiRefresh} size={0.67} color={colors.colorBlack1} />
+                </button>
+                <button
+                  className="w-[30px] h-[30px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors"
+                  onClick={onOpenLinkModal}
+                >
+                  <Icon path={mdiPlus} size={0.67} color={colors.colorBlack1} />
+                </button>
+              </div>
             </div>
-          )}
-        </div>
+
+            {linkedReservations.length === 0 ? (
+              <p className="font-['Roboto',sans-serif] text-[14px] leading-[21px] text-center py-2" style={{ color: colors.colorBlack3 }}>
+                No linked reservations
+              </p>
+            ) : (
+              <div>
+                {/* Active guest card (one slide at a time) */}
+                <div>{slides[activeIndex]?.node}</div>
+
+                {/* Carousel nav — chevron arrows + centered dots. Arrows disable
+                    at the ends (no wrap); a hidden slide with a failure = red dot. */}
+                {slides.length > 1 && (
+                  <div className="flex items-center justify-between mt-3">
+                    <button
+                      onClick={() => setActiveSlide(activeIndex - 1)}
+                      disabled={activeIndex === 0}
+                      aria-label="Previous reservation"
+                      className="w-[30px] h-[30px] flex items-center justify-center rounded-full transition-colors disabled:opacity-30 disabled:cursor-default enabled:hover:bg-[#f0f0f0]"
+                    >
+                      <Icon path={mdiChevronLeft} size={0.83} color={colors.colorBlack1} />
+                    </button>
+
+                    <div className="flex-1 flex items-center justify-center gap-1.5">
+                      {slides.map((s, i) => {
+                        const isActive = i === activeIndex;
+                        const dotColor = isActive
+                          ? colors.colorBlueDark1
+                          : s.hasFailure
+                          ? '#E40046'
+                          : colors.colorBlack5;
+                        return (
+                          <button
+                            key={s.key}
+                            onClick={() => setActiveSlide(i)}
+                            aria-label={`Go to reservation ${i + 1}`}
+                            className="rounded-full transition-colors"
+                            style={{ width: 8, height: 8, backgroundColor: dotColor }}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setActiveSlide(activeIndex + 1)}
+                      disabled={activeIndex === slides.length - 1}
+                      aria-label="Next reservation"
+                      className="w-[30px] h-[30px] flex items-center justify-center rounded-full transition-colors disabled:opacity-30 disabled:cursor-default enabled:hover:bg-[#f0f0f0]"
+                    >
+                      <Icon path={mdiChevronRight} size={0.83} color={colors.colorBlack1} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
         {/* Assignment Card */}
         <div
@@ -274,8 +349,9 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
             </span>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -449,6 +525,13 @@ function PrimaryCard({
   // Header name = the most-current stay's guest (stays are pre-sorted).
   const headerName = stays[0]?.guest.name ?? '';
 
+  // Default view = current + upcoming only; PAST stays collapse behind a
+  // "Show N more stays" toggle (stays are pre-sorted in-house → upcoming → past).
+  const [showPast, setShowPast] = useState(false);
+  const currentUpcoming = stays.filter((lr) => deriveStayState(lr.reservation) !== 'past');
+  const pastStays = stays.filter((lr) => deriveStayState(lr.reservation) === 'past');
+  const visibleStays = showPast ? stays : currentUpcoming;
+
   return (
     <div
       className="rounded-[8px] overflow-hidden"
@@ -480,7 +563,7 @@ function PrimaryCard({
 
       {/* Stay mini-table — aligned columns, hairline dividers between rows */}
       <div>
-        {stays.map((lr, i) => (
+        {visibleStays.map((lr, i) => (
           <PrimaryStayRow
             key={lr.reservation.id}
             linkedReservation={lr}
@@ -491,6 +574,21 @@ function PrimaryCard({
           />
         ))}
       </div>
+
+      {/* Expand/collapse the PAST stays in place */}
+      {pastStays.length > 0 && (
+        <div className="px-3 py-2.5" style={{ borderTop: `1px solid ${colors.colorBlack6}` }}>
+          <button
+            onClick={() => setShowPast((v) => !v)}
+            className="font-['Roboto',sans-serif] font-medium text-[12px] leading-[18px] cursor-pointer hover:underline"
+            style={{ color: colors.colorBlueDark1 }}
+          >
+            {showPast
+              ? 'Show fewer'
+              : `Show ${pastStays.length} more stay${pastStays.length > 1 ? 's' : ''}`}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

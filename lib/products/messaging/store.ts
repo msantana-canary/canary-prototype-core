@@ -10,12 +10,6 @@ import { create } from 'zustand';
 import { Thread, Message } from './types';
 import { mockThreads, mockMessages } from './mock-data';
 
-/** Redesign: the info panel renders as a PUSH column (third body column) or a
- *  DRAWER (the current product's fixed right-edge slide-in). Decide-in-the-room
- *  via the PrototypeVariantToggle — the open question is whether push can carry
- *  messaging's info density or the overlay drawer stays the right call. */
-export type InfoPanelStyle = 'push' | 'drawer';
-
 interface MessagingState {
   // State
   threads: Thread[];
@@ -26,7 +20,6 @@ interface MessagingState {
   composingPhoneNumber: string;
   typingThreadId: string | null;
   isGuestInfoOpen: boolean;
-  infoPanelStyle: InfoPanelStyle;
   isLinkReservationModalOpen: boolean;
   currentView: 'inbox' | 'archived' | 'blocked';
   searchQuery: string;
@@ -45,7 +38,6 @@ interface MessagingState {
   setGuestTyping: (threadId: string | null) => void;
   toggleGuestInfo: () => void;
   closeGuestInfo: () => void;
-  setInfoPanelStyle: (style: InfoPanelStyle) => void;
   setCurrentView: (view: 'inbox' | 'archived' | 'blocked') => void;
   archiveThread: (threadId: string) => void;
   reopenThread: (threadId: string) => void;
@@ -69,7 +61,6 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   composingPhoneNumber: '',
   typingThreadId: null,
   isGuestInfoOpen: false,
-  infoPanelStyle: 'push',
   isLinkReservationModalOpen: false,
   currentView: 'inbox',
   searchQuery: '',
@@ -216,11 +207,6 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   // Close guest info sidebar
   closeGuestInfo: () => {
     set({ isGuestInfoOpen: false });
-  },
-
-  // Switch the info panel mechanic (push column vs drawer overlay)
-  setInfoPanelStyle: (style: InfoPanelStyle) => {
-    set({ infoPanelStyle: style });
   },
 
   // Switch between inbox views
