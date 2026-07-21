@@ -92,6 +92,73 @@ default, the column proportions, and the collapsed views.
 > "Show 1 more stay" expander, 35/65 columns, and the Filters popover all render clean (tsc 0, no
 > console errors).
 
+## Sidebar v4 (2026-07-21)
+
+Six changes this pass — panel width, the primary-card disclosure model, a nested
+per-reservation messages table, a truncation-proof date format, smaller dots, and a
+toggleable compact top row.
+
+- **Panel width 400 → 600px.** The floating Conversation Details card widens to
+  **600px** (inset/scrim/slide-fade animation all unchanged). The extra width is what
+  lets the nested messages table and the detail rows breathe.
+- **Primary card v4 — "current open, next collapsed, link for the rest."** The
+  primary phone-grouped card no longer renders every stay as an equal mini-table row.
+  Instead, using the existing in-house → upcoming → past sort:
+  - the **CURRENT (in-house)** reservation is **expanded by default** as a full detail
+    block — the icon+value rows (phone, email, dates, room, confirmation, check-in/out
+    status w/ open-link icons) **followed by the nested GJ messages table** (below);
+  - the **NEXT** reservation is a **collapsed row** (compact date range + state +
+    compact status/failed signal + chevron); expanding shows the same detail-block
+    anatomy incl. its own table;
+  - **everything else** (further-future + past) hides behind a **"View N more
+    reservations"** text link (`colorBlueDark1`, 13px) → "**View fewer**" to collapse.
+  Default-open is driven by resetting the shared `expandedResId` to the in-house stay's
+  id on thread change. Shared-phone rule unchanged (Sarah Smith's Nov stay still shows
+  her differing name on its row).
+- **Nested per-reservation GJ messages table (the "table in a table").** A
+  rounded-8, `colorBlack6`-bordered container **inside each reservation's detail block**
+  (`GjMessagesTable` in `GuestInfoSidebar`, rendered from `ExpandedDetails` so both the
+  primary rows and the secondary cards get it). One hairline-divided row per
+  guest-journey message: **title** (14px Medium) left, right-aligned **timestamp**
+  caption ("Sent Jul 11 · 9:00 AM" for sent, bare "Jul 14 · 9:00 AM" for scheduled),
+  and a row of ~18px **channel icons** beneath — email (`mdiEmailOutline`), SMS
+  (`mdiMessageProcessingOutline`), WhatsApp (`mdiWhatsapp`), plus two **OTA letter
+  chips** (tiny rounded squares: "B" white-on-`#1a3c8b` Booking, "E" black-on-`#ffd43b`
+  Expedia). **Per-channel status drives color:** failed = red `#E40046`, scheduled =
+  40% opacity, sent = `colorBlack2`. **If any channel in a row failed, that row's
+  timestamp also turns red + gains an alert icon** — failures stay the loudest thing.
+- **Data model + derived counts.** New `gjMessages` map in
+  `lib/products/messaging/mock-data.ts`: `Record<reservationId, Array<{title; sentAt?;
+  scheduledFor?; channels: {type: 'email'|'sms'|'whatsapp'|'booking'|'expedia'; status:
+  'sent'|'failed'|'scheduled'}[]}>>`, seeded for **all of thread 14's reservations**
+  (`res-john-jul` carries a **failed WhatsApp on its Check-in** message → matches the
+  existing "1 failed"), plus James/Ethan/Liam's and Emily's `res-emily-jul`. The coarse
+  `{delivered, failed, scheduled}` summary the collapsed rows + carousel red-dot rule
+  consume is now **DERIVED from `gjMessages`** via `getGjSummary()` (message-level count:
+  a sent message with any failed channel counts failed; else sent ⇒ delivered, else ⇒
+  scheduled) so the table and the summary can never disagree. The legacy
+  `gjMessageStatus` map stays as a **fallback** for reservations without a detail log.
+- **Compact date format everywhere in the panel.** New `formatCompactDateRange`
+  collapses the month/year so ranges never truncate at any width: same-month prints the
+  month once ("Jul. 13 - 15, 2026"), cross-month prints both with one trailing year
+  ("Sep. 28 - Oct. 2, 2026"), cross-year keeps both years. Replaces the old
+  `formatDateRange` at every call site (stay rows, collapsed rows, detail block,
+  secondary cards).
+- **Smaller carousel dots.** Dots shrink **8 → 6px** (active/red rules unchanged).
+- **Compact top-row experiment (toggleable).** The repo's dark-pill **"Prototype"**
+  idiom is **recreated as `PrototypeVariantToggle`** (bottom-right) with one option
+  group, **"Top row": Full (default) vs Compact**, wired to a new store field
+  **`topRowStyle: 'full' | 'compact'`**. In **Compact**, the search input is sized to the
+  thread-list column (**35%** of the content row, aligned to the list card's edges) and
+  the Filters + New message controls become **40px icon-only buttons** (filter-variant
+  icon w/ a corner count badge; New message = `mdiMessagePlusOutline` on the primary blue
+  button), each with an `aria-label`. **Full** mode is unchanged.
+
+> Verified live on :3009 — 600px panel, John Smith's current stay expanded with the red
+> "1 failed" signal, the nested table (Booking "B" chip + red WhatsApp on the failed
+> Check-in row), "View 2 more reservations" link, compact dates, 6px dots, and the
+> Full/Compact top-row toggle all render clean (tsc 0, no console errors).
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |
