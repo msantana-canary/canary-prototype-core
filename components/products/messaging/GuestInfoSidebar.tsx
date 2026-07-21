@@ -254,6 +254,18 @@ function GuestPager({
   );
 }
 
+/**
+ * Entry/exit animation timing for the floating panel. On open the panel slides in
+ * from off-screen-right (its own width + the 16px inset) to its resting position
+ * with an ease-out curve while the scrim fades in; closing reverses both, and the
+ * panel unmounts only after the exit transition completes. prefers-reduced-motion
+ * downgrades to a near-instant fade with no translate. No animation libraries.
+ */
+const PANEL_ANIM_MS = 240;
+const PANEL_ENTER_EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
+const PANEL_EXIT_EASE = 'cubic-bezier(0.4, 0, 1, 1)';
+const PANEL_REDUCED_MS = 120;
+
 interface GuestInfoSidebarProps {
   contactNumber: string;
   linkedReservations: LinkedReservation[];
@@ -276,6 +288,42 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
   const lastDrillRef = useRef<DrillTarget | null>(null);
   if (drillTarget) lastDrillRef.current = drillTarget;
   const activeDrill = drillTarget ?? lastDrillRef.current;
+
+  // ── Entry/exit animation (two-phase: mount → visible) ──────────────────────
+  // `mounted` keeps the panel + scrim in the DOM through the exit transition so
+  // the slide-out is actually visible; `entered` drives the open/closed styles.
+  // prefers-reduced-motion downgrades to a near-instant fade with no translate.
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = () => setReduced(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
+  const [mounted, setMounted] = useState(isOpen);
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    if (isOpen) {
+      // Mount first, then flip to the open state on the next frame so the browser
+      // paints the off-screen start position and the transition actually runs.
+      setMounted(true);
+      let raf2 = 0;
+      const raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => setEntered(true));
+      });
+      return () => {
+        cancelAnimationFrame(raf1);
+        cancelAnimationFrame(raf2);
+      };
+    }
+    // Closing: play the exit, then unmount once it finishes. Clearing this timer
+    // on re-open keeps rapid toggling from wedging the panel in a half state.
+    setEntered(false);
+    const t = setTimeout(() => setMounted(false), reduced ? PANEL_REDUCED_MS : PANEL_ANIM_MS);
+    return () => clearTimeout(t);
+  }, [isOpen, reduced]);
 
   const toggleExpand = (resId: string) => {
     setExpandedResId((prev) => (prev === resId ? null : resId));
@@ -333,6 +381,21 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
     setExpandedResId(defaultExpandedResId);
     setDrillTarget(null);
   }, [slideKey, defaultExpandedResId]);
+
+  // All hooks run above this line. Once the exit transition has finished the
+  // panel leaves the DOM entirely (nothing to render while fully closed).
+  if (!mounted) return null;
+
+  // Derived animation styles for the scrim + floating panel.
+  const ease = entered ? PANEL_ENTER_EASE : PANEL_EXIT_EASE;
+  const panelTransition = reduced
+    ? `opacity ${PANEL_REDUCED_MS}ms linear`
+    : `transform ${PANEL_ANIM_MS}ms ${ease}, opacity ${PANEL_ANIM_MS}ms ${ease}`;
+  const scrimTransition = reduced
+    ? `opacity ${PANEL_REDUCED_MS}ms linear`
+    : `opacity ${PANEL_ANIM_MS}ms ${ease}`;
+  const panelTransform = reduced ? undefined : entered ? 'translateX(0)' : 'translateX(calc(100% + 16px))';
+
   const activeIndex = Math.min(activeSlide, Math.max(0, slides.length - 1));
   // Any OFF-SCREEN guest card with a failed GJ message → the pager count chip
   // goes red (the hidden-failure signal).
@@ -340,25 +403,27 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
 
   return (
     <>
-      {/* Scrim — subtle tint over the app behind the panel; click closes. */}
+      {/* Scrim — subtle tint over the app behind the panel; click closes. Fades
+          in/out in lockstep with the panel slide. */}
       <div
         aria-hidden
         onClick={onClose}
-        className="fixed left-0 right-0 bottom-0 transition-opacity duration-[250ms] ease-in-out"
+        className="fixed left-0 right-0 bottom-0"
         style={{
           top: 56,
           backgroundColor: 'rgba(0,0,0,0.10)',
-          opacity: isOpen ? 1 : 0,
-          pointerEvents: isOpen ? 'auto' : 'none',
+          opacity: entered ? 1 : 0,
+          pointerEvents: entered ? 'auto' : 'none',
+          transition: scrimTransition,
           zIndex: 39,
         }}
       />
 
-      {/* Floating Conversation Details panel */}
+      {/* Floating Conversation Details panel — slides in from off-screen-right to
+          its resting inset on open, and back out on close (see the two-phase
+          mount/visible state above). */}
       <div
-        className={`fixed overflow-hidden transition-[transform,opacity] duration-[250ms] ease-in-out ${
-          isOpen ? 'translate-x-0 opacity-100' : 'translate-x-6 opacity-0 pointer-events-none'
-        }`}
+        className="fixed overflow-hidden"
         style={{
           top: 72,
           right: 16,
@@ -369,6 +434,11 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
           borderRadius: 12,
           boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
           zIndex: 40,
+          transform: panelTransform,
+          opacity: entered ? 1 : 0,
+          pointerEvents: entered ? 'auto' : 'none',
+          transition: panelTransition,
+          willChange: 'transform, opacity',
         }}
       >
         {/* Internal-navigation track: MAIN state ↔ GUEST-level DRILL-IN detail. */}
