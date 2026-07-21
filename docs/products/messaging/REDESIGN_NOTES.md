@@ -268,6 +268,75 @@ and establishes an internal DRILL-IN as a platform pattern.
 > and the guest pager with the red hidden-failure count chip (tsc 0, 200 on
 > /messages, no console errors).
 
+## Sidebar v6 — card anatomy corrections (2026-07-21)
+
+Miguel reviewed v5 against a reference mock; this pass corrects the guest card
+anatomy, promotes GJ monitoring to the card level, and fixes compact top-row mode.
+Primary and secondary cards now share ONE component (`GuestCard`).
+
+- **Guest card anatomy (primary AND secondary, one structure).**
+  - **CARD HEADER:** guest name (16px medium); second line = phone icon + number
+    AND (only when the guest has a checked-in stay) bed icon + current room, side
+    by side.
+  - **INSET SUB-TABLE — a "table IN the card", not "table AS the card".** A
+    bordered (`colorBlack6`), `rounded-[8px]` container INSET within the card
+    padding; one row per reservation, hairline dividers. Row = a left-aligned flex
+    row (8px gaps) of **stay dates (14px medium) + lifecycle chip + "RM {room}"
+    inline BESIDE the dates**; right side = **per-row kebab ⋯ + expand chevron**. A
+    differing guest name (Sarah Smith on the shared phone) renders as a second line
+    under the dates. **Per-row GJ summary cells are DELETED** — future reservations
+    haven't sent anything; the signal lives in the card banner now.
+  - **Per-row kebab.** Staff-linked rows → "Unlink reservation" (wired to the
+    existing `onUnlinkReservation` flow). Phone-matched (auto) rows → the item
+    renders **DISABLED** with the production rationale as its subtitle: *"Can't
+    unlink — phone number matches this conversation."*
+  - **Expanded row detail.** The row header (dates + chip + RM inline, left-aligned
+    **flex — the fixed grid columns are killed**) stays put; the detail fields
+    (phone/email/dates/room/confirmation/check-in/out) render below it. No GJ table
+    in the detail block anymore.
+  - **CARD-LEVEL GJ BANNER (replaces v5's per-stay banners).** A full-width
+    `rounded-[8px]` **gray-tinted box** (`#f4f5f6`) at the card bottom: **"Guest
+    Scheduled Messages"** (14px medium) + chevron-right — a clearly contained
+    tappable box, not floating text. **FAILURE variant** when ANY of the card's
+    reservations has failed messages: red tint (`rgba(228,0,70,0.06)`) + alert icon
+    + "N message(s) failed to send" in `colorRed1`. Tap → drill-in.
+- **Drill-in is now GUEST-level.** Tapping a card's banner drills into a Scheduled
+  Messages detail scoped to that card's guest, showing **ALL** the card's
+  reservations **SECTIONED per reservation** — each section header is a compact
+  date range + lifecycle chip in a small-caps caption register, sections in
+  stay-sort order (current → upcoming → past). Failed rows keep production's Twilio
+  error register (code + curated line + Learn more). The subtitle under the
+  "Scheduled messages" title is the **guest name only**. State is carried via a
+  `DrillTarget { guestName, stays }` (a `lastDrillRef` keeps the pane mounted while
+  it slides back out); back preserves main-panel state.
+- **Compact top-row mode corrected.** In compact mode the search field + Filters
+  icon button + New-message icon button TOGETHER span exactly the thread-list
+  column width (the 35% column) and sit **ABOVE the thread list, INSIDE the left
+  column**; the **conversation thread column then runs FULL HEIGHT** from the top of
+  the content area (it fills the vertical gap the old top row occupied).
+  Implementation: in compact mode `AppLayout` renders **no** top search row; the
+  controls move into the page's left-column stack (controls row, then the list
+  card). The search + Filters + New-message controls were **extracted into a
+  reusable `ConversationControls` component** (with `FiltersControl`) so the exact
+  same controls serve both placements — full-width band (AppLayout) vs
+  column-scoped (page). Full mode is unchanged. Store toggle + `PrototypeVariantToggle`
+  wiring untouched.
+
+> Adaptation: the primary/secondary split collapses into a single `GuestCard`
+> (both card types have identical anatomy now); each stay row derives its kebab
+> behavior from `lr.isAutoLinked` (auto → disabled unlink, staff → live unlink).
+> Row-level "RM {room}" shows whenever the reservation has a room (reserved stays
+> with an assigned room, e.g. Sarah's RM 618, show it too); the HEADER room is
+> gated to the checked-in stay only.
+
+> Verified live on :3009 — John Smith's card (header phone + RM 504, 4-guest pager,
+> inset sub-table with Sarah Smith's differing name on the Nov row + CHECKED-OUT
+> Feb row, red "1 message failed to send" card banner), the auto-row kebab's
+> disabled "Can't unlink" item, the guest-level sectioned drill-in (JUL/SEP/NOV/FEB
+> sections + Error 63016 register), and compact mode (column-scoped controls +
+> full-height thread view) all render clean (tsc 0, 200 on /messages, no console
+> errors).
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |
