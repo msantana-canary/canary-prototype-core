@@ -49,6 +49,49 @@ The Conversation Details sidebar (`GuestInfoSidebar`) is reframed as a **verific
 > removal in the row list; here AUTO-LINKED lives on the primary card header as provenance, not in
 > thread rows.
 
+## Sidebar v3 + layout (2026-07-21)
+
+Five changes this pass — the panel mechanic, the linked-guests presentation, the stays table
+default, the column proportions, and the collapsed views.
+
+- **Panel mechanic v3 — FLOATING PANEL (replaces BOTH push and drawer; now THE mechanic).**
+  Conversation Details is a **fixed, floating white card** on the right: **400px** wide, `rounded-[12px]`,
+  1px `colorBlack6` border, large soft shadow (`0 12px 32px rgba(0,0,0,0.12)`), inset from the window
+  edges — **top 72 / right 16 / bottom 16** so it floats *below* the 56px legacy shell header — with
+  internal `.scrollbar-invisible` scroll. Slides + fades in on open (`translate-x` + opacity, ~250ms).
+  A subtle **scrim** (`rgba(0,0,0,0.10)` over the viewport below the shell header) fades in behind it
+  and **closes the panel on click**. The old `infoPanelStyle`/`setInfoPanelStyle` store state, the
+  `PrototypeVariantToggle` component (deleted), and the push/drawer branches are all **gone**. The
+  info-button pressed state + close behaviors are unchanged.
+- **Linked guests are a CAROUSEL (not a vertical stack).** One guest card per slide: slide 1 = the
+  primary phone-grouped card (unchanged content model), slides 2+ = each "Linked by staff" guest.
+  Nav = left/right **chevron arrows + centered dots**; arrows disable at the ends (no wrap), dots are
+  clickable. **Failure-visibility rule:** a *hidden* slide whose guest has any GJ status with
+  `failed > 0` renders its **dot red** (`#E40046`) instead of gray (`colorBlack5`) — failures stay
+  loud even off-screen (active dot is always `colorBlueDark1`). Demo: on slide 2, dot 1 goes red
+  (John's in-house stay carries the failure). The "+" link + refresh buttons stay in the section header.
+- **Stays table default = CURRENT + UPCOMING; the rest expands.** The primary card's mini-table shows
+  only **in-house + upcoming** stays by default; **past** stays collapse behind a small
+  "**Show N more stays**" text button (`colorBlueDark1`, 12px) at the table bottom → "**Show fewer**"
+  to collapse. Per-row expandable details are unchanged.
+- **% widths for list + convo.** The thread-list column is **35%** and the thread view **65%** of the
+  content row (flex-basis percentages + `min-w-0`, replacing the fixed 434px). With the floating panel
+  there's **no push resizing** anymore — the body row is always 35/65.
+- **Filters consolidation.** The Inbox/Archived/Blocked segmented-control card **and** the in-card
+  Filters row are **removed** from the thread-list column (it's now just scrolling rows; default view
+  stays `inbox`). A **Filters button** sits on the search row *between* search and New message (40px,
+  white, `colorBlack5` border, `rounded-[6px]`, filter icon + "Filters" + a blue count badge "2").
+  Clicking it opens a lightweight **popover** (anchored under the button, white, shadow, `rounded-8`):
+  a **VIEW radio group** — Inbox (default) / Archived / Blocked — **wired to the store's `currentView`**
+  (this is where the collapsed views live now), plus decorative disabled placeholder rows ("Assigned
+  to", "Channel") suggesting the future feature. Closes on outside click.
+  **Usage data point: <1% of usage is on the Archived/Blocked views** — the justification for
+  collapsing them out of the always-visible chrome into the Filters popover.
+
+> Verified live on :3009 — floating panel + scrim, 4-slide carousel with the red hidden-failure dot,
+> "Show 1 more stay" expander, 35/65 columns, and the Filters popover all render clean (tsc 0, no
+> console errors).
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |
@@ -64,7 +107,7 @@ The Conversation Details sidebar (`GuestInfoSidebar`) is reframed as a **verific
 | Day divider | centered 10px gray text | full-width hairline + LEFT-aligned 10px Medium uppercase label |
 | Thread header | Archive (SHADED), Link reservation text btn, info, vertical kebab | Archive (tonal `rgba(40,88,196,0.1)`), info w/ pressed state, horizontal kebab; Link reservation lives in the info panel only |
 | Composer | `#666` border rounded-4; attach/translate/list/concierge | rounded-12 card w/ `colorBlack6` border (blue focus kept); **emoji**/attach/list/concierge; gray rounded-6 AI pill; 32px split "Send via SMS" w/ side-only radii |
-| Info panel | 400px fixed drawer only | PUSH (360px third column, width-animated) **vs** DRAWER (unchanged) behind the floating PrototypeVariantToggle — the open question is whether push carries messaging's info density |
+| Info panel | 400px fixed drawer only | **Floating panel v3** — a fixed 400px white card inset from the window edges (top 72 / right 16 / bottom 16) with a scrim behind it; replaces the earlier push/drawer experiment (see "Sidebar v3 + layout" above). Linked Reservations is a guest carousel |
 
 New data affordance: `Thread.isFlagged` (flag replaces the unread dot in the row). No flag/unflag flow yet — feature TBD.
 
@@ -75,7 +118,9 @@ New data affordance: `Thread.isFlagged` (flag replaces the unread dot in the row
 - **New AppShell** (navy rail, 52px header, Reservations button, Copilot chip, "102 guest messages today") — later, at component level.
 - **Chain of thoughts** (the AI reasoning checklist in the frame) — was a visual conceptualization; the real treatment puts AI thinking in a sidebar. Separate design pass.
 - **Copilot** anything — not touched in this exercise.
-- **Filters panel / flag flow / assignment scoping** — Filters row is a visual placeholder; assignments will live in Filters.
+- **Filters panel / flag flow / assignment scoping** — v3 made the Filters **popover** real for the
+  Inbox/Archived/Blocked VIEW group (wired to `currentView`); the "Assigned to" / "Channel" rows are
+  still decorative placeholders. Flag flow + assignment scoping remain TBD.
 - **Broadcast** redesign — after the main surface is right.
 - **AI answers** tab removed 2026-07-20 — capability moved into Settings as Knowledge Base (per Miguel), tab is redundant on the messaging surface. Gone from the nav, the `MainNavTab` type, and the page.
 - AI-message thumbs/info feedback row — dropped to match the frame; revisit if it's missed.
@@ -102,6 +147,6 @@ values are NOT finalized — when they finalize, promote into `@canary-ui/compon
 
 - `lib/products/messaging/types.ts` — `Thread.isFlagged`
 - `lib/products/messaging/mock-data.ts` — thread `'2'` flagged (the Figma's flagged row)
-- `lib/products/messaging/store.ts` — `infoPanelStyle` (`push` default) + `setInfoPanelStyle`
-- `components/products/messaging/` — `MainNav`, `AppLayout` (SubNav dropped for Conversations; `SubNav.tsx` now unused), `ThreadList`, `ThreadListItem`, `ThreadView`, `MessageBubble` (flat blocks), `MessageFeed`, `DateSeparator`, `MessageComposer`, `Avatar` (rounded-8), `GuestInfoSidebar` (dual mechanic), `PrototypeVariantToggle` (new)
-- `app/(dashboard)/messages/page.tsx` — card-on-canvas composition; info panel + toggle lifted to page level
+- `lib/products/messaging/store.ts` — v2 added `infoPanelStyle`/`setInfoPanelStyle`; **v3 removed them** (floating panel is now the only mechanic)
+- `components/products/messaging/` — `MainNav`, `AppLayout` (SubNav dropped for Conversations; **v3: Filters button + popover on the search row, wired to `currentView`**), `ThreadList` (**v3: segmented control + in-card Filters row removed → just rows**), `ThreadListItem`, `ThreadView`, `MessageBubble` (flat blocks), `MessageFeed`, `DateSeparator`, `MessageComposer`, `Avatar` (rounded-8), `GuestInfoSidebar` (**v3: floating panel + scrim + guest carousel + stays expand**). `PrototypeVariantToggle` **deleted in v3**.
+- `app/(dashboard)/messages/page.tsx` — card-on-canvas composition; **v3: 35/65 flex-basis columns; floating info panel (no push resizing); `currentView`/`setCurrentView` passed to AppLayout for the Filters popover**
