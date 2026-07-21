@@ -15,12 +15,17 @@
  *    AND (when the guest has a checked-in stay) bed icon + current room, side by
  *    side.
  *  - INSET SUB-TABLE ("table IN the card", not table AS the card): a bordered
- *    (colorBlack6) rounded-[8px] container INSET within the card padding, one row
- *    per reservation, hairline dividers. Row = [dates (14px medium) + lifecycle
- *    chip + "RM {room}" inline BESIDE the dates, left-aligned flex] · [kebab ⋯] ·
- *    [expand chevron]. A differing guest name (Sarah Smith on the shared phone)
- *    renders as a second line under the dates. NO per-row GJ cells — the signal
- *    lives in the card banner now.
+ *    (colorBlack6) rounded-[8px] container INSET within the card padding, hairline
+ *    dividers. Row = [dates (14px medium) + lifecycle chip + "RM {room}" inline
+ *    BESIDE the dates, left-aligned flex] · [kebab ⋯] · [expand chevron]. A
+ *    differing guest name (Sarah Smith on the shared phone) renders as a second
+ *    line under the dates. NO per-row GJ cells — the signal lives in the card
+ *    banner now. COLLAPSED BY DEFAULT: only the CURRENT (checked-in) stay + the
+ *    SINGLE next upcoming stay show; every remaining stay (further-future + past)
+ *    hides behind a "View N more reservations" text link (colorBlueDark1, 13px) as
+ *    the sub-table's last row ("View fewer" collapses back). No current stay → the
+ *    single visible row is the next upcoming, else the most recent past. Drill-in
+ *    still covers ALL stays regardless of collapse state.
  *  - Kebab per row: staff-linked → "Unlink reservation" (wired to unlink flow);
  *    phone-matched (auto) → a DISABLED item whose subtitle carries the production
  *    rationale ("Can't unlink — phone number matches this conversation").
@@ -886,6 +891,24 @@ function GuestCardBanner({ failedCount, onClick }: { failedCount: number; onClic
 }
 
 /**
+ * Default-visible stays for a card's inset sub-table. The sub-table doesn't list
+ * every stay flat — by default it shows only (1) the CURRENT (checked-in) stay(s)
+ * and (2) the SINGLE next upcoming stay; every remaining stay (further-future +
+ * past) hides behind a "View N more reservations" link. When the guest has NO
+ * current stay, the single visible row is the next upcoming — or, if none is
+ * upcoming, the most recent past stay. `stays` arrives pre-sorted (current →
+ * upcoming soonest-first → past most-recent-first), so the slices stay in order.
+ */
+function defaultVisibleStays(stays: LinkedReservation[]): LinkedReservation[] {
+  const inHouse = stays.filter((lr) => deriveStayState(lr.reservation) === 'in-house');
+  const upcoming = stays.filter((lr) => deriveStayState(lr.reservation) === 'upcoming');
+  const past = stays.filter((lr) => deriveStayState(lr.reservation) === 'past');
+  if (inHouse.length > 0) return [...inHouse, ...upcoming.slice(0, 1)];
+  if (upcoming.length > 0) return upcoming.slice(0, 1);
+  return past.slice(0, 1);
+}
+
+/**
  * GuestCard — ONE anatomy for both the primary phone-grouped card and each
  * staff-linked card. Header (name + phone + current room), an inset sub-table of
  * stay rows, and a card-level GJ banner. Provenance is structural (primary = the
@@ -912,6 +935,19 @@ function GuestCard({
   const checkedInStay = stays.find((lr) => lr.reservation.status === 'checked-in');
   const headerRoom = checkedInStay?.reservation.room;
   const failedCount = stays.reduce((sum, lr) => sum + (getGjSummary(lr.reservation.id)?.failed ?? 0), 0);
+
+  // Collapse: default shows current + single-next-upcoming; the rest (further-
+  // future + past) hide behind a "View N more reservations" row. Drill-in still
+  // covers ALL stays regardless of this collapse state.
+  const [showAll, setShowAll] = useState(false);
+  const defaultVisible = defaultVisibleStays(stays);
+  const hiddenCount = stays.length - defaultVisible.length;
+  const rows = showAll ? stays : defaultVisible;
+  // Reset the collapse whenever the stay set changes (thread / pager switch).
+  const staysKey = stays.map((lr) => lr.reservation.id).join('|');
+  useEffect(() => {
+    setShowAll(false);
+  }, [staysKey]);
 
   return (
     <div
@@ -945,7 +981,7 @@ function GuestCard({
       <div className="px-4 pb-4">
         {/* INSET SUB-TABLE — a table IN the card */}
         <div className="rounded-[8px] overflow-hidden" style={{ border: `1px solid ${colors.colorBlack6}` }}>
-          {stays.map((lr, i) => (
+          {rows.map((lr, i) => (
             <StayRow
               key={lr.reservation.id}
               linkedReservation={lr}
@@ -956,6 +992,25 @@ function GuestCard({
               onUnlink={onUnlink}
             />
           ))}
+
+          {/* Collapse toggle — last row of the sub-table when stays are hidden. */}
+          {hiddenCount > 0 && (
+            <div style={{ borderTop: `1px solid ${colors.colorBlack6}` }}>
+              <button
+                onClick={() => setShowAll((v) => !v)}
+                className="w-full text-left px-3 py-2.5 transition-colors hover:bg-[#f7f8f9]"
+              >
+                <span
+                  className="font-['Roboto',sans-serif] font-medium text-[13px] leading-[18px]"
+                  style={{ color: colors.colorBlueDark1 }}
+                >
+                  {showAll
+                    ? 'View fewer'
+                    : `View ${hiddenCount} more reservation${hiddenCount > 1 ? 's' : ''}`}
+                </span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* CARD-LEVEL GJ BANNER */}

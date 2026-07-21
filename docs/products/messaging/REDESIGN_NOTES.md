@@ -280,12 +280,22 @@ Primary and secondary cards now share ONE component (`GuestCard`).
     by side.
   - **INSET SUB-TABLE — a "table IN the card", not "table AS the card".** A
     bordered (`colorBlack6`), `rounded-[8px]` container INSET within the card
-    padding; one row per reservation, hairline dividers. Row = a left-aligned flex
-    row (8px gaps) of **stay dates (14px medium) + lifecycle chip + "RM {room}"
-    inline BESIDE the dates**; right side = **per-row kebab ⋯ + expand chevron**. A
-    differing guest name (Sarah Smith on the shared phone) renders as a second line
-    under the dates. **Per-row GJ summary cells are DELETED** — future reservations
-    haven't sent anything; the signal lives in the card banner now.
+    padding; hairline dividers. Row = a left-aligned flex row (8px gaps) of **stay
+    dates (14px medium) + lifecycle chip + "RM {room}" inline BESIDE the dates**;
+    right side = **per-row kebab ⋯ + expand chevron**. A differing guest name
+    (Sarah Smith on the shared phone) renders as a second line under the dates.
+    **Per-row GJ summary cells are DELETED** — future reservations haven't sent
+    anything; the signal lives in the card banner now. **Collapsed by default
+    (Miguel corrected his own mock — 2026-07-21):** the sub-table does NOT list
+    all stays flat. It shows only **(1) the current (checked-in) stay + (2) the
+    single next upcoming stay**; every remaining stay (further-future + past) hides
+    behind a **"View N more reservations"** text link (`colorBlueDark1`, 13px) as
+    the sub-table's last row — clicking reveals them in place, **"View fewer"**
+    collapses back. If the guest has no current stay, the single visible row is the
+    next upcoming (or the most recent past if none is upcoming). The **guest-scoped
+    drill-in still covers ALL stays** regardless of collapse state. (E.g. thread
+    14's John Smith card: Jul (current) + Sep (next) visible; "View 2 more
+    reservations" hides Nov (Sarah) + Feb.)
   - **Per-row kebab.** Staff-linked rows → "Unlink reservation" (wired to the
     existing `onUnlinkReservation` flow). Phone-matched (auto) rows → the item
     renders **DISABLED** with the production rationale as its subtitle: *"Can't
