@@ -592,13 +592,14 @@ function ExpandedDetails({ reservation, guest }: { reservation: Reservation; gue
  * the disambiguating field breathes. Rows use px-3 (vs the header's px-4) to buy
  * back width — content is only ~390px inside the card.
  */
-const STAY_ROW_GRID = 'minmax(0, 1fr) 104px 78px 22px';
+const STAY_ROW_GRID = 'minmax(0, 1fr) 104px 132px 22px';
 
 /**
  * GjStatusCell — the compact, in-table variant of the GJ status line. Failures
  * are the loudest thing (red alert icon + "N failed"); otherwise a quiet gray
- * "✓ D" delivered count, with "· S queued" appended only when messages are still
- * scheduled. Truncates rather than wrapping so row height stays uniform.
+ * "✓ N sent" count, with "· N scheduled" appended only when messages are still
+ * pending. Copy spelled out (hotelier-readable — "✓ 1 · 3 queued" failed the
+ * designer's own read test). Truncates rather than wrapping.
  */
 function GjStatusCell({ reservationId }: { reservationId: string }) {
   const status = getGjSummary(reservationId);
@@ -619,8 +620,8 @@ function GjStatusCell({ reservationId }: { reservationId: string }) {
 
   return (
     <span className="block truncate font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack3 }}>
-      ✓ {status.delivered}
-      {status.scheduled > 0 ? ` · ${status.scheduled} queued` : ''}
+      ✓ {status.delivered} sent
+      {status.scheduled > 0 ? ` · ${status.scheduled} scheduled` : ''}
     </span>
   );
 }
