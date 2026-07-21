@@ -38,7 +38,7 @@ export function ThreadList({
         style={{ backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack6}` }}
       >
         {/* Rows */}
-        <div className="flex-1 overflow-y-auto flex flex-col gap-2" style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 8, paddingBottom: 16 }}>
+        <div className="flex-1 overflow-y-auto scrollbar-invisible flex flex-col gap-2" style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 8, paddingBottom: 16 }}>
           {threads.length === 0 ? (
             <div className="p-8 text-center font-['Roboto',sans-serif] text-[14px]" style={{ color: colors.colorBlack4 }}>
               No conversations
