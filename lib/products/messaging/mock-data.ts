@@ -65,7 +65,7 @@ export const gjMessages: Record<string, GjMessageEntry[]> = {
   'res-john-jul': [
     { title: 'Booking Confirmation', sentAt: 'Jun 20 · 2:14 PM', channels: [{ type: 'email', status: 'sent' }, { type: 'booking', status: 'sent' }] },
     { title: 'Pre-Arrival', sentAt: 'Jul 11 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
-    { title: 'Check-in', sentAt: 'Jul 13 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }, { type: 'whatsapp', status: 'failed', errorCode: '63016', errorNote: "WhatsApp couldn't deliver — the guest hasn't opted in or the 24-hour window closed." }] },
+    { title: 'Check-in', sentAt: 'Jul 13 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'failed', errorCode: '30006', errorNote: "This guest's number can't receive texts right now. Consider another way to contact them." }, { type: 'whatsapp', status: 'failed', errorCode: '63016', errorNote: "WhatsApp couldn't deliver this message — the guest hasn't opted in or the 24-hour window closed. Try SMS or email instead." }] },
     { title: 'Welcome to the Hotel', sentAt: 'Jul 13 · 3:30 PM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
     { title: 'Mid-Stay Check', scheduledFor: 'Jul 14 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
     { title: 'Check-out', scheduledFor: 'Jul 15 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },

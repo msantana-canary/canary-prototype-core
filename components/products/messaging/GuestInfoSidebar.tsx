@@ -499,6 +499,15 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
 /** Loud-red for failed anything; matches colorRed1 (#E40046). */
 const GJ_FAIL_RED = '#E40046';
 
+/** Human channel label for the error register's overline (production register). */
+const CHANNEL_LABEL: Record<'email' | 'sms' | 'whatsapp' | 'booking' | 'expedia', string> = {
+  email: 'Email',
+  sms: 'SMS',
+  whatsapp: 'WhatsApp',
+  booking: 'Booking.com',
+  expedia: 'Expedia',
+};
+
 /**
  * ChannelIcon — one delivery channel inside a GJ message row. email / sms /
  * whatsapp render as ~18px mdi glyphs; booking / expedia render as tiny rounded
@@ -589,31 +598,29 @@ function GjMessagesTable({ reservationId }: { reservationId: string }) {
             </div>
 
             {/* Error register — one block per failed channel. Mirrors production's
-                MessageErrorDetailsModal: the raw carrier code + a curated,
-                hotelier-readable line + a Learn-more link into the Twilio docs. */}
+                messaging failure copy: a small gray channel overline, then ONE red
+                sentence "Error {code}: {curated note}" where ONLY the carrier code
+                is underlined (the Twilio-docs link). No tint, no separate Learn-more. */}
             {m.channels
               .filter((c) => c.status === 'failed' && c.errorCode)
               .map((c, j) => (
-                <div
-                  key={`err-${j}`}
-                  className="mt-2 rounded-[6px] px-2.5 py-2"
-                  style={{ backgroundColor: 'rgba(228,0,70,0.06)' }}
-                >
+                <div key={`err-${j}`} className="mt-2">
                   <span
-                    className="text-[12px] leading-[16px]"
-                    style={{ color: colors.colorRed1, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}
+                    className="block font-['Roboto',sans-serif] text-[12px] leading-[16px]"
+                    style={{ color: colors.colorBlack3 }}
                   >
-                    Error {c.errorCode}
+                    {CHANNEL_LABEL[c.type]}
                   </span>
-                  <p className="font-['Roboto',sans-serif] text-[12px] leading-[17px] mt-0.5" style={{ color: colors.colorBlack2 }}>
-                    {c.errorNote}
-                  </p>
-                  <button
-                    className="font-['Roboto',sans-serif] text-[12px] leading-[17px] underline mt-1"
-                    style={{ color: colors.colorBlueDark1 }}
+                  <p
+                    className="font-['Roboto',sans-serif] text-[13px] leading-[18px] mt-0.5"
+                    style={{ color: colors.colorRed1 }}
                   >
-                    Learn more
-                  </button>
+                    Error{' '}
+                    <span role="link" tabIndex={0} className="underline cursor-pointer">
+                      {c.errorCode}
+                    </span>
+                    : {c.errorNote}
+                  </p>
                 </div>
               ))}
           </div>
@@ -808,10 +815,13 @@ function StayRow({
 
   return (
     <div style={isFirst ? undefined : { borderTop: `1px solid ${colors.colorBlack6}` }}>
-      {/* Row header (clickable) — flex, left-aligned, no fixed grid columns */}
-      <div className="flex items-start gap-2 px-3 py-3 cursor-pointer" onClick={onToggle}>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+      {/* Row header (clickable). The FIRST line (dates + chip + RM) shares one
+          vertically-centered row with the kebab + chevron controls; a differing
+          guest name drops to a second line BELOW, so the controls stay centered on
+          the first line rather than on the two-line block. */}
+      <div className="px-3 py-3 cursor-pointer" onClick={onToggle}>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
             <span className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[21px]" style={{ color: colors.colorBlack1 }}>
               {reservation.checkInDate && reservation.checkOutDate
                 ? formatCompactDateRange(reservation.checkInDate, reservation.checkOutDate)
@@ -827,20 +837,21 @@ function StayRow({
               </span>
             )}
           </div>
-          {nameDiffers && (
-            <span className="block truncate font-['Roboto',sans-serif] text-[12px] leading-[18px] mt-0.5" style={{ color: colors.colorBlack3 }}>
-              {guest.name}
-            </span>
-          )}
-        </div>
 
-        {/* Right side: kebab + chevron */}
-        <div className="flex items-center gap-0.5 shrink-0">
-          <StayRowKebab reservation={reservation} isAutoLinked={isAutoLinked} onUnlink={onUnlink} />
-          <div className="w-[28px] h-[28px] flex items-center justify-center">
-            <Icon path={isExpanded ? mdiChevronUp : mdiChevronDown} size={0.67} color={colors.colorBlack3} />
+          {/* Right side: kebab + chevron — centered on the first line */}
+          <div className="flex items-center gap-0.5 shrink-0">
+            <StayRowKebab reservation={reservation} isAutoLinked={isAutoLinked} onUnlink={onUnlink} />
+            <div className="w-[28px] h-[28px] flex items-center justify-center">
+              <Icon path={isExpanded ? mdiChevronUp : mdiChevronDown} size={0.67} color={colors.colorBlack3} />
+            </div>
           </div>
         </div>
+
+        {nameDiffers && (
+          <span className="block truncate font-['Roboto',sans-serif] text-[12px] leading-[18px] mt-0.5" style={{ color: colors.colorBlack3 }}>
+            {guest.name}
+          </span>
+        )}
       </div>
 
       {/* Expanded detail fields */}
