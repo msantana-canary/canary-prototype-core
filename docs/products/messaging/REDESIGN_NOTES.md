@@ -347,6 +347,48 @@ Primary and secondary cards now share ONE component (`GuestCard`).
 > full-height thread view) all render clean (tsc 0, 200 on /messages, no console
 > errors).
 
+## Sidebar v7 — "one fact, one home" + pager in the header (2026-07-21)
+
+A design pass to kill duplicated facts and reclaim the floating pager row. Two
+corrections to the `GuestCard` anatomy; the inset sub-table, stay-row centering,
+compact top-row mode, the GJ banner, and the drill-in register are all unchanged.
+
+- **One fact, one home.** The room number was surfacing three times (card header,
+  stay row, expanded detail). The rule now: **guest-scope facts live in the card
+  header, reservation-scope facts live in the stay row, and the expanded detail
+  shows ONLY facts that appear nowhere else.**
+  - **CARD HEADER** is now just **guest name + phone below it**. The bed-icon
+    current-room block is **removed** (and the `checkedInStay`/`headerRoom`
+    derivation with it). The room's only home is the stay row's **"RM {room}"**,
+    which is always visible for the current stay by default.
+  - **EXPANDED ROW DETAIL** is slimmed to the fields that live nowhere else:
+    **Email, Confirmation Code, Check-in Status, Check-out Status** (the two status
+    rows keep their open-in-new jump links). The **Phone** row (echoes the header),
+    the **Dates** row and the **Room** row (both echo the row header one line above)
+    are **removed**.
+  - Stay rows are unchanged.
+- **Pager moves into the card header.** The floating pager row above the card is
+  gone. The guest carousel control (**‹ 👥 N ›**, same disabled-at-ends arrow
+  behavior, same red-count-chip-on-hidden-failure rule) now renders **inside the
+  card header, right-aligned on the guest-name line** — name left (truncating,
+  `min-w-0`), pager right (`shrink-0`); phone stays on its own line below. The pager
+  **only renders when there is more than one guest card** — single-guest threads
+  show a plain header with no pager.
+  - Implementation: the pager is extracted into a small `GuestPager` component and
+    passed into `GuestCard` as a `pager` ReactNode header slot. The pager's state
+    (current index, total, prev/next, `hiddenFailure`) still lives in the parent;
+    the `slides` array now carries card DATA (name/phone/stays) rather than
+    pre-built nodes, and only the active card renders. The **hidden-failure signal
+    still considers all OTHER (non-visible) cards**, so a failed guest-journey
+    message off-screen still turns the count chip red.
+
+> Verified live on :3009 — thread 14 (John Smith, 4 guest cards): pager sits in the
+> header beside the name, arrows disable at the ends, phone below the name, no room
+> in the header, expanded rows show only email/confirmation/check-in/check-out.
+> Paging off John's card (which holds the failures) turns the count chip red. A
+> single-guest thread renders no pager, and a long guest name clamps with an
+> ellipsis (`white-space:nowrap; overflow:hidden; text-overflow:ellipsis`). tsc 0.
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |
@@ -403,5 +445,5 @@ values are NOT finalized — when they finalize, promote into `@canary-ui/compon
 - `lib/products/messaging/types.ts` — `Thread.isFlagged`
 - `lib/products/messaging/mock-data.ts` — thread `'2'` flagged (the Figma's flagged row)
 - `lib/products/messaging/store.ts` — v2 added `infoPanelStyle`/`setInfoPanelStyle`; **v3 removed them** (floating panel is now the only mechanic)
-- `components/products/messaging/` — `MainNav`, `AppLayout` (SubNav dropped for Conversations; **v3: Filters button + popover on the search row, wired to `currentView`**), `ThreadList` (**v3: segmented control + in-card Filters row removed → just rows**), `ThreadListItem`, `ThreadView`, `MessageBubble` (flat blocks), `MessageFeed`, `DateSeparator`, `MessageComposer`, `Avatar` (rounded-8), `GuestInfoSidebar` (**v3: floating panel + scrim + guest carousel + stays expand**). `PrototypeVariantToggle` **deleted in v3**.
+- `components/products/messaging/` — `MainNav`, `AppLayout` (SubNav dropped for Conversations; **v3: Filters button + popover on the search row, wired to `currentView`**), `ThreadList` (**v3: segmented control + in-card Filters row removed → just rows**), `ThreadListItem`, `ThreadView`, `MessageBubble` (flat blocks), `MessageFeed`, `DateSeparator`, `MessageComposer`, `Avatar` (rounded-8), `GuestInfoSidebar` (**v3: floating panel + scrim + guest carousel + stays expand**; **v7: pager into the card header + slimmed expanded detail per "one fact, one home"**). `PrototypeVariantToggle` **deleted in v3**.
 - `app/(dashboard)/messages/page.tsx` — card-on-canvas composition; **v3: 35/65 flex-basis columns; floating info panel (no push resizing); `currentView`/`setCurrentView` passed to AppLayout for the Filters popover**
