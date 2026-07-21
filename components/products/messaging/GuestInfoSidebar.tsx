@@ -10,10 +10,11 @@
  * (4) Call History. The standalone Contact Number card is GONE — the phone folds
  * into the card header.
  *
- * v6 — GUEST CARD ANATOMY (primary AND secondary share ONE structure, <GuestCard>):
- *  - CARD HEADER: guest name (15–16px medium); second line = phone icon + number
- *    AND (when the guest has a checked-in stay) bed icon + current room, side by
- *    side.
+ * v7 — GUEST CARD ANATOMY (primary AND secondary share ONE structure, <GuestCard>):
+ *  - CARD HEADER: guest name (15–16px medium, left, truncating) shares its line
+ *    with the multi-guest pager, right-aligned (see below); second line = phone
+ *    icon + number. Room is NOT in the header — "one fact, one home": the room's
+ *    only home is the stay row ("RM {room}"), always visible for the current stay.
  *  - INSET SUB-TABLE ("table IN the card", not table AS the card): a bordered
  *    (colorBlack6) rounded-[8px] container INSET within the card padding, hairline
  *    dividers. Row = [dates (14px medium) + lifecycle chip + "RM {room}" inline
@@ -30,8 +31,9 @@
  *    phone-matched (auto) → a DISABLED item whose subtitle carries the production
  *    rationale ("Can't unlink — phone number matches this conversation").
  *  - EXPANDED row detail: the row header stays (dates + chip + RM inline, flex
- *    left-aligned — no fixed grid columns); the detail fields (phone/email/dates/
- *    room/confirmation/check-in/out) render below it.
+ *    left-aligned — no fixed grid columns); below it render ONLY the fields that
+ *    live nowhere else — email, confirmation code, check-in status, check-out
+ *    status. Phone (card header), dates + room (row header) are NOT repeated here.
  *  - CARD-LEVEL GJ BANNER at the card bottom (replaces v5's per-stay banners): a
  *    full-width rounded-[8px] gray-tinted box, "Guest Scheduled Messages" + chevron.
  *    FAILURE variant when ANY of the card's reservations has failed messages: red
@@ -52,8 +54,10 @@
  *
  * Linked Reservations is a one-guest-per-slide pager: slide 0 = the primary
  * phone-grouped card, slides 1+ = each staff-linked guest. The pager ("‹ 👥 N ›",
- * the Check-in idiom) sits under the heading; when an OFF-SCREEN guest card has a
- * failed GJ message the pager's count chip goes RED (the hidden-failure signal).
+ * the Check-in idiom) now lives INSIDE the active card's header, right-aligned on
+ * the guest-name line (single-guest threads show no pager); when an OFF-SCREEN
+ * guest card has a failed GJ message the pager's count chip goes RED (the
+ * hidden-failure signal).
  */
 
 'use client';
@@ -67,8 +71,6 @@ import Icon from '@mdi/react';
 import {
   mdiPhoneOutline,
   mdiEmailOutline,
-  mdiCalendarBlank,
-  mdiBedOutline,
   mdiPound,
   mdiLogin,
   mdiLogout,
@@ -186,6 +188,70 @@ interface DrillTarget {
   stays: LinkedReservation[];
 }
 
+/**
+ * GuestPager — the multi-guest carousel control ("‹ 👥 N ›", Check-in's idiom),
+ * now living INSIDE the card header (right-aligned beside the guest name) instead
+ * of a floating row above the card. Arrows disable at the ends. When an OFF-SCREEN
+ * guest card has a failed GJ message the count chip goes RED (the hidden-failure
+ * signal) — `hiddenFailure` is computed by the parent across all NON-visible slides.
+ * The parent only renders this when there is more than one guest card.
+ */
+function GuestPager({
+  index,
+  total,
+  hiddenFailure,
+  onPrev,
+  onNext,
+}: {
+  index: number;
+  total: number;
+  hiddenFailure: boolean;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-1" style={{ height: 28 }}>
+      <button
+        onClick={onPrev}
+        disabled={index === 0}
+        aria-label="Previous guest"
+        className="w-[28px] h-[28px] flex items-center justify-center rounded-full transition-colors disabled:opacity-30 disabled:cursor-default enabled:hover:bg-[#f0f0f0]"
+      >
+        <Icon path={mdiChevronLeft} size={0.83} color={colors.colorBlack1} />
+      </button>
+
+      <span
+        className="inline-flex items-center gap-1 px-2 rounded-full"
+        style={{
+          height: 24,
+          backgroundColor: hiddenFailure ? 'rgba(228,0,70,0.08)' : colors.colorBlack7,
+        }}
+      >
+        <Icon
+          path={mdiAccountMultipleOutline}
+          size={0.6}
+          color={hiddenFailure ? colors.colorRed1 : colors.colorBlack2}
+        />
+        <span
+          className="font-['Roboto',sans-serif] font-medium text-[13px] leading-[18px]"
+          style={{ color: hiddenFailure ? colors.colorRed1 : colors.colorBlack2 }}
+        >
+          {total}
+        </span>
+      </span>
+
+      <button
+        onClick={onNext}
+        disabled={index === total - 1}
+        aria-label="Next guest"
+        className="w-[28px] h-[28px] flex items-center justify-center rounded-full transition-colors disabled:opacity-30 disabled:cursor-default enabled:hover:bg-[#f0f0f0]"
+      >
+        <Icon path={mdiChevronRight} size={0.83} color={colors.colorBlack1} />
+      </button>
+    </div>
+  );
+}
+
 interface GuestInfoSidebarProps {
   contactNumber: string;
   linkedReservations: LinkedReservation[];
@@ -235,40 +301,25 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
   // Pager slides: slide 0 = the primary phone-grouped card (all auto-linked
   // stays); slides 1+ = each staff-linked guest card. `hasFailure` lets a HIDDEN
   // slide's count chip render red so a failed GJ message stays loud off-screen.
-  const slides: { key: string; hasFailure: boolean; node: React.ReactNode }[] = [];
+  // Slides carry card DATA (not pre-built nodes) — only the active card renders,
+  // and it receives the pager as a header slot (see below).
+  const slides: { key: string; hasFailure: boolean; headerName: string; headerPhone: string; stays: LinkedReservation[] }[] = [];
   if (autoLinked.length > 0) {
-    const headerName = autoLinked[0]?.guest.name ?? '';
     slides.push({
       key: 'primary',
       hasFailure: cardFailed(autoLinked) > 0,
-      node: (
-        <GuestCard
-          headerName={headerName}
-          headerPhone={contactNumber}
-          stays={autoLinked}
-          expandedResId={expandedResId}
-          onToggle={toggleExpand}
-          onDrillIn={setDrillTarget}
-          onUnlink={onUnlinkReservation}
-        />
-      ),
+      headerName: autoLinked[0]?.guest.name ?? '',
+      headerPhone: contactNumber,
+      stays: autoLinked,
     });
   }
   manualLinked.forEach((lr) => {
     slides.push({
       key: lr.reservation.id,
       hasFailure: cardFailed([lr]) > 0,
-      node: (
-        <GuestCard
-          headerName={lr.guest.name}
-          headerPhone={lr.guest.phone || ''}
-          stays={[lr]}
-          expandedResId={expandedResId}
-          onToggle={toggleExpand}
-          onDrillIn={setDrillTarget}
-          onUnlink={onUnlinkReservation}
-        />
-      ),
+      headerName: lr.guest.name,
+      headerPhone: lr.guest.phone || '',
+      stays: [lr],
     });
   });
 
@@ -372,52 +423,32 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
                 No linked reservations
               </p>
             ) : (
+              /* Active guest card (one slide at a time). The pager now lives IN
+                 the card header (right of the name), rendered only when the thread
+                 has more than one guest. */
               <div>
-                {/* Guest pager — Check-in's multi-guest idiom ("‹ 👥 N ›"). */}
-                {slides.length > 1 && (
-                  <div className="flex items-center gap-1 mb-3" style={{ height: 28 }}>
-                    <button
-                      onClick={() => setActiveSlide(activeIndex - 1)}
-                      disabled={activeIndex === 0}
-                      aria-label="Previous guest"
-                      className="w-[28px] h-[28px] flex items-center justify-center rounded-full transition-colors disabled:opacity-30 disabled:cursor-default enabled:hover:bg-[#f0f0f0]"
-                    >
-                      <Icon path={mdiChevronLeft} size={0.83} color={colors.colorBlack1} />
-                    </button>
-
-                    <span
-                      className="inline-flex items-center gap-1 px-2 rounded-full"
-                      style={{
-                        height: 24,
-                        backgroundColor: hiddenFailure ? 'rgba(228,0,70,0.08)' : colors.colorBlack7,
-                      }}
-                    >
-                      <Icon
-                        path={mdiAccountMultipleOutline}
-                        size={0.6}
-                        color={hiddenFailure ? colors.colorRed1 : colors.colorBlack2}
-                      />
-                      <span
-                        className="font-['Roboto',sans-serif] font-medium text-[13px] leading-[18px]"
-                        style={{ color: hiddenFailure ? colors.colorRed1 : colors.colorBlack2 }}
-                      >
-                        {slides.length}
-                      </span>
-                    </span>
-
-                    <button
-                      onClick={() => setActiveSlide(activeIndex + 1)}
-                      disabled={activeIndex === slides.length - 1}
-                      aria-label="Next guest"
-                      className="w-[28px] h-[28px] flex items-center justify-center rounded-full transition-colors disabled:opacity-30 disabled:cursor-default enabled:hover:bg-[#f0f0f0]"
-                    >
-                      <Icon path={mdiChevronRight} size={0.83} color={colors.colorBlack1} />
-                    </button>
-                  </div>
+                {slides[activeIndex] && (
+                  <GuestCard
+                    headerName={slides[activeIndex].headerName}
+                    headerPhone={slides[activeIndex].headerPhone}
+                    stays={slides[activeIndex].stays}
+                    expandedResId={expandedResId}
+                    onToggle={toggleExpand}
+                    onDrillIn={setDrillTarget}
+                    onUnlink={onUnlinkReservation}
+                    pager={
+                      slides.length > 1 ? (
+                        <GuestPager
+                          index={activeIndex}
+                          total={slides.length}
+                          hiddenFailure={hiddenFailure}
+                          onPrev={() => setActiveSlide(activeIndex - 1)}
+                          onNext={() => setActiveSlide(activeIndex + 1)}
+                        />
+                      ) : null
+                    }
+                  />
                 )}
-
-                {/* Active guest card (one slide at a time) */}
-                <div>{slides[activeIndex]?.node}</div>
               </div>
             )}
           </div>
@@ -631,22 +662,16 @@ function GjMessagesTable({ reservationId }: { reservationId: string }) {
 }
 
 /**
- * ExpandedRowDetail — the settled detail fields (phone, email, dates, room,
- * confirmation, check-in/out status) for one reservation, rendered below the row
- * header when a stay row is expanded. No GJ table here anymore — GJ monitoring is
- * card-level (the banner + drill-in).
+ * ExpandedRowDetail — the reservation detail fields that live NOWHERE else, shown
+ * below the row header when a stay row is expanded. Per "one fact, one home", the
+ * echoes are gone: phone lives in the card header, dates + room live in the row
+ * header one line above. What remains is unique to the expanded detail — email,
+ * confirmation code, and the two check-in/out status rows (each with its
+ * open-in-new jump link). No GJ table here — GJ monitoring is card-level.
  */
-function ExpandedRowDetail({ reservation, phone, email }: { reservation: Reservation; phone?: string; email?: string }) {
+function ExpandedRowDetail({ reservation, email }: { reservation: Reservation; email?: string }) {
   return (
     <div className="pt-2 space-y-2.5">
-      {/* Phone */}
-      <div className="flex items-center gap-3">
-        <Icon path={mdiPhoneOutline} size={0.67} color={colors.colorBlack1} />
-        <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack1 }}>
-          {phone || 'No number assigned'}
-        </span>
-      </div>
-
       {/* Email */}
       <div className="flex items-center gap-3">
         <Icon path={mdiEmailOutline} size={0.67} color={colors.colorBlack1} />
@@ -654,26 +679,6 @@ function ExpandedRowDetail({ reservation, phone, email }: { reservation: Reserva
           {email || 'No email assigned'}
         </span>
       </div>
-
-      {/* Dates */}
-      {reservation.checkInDate && reservation.checkOutDate && (
-        <div className="flex items-center gap-3">
-          <Icon path={mdiCalendarBlank} size={0.67} color={colors.colorBlack1} />
-          <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack1 }}>
-            {formatCompactDateRange(reservation.checkInDate, reservation.checkOutDate)}
-          </span>
-        </div>
-      )}
-
-      {/* Room */}
-      {reservation.room && (
-        <div className="flex items-center gap-3">
-          <Icon path={mdiBedOutline} size={0.67} color={colors.colorBlack1} />
-          <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack1 }}>
-            {reservation.room}
-          </span>
-        </div>
-      )}
 
       {/* Confirmation Code */}
       {reservation.confirmationCode && (
@@ -857,7 +862,7 @@ function StayRow({
       {/* Expanded detail fields */}
       {isExpanded && (
         <div className="px-3 pb-3">
-          <ExpandedRowDetail reservation={reservation} phone={guest.phone} email={guest.email} />
+          <ExpandedRowDetail reservation={reservation} email={guest.email} />
         </div>
       )}
     </div>
@@ -921,9 +926,12 @@ function defaultVisibleStays(stays: LinkedReservation[]): LinkedReservation[] {
 
 /**
  * GuestCard — ONE anatomy for both the primary phone-grouped card and each
- * staff-linked card. Header (name + phone + current room), an inset sub-table of
- * stay rows, and a card-level GJ banner. Provenance is structural (primary = the
- * phone-matched group) + per-row kebab rules (auto rows hard-block unlink).
+ * staff-linked card. Header (name + the multi-guest pager right-aligned on the
+ * same line, then phone below — room is NOT here; its only home is the stay row),
+ * an inset sub-table of stay rows, and a card-level GJ banner. Provenance is
+ * structural (primary = the phone-matched group) + per-row kebab rules (auto rows
+ * hard-block unlink). `pager` is the parent's guest carousel control, injected
+ * into the header; it's null for single-guest threads (no pager rendered).
  */
 function GuestCard({
   headerName,
@@ -933,6 +941,7 @@ function GuestCard({
   onToggle,
   onDrillIn,
   onUnlink,
+  pager,
 }: {
   headerName: string;
   headerPhone: string;
@@ -941,10 +950,8 @@ function GuestCard({
   onToggle: (resId: string) => void;
   onDrillIn: (target: DrillTarget) => void;
   onUnlink?: (reservationId: string) => void;
+  pager?: React.ReactNode;
 }) {
-  // Header room = the current (checked-in) stay's room, when the guest has one.
-  const checkedInStay = stays.find((lr) => lr.reservation.status === 'checked-in');
-  const headerRoom = checkedInStay?.reservation.room;
   const failedCount = stays.reduce((sum, lr) => sum + (getGjSummary(lr.reservation.id)?.failed ?? 0), 0);
 
   // Collapse: default shows current + single-next-upcoming; the rest (further-
@@ -965,26 +972,21 @@ function GuestCard({
       className="rounded-[8px]"
       style={{ backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack6}` }}
     >
-      {/* Card header — name, then phone + current room side by side */}
+      {/* Card header — name (left, truncating) + the guest pager (right, when the
+          thread has more than one guest) share one line; phone drops below. Room
+          is intentionally absent — its only home is the stay row. */}
       <div className="px-4 pt-3 pb-2.5">
-        <span className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px] block truncate" style={{ color: colors.colorBlack1 }}>
-          {headerName}
-        </span>
-        <div className="flex items-center gap-4 mt-1 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <Icon path={mdiPhoneOutline} size={0.6} color={colors.colorBlack2} />
-            <span className="font-['Roboto',sans-serif] text-[14px] leading-[21px]" style={{ color: colors.colorBlack2 }}>
-              {headerPhone || 'No number'}
-            </span>
-          </div>
-          {headerRoom && (
-            <div className="flex items-center gap-1.5">
-              <Icon path={mdiBedOutline} size={0.6} color={colors.colorBlack2} />
-              <span className="font-['Roboto',sans-serif] text-[14px] leading-[21px]" style={{ color: colors.colorBlack2 }}>
-                {headerRoom}
-              </span>
-            </div>
-          )}
+        <div className="flex items-center gap-2">
+          <span className="flex-1 min-w-0 truncate font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px]" style={{ color: colors.colorBlack1 }}>
+            {headerName}
+          </span>
+          {pager && <div className="shrink-0">{pager}</div>}
+        </div>
+        <div className="flex items-center gap-1.5 mt-1">
+          <Icon path={mdiPhoneOutline} size={0.6} color={colors.colorBlack2} />
+          <span className="font-['Roboto',sans-serif] text-[14px] leading-[21px]" style={{ color: colors.colorBlack2 }}>
+            {headerPhone || 'No number'}
+          </span>
         </div>
       </div>
 
