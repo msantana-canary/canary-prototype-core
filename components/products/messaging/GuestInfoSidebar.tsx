@@ -35,7 +35,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { LinkedReservation } from '@/lib/products/messaging/types';
-import { gjMessageStatus } from '@/lib/products/messaging/mock-data';
+import { gjMessages, getGjSummary } from '@/lib/products/messaging/mock-data';
 import { Reservation } from '@/lib/core/types/reservation';
 import { Guest } from '@/lib/core/types/guest';
 import { CanaryTag, TagVariant, TagColor, TagSize } from '@canary-ui/components';
@@ -60,12 +60,28 @@ import {
   mdiDotsHorizontal,
   mdiAccountMultipleOutline,
   mdiAlertCircleOutline,
+  mdiMessageProcessingOutline,
+  mdiWhatsapp,
 } from '@mdi/js';
 
-/** Format date range: strip year from check-in date, keep on check-out. "Jul. 15 – Jul. 18, 2026" */
-function formatDateRange(checkIn: string, checkOut: string): string {
-  const stripped = checkIn.replace(/,?\s*\d{4}$/, '');
-  return `${stripped} - ${checkOut}`;
+/**
+ * Compact stay date range — collapses the month/year so the range never
+ * truncates at any panel width. Same-month stays print the month once
+ * ("Jul. 13 - 15, 2026"); cross-month, same-year print both months with a
+ * single trailing year ("Sep. 28 - Oct. 2, 2026"); cross-year keeps both years.
+ * Inputs are canonical strings like "Jul. 13, 2026".
+ */
+function formatCompactDateRange(checkIn?: string, checkOut?: string): string {
+  if (!checkIn || !checkOut) return checkIn || checkOut || '';
+  const re = /^([A-Za-z]+)\.?\s+(\d+),?\s*(\d{4})$/;
+  const a = checkIn.match(re);
+  const b = checkOut.match(re);
+  if (!a || !b) return `${checkIn} - ${checkOut}`;
+  const [, mA, dA, yA] = a;
+  const [, mB, dB, yB] = b;
+  if (mA === mB && yA === yB) return `${mA}. ${dA} - ${dB}, ${yB}`;
+  if (yA === yB) return `${mA}. ${dA} - ${mB}. ${dB}, ${yB}`;
+  return `${mA}. ${dA}, ${yA} - ${mB}. ${dB}, ${yB}`;
 }
 
 /** Parse a canonical date string ("Jul. 13, 2026") into a comparable timestamp. */
@@ -129,7 +145,14 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
   const autoLinked = sortStays(linkedReservations.filter((lr) => lr.isAutoLinked));
   const manualLinked = linkedReservations.filter((lr) => !lr.isAutoLinked);
 
-  const hasFailure = (resId: string) => (gjMessageStatus[resId]?.failed ?? 0) > 0;
+  const hasFailure = (resId: string) => (getGjSummary(resId)?.failed ?? 0) > 0;
+
+  // v4 default: the CURRENT (in-house) auto-linked stay opens expanded — its full
+  // detail block + nested GJ table is the thing staff want to see first.
+  const defaultExpandedResId =
+    autoLinked.find((lr) => deriveStayState(lr.reservation) === 'in-house')?.reservation.id ??
+    autoLinked[0]?.reservation.id ??
+    null;
 
   // Carousel slides: slide 0 = the primary phone-grouped card (all auto-linked
   // stays); slides 1+ = each staff-linked guest card. `hasFailure` lets a HIDDEN
@@ -169,7 +192,8 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
   const slideKey = slides.map((s) => s.key).join('|');
   useEffect(() => {
     setActiveSlide(0);
-  }, [slideKey]);
+    setExpandedResId(defaultExpandedResId);
+  }, [slideKey, defaultExpandedResId]);
   const activeIndex = Math.min(activeSlide, Math.max(0, slides.length - 1));
 
   return (
@@ -198,7 +222,7 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
           top: 72,
           right: 16,
           bottom: 16,
-          width: 400,
+          width: 600,
           backgroundColor: colors.colorWhite,
           border: `1px solid ${colors.colorBlack6}`,
           borderRadius: 12,
@@ -275,7 +299,7 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
                             onClick={() => setActiveSlide(i)}
                             aria-label={`Go to reservation ${i + 1}`}
                             className="rounded-full transition-colors"
-                            style={{ width: 8, height: 8, backgroundColor: dotColor }}
+                            style={{ width: 6, height: 6, backgroundColor: dotColor }}
                           />
                         );
                       })}
@@ -361,7 +385,7 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
  * quiet gray delivered/scheduled line.
  */
 function GjStatusLine({ reservationId }: { reservationId: string }) {
-  const status = gjMessageStatus[reservationId];
+  const status = getGjSummary(reservationId);
   if (!status) return null;
 
   if (status.failed > 0) {
@@ -384,9 +408,101 @@ function GjStatusLine({ reservationId }: { reservationId: string }) {
   );
 }
 
+/** Loud-red for failed anything; matches colorRed1 (#E40046). */
+const GJ_FAIL_RED = '#E40046';
+
+/**
+ * ChannelIcon — one delivery channel inside a GJ message row. email / sms /
+ * whatsapp render as ~18px mdi glyphs; booking / expedia render as tiny rounded
+ * OTA letter chips ("B" white-on-navy, "E" black-on-amber). Status drives color:
+ * failed = red, scheduled = 40% opacity (a future send), sent = colorBlack2.
+ */
+function ChannelIcon({ type, status }: { type: 'email' | 'sms' | 'whatsapp' | 'booking' | 'expedia'; status: 'sent' | 'failed' | 'scheduled' }) {
+  const failed = status === 'failed';
+  const opacity = status === 'scheduled' ? 0.4 : 1;
+
+  if (type === 'booking' || type === 'expedia') {
+    const isBooking = type === 'booking';
+    return (
+      <span
+        className="flex items-center justify-center font-['Roboto',sans-serif] font-semibold shrink-0"
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: 4,
+          fontSize: 11,
+          lineHeight: '18px',
+          opacity,
+          backgroundColor: failed ? GJ_FAIL_RED : isBooking ? '#1a3c8b' : '#ffd43b',
+          color: failed ? '#ffffff' : isBooking ? '#ffffff' : '#000000',
+        }}
+      >
+        {isBooking ? 'B' : 'E'}
+      </span>
+    );
+  }
+
+  const path = type === 'email' ? mdiEmailOutline : type === 'sms' ? mdiMessageProcessingOutline : mdiWhatsapp;
+  return (
+    <span className="flex items-center justify-center shrink-0" style={{ width: 18, height: 18, opacity }}>
+      <Icon path={path} size={0.72} color={failed ? GJ_FAIL_RED : colors.colorBlack2} />
+    </span>
+  );
+}
+
+/**
+ * GjMessagesTable — the "table in a table": the reservation's guest-journey
+ * message log, rendered INSIDE the detail block. A rounded-8, colorBlack6-bordered
+ * container of hairline-divided rows. Each row = one GJ message: title (left) +
+ * right-aligned timestamp caption ("Sent Jul 11 · 9:00 AM" for sent, bare time for
+ * scheduled), with a row of channel icons beneath. Any failed channel turns that
+ * row's caption red + adds an alert icon — failures stay the loudest thing.
+ */
+function GjMessagesTable({ reservationId }: { reservationId: string }) {
+  const msgs = gjMessages[reservationId];
+  if (!msgs || msgs.length === 0) return null;
+
+  return (
+    <div className="mt-3 rounded-[8px] overflow-hidden" style={{ border: `1px solid ${colors.colorBlack6}` }}>
+      {msgs.map((m, i) => {
+        const failed = m.channels.some((c) => c.status === 'failed');
+        const timestamp = m.sentAt ? `Sent ${m.sentAt}` : m.scheduledFor ?? '';
+        return (
+          <div
+            key={`${m.title}-${i}`}
+            className="px-3 py-2.5"
+            style={i === 0 ? undefined : { borderTop: `1px solid ${colors.colorBlack6}` }}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <span className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[21px] min-w-0 truncate" style={{ color: colors.colorBlack1 }}>
+                {m.title}
+              </span>
+              <span className="flex items-center gap-1 shrink-0">
+                {failed && <Icon path={mdiAlertCircleOutline} size={0.5} color={GJ_FAIL_RED} />}
+                <span
+                  className="font-['Roboto',sans-serif] text-[12px] leading-[18px] whitespace-nowrap"
+                  style={{ color: failed ? GJ_FAIL_RED : colors.colorBlack3 }}
+                >
+                  {timestamp}
+                </span>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 mt-1.5">
+              {m.channels.map((c, j) => (
+                <ChannelIcon key={`${c.type}-${j}`} type={c.type} status={c.status} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /**
  * ExpandedDetails — the settled detail fields (email, confirmation, check-in/out
- * status, etc.). Reused verbatim by both primary stay rows and secondary cards.
+ * status, etc.) followed by the reservation's nested GJ messages table. Reused
+ * verbatim by both primary stay rows and secondary cards.
  */
 function ExpandedDetails({ reservation, guest }: { reservation: Reservation; guest: Guest }) {
   return (
@@ -412,7 +528,7 @@ function ExpandedDetails({ reservation, guest }: { reservation: Reservation; gue
         <div className="flex items-center gap-3">
           <Icon path={mdiCalendarBlank} size={0.67} color={colors.colorBlack1} />
           <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack1 }}>
-            {formatDateRange(reservation.checkInDate, reservation.checkOutDate)}
+            {formatCompactDateRange(reservation.checkInDate, reservation.checkOutDate)}
           </span>
         </div>
       )}
@@ -462,6 +578,9 @@ function ExpandedDetails({ reservation, guest }: { reservation: Reservation; gue
           </button>
         )}
       </div>
+
+      {/* Nested guest-journey messages table (the "table in a table") */}
+      <GjMessagesTable reservationId={reservation.id} />
     </div>
   );
 }
@@ -482,7 +601,7 @@ const STAY_ROW_GRID = 'minmax(0, 1fr) 104px 78px 22px';
  * scheduled. Truncates rather than wrapping so row height stays uniform.
  */
 function GjStatusCell({ reservationId }: { reservationId: string }) {
-  const status = gjMessageStatus[reservationId];
+  const status = getGjSummary(reservationId);
   if (!status) return <span />;
 
   if (status.failed > 0) {
@@ -509,7 +628,16 @@ function GjStatusCell({ reservationId }: { reservationId: string }) {
 /**
  * PrimaryCard — one card holding ALL auto-linked stays. The header carries the
  * current guest name, the green AUTO-LINKED provenance tag, and the thread phone
- * (the card's anchor). Each stay is a chevron-expandable row; no unlink (facts).
+ * (the card's anchor).
+ *
+ * v4 disclosure model — "current open, next collapsed, link for the rest":
+ *  - stays[0] (the CURRENT in-house stay, pre-sorted first) is expanded by default
+ *    via the shared `expandedResId` — a full detail block + nested GJ table.
+ *  - stays[1] (the NEXT reservation) is a COLLAPSED row; expanding shows the same
+ *    detail-block anatomy.
+ *  - everything else (further-future + past) hides behind a "View N more
+ *    reservations" text link that reveals them as collapsed rows.
+ * All rows share the same anatomy — only their default open/hidden state differs.
  */
 function PrimaryCard({
   contactNumber,
@@ -525,12 +653,11 @@ function PrimaryCard({
   // Header name = the most-current stay's guest (stays are pre-sorted).
   const headerName = stays[0]?.guest.name ?? '';
 
-  // Default view = current + upcoming only; PAST stays collapse behind a
-  // "Show N more stays" toggle (stays are pre-sorted in-house → upcoming → past).
-  const [showPast, setShowPast] = useState(false);
-  const currentUpcoming = stays.filter((lr) => deriveStayState(lr.reservation) !== 'past');
-  const pastStays = stays.filter((lr) => deriveStayState(lr.reservation) === 'past');
-  const visibleStays = showPast ? stays : currentUpcoming;
+  // current + next always visible; the rest hide behind the "View N more" link.
+  const alwaysVisible = stays.slice(0, 2);
+  const rest = stays.slice(2);
+  const [showRest, setShowRest] = useState(false);
+  const visibleStays = showRest ? stays : alwaysVisible;
 
   return (
     <div
@@ -561,7 +688,7 @@ function PrimaryCard({
         </div>
       </div>
 
-      {/* Stay mini-table — aligned columns, hairline dividers between rows */}
+      {/* Stays — current (open) + next (collapsed) + revealed rest */}
       <div>
         {visibleStays.map((lr, i) => (
           <PrimaryStayRow
@@ -575,17 +702,17 @@ function PrimaryCard({
         ))}
       </div>
 
-      {/* Expand/collapse the PAST stays in place */}
-      {pastStays.length > 0 && (
+      {/* Reveal / hide the remaining reservations in place */}
+      {rest.length > 0 && (
         <div className="px-3 py-2.5" style={{ borderTop: `1px solid ${colors.colorBlack6}` }}>
           <button
-            onClick={() => setShowPast((v) => !v)}
-            className="font-['Roboto',sans-serif] font-medium text-[12px] leading-[18px] cursor-pointer hover:underline"
+            onClick={() => setShowRest((v) => !v)}
+            className="font-['Roboto',sans-serif] font-medium text-[13px] leading-[18px] cursor-pointer hover:underline"
             style={{ color: colors.colorBlueDark1 }}
           >
-            {showPast
-              ? 'Show fewer'
-              : `Show ${pastStays.length} more stay${pastStays.length > 1 ? 's' : ''}`}
+            {showRest
+              ? 'View fewer'
+              : `View ${rest.length} more reservation${rest.length > 1 ? 's' : ''}`}
           </button>
         </div>
       )}
@@ -641,7 +768,7 @@ function PrimaryStayRow({
         <div className="min-w-0">
           <span className="block truncate font-['Roboto',sans-serif] font-medium text-[14px] leading-[21px]" style={{ color: colors.colorBlack1 }}>
             {reservation.checkInDate && reservation.checkOutDate
-              ? formatDateRange(reservation.checkInDate, reservation.checkOutDate)
+              ? formatCompactDateRange(reservation.checkInDate, reservation.checkOutDate)
               : 'No dates'}
           </span>
           {nameDiffers && (
@@ -771,7 +898,7 @@ function SecondaryCard({
                   <div className="flex items-center gap-1">
                     <Icon path={mdiCalendarBlank} size={0.5} color={colors.colorBlack3} />
                     <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack3 }}>
-                      {formatDateRange(reservation.checkInDate, reservation.checkOutDate)}
+                      {formatCompactDateRange(reservation.checkInDate, reservation.checkOutDate)}
                     </span>
                   </div>
                 )
