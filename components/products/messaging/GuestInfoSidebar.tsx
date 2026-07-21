@@ -10,14 +10,23 @@
  * (4) Call History. The standalone Contact Number card is GONE — the phone folds
  * into the primary card as its anchor.
  *
+ * State-vocabulary alignment (2026-07-21): ONE state family → ONE visual channel
+ * → ONE vocabulary. Provenance is now STRUCTURAL (the primary card IS the
+ * phone-matched group) + a section ⓘ tooltip — the green AUTO-LINKED badge is
+ * retired to match production's post-April treatment. Lifecycle is PMS-vocabulary
+ * CHIPS (RESERVED / CHECKED-IN / CHECKED-OUT) derived from reservation.status;
+ * the invented IN-HOUSE / UPCOMING / PAST text labels are gone; cancelled &
+ * no-show reservations are hidden from the panel entirely.
+ *
  * Linked Reservations is CARDS, not a table:
  *  - PRIMARY CARD (always first, one) = all auto-linked entries (every stay whose
- *    guest phone matches the thread phone). Header: current guest name, green
- *    AUTO-LINKED outline tag, thread phone. Body: one stay row per auto-linked
- *    reservation (sorted in-house → upcoming → past), each with a GJ message
- *    status line and a chevron to expand the detail fields. No unlink (facts).
+ *    guest phone matches the thread phone). Header: current guest name + thread
+ *    phone (provenance is structural — this card is the phone-matched group). Body:
+ *    one stay row per auto-linked reservation (sorted current → upcoming → past),
+ *    each with a lifecycle chip + room, a GJ message status line, and a chevron to
+ *    expand the detail fields. No unlink (facts).
  *  - SECONDARY CARDS (0+) = each manually-linked entry, with "Linked by staff"
- *    caption + a kebab "Unlink reservation".
+ *    caption (the assertion-side provenance signal) + a kebab "Unlink reservation".
  *
  * Panel mechanic v3 — FLOATING PANEL (replaces push/drawer):
  *  - A fixed 400px white card inset from the window edges (top 72 / right 16 /
@@ -38,7 +47,6 @@ import { LinkedReservation } from '@/lib/products/messaging/types';
 import { gjMessages, getGjSummary } from '@/lib/products/messaging/mock-data';
 import { Reservation } from '@/lib/core/types/reservation';
 import { Guest } from '@/lib/core/types/guest';
-import { CanaryTag, TagVariant, TagColor, TagSize } from '@canary-ui/components';
 import { colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import {
@@ -60,6 +68,7 @@ import {
   mdiDotsHorizontal,
   mdiAccountMultipleOutline,
   mdiAlertCircleOutline,
+  mdiInformationOutline,
   mdiMessageProcessingOutline,
   mdiWhatsapp,
 } from '@mdi/js';
@@ -94,9 +103,10 @@ function parseResDate(s?: string): number {
 type StayState = 'in-house' | 'upcoming' | 'past';
 
 /**
- * Derive the stay state from reservation status (+ dates as a fallback).
- * Status is primary: checked-in → in-house. This keeps the demo's current stay
- * anchored regardless of the ambiguous prototype "today".
+ * Derive the TEMPORAL stay state from reservation status — used ONLY for sort
+ * order + the current/upcoming/past grouping (current first, then future, then
+ * past). This is not a display label; lifecycle is shown via <LifecycleChip>
+ * (PMS vocabulary) instead. Status is primary: checked-in → current (in-house).
  */
 function deriveStayState(res: Reservation): StayState {
   if (res.status === 'checked-in') return 'in-house';
@@ -105,7 +115,40 @@ function deriveStayState(res: Reservation): StayState {
 }
 
 const STATE_ORDER: Record<StayState, number> = { 'in-house': 0, upcoming: 1, past: 2 };
-const STATE_LABEL: Record<StayState, string> = { 'in-house': 'IN-HOUSE', upcoming: 'UPCOMING', past: 'PAST' };
+
+/**
+ * PMS lifecycle vocabulary chip — the ONE visual channel for the lifecycle state
+ * family. Maps reservation.status to production's vocabulary + chip register
+ * (10px uppercase). Our prototype's 'upcoming' is production's "reserved".
+ * cancelled / no-show never reach here (filtered out of the panel entirely).
+ */
+const LIFECYCLE_CHIP: Record<string, { label: string; bg: string; color: string; border: string }> = {
+  'upcoming': { label: 'RESERVED', bg: colors.colorBlueDark5, color: colors.colorBlueDark1, border: colors.colorBlueDark3 },
+  'checked-in': { label: 'CHECKED-IN', bg: 'rgba(0,128,64,0.1)', color: colors.colorLightGreen1, border: 'transparent' },
+  'checked-out': { label: 'CHECKED-OUT', bg: colors.colorBlack7, color: colors.colorBlack3, border: 'transparent' },
+};
+
+function LifecycleChip({ status }: { status: Reservation['status'] }) {
+  const cfg = LIFECYCLE_CHIP[status];
+  if (!cfg) return null;
+  return (
+    <span
+      className="inline-flex items-center font-['Roboto',sans-serif] font-medium uppercase whitespace-nowrap shrink-0"
+      style={{
+        fontSize: 10,
+        lineHeight: '14px',
+        letterSpacing: '0.4px',
+        padding: '1px 6px',
+        borderRadius: 4,
+        backgroundColor: cfg.bg,
+        color: cfg.color,
+        border: `1px solid ${cfg.border}`,
+      }}
+    >
+      {cfg.label}
+    </span>
+  );
+}
 
 /**
  * Sort stays: in-house/current first, then upcoming (soonest first), then past
@@ -141,9 +184,15 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
     setExpandedResId((prev) => (prev === resId ? null : resId));
   };
 
+  // Hide cancelled / no-show reservations from the panel entirely (matches
+  // production's April fix) — the lifecycle vocabulary only covers live stays.
+  const visibleLinked = linkedReservations.filter(
+    (lr) => lr.reservation.status !== 'cancelled' && lr.reservation.status !== 'no-show'
+  );
+
   // Split by the auto-link FACT (never by person identity).
-  const autoLinked = sortStays(linkedReservations.filter((lr) => lr.isAutoLinked));
-  const manualLinked = linkedReservations.filter((lr) => !lr.isAutoLinked);
+  const autoLinked = sortStays(visibleLinked.filter((lr) => lr.isAutoLinked));
+  const manualLinked = visibleLinked.filter((lr) => !lr.isAutoLinked);
 
   const hasFailure = (resId: string) => (getGjSummary(resId)?.failed ?? 0) > 0;
 
@@ -247,9 +296,19 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
           {/* Linked Reservations Section (top — the star) */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px]" style={{ color: colors.colorBlack1 }}>
-                Linked Reservations
-              </h3>
+              <div className="flex items-center gap-1.5">
+                <h3 className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px]" style={{ color: colors.colorBlack1 }}>
+                  Linked Reservations
+                </h3>
+                {/* Provenance is now structural + this tooltip — the AUTO-LINKED
+                    badge is retired (production's post-April treatment). */}
+                <span
+                  className="flex items-center cursor-help"
+                  title="Reservations link automatically when the guest's phone number in your PMS matches this conversation. If it's missing, check the phone number in your PMS, or search & link a reservation manually here."
+                >
+                  <Icon path={mdiInformationOutline} size={0.67} color={colors.colorBlack3} />
+                </span>
+              </div>
               <div className="flex gap-1">
                 <button className="w-[30px] h-[30px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors">
                   <Icon path={mdiRefresh} size={0.67} color={colors.colorBlack1} />
@@ -263,7 +322,7 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
               </div>
             </div>
 
-            {linkedReservations.length === 0 ? (
+            {visibleLinked.length === 0 ? (
               <p className="font-['Roboto',sans-serif] text-[14px] leading-[21px] text-center py-2" style={{ color: colors.colorBlack3 }}>
                 No linked reservations
               </p>
@@ -587,12 +646,13 @@ function ExpandedDetails({ reservation, guest }: { reservation: Reservation; gue
 
 /**
  * Column template for the primary card's stay mini-table. Fixed widths on the
- * right three columns (state / GJ / chevron) guarantee they line up across every
- * row even though each row is its own grid; dates take the flexible remainder so
- * the disambiguating field breathes. Rows use px-3 (vs the header's px-4) to buy
- * back width — content is only ~390px inside the card.
+ * right three columns (lifecycle chip + room / GJ / chevron) guarantee they line
+ * up across every row even though each row is its own grid; dates take the
+ * flexible remainder so the disambiguating field breathes. Widened at 600px so
+ * the chip ("CHECKED-IN") + room ("RM 504") + GJ status ("✓ 1 sent · 3
+ * scheduled") all fit without truncation. Rows use px-3 (vs the header's px-4).
  */
-const STAY_ROW_GRID = 'minmax(0, 1fr) 104px 132px 22px';
+const STAY_ROW_GRID = 'minmax(0, 1fr) 140px 148px 22px';
 
 /**
  * GjStatusCell — the compact, in-table variant of the GJ status line. Failures
@@ -628,8 +688,9 @@ function GjStatusCell({ reservationId }: { reservationId: string }) {
 
 /**
  * PrimaryCard — one card holding ALL auto-linked stays. The header carries the
- * current guest name, the green AUTO-LINKED provenance tag, and the thread phone
- * (the card's anchor).
+ * current guest name and the thread phone (the card's anchor). Provenance is
+ * STRUCTURAL — this card IS the phone-matched group — so the AUTO-LINKED badge is
+ * retired; the "how did these link?" explanation lives in the section ⓘ tooltip.
  *
  * v4 disclosure model — "current open, next collapsed, link for the rest":
  *  - stays[0] (the CURRENT in-house stay, pre-sorted first) is expanded by default
@@ -654,30 +715,26 @@ function PrimaryCard({
   // Header name = the most-current stay's guest (stays are pre-sorted).
   const headerName = stays[0]?.guest.name ?? '';
 
-  // current + next always visible; the rest hide behind the "View N more" link.
-  const alwaysVisible = stays.slice(0, 2);
-  const rest = stays.slice(2);
+  // Default state grouping is re-derived from reservation.status: current
+  // (checked-in) + upcoming (reserved) stays stay visible; PAST (checked-out)
+  // stays hide behind the "View N more reservations" link. Stays are pre-sorted
+  // (current → upcoming → past), so the visible set is a contiguous prefix.
+  const alwaysVisible = stays.filter((lr) => lr.reservation.status !== 'checked-out');
+  const rest = stays.filter((lr) => lr.reservation.status === 'checked-out');
   const [showRest, setShowRest] = useState(false);
-  const visibleStays = showRest ? stays : alwaysVisible;
+  const visibleStays = showRest ? [...alwaysVisible, ...rest] : alwaysVisible;
 
   return (
     <div
       className="rounded-[8px] overflow-hidden"
       style={{ backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack6}` }}
     >
-      {/* Card header — name + AUTO-LINKED tag, then the anchor phone */}
+      {/* Card header — guest name, then the anchor phone. Provenance is
+          structural (this card is the phone-matched group), so no badge. */}
       <div className="px-4 pt-3 pb-2.5" style={{ borderBottom: `1px solid ${colors.colorBlack6}` }}>
         <div className="flex items-center gap-2 flex-nowrap overflow-hidden">
           <span className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px] truncate shrink" style={{ color: colors.colorBlack1 }}>
             {headerName}
-          </span>
-          <span className="shrink-0">
-            <CanaryTag
-              label="AUTO-LINKED"
-              variant={TagVariant.OUTLINE}
-              color={TagColor.SUCCESS}
-              size={TagSize.COMPACT}
-            />
           </span>
         </div>
         {/* Thread phone — the card's anchor, displayed prominently */}
@@ -725,16 +782,17 @@ function PrimaryCard({
  * PrimaryStayRow — one stay row of the primary card's mini-table. The row is an
  * aligned grid: (a) STAY DATES (the disambiguator, 14px Medium) with the guest
  * name stacked beneath ONLY when it differs from the header (shared-phone rule —
- * never collapse differing names); (c) state (IN-HOUSE / UPCOMING / PAST, with
- * "· RM 504" appended when in-house); (d) a compact GJ status cell; (e) the
- * expand chevron. A hairline (colorBlack6) top border divides it from the row
- * above. The full-width detail section still expands below the row.
+ * never collapse differing names); (c) a PMS lifecycle CHIP (RESERVED /
+ * CHECKED-IN / CHECKED-OUT) with "RM 504" as its own small text beside it when
+ * checked-in; (d) a compact GJ status cell; (e) the expand chevron. A hairline
+ * (colorBlack6) top border divides it from the row above. The full-width detail
+ * section still expands below the row.
  *
  * Note: the never-collapse name (spec column b) rides in column (a) beneath the
  * dates rather than in a permanent middle column — a dedicated name column would
  * steal fixed width from every row for a field only shared-phone rows use, which
  * would squeeze the dates/GJ columns the reviewer wanted to let breathe. The
- * right-hand columns (state / GJ / chevron) stay perfectly aligned regardless.
+ * right-hand columns (chip+room / GJ / chevron) stay perfectly aligned regardless.
  */
 function PrimaryStayRow({
   linkedReservation,
@@ -750,12 +808,8 @@ function PrimaryStayRow({
   onToggle: () => void;
 }) {
   const { reservation, guest } = linkedReservation;
-  const state = deriveStayState(reservation);
-  const isInHouse = state === 'in-house';
+  const isCheckedIn = reservation.status === 'checked-in';
   const nameDiffers = guest.name !== headerName;
-
-  const stateText =
-    isInHouse && reservation.room ? `${STATE_LABEL[state]} · RM ${reservation.room}` : STATE_LABEL[state];
 
   return (
     <div style={isFirst ? undefined : { borderTop: `1px solid ${colors.colorBlack6}` }}>
@@ -779,14 +833,17 @@ function PrimaryStayRow({
           )}
         </div>
 
-        {/* (c) State (+ room when in-house) */}
-        <div className="min-w-0 pt-[3px]">
-          <span
-            className="block truncate font-['Roboto',sans-serif] font-medium uppercase"
-            style={{ fontSize: 10, lineHeight: '14px', letterSpacing: '0.4px', color: colors.colorBlack3 }}
-          >
-            {stateText}
-          </span>
+        {/* (c) Lifecycle chip (+ room as its own text when checked-in) */}
+        <div className="flex items-center gap-1.5 min-w-0 pt-[2px]">
+          <LifecycleChip status={reservation.status} />
+          {isCheckedIn && reservation.room && (
+            <span
+              className="font-['Roboto',sans-serif] text-[12px] leading-[18px] whitespace-nowrap"
+              style={{ color: colors.colorBlack3 }}
+            >
+              RM {reservation.room}
+            </span>
+          )}
         </div>
 
         {/* (d) Compact GJ status */}
@@ -827,8 +884,7 @@ function SecondaryCard({
   onUnlink?: (reservationId: string) => void;
 }) {
   const { reservation, guest } = linkedReservation;
-  const state = deriveStayState(reservation);
-  const isInHouse = state === 'in-house';
+  const isInHouse = reservation.status === 'checked-in';
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -864,11 +920,12 @@ function SecondaryCard({
       {/* Header (clickable to expand) */}
       <div className="flex items-start justify-between px-4 py-3 cursor-pointer" onClick={onToggle}>
         <div className="flex-1 min-w-0">
-          {/* Guest name */}
+          {/* Guest name + lifecycle chip (same PMS vocabulary as primary rows) */}
           <div className="flex items-center gap-2 overflow-hidden">
             <span className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[21px] truncate" style={{ color: colors.colorBlack1 }}>
               {guest.name}
             </span>
+            <LifecycleChip status={reservation.status} />
           </div>
 
           {/* "Linked by staff" caption — the assertion signal */}
