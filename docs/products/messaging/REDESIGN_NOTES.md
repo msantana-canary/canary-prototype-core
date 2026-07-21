@@ -211,6 +211,63 @@ Each distinct state family in the panel now speaks through exactly one channel:
 > gone, the ⓘ tooltip carries production's copy, and the "1 failed" signal stays
 > loud (tsc 0, no console errors).
 
+## Sidebar v5 — progressive disclosure (2026-07-21)
+
+Design principle (Miguel + Rachel): **conversation details are the panel's content;
+GJ messages are ANCILLARY monitoring** — healthy = nearly silent, failure =
+unmissable. This pass demotes GJ from an always-on table to a two-intensity banner
+and establishes an internal DRILL-IN as a platform pattern.
+
+- **GJ demoted to a two-intensity BANNER (`GjBanner`).** The inline nested GJ
+  messages table is **removed from the reservation detail blocks**; each stay
+  row / reservation detail now carries ONE compact tappable line:
+  - **HEALTHY = quiet gray** — "Scheduled messages ✓" (13px `colorBlack3`,
+    chevron-right affordance, transparent bg).
+  - **FAILURE = promoted red banner** — subtle red tint bg
+    (`rgba(228,0,70,0.06)`), alert icon + "N message(s) failed to send" in
+    `colorRed1` medium weight — the **loudest** element in the card.
+  Both variants tap through to the drill-in.
+- **DRILL-IN view = internal panel navigation (the "thing").** Tapping a banner
+  slides the panel's content to a **Scheduled Messages** detail for THAT
+  reservation — the panel navigates **within itself** via a `translateX(-100%)`
+  track (~250ms), NOT a new modal/route. Header = back arrow (top-left) + title
+  "Scheduled messages" + subtitle "guest name · compact date range". Back returns
+  to the main panel with **state preserved** (expand + pager position intact; a
+  `lastDrillRef` keeps the drill pane's content mounted while it slides back out).
+  Content = the existing `GjMessagesTable`, now at **full panel width**. This
+  internal-navigation idiom is deliberately established as a **platform pattern —
+  the future home for AI explanations** and other progressive-disclosure features.
+- **Failed rows carry production's error register.** Under a failed message row in
+  the drill-in, a small error block per failed channel: **"Error {code}"** (mono,
+  `colorRed1`) + one **curated hotelier-readable line** + a **"Learn more"**
+  underlined no-op link (production reference: messaging's
+  `MessageErrorDetailsModal`). New `errorCode` + `errorNote` fields on failed
+  channel entries in `gjMessages` (`res-john-jul` Check-in → WhatsApp **63016**:
+  "WhatsApp couldn't deliver — the guest hasn't opted in or the 24-hour window
+  closed."). Rationale (in a code comment): hotels can't fix a Twilio/carrier
+  failure, but the on-screen code **saves Canary support the investigation**.
+- **GUEST PAGER replaces the carousel dots+arrows.** The idiom is carried from
+  **Check-in's multi-guest control** ("‹ 👥 N ›"). Under the Linked Reservations
+  heading, **left-aligned** (~28px row): chevron-left button · people icon
+  (`mdiAccountMultipleOutline`) + guest count · chevron-right button. Arrows
+  **disable at the ends** (no wrap); slides are unchanged (primary phone-grouped
+  card first, then staff-linked guests). **The dots row is removed entirely.**
+  **Hidden-failure signal:** when any **off-screen** guest has a reservation with
+  failed GJ messages, the pager's **count chip renders red** (`colorRed1` text +
+  `rgba(228,0,70,0.08)` bg) — the signal the red dot used to carry.
+
+> Adaptation: the SecondaryCard's collapsed header keeps its `GjStatusLine`
+> at-a-glance summary and the primary rows keep their `GjStatusCell` — the banner
+> replaces only the **table inside the expanded detail block** (per the spec's
+> "remove the nested table from the detail blocks"). GJ banners appear in every
+> reservation's detail block (primary rows + secondary cards) via `ExpandedDetails`.
+
+> Verified live on :3009 — banner (loud red on John's in-house stay / quiet gray
+> elsewhere), tap → drill-in slide to Scheduled messages with the full-width table,
+> Error 63016 block + Learn more on the failed WhatsApp row, back preserves state,
+> and the guest pager with the red hidden-failure count chip (tsc 0, 200 on
+> /messages, no console errors).
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |
