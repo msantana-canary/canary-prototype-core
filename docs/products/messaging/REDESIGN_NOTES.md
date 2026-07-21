@@ -353,19 +353,21 @@ A design pass to kill duplicated facts and reclaim the floating pager row. Two
 corrections to the `GuestCard` anatomy; the inset sub-table, stay-row centering,
 compact top-row mode, the GJ banner, and the drill-in register are all unchanged.
 
-- **One fact, one home.** The room number was surfacing three times (card header,
-  stay row, expanded detail). The rule now: **guest-scope facts live in the card
-  header, reservation-scope facts live in the stay row, and the expanded detail
-  shows ONLY facts that appear nowhere else.**
-  - **CARD HEADER** is now just **guest name + phone below it**. The bed-icon
-    current-room block is **removed** (and the `checkedInStay`/`headerRoom`
-    derivation with it). The room's only home is the stay row's **"RM {room}"**,
-    which is always visible for the current stay by default.
-  - **EXPANDED ROW DETAIL** is slimmed to the fields that live nowhere else:
-    **Email, Confirmation Code, Check-in Status, Check-out Status** (the two status
-    rows keep their open-in-new jump links). The **Phone** row (echoes the header),
-    the **Dates** row and the **Room** row (both echo the row header one line above)
-    are **removed**.
+- **One fact, one home — CARD HEADER only.** The room number was surfacing in
+  both the card header and the stay row. The consolidation applies to the **card
+  header**: it now carries just **guest name + phone below it**. The bed-icon
+  current-room block is **removed** (and the `checkedInStay`/`headerRoom`
+  derivation with it). The room's glance home is the stay row's **"RM {room}"**,
+  always visible for the current stay by default.
+  - **EXPANDED ROW DETAIL is production's COMPLETE reservation-details block** —
+    the familiar full record, in order: **Phone, Email, Dates, Room, Confirmation
+    Code, Check-in Status, Check-out Status** (the two status rows keep their
+    open-in-new jump links). The Dates and Room rows **deliberately echo** the stay
+    row header one line above — that repetition is intentional: the expanded block
+    is the whole, familiar anatomy, not a de-duped subset. *(Amends an interim v7
+    slim-down that had trimmed Phone/Dates/Room from the expanded detail — the
+    designer reversed it; the complete block is restored. The one-fact-one-home
+    consolidation stays scoped to the card header.)*
   - Stay rows are unchanged.
 - **Pager moves into the card header.** The floating pager row above the card is
   gone. The guest carousel control (**‹ 👥 N ›**, same disabled-at-ends arrow
@@ -384,7 +386,9 @@ compact top-row mode, the GJ banner, and the drill-in register are all unchanged
 
 > Verified live on :3009 — thread 14 (John Smith, 4 guest cards): pager sits in the
 > header beside the name, arrows disable at the ends, phone below the name, no room
-> in the header, expanded rows show only email/confirmation/check-in/check-out.
+> in the header. Expanding a stay row shows production's complete block —
+> phone/email/dates/room/confirmation/check-in/check-out, in order — with the stay
+> row's "RM {room}" still inline above it (the dates/room echo is intentional).
 > Paging off John's card (which holds the failures) turns the count chip red. A
 > single-guest thread renders no pager, and a long guest name clamps with an
 > ellipsis (`white-space:nowrap; overflow:hidden; text-overflow:ellipsis`). tsc 0.
@@ -445,5 +449,5 @@ values are NOT finalized — when they finalize, promote into `@canary-ui/compon
 - `lib/products/messaging/types.ts` — `Thread.isFlagged`
 - `lib/products/messaging/mock-data.ts` — thread `'2'` flagged (the Figma's flagged row)
 - `lib/products/messaging/store.ts` — v2 added `infoPanelStyle`/`setInfoPanelStyle`; **v3 removed them** (floating panel is now the only mechanic)
-- `components/products/messaging/` — `MainNav`, `AppLayout` (SubNav dropped for Conversations; **v3: Filters button + popover on the search row, wired to `currentView`**), `ThreadList` (**v3: segmented control + in-card Filters row removed → just rows**), `ThreadListItem`, `ThreadView`, `MessageBubble` (flat blocks), `MessageFeed`, `DateSeparator`, `MessageComposer`, `Avatar` (rounded-8), `GuestInfoSidebar` (**v3: floating panel + scrim + guest carousel + stays expand**; **v7: pager into the card header + slimmed expanded detail per "one fact, one home"**). `PrototypeVariantToggle` **deleted in v3**.
+- `components/products/messaging/` — `MainNav`, `AppLayout` (SubNav dropped for Conversations; **v3: Filters button + popover on the search row, wired to `currentView`**), `ThreadList` (**v3: segmented control + in-card Filters row removed → just rows**), `ThreadListItem`, `ThreadView`, `MessageBubble` (flat blocks), `MessageFeed`, `DateSeparator`, `MessageComposer`, `Avatar` (rounded-8), `GuestInfoSidebar` (**v3: floating panel + scrim + guest carousel + stays expand**; **v7: pager into the card header; "one fact, one home" scoped to the card header (room dropped from the header); expanded row detail is production's COMPLETE reservation-details block — phone/email/dates/room/confirmation/check-in/check-out**). `PrototypeVariantToggle` **deleted in v3**.
 - `app/(dashboard)/messages/page.tsx` — card-on-canvas composition; **v3: 35/65 flex-basis columns; floating info panel (no push resizing); `currentView`/`setCurrentView` passed to AppLayout for the Filters popover**
