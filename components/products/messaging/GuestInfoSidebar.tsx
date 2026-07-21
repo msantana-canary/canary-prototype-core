@@ -71,6 +71,8 @@ import Icon from '@mdi/react';
 import {
   mdiPhoneOutline,
   mdiEmailOutline,
+  mdiCalendarBlank,
+  mdiBedOutline,
   mdiPound,
   mdiLogin,
   mdiLogout,
@@ -662,16 +664,24 @@ function GjMessagesTable({ reservationId }: { reservationId: string }) {
 }
 
 /**
- * ExpandedRowDetail — the reservation detail fields that live NOWHERE else, shown
- * below the row header when a stay row is expanded. Per "one fact, one home", the
- * echoes are gone: phone lives in the card header, dates + room live in the row
- * header one line above. What remains is unique to the expanded detail — email,
- * confirmation code, and the two check-in/out status rows (each with its
- * open-in-new jump link). No GJ table here — GJ monitoring is card-level.
+ * ExpandedRowDetail — production's COMPLETE reservation-details block for one
+ * reservation, rendered below the row header when a stay row is expanded. This is
+ * the familiar full record (phone, email, dates, room, confirmation, check-in/out
+ * status) — the dates + room deliberately echo the row header one line above; the
+ * expanded block is intentionally the whole anatomy, not a de-duped subset. No GJ
+ * table here — GJ monitoring is card-level (the banner + drill-in).
  */
-function ExpandedRowDetail({ reservation, email }: { reservation: Reservation; email?: string }) {
+function ExpandedRowDetail({ reservation, phone, email }: { reservation: Reservation; phone?: string; email?: string }) {
   return (
     <div className="pt-2 space-y-2.5">
+      {/* Phone */}
+      <div className="flex items-center gap-3">
+        <Icon path={mdiPhoneOutline} size={0.67} color={colors.colorBlack1} />
+        <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack1 }}>
+          {phone || 'No number assigned'}
+        </span>
+      </div>
+
       {/* Email */}
       <div className="flex items-center gap-3">
         <Icon path={mdiEmailOutline} size={0.67} color={colors.colorBlack1} />
@@ -679,6 +689,26 @@ function ExpandedRowDetail({ reservation, email }: { reservation: Reservation; e
           {email || 'No email assigned'}
         </span>
       </div>
+
+      {/* Dates */}
+      {reservation.checkInDate && reservation.checkOutDate && (
+        <div className="flex items-center gap-3">
+          <Icon path={mdiCalendarBlank} size={0.67} color={colors.colorBlack1} />
+          <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack1 }}>
+            {formatCompactDateRange(reservation.checkInDate, reservation.checkOutDate)}
+          </span>
+        </div>
+      )}
+
+      {/* Room */}
+      {reservation.room && (
+        <div className="flex items-center gap-3">
+          <Icon path={mdiBedOutline} size={0.67} color={colors.colorBlack1} />
+          <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]" style={{ color: colors.colorBlack1 }}>
+            {reservation.room}
+          </span>
+        </div>
+      )}
 
       {/* Confirmation Code */}
       {reservation.confirmationCode && (
@@ -862,7 +892,7 @@ function StayRow({
       {/* Expanded detail fields */}
       {isExpanded && (
         <div className="px-3 pb-3">
-          <ExpandedRowDetail reservation={reservation} email={guest.email} />
+          <ExpandedRowDetail reservation={reservation} phone={guest.phone} email={guest.email} />
         </div>
       )}
     </div>
