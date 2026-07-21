@@ -15,6 +15,7 @@ import { ThreadView } from '@/components/products/messaging/ThreadView';
 import { GuestInfoSidebar } from '@/components/products/messaging/GuestInfoSidebar';
 import { ComposeHeader } from '@/components/products/messaging/ComposeHeader';
 import { UnlinkReservationModal } from '@/components/products/messaging/UnlinkReservationModal';
+import { PrototypeVariantToggle } from '@/components/products/messaging/PrototypeVariantToggle';
 import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { guests } from '@/lib/core/data/guests';
@@ -296,6 +297,9 @@ export default function MessagesPage() {
         contactNumber={selectedThread?.contactNumber || ''}
         isAutoLinked={unlinkTarget?.isAutoLinked || false}
       />
+
+      {/* Prototype control — top-row layout experiment (full vs compact) */}
+      <PrototypeVariantToggle />
     </AppLayout>
   );
 }

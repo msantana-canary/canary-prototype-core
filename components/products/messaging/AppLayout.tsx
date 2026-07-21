@@ -12,11 +12,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Icon from '@mdi/react';
-import { mdiMagnify, mdiFilterVariant } from '@mdi/js';
+import { mdiMagnify, mdiFilterVariant, mdiMessagePlusOutline } from '@mdi/js';
 import { colors, CanaryButton, ButtonType, ButtonSize } from '@canary-ui/components';
 import { MainNav } from './MainNav';
 import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
 import { BroadcastSubNav } from './broadcast/BroadcastSubNav';
+import { useMessagingStore } from '@/lib/products/messaging/store';
 
 type CategoryFilter = 'inbox' | 'archived' | 'blocked';
 
@@ -49,9 +50,11 @@ const PLACEHOLDER_FILTERS = ['Assigned to', 'Channel'];
 function FiltersControl({
   currentView,
   onViewChange,
+  compact = false,
 }: {
   currentView: CategoryFilter;
   onViewChange: (view: CategoryFilter) => void;
+  compact?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -67,30 +70,48 @@ function FiltersControl({
   }, [isOpen]);
 
   return (
-    <div className="relative" ref={rootRef}>
-      <button
-        onClick={() => setIsOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-[6px] cursor-pointer transition-colors hover:bg-[#f9fafb]"
-        style={{
-          height: 40,
-          paddingLeft: 12,
-          paddingRight: 12,
-          backgroundColor: colors.colorWhite,
-          border: `1px solid ${colors.colorBlack5}`,
-        }}
-      >
-        <Icon path={mdiFilterVariant} size={0.83} color={colors.colorBlack1} />
-        <span className="font-['Roboto',sans-serif]" style={{ fontSize: 14, lineHeight: '22px', color: colors.colorBlack1 }}>
-          Filters
-        </span>
-        {/* Blue count badge — filters applied */}
-        <span
-          className="flex items-center justify-center rounded-full font-['Roboto',sans-serif] font-medium"
-          style={{ minWidth: 18, height: 18, paddingLeft: 5, paddingRight: 5, fontSize: 11, lineHeight: '18px', color: colors.colorWhite, backgroundColor: colors.colorBlueDark1 }}
+    <div className="relative shrink-0" ref={rootRef}>
+      {compact ? (
+        /* Compact: 40px icon-only button with a small applied-count badge */
+        <button
+          onClick={() => setIsOpen((v) => !v)}
+          aria-label="Filters"
+          className="relative flex items-center justify-center rounded-[6px] cursor-pointer transition-colors hover:bg-[#f9fafb]"
+          style={{ width: 40, height: 40, backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack5}` }}
         >
-          2
-        </span>
-      </button>
+          <Icon path={mdiFilterVariant} size={0.83} color={colors.colorBlack1} />
+          <span
+            className="absolute flex items-center justify-center rounded-full font-['Roboto',sans-serif] font-medium"
+            style={{ top: -6, right: -6, minWidth: 16, height: 16, paddingLeft: 4, paddingRight: 4, fontSize: 10, lineHeight: '16px', color: colors.colorWhite, backgroundColor: colors.colorBlueDark1 }}
+          >
+            2
+          </span>
+        </button>
+      ) : (
+        <button
+          onClick={() => setIsOpen((v) => !v)}
+          className="flex items-center gap-2 rounded-[6px] cursor-pointer transition-colors hover:bg-[#f9fafb]"
+          style={{
+            height: 40,
+            paddingLeft: 12,
+            paddingRight: 12,
+            backgroundColor: colors.colorWhite,
+            border: `1px solid ${colors.colorBlack5}`,
+          }}
+        >
+          <Icon path={mdiFilterVariant} size={0.83} color={colors.colorBlack1} />
+          <span className="font-['Roboto',sans-serif]" style={{ fontSize: 14, lineHeight: '22px', color: colors.colorBlack1 }}>
+            Filters
+          </span>
+          {/* Blue count badge — filters applied */}
+          <span
+            className="flex items-center justify-center rounded-full font-['Roboto',sans-serif] font-medium"
+            style={{ minWidth: 18, height: 18, paddingLeft: 5, paddingRight: 5, fontSize: 11, lineHeight: '18px', color: colors.colorWhite, backgroundColor: colors.colorBlueDark1 }}
+          >
+            2
+          </span>
+        </button>
+      )}
 
       {isOpen && (
         <div
@@ -165,6 +186,32 @@ export function AppLayout({
   currentView,
   onViewChange,
 }: AppLayoutProps) {
+  // Prototype control: top-row layout experiment (full vs compact).
+  const topRowStyle = useMessagingStore((s) => s.topRowStyle);
+  const isCompact = topRowStyle === 'compact';
+
+  const searchField = (
+    <div
+      className="flex items-center gap-2 rounded-[6px]"
+      style={{
+        backgroundColor: colors.colorWhite,
+        border: `1px solid ${colors.colorBlack5}`,
+        height: 40,
+        paddingLeft: 8,
+        paddingRight: 16,
+      }}
+    >
+      <Icon path={mdiMagnify} size={0.83} color={colors.colorBlack3} />
+      <input
+        value={searchQuery}
+        onChange={(e) => onSearchChange(e.target.value)}
+        placeholder="Search"
+        className="flex-1 min-w-0 border-0 outline-none bg-transparent font-['Roboto',sans-serif] text-[14px] leading-[22px] placeholder:text-[#666666]"
+        style={{ color: colors.colorBlack1 }}
+      />
+    </div>
+  );
+
   return (
     <div className="h-full flex flex-col overflow-hidden" style={{ backgroundColor: colors.colorBlack8 }}>
       {/* Main Navigation */}
@@ -176,32 +223,33 @@ export function AppLayout({
           className="flex items-center gap-3 shrink-0"
           style={{ paddingLeft: 24, paddingRight: 24, paddingTop: 16, paddingBottom: 16 }}
         >
-          <div
-            className="flex-1 flex items-center gap-2 rounded-[6px]"
-            style={{
-              backgroundColor: colors.colorWhite,
-              border: `1px solid ${colors.colorBlack5}`,
-              height: 40,
-              paddingLeft: 8,
-              paddingRight: 16,
-            }}
-          >
-            <Icon path={mdiMagnify} size={0.83} color={colors.colorBlack3} />
-            <input
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search"
-              className="flex-1 border-0 outline-none bg-transparent font-['Roboto',sans-serif] text-[14px] leading-[22px] placeholder:text-[#666666]"
-              style={{ color: colors.colorBlack1 }}
-            />
-          </div>
+          {isCompact ? (
+            <>
+              {/* Search sized to the thread-list column (35%, aligned to its edges) */}
+              <div style={{ flexBasis: '35%', flexGrow: 0, flexShrink: 0 }}>{searchField}</div>
+              <FiltersControl currentView={currentView} onViewChange={onViewChange} compact />
+              {/* New message — 40px icon-only PRIMARY button */}
+              <button
+                onClick={onNewMessage}
+                aria-label="New message"
+                className="flex items-center justify-center rounded-[6px] shrink-0 cursor-pointer transition-opacity hover:opacity-90"
+                style={{ width: 40, height: 40, backgroundColor: colors.colorBlueDark1 }}
+              >
+                <Icon path={mdiMessagePlusOutline} size={0.83} color={colors.colorWhite} />
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="flex-1 min-w-0">{searchField}</div>
 
-          {/* Filters — collapsed Inbox/Archived/Blocked views + future filters */}
-          <FiltersControl currentView={currentView} onViewChange={onViewChange} />
+              {/* Filters — collapsed Inbox/Archived/Blocked views + future filters */}
+              <FiltersControl currentView={currentView} onViewChange={onViewChange} />
 
-          <CanaryButton type={ButtonType.PRIMARY} size={ButtonSize.NORMAL} onClick={onNewMessage}>
-            New message
-          </CanaryButton>
+              <CanaryButton type={ButtonType.PRIMARY} size={ButtonSize.NORMAL} onClick={onNewMessage}>
+                New message
+              </CanaryButton>
+            </>
+          )}
         </div>
       )}
 

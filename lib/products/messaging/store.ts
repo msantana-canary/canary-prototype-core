@@ -23,6 +23,7 @@ interface MessagingState {
   isLinkReservationModalOpen: boolean;
   currentView: 'inbox' | 'archived' | 'blocked';
   searchQuery: string;
+  topRowStyle: 'full' | 'compact';
 
   // Actions
   selectThread: (threadId: string) => void;
@@ -49,6 +50,7 @@ interface MessagingState {
   closeLinkReservationModal: () => void;
   linkReservation: (threadId: string, reservationId: string) => void;
   unlinkReservation: (threadId: string, reservationId: string) => void;
+  setTopRowStyle: (style: 'full' | 'compact') => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set, get) => ({
@@ -64,6 +66,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   isLinkReservationModalOpen: false,
   currentView: 'inbox',
   searchQuery: '',
+  topRowStyle: 'full',
 
   // Select a thread
   selectThread: (threadId: string) => {
@@ -330,5 +333,10 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
           : thread
       ),
     }));
+  },
+
+  // Prototype control: top-row layout experiment (full vs compact)
+  setTopRowStyle: (style: 'full' | 'compact') => {
+    set({ topRowStyle: style });
   },
 }));
