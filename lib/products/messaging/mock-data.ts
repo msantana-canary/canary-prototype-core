@@ -123,6 +123,204 @@ export const gjMessages: Record<string, GjMessageEntry[]> = {
     { title: 'Mid-Stay Check', scheduledFor: 'Jul 14 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
     { title: 'Check-out', scheduledFor: 'Jul 15 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
   ],
+
+  // ── GJ data for every other thread's linked reservation (no failures — the
+  // failure scenario is thread-14 exclusive). PAST stays: all sent. CURRENT
+  // (checked-in): Check-in sent, Mid-Stay + Check-out scheduled. FUTURE
+  // (reserved): scheduled only — nothing sent yet. Times derive from stay dates.
+
+  // ── CURRENT (checked-in) — Check-in sent; Mid-Stay + Check-out scheduled ──
+  // Miguel — thread '2' (Mar 15–17).
+  'res-miguel-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 26 · 2:00 PM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 13 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 15 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 16 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 17 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Brooklyn — thread '3' (Mar 14–18).
+  'res-brooklyn-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 24 · 10:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'booking', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 12 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 14 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 16 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 18 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Kristin — thread '5' (Mar 16–19).
+  'res-kristin-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 27 · 4:00 PM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 14 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 16 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 17 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 19 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Liam Nguyen — thread '6' (Mar 16–18).
+  'res-liam-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 28 · 1:00 PM', channels: [{ type: 'email', status: 'sent' }, { type: 'expedia', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 14 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 16 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 17 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 18 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Olivia — thread '7' (Mar 15–20).
+  'res-olivia-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 22 · 11:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 13 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 15 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }, { type: 'whatsapp', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 17 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 20 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Noah — thread '8' (Mar 14–17).
+  'res-noah-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 23 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 12 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 14 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 15 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 17 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Emma — thread '9' (Mar 16–19).
+  'res-emma-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 25 · 2:00 PM', channels: [{ type: 'email', status: 'sent' }, { type: 'booking', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 14 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 16 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 17 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 19 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Priya — thread '17' (Mar 15–18).
+  'res-priya-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 24 · 1:00 PM', channels: [{ type: 'email', status: 'sent' }, { type: 'booking', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 13 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 15 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 16 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 18 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Yuki — thread '18' (Mar 14–17).
+  'res-yuki-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 20 · 11:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'expedia', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 12 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 14 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 15 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 17 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Lucia — thread '20' (Mar 16–19).
+  'res-lucia-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 26 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 14 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 16 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }, { type: 'whatsapp', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 17 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 19 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Hiroshi — thread '21' (Mar 15–19).
+  'res-hiroshi-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 22 · 2:00 PM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 13 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 15 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 17 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 19 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Ingrid — thread '22' (Mar 14–18).
+  'res-ingrid-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 23 · 10:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'booking', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 12 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 14 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 16 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 18 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Andre — thread '26' (Mar 16–18).
+  'res-andre-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 28 · 10:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 14 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 16 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 17 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 18 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Maya — thread '27' (Mar 15–19).
+  'res-maya-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 21 · 3:00 PM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 13 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 15 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 17 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 19 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+
+  // ── FUTURE (reserved) — scheduled only; nothing sent yet ──
+  // Marco — thread '4' (Mar 19–22).
+  'res-marco-nov': [
+    { title: 'Pre-Arrival', scheduledFor: 'Mar 17 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-in', scheduledFor: 'Mar 19 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 20 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 22 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Emerson — thread '15' (Jun 22–25).
+  'res-emerson-jun': [
+    { title: 'Pre-Arrival', scheduledFor: 'Jun 20 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-in', scheduledFor: 'Jun 22 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Jun 23 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Jun 25 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Thomas K. — thread '23' (Mar 16–18).
+  'res-thomas-k-nov': [
+    { title: 'Pre-Arrival', scheduledFor: 'Mar 14 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-in', scheduledFor: 'Mar 16 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 18 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Rachel — thread '24' (Mar 15–18).
+  'res-rachel-nov': [
+    { title: 'Pre-Arrival', scheduledFor: 'Mar 13 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-in', scheduledFor: 'Mar 15 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 16 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 18 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Chloe — thread '25' (Mar 15–17).
+  'res-chloe-nov': [
+    { title: 'Pre-Arrival', scheduledFor: 'Mar 13 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-in', scheduledFor: 'Mar 15 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 17 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+  // Fatima — thread '19' (Mar 15–20).
+  'res-fatima-nov': [
+    { title: 'Pre-Arrival', scheduledFor: 'Mar 13 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+    { title: 'Check-in', scheduledFor: 'Mar 15 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }, { type: 'whatsapp', status: 'scheduled' }] },
+    { title: 'Mid-Stay Check', scheduledFor: 'Mar 17 · 9:00 AM', channels: [{ type: 'email', status: 'scheduled' }] },
+    { title: 'Check-out', scheduledFor: 'Mar 20 · 8:00 AM', channels: [{ type: 'email', status: 'scheduled' }, { type: 'sms', status: 'scheduled' }] },
+  ],
+
+  // ── PAST (checked-out) — all messages sent; no failures ──
+  // Sarah Martinez — archived thread '10' (Mar 9–12).
+  'res-sarah-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 20 · 10:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 7 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 9 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', sentAt: 'Mar 10 · 10:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Check-out', sentAt: 'Mar 12 · 8:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Post-Stay Thank You', sentAt: 'Mar 13 · 11:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+  ],
+  // James Chen — archived thread '11' (Mar 10–11).
+  'res-james-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 25 · 3:00 PM', channels: [{ type: 'email', status: 'sent' }, { type: 'expedia', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 9 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 10 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-out', sentAt: 'Mar 11 · 8:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Post-Stay Thank You', sentAt: 'Mar 12 · 11:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+  ],
+  // Maria Garcia — archived thread '12' (Mar 7–10).
+  'res-maria-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 18 · 1:00 PM', channels: [{ type: 'email', status: 'sent' }, { type: 'booking', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 5 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 7 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', sentAt: 'Mar 8 · 10:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Check-out', sentAt: 'Mar 10 · 8:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Post-Stay Thank You', sentAt: 'Mar 11 · 11:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+  ],
+  // Robert Thompson — archived thread '13' (Mar 5–9).
+  'res-robert-nov': [
+    { title: 'Booking Confirmation', sentAt: 'Feb 15 · 11:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+    { title: 'Pre-Arrival', sentAt: 'Mar 3 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-in', sentAt: 'Mar 5 · 9:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Mid-Stay Check', sentAt: 'Mar 7 · 10:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Check-out', sentAt: 'Mar 9 · 8:00 AM', channels: [{ type: 'email', status: 'sent' }, { type: 'sms', status: 'sent' }] },
+    { title: 'Post-Stay Thank You', sentAt: 'Mar 10 · 11:00 AM', channels: [{ type: 'email', status: 'sent' }] },
+  ],
 };
 
 /**
@@ -299,14 +497,18 @@ export const mockThreads: Thread[] = [
     isUnread: false,
     status: 'inbox',
   },
+  // Escalated conversation — an unresolved complaint (room 226). The row's
+  // attention dot renders amber (warning), mirroring production's `is_escalated`
+  // `.isEscalated` variant.
   {
     id: '20',
     contactNumber: '+15005550045',
     linkedReservationIds: ['res-lucia-nov'],
-    lastMessage: 'Can someone bring extra blankets to room 226?',
+    lastMessage: "I've been waiting over an hour for the extra blankets and room 226 is freezing. No one has come by — this is really disappointing.",
     lastMessageAt: new Date('2026-03-16T07:30:00'),
     isUnread: true,
     status: 'inbox',
+    isEscalated: true,
   },
   {
     id: '21',
@@ -841,13 +1043,22 @@ export const mockMessages: Record<string, Message[]> = {
       status: 'delivered',
     },
   ],
-  // Lucia's conversation
+  // Lucia's conversation — escalated (unresolved complaint)
   '20': [
+    {
+      id: 'm67a',
+      threadId: '20',
+      sender: 'guest',
+      content: 'Can someone bring extra blankets to room 226? It is quite cold in here.',
+      timestamp: new Date('2026-03-16T06:20:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
     {
       id: 'm67',
       threadId: '20',
       sender: 'guest',
-      content: 'Can someone bring extra blankets to room 226?',
+      content: "I've been waiting over an hour for the extra blankets and room 226 is freezing. No one has come by — this is really disappointing.",
       timestamp: new Date('2026-03-16T07:30:00'),
       channel: 'SMS',
       status: 'delivered',
