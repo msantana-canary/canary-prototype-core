@@ -977,13 +977,20 @@ function StayRow({
  */
 function GuestCardBanner({ failedCount, onClick }: { failedCount: number; onClick: () => void }) {
   const failed = failedCount > 0;
+  const [isHovered, setIsHovered] = useState(false);
+  const backgroundColor = failed
+    ? isHovered ? 'rgba(228,0,70,0.10)' : 'rgba(228,0,70,0.06)'
+    : isHovered ? '#e9eaec' : '#f4f5f6';
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-2 mt-3 rounded-[8px] transition-opacity hover:opacity-90 text-left"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="w-full flex items-center gap-2 mt-3 rounded-[8px] transition-colors text-left"
       style={{
         padding: '10px 12px',
-        backgroundColor: failed ? 'rgba(228,0,70,0.06)' : '#f4f5f6',
+        backgroundColor,
+        transitionDuration: '150ms',
       }}
     >
       {failed ? (
