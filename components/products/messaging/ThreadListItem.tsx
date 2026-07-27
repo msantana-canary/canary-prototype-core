@@ -3,8 +3,11 @@
  *
  * Row anatomy: 32px rounded-8 avatar · name (14 Medium) + time (10 uppercase) ·
  * room line (bed icon + number, "(RESERVED)"-style status as plain text, and a
- * concierge request-count chip) · preview (14 Regular colorBlack3) with a
- * trailing flag icon (flagged threads) or the pink unread dot.
+ * concierge request-count chip) · preview (14 Regular colorBlack3) with two
+ * independent trailing indicators — the red anger flag (flagged threads) AND
+ * the pink unread dot (unread threads). They are siblings, not alternatives:
+ * neither replaces the other, and when both apply the flag renders first,
+ * then the dot. The flag means AI-detected guest frustration (AI paused).
  *
  * Selection = soft colorBlueDark5 fill + colorBlueDark3 border + rounded-6
  * (was: solid blue with white text). Unread = dot only — the row background
@@ -134,7 +137,7 @@ export function ThreadListItem({
           </div>
         )}
 
-        {/* Preview + flag/unread indicator */}
+        {/* Preview + independent flag & unread indicators (siblings, not alternatives) */}
         <div className="flex items-center gap-2">
           <p
             className={`flex-1 min-w-0 font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate ${isTyping ? 'italic' : ''}`}
@@ -142,14 +145,19 @@ export function ThreadListItem({
           >
             {isTyping ? `${firstName} is typing...` : thread.lastMessage}
           </p>
-          {thread.isFlagged ? (
-            <Icon path={mdiFlag} size={0.83} color="#E40046" className="shrink-0" />
-          ) : (
-            <div
-              className="w-[10px] h-[10px] rounded-full shrink-0"
-              style={{ backgroundColor: thread.isUnread ? colors.colorPink1 : 'transparent' }}
+          {thread.isFlagged && (
+            <Icon
+              path={mdiFlag}
+              size={0.83}
+              color="#E40046"
+              className="shrink-0"
+              title="Potential guest frustration detected. AI paused to avoid escalation."
             />
           )}
+          <div
+            className="w-[10px] h-[10px] rounded-full shrink-0"
+            style={{ backgroundColor: thread.isUnread ? colors.colorPink1 : 'transparent' }}
+          />
         </div>
       </div>
     </div>
