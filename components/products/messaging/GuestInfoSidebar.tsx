@@ -56,8 +56,8 @@
  * phone-grouped card, slides 1+ = each staff-linked guest. The pager ("‹ 👥 N ›",
  * the Check-in idiom) now lives INSIDE the active card's header, right-aligned on
  * the guest-name line (single-guest threads show no pager); when an OFF-SCREEN
- * guest card has a failed GJ message the pager's count chip goes RED (the
- * hidden-failure signal).
+ * guest card has a failed GJ message a small red dot appears at the pager count-
+ * chip's corner (the hidden-failure signal — the chip itself stays neutral).
  */
 
 'use client';
@@ -88,7 +88,7 @@ import {
   mdiDotsHorizontal,
   mdiAccountMultipleOutline,
   mdiAlertCircleOutline,
-  mdiInformationOutline,
+  mdiLinkVariant,
   mdiMessageProcessingOutline,
   mdiWhatsapp,
 } from '@mdi/js';
@@ -194,9 +194,10 @@ interface DrillTarget {
  * GuestPager — the multi-guest carousel control ("‹ 👥 N ›", Check-in's idiom),
  * now living INSIDE the card header (right-aligned beside the guest name) instead
  * of a floating row above the card. Arrows disable at the ends. When an OFF-SCREEN
- * guest card has a failed GJ message the count chip goes RED (the hidden-failure
- * signal) — `hiddenFailure` is computed by the parent across all NON-visible slides.
- * The parent only renders this when there is more than one guest card.
+ * guest card has a failed GJ message a small red dot pins to the count chip's
+ * top-right corner (the hidden-failure signal — the chip stays neutral otherwise);
+ * `hiddenFailure` is computed by the parent across all NON-visible slides. The
+ * parent only renders this when there is more than one guest card.
  */
 function GuestPager({
   index,
@@ -223,23 +224,37 @@ function GuestPager({
       </button>
 
       <span
-        className="inline-flex items-center gap-1 px-2 rounded-full"
+        className="relative inline-flex items-center gap-1 px-2 rounded-full"
         style={{
           height: 24,
-          backgroundColor: hiddenFailure ? 'rgba(228,0,70,0.08)' : colors.colorBlack7,
+          backgroundColor: colors.colorBlack7,
         }}
       >
-        <Icon
-          path={mdiAccountMultipleOutline}
-          size={0.6}
-          color={hiddenFailure ? colors.colorRed1 : colors.colorBlack2}
-        />
+        <Icon path={mdiAccountMultipleOutline} size={0.6} color={colors.colorBlack2} />
         <span
           className="font-['Roboto',sans-serif] font-medium text-[13px] leading-[18px]"
-          style={{ color: hiddenFailure ? colors.colorRed1 : colors.colorBlack2 }}
+          style={{ color: colors.colorBlack2 }}
         >
           {total}
         </span>
+        {/* Hidden-failure signal — a small red dot pinned just outside the chip's
+            top-right corner (absolute, so it never shifts layout), with a subtle
+            white ring for separation. Neutral chip stays neutral. */}
+        {hiddenFailure && (
+          <span
+            aria-hidden
+            style={{
+              position: 'absolute',
+              top: -2,
+              right: -2,
+              width: 7,
+              height: 7,
+              borderRadius: 9999,
+              backgroundColor: GJ_FAIL_RED,
+              boxShadow: `0 0 0 1.5px ${colors.colorWhite}`,
+            }}
+          />
+        )}
       </span>
 
       <button
@@ -350,14 +365,17 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
 
   // Pager slides: slide 0 = the primary phone-grouped card (all auto-linked
   // stays); slides 1+ = each staff-linked guest card. `hasFailure` lets a HIDDEN
-  // slide's count chip render red so a failed GJ message stays loud off-screen.
-  // Slides carry card DATA (not pre-built nodes) — only the active card renders,
-  // and it receives the pager as a header slot (see below).
-  const slides: { key: string; hasFailure: boolean; headerName: string; headerPhone: string; stays: LinkedReservation[] }[] = [];
+  // slide surface a corner dot on the pager chip so a failed GJ message stays loud
+  // off-screen. `isPrimary` marks the phone-matched card — only it shows the
+  // auto-link 🔗 provenance icon beside the phone. Slides carry card DATA (not
+  // pre-built nodes) — only the active card renders, and it receives the pager as
+  // a header slot (see below).
+  const slides: { key: string; hasFailure: boolean; isPrimary: boolean; headerName: string; headerPhone: string; stays: LinkedReservation[] }[] = [];
   if (autoLinked.length > 0) {
     slides.push({
       key: 'primary',
       hasFailure: cardFailed(autoLinked) > 0,
+      isPrimary: true,
       headerName: autoLinked[0]?.guest.name ?? '',
       headerPhone: contactNumber,
       stays: autoLinked,
@@ -367,6 +385,7 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
     slides.push({
       key: lr.reservation.id,
       hasFailure: cardFailed([lr]) > 0,
+      isPrimary: false,
       headerName: lr.guest.name,
       headerPhone: lr.guest.phone || '',
       stays: [lr],
@@ -397,8 +416,8 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
   const panelTransform = reduced ? undefined : entered ? 'translateX(0)' : 'translateX(calc(100% + 16px))';
 
   const activeIndex = Math.min(activeSlide, Math.max(0, slides.length - 1));
-  // Any OFF-SCREEN guest card with a failed GJ message → the pager count chip
-  // goes red (the hidden-failure signal).
+  // Any OFF-SCREEN guest card with a failed GJ message → a small red dot appears
+  // at the pager count-chip's corner (the hidden-failure signal).
   const hiddenFailure = slides.some((s, i) => i !== activeIndex && s.hasFailure);
 
   return (
@@ -465,17 +484,13 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
           {/* Linked Reservations Section (top — the star) */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
+              {/* Provenance is structural + the link icon beside the phone in the
+                  PRIMARY (phone-matched) card header — no section-header ⓘ, no
+                  AUTO-LINKED badge. One provenance channel, not two. */}
               <div className="flex items-center gap-1.5">
                 <h3 className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px]" style={{ color: colors.colorBlack1 }}>
                   Linked Reservations
                 </h3>
-                {/* Provenance is structural + this tooltip — no AUTO-LINKED badge. */}
-                <span
-                  className="flex items-center cursor-help"
-                  title="Reservations link automatically when the guest's phone number in your PMS matches this conversation. If it's missing, check the phone number in your PMS, or search & link a reservation manually here."
-                >
-                  <Icon path={mdiInformationOutline} size={0.67} color={colors.colorBlack3} />
-                </span>
               </div>
               <div className="flex gap-1">
                 <button className="w-[30px] h-[30px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors">
@@ -503,6 +518,7 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
                   <GuestCard
                     headerName={slides[activeIndex].headerName}
                     headerPhone={slides[activeIndex].headerPhone}
+                    isPrimary={slides[activeIndex].isPrimary}
                     stays={slides[activeIndex].stays}
                     expandedResId={expandedResId}
                     onToggle={toggleExpand}
@@ -1037,12 +1053,15 @@ function defaultVisibleStays(stays: LinkedReservation[]): LinkedReservation[] {
  * same line, then phone below — room is NOT here; its only home is the stay row),
  * an inset sub-table of stay rows, and a card-level GJ banner. Provenance is
  * structural (primary = the phone-matched group) + per-row kebab rules (auto rows
- * hard-block unlink). `pager` is the parent's guest carousel control, injected
- * into the header; it's null for single-guest threads (no pager rendered).
+ * hard-block unlink) + the auto-link 🔗 icon beside the phone on the PRIMARY card
+ * ONLY (production's own vocabulary; carries the auto-link explanation as its
+ * tooltip). `pager` is the parent's guest carousel control, injected into the
+ * header; it's null for single-guest threads (no pager rendered).
  */
 function GuestCard({
   headerName,
   headerPhone,
+  isPrimary,
   stays,
   expandedResId,
   onToggle,
@@ -1052,6 +1071,7 @@ function GuestCard({
 }: {
   headerName: string;
   headerPhone: string;
+  isPrimary?: boolean;
   stays: LinkedReservation[];
   expandedResId: string | null;
   onToggle: (resId: string) => void;
@@ -1094,6 +1114,16 @@ function GuestCard({
           <span className="font-['Roboto',sans-serif] text-[14px] leading-[21px]" style={{ color: colors.colorBlack2 }}>
             {headerPhone || 'No number'}
           </span>
+          {/* Auto-link provenance — PRIMARY (phone-matched) card only; never on
+              staff-linked cards. Carries production's verbatim explanation copy. */}
+          {isPrimary && (
+            <span
+              className="flex items-center cursor-help"
+              title="Reservations link automatically when the guest's phone number in your PMS matches this conversation. If it's missing, check the phone number in your PMS, or search & link a reservation manually here."
+            >
+              <Icon path={mdiLinkVariant} size={0.55} color={colors.colorBlack3} />
+            </span>
+          )}
         </div>
       </div>
 
