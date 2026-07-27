@@ -5,9 +5,11 @@
  * room line (bed icon + number, "(RESERVED)"-style status as plain text, and a
  * concierge request-count chip) · preview (14 Regular colorBlack3) with two
  * independent trailing indicators — the red anger flag (flagged threads) AND
- * the pink unread dot (unread threads). They are siblings, not alternatives:
- * neither replaces the other, and when both apply the flag renders first,
- * then the dot. The flag means AI-detected guest frustration (AI paused).
+ * the attention dot. They are siblings, not alternatives: neither replaces the
+ * other, and when both apply the flag renders first, then the dot. The flag means
+ * AI-detected guest frustration (AI paused). The dot shows for unread OR escalated
+ * (production parity): plain unread = pink, escalated = amber (warning), the
+ * `.isEscalated` variant — the ONLY difference is the dot color.
  *
  * Selection = soft colorBlueDark5 fill + colorBlueDark3 border + rounded-6
  * (was: solid blue with white text). Unread = dot only — the row background
@@ -154,9 +156,20 @@ export function ThreadListItem({
               title="Potential guest frustration detected. AI paused to avoid escalation."
             />
           )}
+          {/* Attention dot — shows for unread OR escalated (production parity:
+              `unread_count > 0 || is_escalated`). Escalated turns amber (warning),
+              matching production's `.isEscalated` variant; plain unread stays pink.
+              The 10px slot is always reserved (transparent when neither) so the
+              row layout never shifts. */}
           <div
             className="w-[10px] h-[10px] rounded-full shrink-0"
-            style={{ backgroundColor: thread.isUnread ? colors.colorPink1 : 'transparent' }}
+            style={{
+              backgroundColor: thread.isEscalated
+                ? colors.warning
+                : thread.isUnread
+                ? colors.colorPink1
+                : 'transparent',
+            }}
           />
         </div>
       </div>

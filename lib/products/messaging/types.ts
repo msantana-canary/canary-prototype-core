@@ -37,6 +37,9 @@ export interface Thread {
   isUnread: boolean;
   status: ThreadStatus;
   isFlagged?: boolean;              // Priority flag (redesign) — flag replaces the unread dot in the row
+  isEscalated?: boolean;            // Escalated conversation — the row's attention dot turns amber
+                                    // (warning), mirroring production's `is_escalated` `.isEscalated`
+                                    // variant. The dot shows for unread OR escalated.
 }
 
 export type ThreadFilter = 'inbox' | 'archived' | 'blocked';
