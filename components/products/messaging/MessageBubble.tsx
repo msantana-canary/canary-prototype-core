@@ -124,7 +124,7 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
             a "Learn more" affordance (opens a carrier-error modal in prod; the
             modal itself is out of scope here). */}
         {isFailed ? (
-          <div className="flex items-center gap-1" style={{ color: COLOR_RED_1 }}>
+          <div className="flex items-center gap-1" style={{ color: COLOR_RED_1, marginTop: 6 }}>
             <Icon path={mdiAlertCircleOutline} size="14px" color={COLOR_RED_1} />
             <span className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase">
               {footer}
@@ -142,7 +142,7 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
           footer && (
             <span
               className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase"
-              style={{ color: colors.colorBlack3 }}
+              style={{ color: colors.colorBlack3, marginTop: 6 }}
             >
               {footer}
             </span>
