@@ -25,9 +25,11 @@ import {
   mdiAccountMultipleOutline,
   mdiPlus,
   mdiDotsHorizontal,
+  mdiClockOutline,
 } from '@mdi/js';
 import { colors } from '@canary-ui/components';
 import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
+import { getFolderPopulation } from '@/lib/products/messaging/broadcast-audience-facts';
 
 const builtInIcons: Record<string, string> = {
   arrivals: mdiLoginVariant,
@@ -47,6 +49,8 @@ function AudienceRow({
   onClick,
   memberCount,
   preview,
+  population,
+  scheduledCount,
 }: {
   iconPath: string;
   label: string;
@@ -54,8 +58,12 @@ function AudienceRow({
   onClick: () => void;
   memberCount?: number;
   preview?: string;
+  /** Right-aligned live population (variant B/C rails). */
+  population?: number;
+  /** Inline "N scheduled" line on groups holding a queued send. */
+  scheduledCount?: number;
 }) {
-  const isRich = memberCount !== undefined || !!preview;
+  const isRich = memberCount !== undefined || !!preview || !!scheduledCount;
 
   return (
     <button
@@ -81,12 +89,25 @@ function AudienceRow({
       />
 
       <span className="flex-1 min-w-0 flex flex-col">
-        <span
-          className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] truncate"
-          style={{ color: isSelected ? colors.colorBlueDark1 : colors.colorBlack1 }}
-          title={label}
-        >
-          {label}
+        <span className="flex items-center gap-2">
+          <span
+            className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] truncate min-w-0"
+            style={{ color: isSelected ? colors.colorBlueDark1 : colors.colorBlack1 }}
+            title={label}
+          >
+            {label}
+          </span>
+          {population !== undefined && (
+            <>
+              <span className="flex-1" />
+              <span
+                className="font-['Roboto',sans-serif] text-[12px] leading-[18px] shrink-0 tabular-nums"
+                style={{ color: colors.colorBlack3 }}
+              >
+                {population}
+              </span>
+            </>
+          )}
         </span>
 
         {memberCount !== undefined && (
@@ -107,12 +128,25 @@ function AudienceRow({
             {preview}
           </span>
         )}
+
+        {!!scheduledCount && (
+          <span className="flex items-center gap-1" style={{ marginTop: 2 }}>
+            <Icon path={mdiClockOutline} size={0.5} color={colors.colorBlueDark1} />
+            <span
+              className="font-['Roboto',sans-serif] text-[12px] leading-[18px]"
+              style={{ color: colors.colorBlueDark1 }}
+            >
+              {scheduledCount} scheduled
+            </span>
+          </span>
+        )}
       </span>
     </button>
   );
 }
 
-export function BroadcastGroupList() {
+/** `showPopulation` adds the live folder counts the challenger rails carry. */
+export function BroadcastGroupList({ showPopulation = false }: { showPopulation?: boolean } = {}) {
   const {
     allGroups,
     selectedGroupId,
@@ -120,6 +154,7 @@ export function BroadcastGroupList() {
     selectGroup,
     setActiveGroupTab,
     openCreateGroupModal,
+    scheduledBroadcasts,
   } = useBroadcastStore();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -152,6 +187,7 @@ export function BroadcastGroupList() {
             label={group.name}
             isSelected={selectedGroupId === group.id}
             onClick={() => selectGroup(group.id)}
+            population={showPopulation ? getFolderPopulation(group.id, allGroups) : undefined}
           />
         ))}
       </div>
@@ -234,6 +270,11 @@ export function BroadcastGroupList() {
               onClick={() => selectGroup(group.id)}
               memberCount={group.memberCount ?? 0}
               preview={group.lastBroadcastPreview}
+              scheduledCount={
+                showPopulation
+                  ? scheduledBroadcasts.filter(sb => sb.groupId === group.id).length
+                  : undefined
+              }
             />
           ))}
         </div>

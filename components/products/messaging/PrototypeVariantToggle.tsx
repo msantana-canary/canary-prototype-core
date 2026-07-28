@@ -8,8 +8,9 @@
  *   Conversations — "Top row": FULL (search + Filters + New-message across the
  *                   width) vs COMPACT (sized to the thread-list column, icon-only
  *                   buttons). Wired to `topRowStyle`.
- *   Broadcast     — "Filter modal": CLASSIC (the shipped modal, untouched) vs
- *                   BUILDER (the step-3 redesign). Wired to `filterModalVariant`.
+ *   Broadcast     — TWO stacked groups, because two experiments run at once:
+ *                   "Left panel" (Baseline / To-strip / Ledger, the step-5
+ *                   paradigms) and "Filter modal" (Classic / Builder, step 3).
  *
  * POSITION: bottom-LEFT. Both surfaces put their composer's Send button at the
  * bottom-right of the right-hand card, so a bottom-right FAB sits on top of it —
@@ -35,6 +36,12 @@ const FILTER_MODAL_OPTIONS: { value: 'classic' | 'builder'; label: string; desc:
   { value: 'builder', label: 'Builder', desc: 'Start from a segment, add rules, live match preview' },
 ];
 
+const LEFT_PANEL_OPTIONS: { value: 'baseline' | 'to-strip' | 'ledger'; label: string; desc: string }[] = [
+  { value: 'baseline', label: 'Baseline', desc: 'Audience + recipients side by side (control arm)' },
+  { value: 'to-strip', label: 'To-strip', desc: 'Addressing: audience list only; recipients in a To strip' },
+  { value: 'ledger', label: 'Ledger', desc: 'Confidence: ledger header over rail + roster' },
+];
+
 export function PrototypeVariantToggle({
   surface = 'conversations',
 }: {
@@ -46,14 +53,44 @@ export function PrototypeVariantToggle({
   const filterModalVariant = useBroadcastStore((s) => s.filterModalVariant);
   const setFilterModalVariant = useBroadcastStore((s) => s.setFilterModalVariant);
 
+  const leftPanelVariant = useBroadcastStore((s) => s.leftPanelVariant);
+  const setLeftPanelVariant = useBroadcastStore((s) => s.setLeftPanelVariant);
+
   const isBroadcast = surface === 'broadcast';
-  const groupLabel = isBroadcast ? 'Filter modal' : 'Top row';
-  const options = isBroadcast ? FILTER_MODAL_OPTIONS : TOP_ROW_OPTIONS;
-  const active = isBroadcast ? filterModalVariant : topRowStyle;
-  const setActive = (value: string) => {
-    if (isBroadcast) setFilterModalVariant(value as 'classic' | 'builder');
-    else setTopRowStyle(value as 'full' | 'compact');
-  };
+
+  /**
+   * One or more option groups per surface. Broadcast carries two live
+   * experiments at once — the left-panel paradigm A/B/C and the filter-modal
+   * A/B — so they render stacked rather than one replacing the other.
+   */
+  const groups: {
+    label: string;
+    options: { value: string; label: string; desc: string }[];
+    active: string;
+    onSelect: (value: string) => void;
+  }[] = isBroadcast
+    ? [
+        {
+          label: 'Left panel',
+          options: LEFT_PANEL_OPTIONS,
+          active: leftPanelVariant,
+          onSelect: (v) => setLeftPanelVariant(v as 'baseline' | 'to-strip' | 'ledger'),
+        },
+        {
+          label: 'Filter modal',
+          options: FILTER_MODAL_OPTIONS,
+          active: filterModalVariant,
+          onSelect: (v) => setFilterModalVariant(v as 'classic' | 'builder'),
+        },
+      ]
+    : [
+        {
+          label: 'Top row',
+          options: TOP_ROW_OPTIONS,
+          active: topRowStyle,
+          onSelect: (v) => setTopRowStyle(v as 'full' | 'compact'),
+        },
+      ];
 
   return (
     <div className="fixed bottom-6 left-6 z-[100]">
@@ -78,17 +115,19 @@ export function PrototypeVariantToggle({
             </button>
           </div>
 
-          <div className="p-4">
+          <div className="p-4 flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
+            {groups.map((group) => (
+            <div key={group.label}>
             <p className="font-['Roboto',sans-serif] text-[10px] uppercase font-medium text-gray-400 mb-2 tracking-wide">
-              {groupLabel}
+              {group.label}
             </p>
             <div className="flex flex-col gap-1.5">
-              {options.map((opt) => {
-                const isActive = active === opt.value;
+              {group.options.map((opt) => {
+                const isActive = group.active === opt.value;
                 return (
                   <button
                     key={opt.value}
-                    onClick={() => setActive(opt.value)}
+                    onClick={() => group.onSelect(opt.value)}
                     className="flex items-start gap-3 px-3 py-2 rounded-lg text-left transition-colors"
                     style={{
                       backgroundColor: isActive ? '#eaeef9' : '#fafafa',
@@ -115,6 +154,8 @@ export function PrototypeVariantToggle({
                 );
               })}
             </div>
+            </div>
+            ))}
           </div>
         </div>
       )}

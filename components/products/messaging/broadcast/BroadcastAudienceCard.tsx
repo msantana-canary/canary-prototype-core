@@ -22,11 +22,36 @@ import React from 'react';
 import { colors } from '@canary-ui/components';
 import { BroadcastGroupList } from './BroadcastGroupList';
 import { BroadcastGuestList } from './BroadcastGuestList';
+import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
 
 /** Both internal columns are the same width (the old rail was 240px). */
 export const BROADCAST_COLUMN_WIDTH = 212;
 
 export function BroadcastAudienceCard() {
+  const leftPanelVariant = useBroadcastStore(s => s.leftPanelVariant);
+
+  /**
+   * VARIANT B ("To-strip"): the card is a pure audience list. The recipients
+   * column is gone — its job moved into the composer's To strip and the
+   * Recipients panel behind it.
+   */
+  if (leftPanelVariant === 'to-strip') {
+    return (
+      <div
+        className="h-full flex shrink-0 overflow-clip rounded-[12px]"
+        style={{
+          width: 320,
+          backgroundColor: colors.colorWhite,
+          border: `1px solid ${colors.colorBlack6}`,
+        }}
+      >
+        <div className="w-full h-full overflow-y-auto scrollbar-invisible">
+          <BroadcastGroupList showPopulation />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="h-full flex shrink-0 overflow-clip rounded-[12px]"

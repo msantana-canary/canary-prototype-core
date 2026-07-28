@@ -323,7 +323,21 @@ function GuestItem({
   );
 }
 
-export function BroadcastGuestList() {
+/**
+ * `hideControls` and `showBucketAddAll` exist for variant B's Recipients panel,
+ * which lifts the Filters row / date / Select-all into its own header and adds a
+ * per-bucket "Add all". BOTH DEFAULT TO THE BASELINE BEHAVIOUR — with no props
+ * this renders exactly what it always has. The row, bucket, sort and popover
+ * logic is shared deliberately: duplicating it for the challenger would let the
+ * control arm drift, which would corrupt the comparison the A/B exists for.
+ */
+export function BroadcastGuestList({
+  hideControls = false,
+  showBucketAddAll = false,
+}: {
+  hideControls?: boolean;
+  showBucketAddAll?: boolean;
+} = {}) {
   const {
     allGroups,
     selectedGroupId,
@@ -336,6 +350,7 @@ export function BroadcastGuestList() {
     deselectAllGuests,
     openFilterModal,
     clearAllFilters,
+    addGuestsToSelection,
   } = useBroadcastStore();
 
   const currentGroup = allGroups.find(g => g.id === selectedGroupId);
@@ -396,7 +411,7 @@ export function BroadcastGuestList() {
   return (
     <div className="h-full flex flex-col min-h-0 broadcast-guest-list">
       {/* Filters row (built-in groups only) */}
-      {isBuiltIn && (
+      {!hideControls && isBuiltIn && (
         <div
           className="shrink-0"
           style={{ paddingLeft: COLUMN_INSET, paddingRight: COLUMN_INSET, paddingTop: 12 }}
@@ -438,7 +453,7 @@ export function BroadcastGuestList() {
       )}
 
       {/* Date picker (Arrivals / Departures) — knowingly decorative */}
-      {showDatePicker && (
+      {!hideControls && showDatePicker && (
         <div
           className="shrink-0"
           style={{ paddingLeft: COLUMN_INSET, paddingRight: COLUMN_INSET, paddingTop: 8 }}
@@ -448,6 +463,7 @@ export function BroadcastGuestList() {
       )}
 
       {/* Select all */}
+      {!hideControls && (
       <div
         className="shrink-0"
         style={{
@@ -474,6 +490,7 @@ export function BroadcastGuestList() {
           </span>
         </div>
       </div>
+      )}
 
       {/* Guest list */}
       <div
@@ -487,13 +504,33 @@ export function BroadcastGuestList() {
             .map(bucket => (
               <div key={bucket}>
                 {/* Section header */}
-                <div style={{ paddingTop: 16, paddingBottom: 4 }}>
+                <div
+                  className="flex items-center justify-between"
+                  style={{ paddingTop: 16, paddingBottom: 4 }}
+                >
                   <span
                     className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase font-medium"
                     style={{ color: colors.colorBlack4, letterSpacing: '0.4px' }}
                   >
                     {bucketLabels[bucket]}
                   </span>
+                  {showBucketAddAll && (() => {
+                    const missing = bucketed[bucket]!
+                      .filter(canMessageGuest)
+                      .filter(e => !selectedGuestIds.includes(e.guestId))
+                      .map(e => e.guestId);
+                    if (missing.length === 0) return null;
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => addGuestsToSelection(missing)}
+                        className="font-['Roboto',sans-serif] font-medium text-[12px] leading-[18px] cursor-pointer hover:underline"
+                        style={{ color: colors.colorBlueDark1 }}
+                      >
+                        Add all {missing.length}
+                      </button>
+                    );
+                  })()}
                 </div>
                 {/* Section guests */}
                 {bucketed[bucket]!.map(entry => (

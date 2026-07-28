@@ -30,6 +30,21 @@ interface BroadcastComposerProps {
    */
   canSchedule?: boolean;
   onSchedule?: (content: string, sendAt: Date) => void;
+  /**
+   * Challenger variants label the button "Send to {N}" so the recipient count is
+   * legible at the moment of commitment. Baseline keeps a plain "Send" so the
+   * control arm stays honest.
+   */
+  showSendCount?: boolean;
+  /** Slot above the textarea — variant B's To strip lives here. */
+  topSlot?: React.ReactNode;
+  /**
+   * Replaces the send-confirm body. Receives the draft so a variant can preview
+   * what is about to go out (variant B's message preview + avatar strip).
+   */
+  renderConfirmDetail?: (draft: string) => React.ReactNode;
+  /** "Review recipients" link in the confirm; closes it, keeps the draft. */
+  onReviewRecipients?: () => void;
 }
 
 export function BroadcastComposer({
@@ -38,6 +53,10 @@ export function BroadcastComposer({
   recipientCount = 0,
   canSchedule = false,
   onSchedule,
+  showSendCount = false,
+  topSlot,
+  renderConfirmDetail,
+  onReviewRecipients,
 }: BroadcastComposerProps) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -93,6 +112,14 @@ export function BroadcastComposer({
             border: `1px solid ${isFocused ? colors.colorBlueDark1 : colors.colorBlack6}`,
           }}
         >
+          {/* Addressing slot (variant B's To strip) — first child, hairline below */}
+          {topSlot && (
+            <>
+              {topSlot}
+              <div className="w-full h-[1px]" style={{ backgroundColor: colors.colorBlack6 }} />
+            </>
+          )}
+
           {/* Input Area */}
           <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 12, paddingBottom: 12 }}>
             <textarea
@@ -201,7 +228,7 @@ export function BroadcastComposer({
                 cursor: canSend ? 'pointer' : 'not-allowed',
               }}
             >
-              Send
+              {showSendCount ? `Send to ${recipientCount}` : 'Send'}
             </button>
           </div>
         </div>
@@ -224,12 +251,30 @@ export function BroadcastComposer({
           </div>
         }
       >
-        <p
-          className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
-          style={{ color: colors.colorBlack1 }}
-        >
-          This message goes out to everyone selected right away. It can&apos;t be unsent.
-        </p>
+        {renderConfirmDetail ? (
+          renderConfirmDetail(message.trim())
+        ) : (
+          <p
+            className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
+            style={{ color: colors.colorBlack1 }}
+          >
+            This message goes out to everyone selected right away. It can&apos;t be unsent.
+          </p>
+        )}
+        {onReviewRecipients && (
+          <button
+            type="button"
+            onClick={() => {
+              // Close the confirm only — `message` is untouched, so the draft survives.
+              setIsConfirmOpen(false);
+              onReviewRecipients();
+            }}
+            className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] cursor-pointer hover:underline"
+            style={{ color: colors.colorBlueDark1, marginTop: 12 }}
+          >
+            Review recipients
+          </button>
+        )}
       </CanaryModal>
 
       {/* Schedule send time */}

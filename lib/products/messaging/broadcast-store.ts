@@ -142,6 +142,12 @@ interface BroadcastState {
    */
   filterModalVariant: 'classic' | 'builder';
 
+  /**
+   * Step-5 A/B/C on the left panel. 'baseline' is the control arm and is
+   * byte-identical to what shipped; the two challengers are additive.
+   */
+  leftPanelVariant: 'baseline' | 'to-strip' | 'ledger';
+
   /** Queued sends. Custom groups only — production gates the affordance the same way. */
   scheduledBroadcasts: ScheduledBroadcast[];
   /** Scheduled broadcast whose detail panel is open, if any. */
@@ -154,6 +160,8 @@ interface BroadcastState {
   toggleGuestSelection: (guestId: string) => void;
   selectAllGuests: () => void;
   deselectAllGuests: () => void;
+  /** Add a set of guests to the selection without clearing anything else. */
+  addGuestsToSelection: (guestIds: string[]) => void;
   sendBroadcast: (content: string) => void;
   openCreateGroupModal: () => void;
   closeCreateGroupModal: () => void;
@@ -170,6 +178,7 @@ interface BroadcastState {
   closeDeliveryPanel: () => void;
 
   setFilterModalVariant: (variant: 'classic' | 'builder') => void;
+  setLeftPanelVariant: (variant: 'baseline' | 'to-strip' | 'ledger') => void;
 
   // Scheduled broadcasts
   scheduleBroadcast: (content: string, sendAt: Date) => void;
@@ -306,6 +315,7 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   segmentSavedToast: null,
   deliveryPanelMessageId: null,
   filterModalVariant: 'classic',
+  leftPanelVariant: 'baseline',
   scheduledBroadcasts: [...mockScheduledBroadcasts],
   scheduledPanelId: null,
 
@@ -351,6 +361,14 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
 
   deselectAllGuests: () => {
     set({ selectedGuestIds: [] });
+  },
+
+  addGuestsToSelection: (guestIds: string[]) => {
+    set(state => {
+      const next = new Set(state.selectedGuestIds);
+      for (const id of guestIds) next.add(id);
+      return { selectedGuestIds: Array.from(next) };
+    });
   },
 
   sendBroadcast: (content: string) => {
@@ -493,6 +511,10 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
 
   setFilterModalVariant: (variant: 'classic' | 'builder') => {
     set({ filterModalVariant: variant });
+  },
+
+  setLeftPanelVariant: (variant: 'baseline' | 'to-strip' | 'ledger') => {
+    set({ leftPanelVariant: variant });
   },
 
   // ── Scheduled broadcasts ───────────────────────────────────────────────────
