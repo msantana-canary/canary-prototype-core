@@ -407,18 +407,25 @@ deliberately absent.
 The old left rail (groups) and middle column (guest list) combine into **ONE
 card**: they're closely associated — you pick an audience, then narrow it to
 recipients. The surface is now two white rounded-12 cards on the `colorBlack8`
-canvas, spaced and margined exactly like Conversations (35% / 65% flex-basis,
-16px gap, 24px page padding, 16px top).
+canvas, spaced and margined like Conversations (16px gap, 24px page padding, 16px
+top). The Audience card takes **42%** and the Thread card **58%** — wider than
+the Conversations 35/65 split because the Audience card carries two internal
+columns (the two old panes were 240 + 260 = 500px).
 
-**Left card — Audience (combined).** Top zone: the status trio (Arrivals /
-In-house / Departures) as compact selectable rows with their existing icons, then
-a GROUPS section (10px uppercase label + "+" new-group button) listing custom
-groups. Rows use the redesign selection register (soft `colorBlueDark5` fill +
-`colorBlueDark3` border, rounded-6) instead of solid-blue `CanaryListItem` rows,
-and stay lean — no counts, no previews. Divider, then the recipients zone:
-Filters row (built-ins only), date picker (Arrivals/Departures — unchanged, and
-still knowingly decorative), Select-all, and the guest list with its
-EXPECTING / CHECKED IN section labels and hover contact popover.
+**Left card — Audience (combined).** The two old panes keep their **side-by-side**
+relationship *inside* the one card — a 212px audience-selector column, a vertical
+`colorBlack6` hairline, then the recipients column:
+
+- *Audience column (212px, scrolls independently):* the status trio (Arrivals /
+  In-house / Departures) as compact selectable rows with their existing icons,
+  then a GROUPS section (10px uppercase label + "+" new-group button + kebab)
+  listing custom groups. Rows use the redesign selection register (soft
+  `colorBlueDark5` fill + `colorBlueDark3` border, rounded-6) instead of
+  solid-blue `CanaryListItem` rows, and stay lean — no counts, no previews.
+- *Recipients column (flex-1):* Filters row (built-ins only), date picker
+  (Arrivals/Departures — unchanged, and still knowingly decorative), Select-all,
+  and the guest list with its EXPECTING / CHECKED IN section labels and hover
+  contact popover.
 
 **Right card — Broadcast thread.** Header names the audience with the recipient
 count beneath it, in the Conversations thread-header register; the dead info
@@ -436,7 +443,7 @@ Segments mode, where it already lived.
 
 | Area | Old | Step 1 baseline |
 |---|---|---|
-| Surface | 3 flush columns separated by borders, gray column fills (`#fafafa` / `#f0f0f0`) | 2 white rounded-12 cards with `colorBlack6` borders on the `colorBlack8` canvas, Conversations spacing |
+| Surface | 3 flush columns separated by borders, gray column fills (`#fafafa` / `#f0f0f0`) | 2 white rounded-12 cards with `colorBlack6` borders on the `colorBlack8` canvas (42% / 58%), Conversations spacing; the first two columns live side by side INSIDE the Audience card, split by a vertical hairline |
 | Control band | white sub-nav strip: Active/Archived pills + "Manage segments" | REMOVED — Active is the default, Archived in the GROUPS kebab, Manage segments only inside the filter modal |
 | Audience rows | `CanaryList`/`CanaryListItem`, solid-blue selected row, custom groups carried a 40px gray tile + member count + last-broadcast preview | lean rounded-6 rows, soft blue selection, icon + name only (counts/previews are step 4) |
 | Guest rows | 40px avatar, no channel signal | 32px rounded-8 square avatar, **NEW preferred-channel indicator** (SMS / WhatsApp / Email); no-phone treatment unchanged (0.4 opacity, disabled, "No phone number") |

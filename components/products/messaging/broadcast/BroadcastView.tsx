@@ -2,7 +2,8 @@
  * BroadcastView Component — REDESIGN (broadcast step 1 baseline)
  *
  * TWO cards on the colorBlack8 canvas, spaced/margined like the Conversations
- * surface: the combined Audience card (35%) and the broadcast Thread card (65%).
+ * surface: the combined Audience card (42% — it carries two internal columns)
+ * and the broadcast Thread card (58%).
  * The old three-column flush layout and the Active/Archived + Manage-segments
  * control band are gone — Active is simply the default state, Archived lives in
  * the GROUPS kebab, and "Manage segments" is reachable only from the filter
@@ -44,13 +45,15 @@ export function BroadcastView() {
         className="flex h-full gap-4 min-h-0"
         style={{ paddingLeft: 24, paddingRight: 24, paddingBottom: 24, paddingTop: 16 }}
       >
-        {/* Audience card — 35% of the content row */}
-        <div className="min-w-0 h-full flex" style={{ flexBasis: '35%', flexGrow: 0, flexShrink: 1 }}>
+        {/* Audience card — 42% of the content row. Wider than the Conversations
+            thread-list column (35%) because it holds TWO internal columns; the
+            two old panes together were 240 + 260 = 500px. */}
+        <div className="min-w-0 h-full flex" style={{ flexBasis: '42%', flexGrow: 0, flexShrink: 1 }}>
           <BroadcastAudienceCard />
         </div>
 
-        {/* Broadcast thread card — 65% of the content row */}
-        <div className="min-w-0 h-full flex" style={{ flexBasis: '65%', flexGrow: 1, flexShrink: 1 }}>
+        {/* Broadcast thread card — 58% of the content row */}
+        <div className="min-w-0 h-full flex" style={{ flexBasis: '58%', flexGrow: 1, flexShrink: 1 }}>
           <BroadcastThread />
         </div>
       </div>
