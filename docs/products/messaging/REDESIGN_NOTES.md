@@ -581,6 +581,62 @@ nullable `broadcast` id, and `sent_at`/`deleted_at` tombstones; here the record
 simply leaves the list). One is seeded on the Corporate retreat group, relative
 to now, so it always reads as a future send.
 
+## Broadcast — opted-out gate + per-folder auto-select (2026-07-28)
+
+Two more production behaviours imported exactly.
+
+### Opted-out guests
+
+`canMessageGuest` is now production's rule verbatim — **phone on file AND not
+opted out of messaging**. `BroadcastGuestEntry` gains `messagingOptedOut`, and an
+opted-out guest gets the identical treatment to a no-phone guest: 0.4 opacity,
+disabled checkbox, never auto-selected, never counted as selectable. The subtitle
+is production's `guestRoomMethod` copy, with opted-out taking precedence:
+
+- `"{room} • Opted out from messaging"`
+- `"{room} • No phone number"`
+
+(Note the bullet is `•`, not the `·` we had.) Three opted-out guests are seeded,
+one per built-in folder, all single-folder guests so the flag can't contradict
+itself: Tariq (Arrivals), Lucia (In-house), Javier (Departures).
+
+### Per-folder buckets and auto-select exclusions
+
+Guests now carry `checkInStatus` (production's `CheckInStatus`: expecting /
+in-house / checked-out) instead of our invented per-folder `segment`. Our
+"Departing" label is gone — production has no such bucket; a departing guest has
+not checked out, so it is simply in-house, and Departures buckets it under
+"Expecting".
+
+**Buckets** (production's `guestsByBucket`), with production's own section
+titles — "Expecting" / "Checked In" / "Checked Out", in that order:
+
+| Folder | Bucketing |
+|---|---|
+| In-house | one list, **no section headers** |
+| Departures | checked-out → "Checked Out"; everyone else → "Expecting" |
+| Arrivals | in-house → "Checked In"; checked-out → "Checked Out"; rest → "Expecting" |
+
+**Auto-select exclusions** (production's `selectGuestsForFolder`) — beyond
+`canMessageGuest`, entering a folder pre-selects:
+
+| Folder | Pre-selected |
+|---|---|
+| Custom / In-house | everyone messageable |
+| Departures | everyone except checked-out |
+| Arrivals | everyone except in-house and checked-out |
+
+i.e. only the "Expecting" bucket pre-selects on Arrivals and Departures. This
+exclusion applies **only** on folder entry and filter-clear — production does not
+re-apply it in Select-all or the filter-apply rebuild, which take everything
+messageable that is visible, so neither do we. A consequence worth expecting:
+Arrivals loads with the Select-all checkbox **indeterminate**, because the
+checked-in guest is visible-and-messageable but deliberately unselected. That is
+production's behaviour too.
+
+**Sorting** (production's `sortedGuests`): unmessageable guests sink to the
+bottom of their section, alphabetical by last name within each side.
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |
