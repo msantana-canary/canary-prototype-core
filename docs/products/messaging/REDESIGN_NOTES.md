@@ -424,12 +424,21 @@ column. The card is therefore 212 + 1 + 212 + borders wide and no wider.
   solid-blue `CanaryListItem` rows. The status trio renders **bare** (icon +
   name); **GROUPS rows keep their member count and last-broadcast preview**,
   which both the old prototype and production show.
-- *Recipients column (212px):* Filters row (built-ins only), date picker
-  (Arrivals/Departures — unchanged, and still knowingly decorative), Select-all,
-  and the guest list with its EXPECTING / CHECKED IN section labels and hover
-  contact popover. Rows are **bare** — checkbox, avatar, name, room — matching
-  production. The name truncates rather than wrapping (full name on the hover
-  popover and as a `title`).
+- *Recipients column (212px):* Filters row (built-ins only), date control
+  (Arrivals/Departures — knowingly decorative, nothing filters on it),
+  Select-all, and the guest list with its EXPECTING / CHECKED IN section labels
+  and hover contact popover. Rows are **bare** — checkbox, avatar, name, room —
+  matching production. The name truncates rather than wrapping (full name on the
+  hover popover and as a `title`).
+  **One inset for the whole column:** a single `COLUMN_INSET` of **12px** governs
+  every box in here — Filters row, date control, Select-all, segment labels and
+  guest rows all start at the same left edge and end at the mirrored right edge.
+  Guest rows carry no horizontal padding of their own, so a row's hover
+  background is exactly the Filters row's box rather than sitting indented inside
+  it. The date control is a **compact 32px row** (calendar icon + formatted date,
+  1px `colorBlack6` border, rounded-6) with a transparent native date input laid
+  over it — it replaces the full-height bordered `CanaryInputDate` box that
+  dominated the column, and picking a date still works.
 
 **Right card — Broadcast thread.** Header names the audience with the recipient
 count beneath it, in the Conversations thread-header register; the dead info
@@ -451,7 +460,7 @@ Segments mode, where it already lived.
 | Control band | white sub-nav strip: Active/Archived pills + "Manage segments" | REMOVED — Active is the default, Archived in the GROUPS kebab, Manage segments only inside the filter modal |
 | Audience rows | `CanaryList`/`CanaryListItem`, solid-blue selected row, custom groups carried a 40px gray tile + member count + last-broadcast preview | lean rounded-6 rows, soft blue selection, icon + name only (counts/previews are step 4) |
 | Guest rows | 40px avatar | 32px rounded-8 square avatar, otherwise unchanged — checkbox, avatar, name, room, and the same no-phone treatment (0.4 opacity, disabled, "No phone number") |
-| Filters row | `CanaryListItem` in `#eaeef9` | tonal rounded-6 row, same built-ins-only content and clear "×" |
+| Filters row | `CanaryListItem` in `#eaeef9` | tonal rounded-6 row, same built-ins-only content and clear "×"; it and the date control define the column's shared 12px inset |
 | Thread header | 60px, generic group icon + bare "N guests", dead info button | 70px Conversations register, audience name + guest count, rounded-8 tile, info button dropped |
 | Sent broadcasts | right-aligned tinted bubbles with a trailing antenna tile and a left timestamp gutter | FLAT LEFT-ALIGNED blocks (Slack register, same anatomy as `MessageBubble`): 32px sender avatar, sender name + right-aligned uppercase time, body, meta row = antenna + recipient count + the "N FILTERS APPLIED" / segment-name chip (still opens the filters-applied modal) |
 | Composer | `#666` border rounded-4, `p-6`, ad-hoc icon buttons | Conversations composer anatomy — rounded-12 card, `colorBlack6` border w/ blue focus, hairline divider, ghost tool icons, 32px rounded-6 Send. No AI toggle (broadcasts have none) |

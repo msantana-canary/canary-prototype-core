@@ -17,7 +17,8 @@
 
 import React, { useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { CanaryCheckbox, CanaryInputDate, colors } from '@canary-ui/components';
+import { format } from 'date-fns';
+import { CanaryCheckbox, colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import {
   mdiAccountOutline,
@@ -58,6 +59,64 @@ const segmentLabels: Record<GuestSegment, string> = {
 };
 
 const segmentOrder: GuestSegment[] = ['expecting', 'checked-in', 'departing', 'checked-out'];
+
+/**
+ * ONE inset for the whole recipients column. Every box in here — the Filters
+ * row, the date control, Select-all, the segment labels and the guest rows —
+ * starts at this left edge and ends at the mirrored right edge, so the column
+ * reads as a single column instead of four slightly different indents.
+ * Guest rows therefore carry NO horizontal padding of their own: their hover
+ * background is exactly the Filters row's box.
+ */
+const COLUMN_INSET = 12;
+
+/**
+ * Compact date control (Arrivals / Departures). Knowingly decorative — nothing
+ * filters on it — but it stays a real date input so picking a date still works.
+ * A slim 32px row (calendar icon + formatted date) with a transparent native
+ * input laid over it, replacing the full-height bordered CanaryInputDate box
+ * that dominated the column.
+ */
+function CompactDateControl({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (date: string) => void;
+}) {
+  // `value` is YYYY-MM-DD; parse as local time so the label can't slip a day.
+  const parsed = value ? new Date(`${value}T00:00:00`) : null;
+  const label = parsed && !Number.isNaN(parsed.getTime())
+    ? format(parsed, 'MMM d, yyyy')
+    : 'Select date';
+
+  return (
+    <div
+      className="relative flex items-center gap-2 rounded-[6px] transition-colors hover:bg-[#f9fafb]"
+      style={{
+        height: 32,
+        paddingLeft: 12,
+        paddingRight: 12,
+        border: `1px solid ${colors.colorBlack6}`,
+      }}
+    >
+      <Icon path={mdiCalendarOutline} size={0.67} color={colors.colorBlack3} className="shrink-0" />
+      <span
+        className="font-['Roboto',sans-serif] text-[12px] leading-[18px] truncate"
+        style={{ color: colors.colorBlack1 }}
+      >
+        {label}
+      </span>
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label="Broadcast date"
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+      />
+    </div>
+  );
+}
 
 function ContactDetailsPopover({ guest, reservation }: { guest: Guest; reservation?: Reservation }) {
   const roomDisplay = reservation
@@ -160,8 +219,8 @@ function GuestItem({
       className="flex items-center gap-3 rounded-[6px] transition-colors hover:bg-[#f9fafb] cursor-pointer"
       style={{
         opacity: hasPhone ? 1 : 0.4,
-        paddingLeft: 12,
-        paddingRight: 12,
+        // No horizontal padding — the column's single inset is on the scroll
+        // container, so the checkbox sits flush with the Filters row's edge.
         paddingTop: 8,
         paddingBottom: 8,
       }}
@@ -293,7 +352,10 @@ export function BroadcastGuestList() {
     <div className="h-full flex flex-col min-h-0 broadcast-guest-list">
       {/* Filters row (built-in groups only) */}
       {isBuiltIn && (
-        <div className="shrink-0" style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 8 }}>
+        <div
+          className="shrink-0"
+          style={{ paddingLeft: COLUMN_INSET, paddingRight: COLUMN_INSET, paddingTop: 12 }}
+        >
           <div
             onClick={openFilterModal}
             className="flex items-center gap-2 rounded-[6px] cursor-pointer transition-opacity hover:opacity-80"
@@ -332,11 +394,11 @@ export function BroadcastGuestList() {
 
       {/* Date picker (Arrivals / Departures) — knowingly decorative */}
       {showDatePicker && (
-        <div className="shrink-0" style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 8 }}>
-          <CanaryInputDate
-            value={selectedDate}
-            onChange={(date) => setSelectedDate(date)}
-          />
+        <div
+          className="shrink-0"
+          style={{ paddingLeft: COLUMN_INSET, paddingRight: COLUMN_INSET, paddingTop: 8 }}
+        >
+          <CompactDateControl value={selectedDate} onChange={setSelectedDate} />
         </div>
       )}
 
@@ -344,8 +406,8 @@ export function BroadcastGuestList() {
       <div
         className="shrink-0"
         style={{
-          paddingLeft: 20,
-          paddingRight: 20,
+          paddingLeft: COLUMN_INSET,
+          paddingRight: COLUMN_INSET,
           paddingTop: 12,
           paddingBottom: 12,
           borderBottom: `1px solid ${colors.colorBlack6}`,
@@ -371,7 +433,7 @@ export function BroadcastGuestList() {
       {/* Guest list */}
       <div
         className="flex-1 min-h-0 overflow-y-auto scrollbar-invisible"
-        style={{ paddingLeft: 8, paddingRight: 8, paddingBottom: 16 }}
+        style={{ paddingLeft: COLUMN_INSET, paddingRight: COLUMN_INSET, paddingBottom: 16 }}
       >
         {hasSegments && segmentedEntries ? (
           // Segmented view (Arrivals / Departures)
@@ -380,7 +442,7 @@ export function BroadcastGuestList() {
             .map(seg => (
               <div key={seg}>
                 {/* Segment header */}
-                <div style={{ paddingLeft: 12, paddingRight: 12, paddingTop: 16, paddingBottom: 4 }}>
+                <div style={{ paddingTop: 16, paddingBottom: 4 }}>
                   <span
                     className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase font-medium"
                     style={{ color: colors.colorBlack4, letterSpacing: '0.4px' }}
