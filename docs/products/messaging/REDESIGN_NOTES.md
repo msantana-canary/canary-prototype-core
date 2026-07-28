@@ -510,6 +510,77 @@ Recipients-as-floating-panel · richer audience rows (beyond the count + preview
 filter-modal restructure · scheduling · wiring the date picker (still decorative)
 · archiving a group (the archived view exists, nothing archives into it).
 
+## Broadcast — delivery panel + send later (2026-07-28)
+
+Two builds on top of the step-1 baseline, both mirroring production semantics.
+
+### Per-recipient delivery panel
+
+Clicking a sent broadcast block opens a panel listing every recipient and what
+happened to their copy. Production ships this as a 420px right-edge slide-over;
+ours rides the shared floating-panel shell (480px — one narrow list, not the
+sidebar's guest cards). Anatomy follows production: "Broadcast message" title +
+right-arrow close, icon meta rows (body · sent timestamp · sender ·
+"(Audience) N"), then a bordered rounded-8 recipient list with the status
+right-aligned. Avatars are our 32px rounded-8 squares, not production's circles.
+
+Status vocabulary is production's `NotificationStatus` set with its own English
+labels — including FAILED and BLOCKED_HIGH_RATE_COUNTRY deliberately sharing
+"Failed to send". "Pending RTC" (an outstanding WhatsApp Request-to-Contact
+behind a failed send) is *derived* in production; the prototype has no
+per-channel fields to derive from, so it is stored as its own status.
+
+Colour: failed red, Pending RTC amber (`colors.warning`), the rest neutral. Two
+deliberate divergences: **blocked is red** here (production leaves it black
+because its class check is `=== FAILED`, which reads like an oversight for
+something labelled "Failed to send"), and **"Not sent" is gray** (it is a
+non-event, not a delivery).
+
+The filter/segment chip keeps its own FiltersAppliedModal and stops the click
+from reaching the block. The panel sits at z 40 / scrim 39, below `zIndex.modal`
+(50), so both that modal and the send-confirm stack above it.
+
+### Send later (scheduled broadcasts)
+
+**The gate is custom-group-only**, exactly as production: `BroadcastsV2.vue`
+passes `!isBuiltInBroadcastFolder(currentFolder)` into the composer, which then
+renders the clock. The affordance is **absent** on Arrivals / In-house /
+Departures, not disabled.
+
+- **Composer** gains a clock beside attachment + templates. It opens
+  "Schedule send time" — date + "Select time" side by side, Cancel + "Schedule
+  send time", enabled only once both are chosen. Time slots are 15-minute
+  blocks generated from *now* when the chosen date is today, so a past time is
+  never offered, and changing the date clears the time — both production
+  behaviours.
+- **Scheduled pill** appears under the textarea: clock + "Scheduled for Today,
+  1:00 PM" in `colorBlueDark1` inside a rounded-24 outline, with a ✕ to clear.
+  Clicking the label reopens the modal. The day part follows production's full
+  cascade — Today / Tomorrow / weekday within 6 days / "August 14, 2026".
+- **Send with a schedule set queues instead of sending**, and skips the
+  send-confirm (production has no confirmation on that path). Note production
+  leaves the button reading "Send" either way; we match.
+- **In the feed**, scheduled sends are NOT interleaved chronologically. They sit
+  in a pinned block after everything sent, behind a hairline and a centered
+  "Scheduled to send later" header — production's `MessageList.vue` layout. The
+  block itself is our flat-block register (a clock tile where the sender avatar
+  goes, soft `colorBlack8` card, blue "Scheduled for …" line) rather than
+  production's outlined bubble, since this surface has no bubbles.
+- **The block carries no actions** — like production's atom it is a launcher.
+  All management lives in its panel, with production's own hybrid split: three
+  bare icon buttons (edit text · edit time · send now) and a kebab holding only
+  the destructive Delete. Delete and Send now confirm, with production's copy
+  verbatim; edit text and edit time do not and leave the panel open.
+- **Send now** converts the queued item into a sent broadcast with delivery
+  statuses and drops it from the queue — production posts to `/send` and removes
+  the record, letting the resulting broadcast appear in the normal feed.
+
+Data: `ScheduledBroadcast { id, groupId, body, senderName, sendAt, createdAt }`,
+a trimmed `ScheduledGroupBroadcast` (production carries uuid/id pairs, a
+nullable `broadcast` id, and `sent_at`/`deleted_at` tombstones; here the record
+simply leaves the list). One is seeded on the Corporate retreat group, relative
+to now, so it always reads as a future send.
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |
@@ -558,6 +629,10 @@ values are NOT finalized — when they finalize, promote into `@canary-ui/compon
 5. **Tonal button variant**: 10%-alpha fill + full-strength text (`rgba(40,88,196,0.1)` + `colorBlueDark1`; green analog `rgba(0,128,64,0.1)` + `colorLightGreen1` used by the status pill).
 6. **Boxed segmented control**: white card, 4px padding, 4px gap, filled-blue selected segment.
 7. **Split button** anatomy: side-only 6px radii, 1px seam.
+7b. **Compact date control** — a 32px rounded-6 row (calendar icon + formatted date, 1px `colorBlack6` border) with a transparent native date input laid over it. Hand-rolled in `BroadcastGuestList` to replace `CanaryInputDate`, whose full-height bordered box dominated the 212px recipients column. Designer asked for it and accepted it as an in-branch override. The library still has no compact/inline date variant.
+7c. **Floating panel shell** — `components/products/messaging/FloatingPanel.tsx`. Fixed inset card + scrim + two-phase mount + 240ms slide/fade + reduced-motion, z 40/39 under `zIndex.modal` (50). Used by Conversation Details, the broadcast delivery panel and the scheduled-broadcast panel. Promote once a second product needs a right-side panel.
+7d. **Overflow (kebab) menu** — hand-rolled in `BroadcastScheduledPanel` and `BroadcastGroupList`. Production has `CanaryOverflowMenu` (with an `OverflowMenuItemColor.DANGER` item variant); `@canary-ui` exports no equivalent, so every kebab in this branch is bespoke. Best single candidate for promotion.
+7e. **Scheduled pill** — the composer's rounded-24 "Scheduled for …" chip with a clear affordance. No library chip carries icon + label + dismiss.
 8. **Status pill** (online/away/offline) — dot + tonal bg + caret. Note the Figma has a 6-outer/8-inner radius mismatch on this control; we used 6 throughout.
 9. Figma mock nits to fix in the file when convenient: Chain-of-thoughts says Room 504 vs Emily's 153; dates say 2024; "TODAY" divider is 5 literal spaces + text; "AI actitivity" layer typo; Filters row hard-coded at 434 bleeding its card padding; Canary chatlog detached at fixed 862.
 
