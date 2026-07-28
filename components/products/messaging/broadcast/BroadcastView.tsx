@@ -17,6 +17,7 @@ import { BroadcastAudienceCard } from './BroadcastAudienceCard';
 import { BroadcastThread } from './BroadcastThread';
 import { CreateGroupModal } from './CreateGroupModal';
 import { FilterGuestsModal } from './FilterGuestsModal';
+import { BroadcastDeliveryPanel } from './BroadcastDeliveryPanel';
 import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
 import { Toast } from '@/components/core/Toast';
 
@@ -70,6 +71,11 @@ export function BroadcastView() {
         isOpen={isFilterModalOpen}
         onClose={closeFilterModal}
       />
+
+      {/* Per-recipient delivery panel — rides the shared floating-panel shell.
+          Its z-index (40 / scrim 39) sits below @canary-ui's modal layer (50),
+          so the filters-applied and send-confirm modals stack above it. */}
+      <BroadcastDeliveryPanel />
 
       {/* Toast: guest segment saved */}
       <Toast message="Guest segment saved" isOpen={!!segmentSavedToast} variant="success" />

@@ -20,6 +20,7 @@ import {
   BroadcastMessage,
   BroadcastGuestEntry,
   BroadcastFilterCriteria,
+  BroadcastRecipientDelivery,
 } from './broadcast-types';
 import {
   builtInGroups,
@@ -126,6 +127,9 @@ interface BroadcastState {
   /** Name of the just-saved guest segment, drives the in-register toast. */
   segmentSavedToast: string | null;
 
+  /** Broadcast whose per-recipient delivery panel is open, if any. */
+  deliveryPanelMessageId: string | null;
+
   // Actions
   selectGroup: (groupId: string) => void;
   setActiveGroupTab: (tab: 'active' | 'archived') => void;
@@ -143,6 +147,10 @@ interface BroadcastState {
   closeFilterModal: () => void;
   applyFilters: (criteria: BroadcastFilterCriteria, segmentId?: string) => void;
   clearAllFilters: () => void;
+
+  // Delivery panel
+  openDeliveryPanel: (messageId: string) => void;
+  closeDeliveryPanel: () => void;
 
   // Toast
   showSegmentSavedToast: (name: string) => void;
@@ -181,6 +189,20 @@ function getSelectableGuestIds(groupId: string, allGroups: BroadcastGroup[]): st
     .map(entry => entry.guestId);
 }
 
+/**
+ * Delivery log for a freshly sent broadcast. A real send lands mostly
+ * "Delivered" with a few still "Sent" (carrier accepted, no delivery receipt
+ * yet); anyone without a phone who slipped through is "Not sent", mirroring
+ * production's canMessageGuest gate. Deterministic by index so a demo replays
+ * identically.
+ */
+function buildRecipientDeliveries(guestIds: string[]): BroadcastRecipientDelivery[] {
+  return guestIds.map((guestId, i) => ({
+    guestId,
+    status: !guests[guestId]?.phone ? 'not-sent' : i % 5 === 3 ? 'sent' : 'delivered',
+  }));
+}
+
 /** Messageable ids among the guest entries currently on screen for a filter. */
 function getVisibleSelectableIds(
   groupId: string,
@@ -209,6 +231,7 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   loadedSegmentId: null,
 
   segmentSavedToast: null,
+  deliveryPanelMessageId: null,
 
   // Select a group — auto-selects all messageable guests and clears filters.
   // Production does the same on folder change (BroadcastV2BuiltInGroupGuestList
@@ -265,6 +288,7 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
       senderName: 'THERESA WEBB',
       sentAt: new Date(),
       recipientCount: selectedGuestIds.length,
+      recipients: buildRecipientDeliveries(selectedGuestIds),
     };
 
     // Attach filter snapshot if filters are active. A loaded Guest Segment
@@ -381,6 +405,14 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
       loadedSegmentId: null,
       selectedGuestIds: getSelectableGuestIds(selectedGroupId, allGroups),
     });
+  },
+
+  openDeliveryPanel: (messageId: string) => {
+    set({ deliveryPanelMessageId: messageId });
+  },
+
+  closeDeliveryPanel: () => {
+    set({ deliveryPanelMessageId: null });
   },
 
   showSegmentSavedToast: (name: string) => {

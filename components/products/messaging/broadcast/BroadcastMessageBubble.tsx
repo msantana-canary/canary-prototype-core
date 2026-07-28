@@ -20,6 +20,7 @@ import Icon from '@mdi/react';
 import { mdiVideoInputAntenna, mdiFilterOutline } from '@mdi/js';
 import { CanaryModal, colors } from '@canary-ui/components';
 import { Avatar } from '../Avatar';
+import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
 
 const LOYALTY_LABELS: Record<LoyaltyTier, string> = {
   'non-member': 'Non-member',
@@ -129,6 +130,7 @@ interface BroadcastMessageBubbleProps {
 export function BroadcastMessageBubble({ message }: BroadcastMessageBubbleProps) {
   const formattedTime = format(message.sentAt, 'h:mm a').toUpperCase();
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const openDeliveryPanel = useBroadcastStore((s) => s.openDeliveryPanel);
 
   const displayName = toTitleCase(message.senderName);
 
@@ -140,7 +142,11 @@ export function BroadcastMessageBubble({ message }: BroadcastMessageBubbleProps)
 
   return (
     <div
-      className="flex items-start gap-3"
+      onClick={() => openDeliveryPanel(message.id)}
+      role="button"
+      tabIndex={0}
+      aria-label="View delivery details"
+      className="flex items-start gap-3 cursor-pointer transition-colors hover:bg-[#f9fafb]"
       style={{ paddingLeft: 16, paddingRight: 16, paddingTop: 8, paddingBottom: 8 }}
     >
       {/* Sender avatar */}
@@ -173,8 +179,10 @@ export function BroadcastMessageBubble({ message }: BroadcastMessageBubbleProps)
           {message.content}
         </p>
 
-        {/* Meta row — reach + the filter/segment chip */}
-        <div className="flex items-center gap-2 flex-wrap" style={{ paddingTop: 2 }}>
+        {/* Meta row — reach + the filter/segment chip. 6px of air off the body
+            text (4px more than before); kept in step with the delivery-status
+            line on the Conversations surface. */}
+        <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 6 }}>
           <div className="flex items-center gap-1">
             <Icon path={mdiVideoInputAntenna} size={0.58} color={colors.colorBlack3} />
             <span
@@ -188,7 +196,12 @@ export function BroadcastMessageBubble({ message }: BroadcastMessageBubbleProps)
           {message.filterSnapshot && (
             <button
               type="button"
-              onClick={() => setShowFilterModal(true)}
+              // Stop the click reaching the block — the chip keeps its own
+              // FiltersAppliedModal; the two are deliberately not merged.
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowFilterModal(true);
+              }}
               className="flex items-center gap-1 rounded-[6px] cursor-pointer transition-opacity hover:opacity-80"
               style={{
                 backgroundColor: colors.colorBlueDark5,

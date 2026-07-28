@@ -188,6 +188,13 @@ export const mockBroadcastMessages: Record<string, BroadcastMessage[]> = {
       senderName: 'MARTA ZIAEI',
       sentAt: new Date('2026-01-16T13:02:00'),
       recipientCount: 5,
+      recipients: [
+        { guestId: 'guest-gel', status: 'delivered' },
+        { guestId: 'guest-jack', status: 'delivered' },
+        { guestId: 'guest-sofia', status: 'read' },
+        { guestId: 'guest-carlos', status: 'delivered' },
+        { guestId: 'guest-nina', status: 'delivered' },
+      ],
     },
     {
       id: 'bm-arr-2',
@@ -196,6 +203,11 @@ export const mockBroadcastMessages: Record<string, BroadcastMessage[]> = {
       senderName: 'SARAH SIM',
       sentAt: new Date('2026-02-02T03:44:00'),
       recipientCount: 3,
+      recipients: [
+        { guestId: 'guest-gel', status: 'delivered' },
+        { guestId: 'guest-jack', status: 'failed' },
+        { guestId: 'guest-nook', status: 'delivered' },
+      ],
     },
   ],
   'group-in-house': [
@@ -206,6 +218,26 @@ export const mockBroadcastMessages: Record<string, BroadcastMessage[]> = {
       senderName: 'THERESA WEBB',
       sentAt: new Date('2026-03-10T07:00:00'),
       recipientCount: 18,
+      recipients: [
+        { guestId: 'guest-emily', status: 'read' },
+        { guestId: 'guest-brooklyn', status: 'delivered' },
+        { guestId: 'guest-kristin', status: 'delivered' },
+        { guestId: 'guest-olivia', status: 'read' },
+        { guestId: 'guest-liam', status: 'delivered' },
+        { guestId: 'guest-raj', status: 'delivered' },
+        { guestId: 'guest-noah', status: 'delivered' },
+        { guestId: 'guest-emma', status: 'delivered' },
+        { guestId: 'guest-nook', status: 'delivered' },
+        { guestId: 'guest-priya', status: 'delivered' },
+        { guestId: 'guest-yuki', status: 'read' },
+        { guestId: 'guest-fatima', status: 'delivered' },
+        { guestId: 'guest-lucia', status: 'delivered' },
+        { guestId: 'guest-ahmed', status: 'sent' },
+        { guestId: 'guest-hiroshi', status: 'delivered' },
+        { guestId: 'guest-sven', status: 'delivered' },
+        { guestId: 'guest-anya', status: 'delivered' },
+        { guestId: 'guest-sophie-t', status: 'delivered' },
+      ],
     },
     {
       id: 'bm-ih-2',
@@ -214,6 +246,15 @@ export const mockBroadcastMessages: Record<string, BroadcastMessage[]> = {
       senderName: 'SARAH SIM',
       sentAt: new Date('2026-03-10T12:30:00'),
       recipientCount: 7,
+      recipients: [
+        { guestId: 'guest-emily', status: 'delivered' },
+        { guestId: 'guest-olivia', status: 'failed' },
+        { guestId: 'guest-priya', status: 'pending-rtc' },
+        { guestId: 'guest-fatima', status: 'delivered' },
+        { guestId: 'guest-hiroshi', status: 'read' },
+        { guestId: 'guest-victor', status: 'blocked-high-rate-country' },
+        { guestId: 'guest-leila', status: 'sent' },
+      ],
       filterSnapshot: {
         type: 'saved',
         savedFilterName: 'Corporate Guests',
@@ -237,6 +278,20 @@ export const mockBroadcastMessages: Record<string, BroadcastMessage[]> = {
       senderName: 'THERESA WEBB',
       sentAt: new Date('2026-03-11T07:30:00'),
       recipientCount: 12,
+      recipients: [
+        { guestId: 'guest-diana', status: 'delivered' },
+        { guestId: 'guest-marco', status: 'delivered' },
+        { guestId: 'guest-kwame', status: 'failed' },
+        { guestId: 'guest-carmen', status: 'delivered' },
+        { guestId: 'guest-rafael', status: 'delivered' },
+        { guestId: 'guest-javier', status: 'delivered' },
+        { guestId: 'guest-kenji', status: 'not-sent' },
+        { guestId: 'guest-raj', status: 'delivered' },
+        { guestId: 'guest-nook', status: 'read' },
+        { guestId: 'guest-anya', status: 'delivered' },
+        { guestId: 'guest-sophie-t', status: 'delivered' },
+        { guestId: 'guest-ines', status: 'delivered' },
+      ],
     },
   ],
   'group-corporate': [
@@ -247,6 +302,11 @@ export const mockBroadcastMessages: Record<string, BroadcastMessage[]> = {
       senderName: 'MARTA ZIAEI',
       sentAt: new Date('2026-03-10T09:00:00'),
       recipientCount: 3,
+      recipients: [
+        { guestId: 'guest-emily', status: 'read' },
+        { guestId: 'guest-brooklyn', status: 'delivered' },
+        { guestId: 'guest-raj', status: 'delivered' },
+      ],
     },
   ],
   'group-conference': [
@@ -257,6 +317,10 @@ export const mockBroadcastMessages: Record<string, BroadcastMessage[]> = {
       senderName: 'THERESA WEBB',
       sentAt: new Date('2026-03-10T18:00:00'),
       recipientCount: 2,
+      recipients: [
+        { guestId: 'guest-olivia', status: 'delivered' },
+        { guestId: 'guest-liam', status: 'read' },
+      ],
     },
   ],
   'group-soccer': [
@@ -267,6 +331,12 @@ export const mockBroadcastMessages: Record<string, BroadcastMessage[]> = {
       senderName: 'SARAH SIM',
       sentAt: new Date('2026-03-10T20:00:00'),
       recipientCount: 4,
+      recipients: [
+        { guestId: 'guest-gel', status: 'delivered' },
+        { guestId: 'guest-jack', status: 'delivered' },
+        { guestId: 'guest-nook', status: 'sent' },
+        { guestId: 'guest-noah', status: 'delivered' },
+      ],
     },
   ],
   'group-test': [
@@ -277,6 +347,9 @@ export const mockBroadcastMessages: Record<string, BroadcastMessage[]> = {
       senderName: 'THERESA WEBB',
       sentAt: new Date('2026-03-09T14:00:00'),
       recipientCount: 1,
+      recipients: [
+        { guestId: 'guest-kristin', status: 'delivered' },
+      ],
     },
   ],
   'group-test2': [
@@ -287,6 +360,9 @@ export const mockBroadcastMessages: Record<string, BroadcastMessage[]> = {
       senderName: 'THERESA WEBB',
       sentAt: new Date('2026-03-08T10:00:00'),
       recipientCount: 1,
+      recipients: [
+        { guestId: 'guest-sofia', status: 'delivered' },
+      ],
     },
   ],
 };

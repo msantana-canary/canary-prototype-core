@@ -60,6 +60,32 @@ export interface BroadcastGuestEntry {
   isReturningGuest?: boolean;
 }
 
+/**
+ * Per-recipient delivery status.
+ *
+ * Mirrors production's `NotificationStatus` (shared/schemas/notifications/
+ * NotificationStatus.ts) one-for-one, plus `pending-rtc`. Production does NOT
+ * store that last one: it derives it from a FAILED WhatsApp message that has a
+ * live Request-to-Contact behind it (`isRtcPending` in messageChannelLabel.ts).
+ * The prototype has no per-channel status fields to derive from, so it's carried
+ * as its own value.
+ */
+export type BroadcastRecipientStatus =
+  | 'not-sent'
+  | 'sending'
+  | 'sent'
+  | 'resent'
+  | 'delivered'
+  | 'read'
+  | 'failed'
+  | 'blocked-high-rate-country'
+  | 'pending-rtc';
+
+export interface BroadcastRecipientDelivery {
+  guestId: string;
+  status: BroadcastRecipientStatus;
+}
+
 export interface BroadcastMessage {
   id: string;
   groupId: string;
@@ -68,6 +94,8 @@ export interface BroadcastMessage {
   sentAt: Date;
   recipientCount: number;
   filterSnapshot?: BroadcastMessageFilterSnapshot;
+  /** Per-recipient delivery log, shown in the broadcast delivery panel. */
+  recipients?: BroadcastRecipientDelivery[];
 }
 
 export type MainNavTab = 'conversations' | 'broadcast';
