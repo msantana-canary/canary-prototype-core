@@ -147,14 +147,20 @@ export function ThreadListItem({
           >
             {isTyping ? `${firstName} is typing...` : thread.lastMessage}
           </p>
+          {/* Tooltip lives on a wrapping span, NOT on @mdi/react's `title` prop:
+              that prop auto-generates an `aria-labelledby` id from a module-level
+              counter, which differs between the server and client renders and
+              trips React hydration. Same pattern as the auto-link icon in
+              GuestInfoSidebar. */}
           {thread.isFlagged && (
-            <Icon
-              path={mdiFlag}
-              size={0.83}
-              color="#E40046"
-              className="shrink-0"
+            <span
+              className="flex items-center shrink-0 cursor-help"
+              role="img"
+              aria-label="Potential guest frustration detected. AI paused to avoid escalation."
               title="Potential guest frustration detected. AI paused to avoid escalation."
-            />
+            >
+              <Icon path={mdiFlag} size={0.83} color="#E40046" />
+            </span>
           )}
           {/* Attention dot — shows for unread OR escalated (production parity:
               `unread_count > 0 || is_escalated`). Escalated turns amber (warning),
