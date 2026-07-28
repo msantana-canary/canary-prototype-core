@@ -7,7 +7,8 @@
  *
  * Rows use the redesign selection register (soft colorBlueDark5 fill +
  * colorBlueDark3 border, rounded-6) instead of the old solid-blue CanaryListItem
- * rows. Deliberately LEAN: no member counts, no last-send previews (step 4).
+ * rows. GROUPS rows keep their member count + last-broadcast preview (both the
+ * old prototype and production show them); the STATUS trio stays bare.
  *
  * The kebab replaces the removed Active/Archived pill row — "View archived"
  * flips the section to the archived empty state and back.
@@ -34,23 +35,34 @@ const builtInIcons: Record<string, string> = {
   departures: mdiLogoutVariant,
 };
 
+/**
+ * One selectable audience row. The STATUS trio renders bare (icon + name).
+ * GROUPS rows also carry a member count and the last-broadcast preview, which
+ * both the old prototype and production show.
+ */
 function AudienceRow({
   iconPath,
   label,
   isSelected,
   onClick,
+  memberCount,
+  preview,
 }: {
   iconPath: string;
   label: string;
   isSelected: boolean;
   onClick: () => void;
+  memberCount?: number;
+  preview?: string;
 }) {
+  const isRich = memberCount !== undefined || !!preview;
+
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-3 rounded-[6px] transition-colors cursor-pointer text-left ${
-        isSelected ? '' : 'hover:bg-[#f9fafb]'
-      }`}
+      className={`w-full flex gap-3 rounded-[6px] transition-colors cursor-pointer text-left ${
+        isRich ? 'items-start' : 'items-center'
+      } ${isSelected ? '' : 'hover:bg-[#f9fafb]'}`}
       style={{
         paddingLeft: 12,
         paddingRight: 12,
@@ -65,12 +77,36 @@ function AudienceRow({
         size={0.83}
         color={isSelected ? colors.colorBlueDark1 : colors.colorBlack3}
         className="shrink-0"
+        style={isRich ? { marginTop: 2 } : undefined}
       />
-      <span
-        className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] truncate min-w-0"
-        style={{ color: isSelected ? colors.colorBlueDark1 : colors.colorBlack1 }}
-      >
-        {label}
+
+      <span className="flex-1 min-w-0 flex flex-col">
+        <span
+          className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] truncate"
+          style={{ color: isSelected ? colors.colorBlueDark1 : colors.colorBlack1 }}
+          title={label}
+        >
+          {label}
+        </span>
+
+        {memberCount !== undefined && (
+          <span
+            className="font-['Roboto',sans-serif] text-[12px] leading-[18px] truncate"
+            style={{ color: colors.colorBlack3 }}
+          >
+            {memberCount} guest{memberCount !== 1 ? 's' : ''}
+          </span>
+        )}
+
+        {preview && (
+          <span
+            className="font-['Roboto',sans-serif] text-[12px] leading-[18px] truncate"
+            style={{ color: colors.colorBlack4 }}
+            title={preview}
+          >
+            {preview}
+          </span>
+        )}
       </span>
     </button>
   );
@@ -196,6 +232,8 @@ export function BroadcastGroupList() {
               label={group.name}
               isSelected={selectedGroupId === group.id}
               onClick={() => selectGroup(group.id)}
+              memberCount={group.memberCount ?? 0}
+              preview={group.lastBroadcastPreview}
             />
           ))}
         </div>
