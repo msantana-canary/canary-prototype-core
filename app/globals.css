@@ -1,6 +1,50 @@
 @import "tailwindcss";
 @import "@canary-ui/components/styles.css";
 
+/* ───────────────────────────────────────────────────────────────────────────
+   APP-SHELL HEIGHT CHAIN — do not remove.
+
+   CanaryAppShell's root is `h-screen min-h-screen overflow-hidden`, i.e. a
+   FIXED 100vh box that clips its own overflow. But html/body carry no height
+   and no overflow constraint, so the DOCUMENT is free to scroll independently.
+   When it does, the entire app — navy rail included — slides up as one block
+   and paints white below it. That is the recurring "everything is cut at one
+   horizontal line" bug: the app isn't collapsing, it's being scrolled out of
+   the viewport.
+
+   Two things are pinned here:
+
+   1. html/body are locked to the viewport with overflow hidden. Nothing in the
+      app ever intends the document to scroll — every scroll region is an inner
+      `overflow-auto` container — so removing document scroll entirely makes the
+      failure structurally impossible rather than merely unlikely.
+
+   2. 100vh → 100dvh where supported. 100vh resolves against the LARGE viewport,
+      so on any browser with dynamic chrome it is taller than the visible area,
+      which is what gave the document scrollable overflow in the first place.
+      These rules are unlayered, so they win over Tailwind's @layer utilities
+      regardless of import order.
+
+   The usual trigger was `scrollIntoView`, which scrolls every scrollable
+   ancestor up to and including the document; call sites are now
+   container-scoped instead. This CSS is the belt to that braces.
+   ─────────────────────────────────────────────────────────────────────────── */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+@supports (height: 100dvh) {
+  .h-screen {
+    height: 100dvh;
+  }
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+}
+
 /* Broadcast guest list — strip padding from checkbox labels */
 .broadcast-guest-list label {
   padding: 0 !important;

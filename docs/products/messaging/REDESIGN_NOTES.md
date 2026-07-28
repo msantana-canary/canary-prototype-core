@@ -777,6 +777,53 @@ is identified by the guest's own `checkInStatus` against the folder rule, so any
 other messageable unselected guest is by definition a user removal. No state was
 added for it.
 
+## ⚠ App-shell height collapse — root cause (2026-07-28)
+
+The recurring bug where the whole app — navy rail *and* content cards — is cut at
+one horizontal line with dead white below.
+
+**It was never a collapse. The app was being scrolled out of the viewport.**
+
+`CanaryAppShell`'s root is `h-screen min-h-screen overflow-hidden` — a fixed
+100vh box that clips its own overflow. But `html`/`body` carry no height and no
+overflow constraint, so the DOCUMENT is independently scrollable. Scroll it and
+the entire shell, rail included, slides up as one rigid block and paints white
+beneath. Both halves cut at the same y precisely *because* it is one block
+moving, which is why it never looked like a component bug.
+
+Two things made it fire:
+
+1. **`100vh` guarantees the overflow.** It resolves against the *large* viewport,
+   so on any browser with dynamic chrome the shell is taller than the visible
+   area — the document has a few scrollable pixels by construction.
+2. **`scrollIntoView` was the trigger.** It scrolls *every* scrollable ancestor
+   up to the document, not just the nearest one. `MessageFeed` called it on every
+   message change, so ordinary use kept yanking the shell upward. (Telling
+   detail: `BroadcastMessageFeed` already carried a comment about scrolling "not
+   ancestor scroll contexts" — an earlier session hit this and fixed one call
+   site without recognising the general cause.)
+
+**Fix — structural, three layers:**
+
+- `html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }` in
+  `globals.css`. Nothing in this app ever intends the document to scroll — every
+  scroll region is an inner `overflow-auto` container — so removing document
+  scroll entirely makes the failure impossible rather than unlikely. Verified
+  safe: every route renders inside `CanaryAppShell` (whose `<main>` is
+  `overflow-auto`); the only non-shell route is a one-line redirect stub.
+- `100vh → 100dvh` under `@supports`, removing the overflow at its source. The
+  rules are unlayered so they beat Tailwind's `@layer utilities` regardless of
+  import order — and the library ships its own compiled `.h-screen`, so ours has
+  to win on the cascade, not on the build.
+- Every `scrollIntoView` in the messaging surfaces replaced with container-scoped
+  `scrollTop`. `MessageFeed` and variant C's ledger-token jump both now scroll
+  only their own box.
+
+Deliberately NOT patched: `node_modules/@canary-ui`. The shell's `h-screen` is
+reasonable on its own; it is the *unconstrained document* underneath it that made
+it fragile, and that is ours to own. Worth raising with the library owner anyway
+— `100dvh` would be the better default there.
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |

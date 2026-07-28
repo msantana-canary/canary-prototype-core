@@ -4,7 +4,11 @@
  * Scrollable container displaying flat message blocks grouped by day.
  * Bottom-anchored via mt-auto on the inner column (NOT justify-end on the
  * scroll container — that breaks scrolling for overflowing content).
- * Auto-scrolls to bottom when new messages arrive.
+ *
+ * Auto-scrolls by setting this container's own scrollTop. Deliberately NOT
+ * scrollIntoView: that walks every scrollable ancestor up to the document, so
+ * whenever the document has any scrollable overflow it drags the whole app
+ * shell upward and paints white below it.
  */
 
 'use client';
@@ -22,11 +26,13 @@ interface MessageFeedProps {
 }
 
 export function MessageFeed({ messages, guest }: MessageFeedProps) {
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom when messages change — container-scoped.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   if (messages.length === 0) {
@@ -41,7 +47,7 @@ export function MessageFeed({ messages, guest }: MessageFeedProps) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto flex flex-col" style={{ paddingTop: 16 }}>
+    <div ref={containerRef} className="flex-1 overflow-y-auto flex flex-col" style={{ paddingTop: 16 }}>
       <div className="flex flex-col mt-auto">
         {messages.map((message, index) => {
           const showDateSeparator =
@@ -60,7 +66,6 @@ export function MessageFeed({ messages, guest }: MessageFeedProps) {
             </React.Fragment>
           );
         })}
-        <div ref={messagesEndRef} />
       </div>
     </div>
   );
