@@ -9,8 +9,16 @@
  * interactive elements, colorBlack* type ramp).
  *
  * Rows are bare — checkbox, avatar, name, room — matching production, which
- * shows no channel tag here. Guests with no phone on file keep the existing
- * treatment: 0.4 opacity, disabled checkbox, "No phone number".
+ * shows no channel tag here.
+ *
+ * UNMESSAGEABLE guests (production's `canMessageGuest`: no phone OR opted out of
+ * messaging) render at 0.4 opacity with a disabled checkbox and production's own
+ * subtitle copy — "{room} • Opted out from messaging" / "{room} • No phone
+ * number" — and sort to the bottom of their section.
+ *
+ * Sections mirror production's per-folder bucketing: In-house is one unlabelled
+ * list; Arrivals and Departures bucket by stay status under "Expecting" /
+ * "Checked In" / "Checked Out".
  */
 
 'use client';
@@ -40,25 +48,49 @@ import {
   getFilteredGuestEntries,
   isFilterEmpty,
   getActiveFilterCount,
+  canMessageGuest,
+  bucketForFolder,
 } from '@/lib/products/messaging/broadcast-store';
 import { guests } from '@/lib/core/data/guests';
 import { reservations } from '@/lib/core/data/reservations';
 import {
   BroadcastGuestEntry,
-  GuestSegment,
+  BroadcastBucket,
 } from '@/lib/products/messaging/broadcast-types';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
 import { Avatar } from '../Avatar';
 
-const segmentLabels: Record<GuestSegment, string> = {
+/** Production's section titles, verbatim (broadcastV2BuiltInGroupGuestList.sectionTitle.*). */
+const bucketLabels: Record<BroadcastBucket, string> = {
   expecting: 'Expecting',
-  'checked-in': 'Checked In',
-  'checked-out': 'Checked Out',
-  departing: 'Departing',
+  in: 'Checked In',
+  out: 'Checked Out',
 };
 
-const segmentOrder: GuestSegment[] = ['expecting', 'checked-in', 'departing', 'checked-out'];
+/** Production's header order in `flattenedList`: expecting, then in, then out. */
+const bucketOrder: BroadcastBucket[] = ['expecting', 'in', 'out'];
+
+/** Last name, for production's alphabetical sort within each messageable group. */
+function lastNameOf(guestId: string): string {
+  const name = guests[guestId]?.name ?? '';
+  return (name.split(' ').pop() ?? name).toLowerCase();
+}
+
+/**
+ * Production's `sortedGuests`: unmessageable guests sink to the bottom,
+ * alphabetical by last name within each side.
+ */
+function sortEntries(entries: BroadcastGuestEntry[]): BroadcastGuestEntry[] {
+  return [...entries].sort((a, b) => {
+    const aOk = canMessageGuest(a);
+    const bOk = canMessageGuest(b);
+    if (!aOk && !bOk) return lastNameOf(a.guestId).localeCompare(lastNameOf(b.guestId));
+    if (!aOk) return 1;
+    if (!bOk) return -1;
+    return lastNameOf(a.guestId).localeCompare(lastNameOf(b.guestId));
+  });
+}
 
 /**
  * ONE inset for the whole recipients column. Every box in here — the Filters
@@ -188,13 +220,23 @@ function GuestItem({
   const rowRef = useRef<HTMLDivElement>(null);
   const guest = guests[entry.guestId];
   const reservation = reservations[entry.reservationId];
-  const hasPhone = !!guest?.phone;
+  const isMessageable = canMessageGuest(entry);
 
   if (!guest) return null;
 
-  const roomDisplay = reservation
+  const room = reservation
     ? `${reservation.room}${reservation.roomType ? ` ${reservation.roomType}` : ''}`
     : '';
+
+  /**
+   * Production's `guestRoomMethod`, verbatim — opted-out takes precedence over
+   * no-phone, and both render as "{room} • reason".
+   */
+  const subtitle = entry.messagingOptedOut
+    ? `${room} • Opted out from messaging`
+    : !guest.phone
+    ? `${room} • No phone number`
+    : room;
 
   const handleMouseEnter = () => {
     if (rowRef.current) {
@@ -218,13 +260,14 @@ function GuestItem({
       ref={rowRef}
       className="flex items-center gap-3 rounded-[6px] transition-colors hover:bg-[#f9fafb] cursor-pointer"
       style={{
-        opacity: hasPhone ? 1 : 0.4,
+        // Unmessageable = no phone OR opted out; production dims both the same.
+        opacity: isMessageable ? 1 : 0.4,
         // No horizontal padding — the column's single inset is on the scroll
         // container, so the checkbox sits flush with the Filters row's edge.
         paddingTop: 8,
         paddingBottom: 8,
       }}
-      onClick={() => hasPhone && onToggle()}
+      onClick={() => isMessageable && onToggle()}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -233,7 +276,7 @@ function GuestItem({
         <CanaryCheckbox
           checked={isSelected}
           onChange={onToggle}
-          isDisabled={!hasPhone}
+          isDisabled={!isMessageable}
         />
       </div>
 
@@ -250,18 +293,13 @@ function GuestItem({
         >
           {guest.name}
         </div>
-        {(roomDisplay || !hasPhone) && (
+        {subtitle && (
           <div
             className="font-['Roboto',sans-serif] text-[12px] leading-[18px] truncate"
             style={{ color: colors.colorBlack3 }}
+            title={subtitle}
           >
-            {roomDisplay}
-            {!hasPhone && (
-              <>
-                {roomDisplay && ' · '}
-                No phone number
-              </>
-            )}
+            {subtitle}
           </div>
         )}
       </div>
@@ -316,24 +354,31 @@ export function BroadcastGuestList() {
   // Whether this group shows a date picker (decorative — not wired)
   const showDatePicker = currentGroup?.builtInType === 'arrivals' || currentGroup?.builtInType === 'departures';
 
-  // Whether this group has segments
-  const hasSegments = guestEntries.some(e => e.segment);
+  /**
+   * Production sorts before bucketing (`sortedGuests` → `guestsByBucket`):
+   * unmessageable guests sink to the bottom of whichever section they land in.
+   */
+  const sortedEntries = useMemo(() => sortEntries(guestEntries), [guestEntries]);
 
-  // Group entries by segment
-  const segmentedEntries = useMemo(() => {
-    if (!hasSegments) return null;
+  /**
+   * Section buckets. In-house is a single unlabelled list in production; the
+   * other two folders bucket by stay status and get headers.
+   */
+  const builtInType = currentGroup?.builtInType;
+  const bucketed = useMemo(() => {
+    if (!builtInType || builtInType === 'in-house') return null;
 
-    const grouped: Partial<Record<GuestSegment, BroadcastGuestEntry[]>> = {};
-    for (const entry of guestEntries) {
-      const seg = entry.segment || 'expecting';
-      if (!grouped[seg]) grouped[seg] = [];
-      grouped[seg]!.push(entry);
+    const grouped: Partial<Record<BroadcastBucket, BroadcastGuestEntry[]>> = {};
+    for (const entry of sortedEntries) {
+      const bucket = bucketForFolder(builtInType, entry.checkInStatus);
+      if (!grouped[bucket]) grouped[bucket] = [];
+      grouped[bucket]!.push(entry);
     }
     return grouped;
-  }, [guestEntries, hasSegments]);
+  }, [sortedEntries, builtInType]);
 
-  // Selectable count (guests with phone)
-  const selectableCount = guestEntries.filter(e => guests[e.guestId]?.phone).length;
+  // Selectable = messageable (has phone AND not opted out)
+  const selectableCount = guestEntries.filter(canMessageGuest).length;
   const selectedCount = selectedGuestIds.length;
   const allSelected = selectedCount === selectableCount && selectableCount > 0;
   const someSelected = selectedCount > 0 && selectedCount < selectableCount;
@@ -435,23 +480,23 @@ export function BroadcastGuestList() {
         className="flex-1 min-h-0 overflow-y-auto scrollbar-invisible"
         style={{ paddingLeft: COLUMN_INSET, paddingRight: COLUMN_INSET, paddingBottom: 16 }}
       >
-        {hasSegments && segmentedEntries ? (
-          // Segmented view (Arrivals / Departures)
-          segmentOrder
-            .filter(seg => segmentedEntries[seg]?.length)
-            .map(seg => (
-              <div key={seg}>
-                {/* Segment header */}
+        {bucketed ? (
+          // Bucketed view (Arrivals / Departures) — production's header order
+          bucketOrder
+            .filter(bucket => bucketed[bucket]?.length)
+            .map(bucket => (
+              <div key={bucket}>
+                {/* Section header */}
                 <div style={{ paddingTop: 16, paddingBottom: 4 }}>
                   <span
                     className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase font-medium"
                     style={{ color: colors.colorBlack4, letterSpacing: '0.4px' }}
                   >
-                    {segmentLabels[seg]}
+                    {bucketLabels[bucket]}
                   </span>
                 </div>
-                {/* Segment guests */}
-                {segmentedEntries[seg]!.map(entry => (
+                {/* Section guests */}
+                {bucketed[bucket]!.map(entry => (
                   <GuestItem
                     key={entry.guestId}
                     entry={entry}
@@ -462,9 +507,10 @@ export function BroadcastGuestList() {
               </div>
             ))
         ) : (
-          // Flat list (In-house, custom groups)
+          // Single unlabelled list (In-house, custom groups) — production
+          // renders no section headers for these.
           <div style={{ paddingTop: 8 }}>
-            {guestEntries.map(entry => (
+            {sortedEntries.map(entry => (
               <GuestItem
                 key={entry.guestId}
                 entry={entry}
