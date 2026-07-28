@@ -3,6 +3,14 @@
  *
  * State management for the broadcast messaging feature.
  * Manages group selection, guest selection, and broadcast messages.
+ *
+ * Step-1 baseline notes:
+ *  - Saved filters no longer live here. Guest Segments are the single source
+ *    (`useGuestJourneyStore.segments`); the broadcast-local `savedFilters` list
+ *    and its save/update/delete actions were removed along with the
+ *    Manage-filters modal.
+ *  - Manual row checks/unchecks are STICKY: they survive applying and clearing a
+ *    filter (see `manualSelectionOverrides`).
  */
 
 import { create } from 'zustand';
@@ -11,7 +19,6 @@ import {
   BroadcastMessage,
   BroadcastGuestEntry,
   BroadcastFilterCriteria,
-  SavedFilter,
 } from './broadcast-types';
 import {
   builtInGroups,
@@ -19,9 +26,9 @@ import {
   builtInGroupGuests,
   customGroupGuests,
   mockBroadcastMessages,
-  mockSavedFilters,
 } from './broadcast-mock-data';
 import { guests } from '@/lib/core/data/guests';
+import { useGuestJourneyStore } from '@/lib/products/guest-journey/store';
 
 export const emptyFilterCriteria: BroadcastFilterCriteria = {
   loyaltyTiers: [],
@@ -94,6 +101,7 @@ interface BroadcastState {
   // Groups
   allGroups: BroadcastGroup[];
   selectedGroupId: string;
+  /** 'archived' is reached from the GROUPS kebab (the Active/Archived pill row is gone). */
   activeGroupTab: 'active' | 'archived';
 
   // Date filter (for arrivals/departures)
@@ -101,6 +109,15 @@ interface BroadcastState {
 
   // Guest selection
   selectedGuestIds: string[];
+  /**
+   * STICKY SELECTION (production rule: "manual picks survive a subsequently
+   * applied filter"). Every explicit row toggle records its resulting state
+   * here; applying or clearing a filter rebuilds the selection from the newly
+   * visible guests MINUS anyone the user manually unchecked. Bulk Select-all /
+   * Deselect-all and switching group clear the map (a blanket intent supersedes
+   * per-row history).
+   */
+  manualSelectionOverrides: Record<string, boolean>;
 
   // Messages
   messages: Record<string, BroadcastMessage[]>;
@@ -111,11 +128,11 @@ interface BroadcastState {
   // Filters
   activeFilters: BroadcastFilterCriteria;
   isFilterModalOpen: boolean;
-  savedFilters: SavedFilter[];
-  loadedSavedFilterId: string | null;
+  /** Guest Segment id (`seg-*`) currently loaded into activeFilters, if any. */
+  loadedSegmentId: string | null;
 
-  // Manage filters modal
-  isManageFiltersModalOpen: boolean;
+  /** Name of the just-saved guest segment, drives the in-register toast. */
+  segmentSavedToast: string | null;
 
   // Actions
   selectGroup: (groupId: string) => void;
@@ -132,13 +149,12 @@ interface BroadcastState {
   // Filter actions
   openFilterModal: () => void;
   closeFilterModal: () => void;
-  applyFilters: (criteria: BroadcastFilterCriteria, savedFilterId?: string) => void;
+  applyFilters: (criteria: BroadcastFilterCriteria, segmentId?: string) => void;
   clearAllFilters: () => void;
-  saveFilter: (name: string, criteria: BroadcastFilterCriteria) => void;
-  updateFilter: (id: string, name: string, criteria: BroadcastFilterCriteria) => void;
-  deleteFilter: (id: string) => void;
-  openManageFiltersModal: () => void;
-  closeManageFiltersModal: () => void;
+
+  // Toast
+  showSegmentSavedToast: (name: string) => void;
+  dismissSegmentSavedToast: () => void;
 }
 
 /** Get guest entries for a given group */
@@ -173,6 +189,17 @@ function getSelectableGuestIds(groupId: string, allGroups: BroadcastGroup[]): st
     .map(entry => entry.guestId);
 }
 
+/**
+ * Re-apply sticky manual decisions to a freshly computed candidate set.
+ * Manual UNCHECKS are honored (the guest stays off); manual CHECKS are already
+ * covered because the candidate set is "everything currently visible and
+ * messageable". Deliberately never re-adds a guest who is NOT in the candidate
+ * set — an invisible recipient inflating the send count is the surprising case.
+ */
+function applyManualOverrides(candidateIds: string[], overrides: Record<string, boolean>): string[] {
+  return candidateIds.filter(id => overrides[id] !== false);
+}
+
 export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   // Initial state
   allGroups: [...builtInGroups, ...customGroups],
@@ -180,24 +207,27 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   activeGroupTab: 'active',
   selectedDate: '2026-03-11',
   selectedGuestIds: getSelectableGuestIds('group-arrivals', [...builtInGroups, ...customGroups]),
+  manualSelectionOverrides: {},
   messages: { ...mockBroadcastMessages },
   isCreateGroupModalOpen: false,
 
   // Filter state
   activeFilters: { ...emptyFilterCriteria },
   isFilterModalOpen: false,
-  savedFilters: [...mockSavedFilters],
-  loadedSavedFilterId: null,
-  isManageFiltersModalOpen: false,
+  loadedSegmentId: null,
 
-  // Select a group — auto-selects all messageable guests, clears filters
+  segmentSavedToast: null,
+
+  // Select a group — auto-selects all messageable guests, clears filters and
+  // any sticky per-row decisions (they belonged to the previous audience).
   selectGroup: (groupId: string) => {
     const selectableIds = getSelectableGuestIds(groupId, get().allGroups);
     set({
       selectedGroupId: groupId,
       selectedGuestIds: selectableIds,
+      manualSelectionOverrides: {},
       activeFilters: { ...emptyFilterCriteria },
-      loadedSavedFilterId: null,
+      loadedSegmentId: null,
     });
   },
 
@@ -216,6 +246,11 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
         selectedGuestIds: isSelected
           ? state.selectedGuestIds.filter(id => id !== guestId)
           : [...state.selectedGuestIds, guestId],
+        // Record the explicit decision so it survives the next filter apply/clear.
+        manualSelectionOverrides: {
+          ...state.manualSelectionOverrides,
+          [guestId]: !isSelected,
+        },
       };
     });
   },
@@ -228,15 +263,15 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
     const selectableIds = entries
       .filter(entry => guests[entry.guestId]?.phone)
       .map(entry => entry.guestId);
-    set({ selectedGuestIds: selectableIds });
+    set({ selectedGuestIds: selectableIds, manualSelectionOverrides: {} });
   },
 
   deselectAllGuests: () => {
-    set({ selectedGuestIds: [] });
+    set({ selectedGuestIds: [], manualSelectionOverrides: {} });
   },
 
   sendBroadcast: (content: string) => {
-    const { selectedGroupId, selectedGuestIds, activeFilters, loadedSavedFilterId, savedFilters } = get();
+    const { selectedGroupId, selectedGuestIds, activeFilters, loadedSegmentId } = get();
     if (!content.trim() || selectedGuestIds.length === 0) return;
 
     const newMessage: BroadcastMessage = {
@@ -248,14 +283,17 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
       recipientCount: selectedGuestIds.length,
     };
 
-    // Attach filter snapshot if filters are active
+    // Attach filter snapshot if filters are active. A loaded Guest Segment
+    // resolves against the guest-journey segment store (the single source) —
+    // looking `seg-*` ids up against a broadcast-local list is what used to make
+    // segment sends render "N FILTERS APPLIED" instead of the segment name.
     if (!isFilterEmpty(activeFilters)) {
-      const savedFilter = loadedSavedFilterId
-        ? savedFilters.find(f => f.id === loadedSavedFilterId)
+      const segment = loadedSegmentId
+        ? useGuestJourneyStore.getState().segments.find(s => s.id === loadedSegmentId)
         : null;
       newMessage.filterSnapshot = {
-        type: savedFilter ? 'saved' : 'ad-hoc',
-        savedFilterName: savedFilter?.name,
+        type: segment ? 'saved' : 'ad-hoc',
+        savedFilterName: segment?.name,
         criteria: { ...activeFilters },
         attributeCount: getActiveFilterCount(activeFilters),
       };
@@ -307,63 +345,41 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
     set({ isFilterModalOpen: false });
   },
 
-  applyFilters: (criteria: BroadcastFilterCriteria, savedFilterId?: string) => {
-    const { selectedGroupId, allGroups } = get();
-    // Auto-select all matching guests that have a phone
-    const filtered = getFilteredGuestEntries(selectedGroupId, allGroups, criteria);
-    const selectableIds = filtered
+  applyFilters: (criteria: BroadcastFilterCriteria, segmentId?: string) => {
+    const { selectedGroupId, allGroups, manualSelectionOverrides } = get();
+    // Candidates = every messageable guest the filter leaves visible…
+    const visible = isFilterEmpty(criteria)
+      ? getGuestEntriesForGroup(selectedGroupId, allGroups)
+      : getFilteredGuestEntries(selectedGroupId, allGroups, criteria);
+    const selectableIds = visible
       .filter(entry => guests[entry.guestId]?.phone)
       .map(entry => entry.guestId);
 
     set({
       activeFilters: { ...criteria },
-      loadedSavedFilterId: savedFilterId || null,
-      selectedGuestIds: selectableIds,
+      loadedSegmentId: segmentId || null,
+      // …minus anyone the user has manually unchecked (sticky selection).
+      selectedGuestIds: applyManualOverrides(selectableIds, manualSelectionOverrides),
       isFilterModalOpen: false,
     });
   },
 
   clearAllFilters: () => {
-    const { selectedGroupId, allGroups } = get();
+    const { selectedGroupId, allGroups, manualSelectionOverrides } = get();
     const selectableIds = getSelectableGuestIds(selectedGroupId, allGroups);
     set({
       activeFilters: { ...emptyFilterCriteria },
-      loadedSavedFilterId: null,
-      selectedGuestIds: selectableIds,
+      loadedSegmentId: null,
+      // Clearing a filter restores the full audience, but manual unchecks stick.
+      selectedGuestIds: applyManualOverrides(selectableIds, manualSelectionOverrides),
     });
   },
 
-  saveFilter: (name: string, criteria: BroadcastFilterCriteria) => {
-    const newFilter: SavedFilter = {
-      id: `sf-${Date.now()}`,
-      name: name.trim(),
-      criteria: { ...criteria },
-    };
-    set(state => ({
-      savedFilters: [...state.savedFilters, newFilter],
-    }));
+  showSegmentSavedToast: (name: string) => {
+    set({ segmentSavedToast: name });
   },
 
-  updateFilter: (id: string, name: string, criteria: BroadcastFilterCriteria) => {
-    set(state => ({
-      savedFilters: state.savedFilters.map(f =>
-        f.id === id ? { ...f, name: name.trim(), criteria: { ...criteria } } : f
-      ),
-    }));
-  },
-
-  deleteFilter: (id: string) => {
-    set(state => ({
-      savedFilters: state.savedFilters.filter(f => f.id !== id),
-      loadedSavedFilterId: state.loadedSavedFilterId === id ? null : state.loadedSavedFilterId,
-    }));
-  },
-
-  openManageFiltersModal: () => {
-    set({ isManageFiltersModalOpen: true });
-  },
-
-  closeManageFiltersModal: () => {
-    set({ isManageFiltersModalOpen: false });
+  dismissSegmentSavedToast: () => {
+    set({ segmentSavedToast: null });
   },
 }));

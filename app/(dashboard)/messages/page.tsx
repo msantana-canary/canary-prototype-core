@@ -320,8 +320,10 @@ export default function MessagesPage() {
         isAutoLinked={unlinkTarget?.isAutoLinked || false}
       />
 
-      {/* Prototype control — top-row layout experiment (full vs compact) */}
-      <PrototypeVariantToggle />
+      {/* Prototype control — top-row layout experiment (full vs compact). Scoped
+          to Conversations: the variant only affects that surface, and on the
+          broadcast surface the FAB sat on top of the composer's Send button. */}
+      {activeTab === 'conversations' && <PrototypeVariantToggle />}
     </AppLayout>
   );
 }

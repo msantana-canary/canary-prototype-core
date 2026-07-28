@@ -3,7 +3,8 @@
  *
  * MainNav (tabs + online status) → page content on a colorBlack8 canvas. The
  * Inbox/Archived/Blocked scoping lives inside the Filters popover on the search
- * row. Broadcast keeps its sub nav.
+ * row. Broadcast has no sub nav — its control band collapsed into the audience
+ * card (step 1 baseline).
  *
  * Top-row placement is a prototype experiment (`topRowStyle`):
  *  - FULL: AppLayout renders the search + Filters + New-message row as a
@@ -19,7 +20,6 @@ import React from 'react';
 import { colors } from '@canary-ui/components';
 import { MainNav } from './MainNav';
 import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
-import { BroadcastSubNav } from './broadcast/BroadcastSubNav';
 import { ConversationControls, CategoryFilter } from './ConversationControls';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 
@@ -70,7 +70,9 @@ export function AppLayout({
         </div>
       )}
 
-      {activeTab === 'broadcast' && <BroadcastSubNav />}
+      {/* Broadcast has NO control band — Active is the default state, Archived
+          lives in the audience card's GROUPS kebab, and "Manage segments" is
+          reachable from the filter modal's Guest Segments mode. */}
 
       {/* Page Content */}
       <div className="flex-1 overflow-hidden">
