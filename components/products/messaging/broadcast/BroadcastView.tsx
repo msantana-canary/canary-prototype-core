@@ -33,6 +33,8 @@ export function BroadcastView() {
     filterModalVariant,
     segmentSavedToast,
     dismissSegmentSavedToast,
+    filtersClearedToast,
+    dismissFiltersClearedToast,
   } = useBroadcastStore();
 
   // Save-as-segment toast — wired to the real save action (it used to watch a
@@ -42,6 +44,12 @@ export function BroadcastView() {
     const timer = setTimeout(dismissSegmentSavedToast, 3000);
     return () => clearTimeout(timer);
   }, [segmentSavedToast, dismissSegmentSavedToast]);
+
+  useEffect(() => {
+    if (!filtersClearedToast) return;
+    const timer = setTimeout(dismissFiltersClearedToast, 3000);
+    return () => clearTimeout(timer);
+  }, [filtersClearedToast, dismissFiltersClearedToast]);
 
   return (
     <>
@@ -88,6 +96,13 @@ export function BroadcastView() {
 
       {/* Toast: guest segment saved */}
       <Toast message="Guest segment saved" isOpen={!!segmentSavedToast} variant="success" />
+
+      {/* Variant C: clearing filters also resets the selection — say so. */}
+      <Toast
+        message="Filters cleared — selection reset"
+        isOpen={filtersClearedToast}
+        variant="info"
+      />
     </>
   );
 }

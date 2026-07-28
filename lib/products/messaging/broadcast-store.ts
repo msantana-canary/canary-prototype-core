@@ -132,6 +132,9 @@ interface BroadcastState {
   /** Name of the just-saved guest segment, drives the in-register toast. */
   segmentSavedToast: string | null;
 
+  /** Variant C announces that clearing filters also reset the selection. */
+  filtersClearedToast: boolean;
+
   /** Broadcast whose per-recipient delivery panel is open, if any. */
   deliveryPanelMessageId: string | null;
 
@@ -192,6 +195,7 @@ interface BroadcastState {
   // Toast
   showSegmentSavedToast: (name: string) => void;
   dismissSegmentSavedToast: () => void;
+  dismissFiltersClearedToast: () => void;
 }
 
 /** Get guest entries for a given group */
@@ -313,6 +317,7 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   loadedSegmentId: null,
 
   segmentSavedToast: null,
+  filtersClearedToast: false,
   deliveryPanelMessageId: null,
   filterModalVariant: 'classic',
   leftPanelVariant: 'baseline',
@@ -498,6 +503,9 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
       activeFilters: { ...emptyFilterCriteria },
       loadedSegmentId: null,
       selectedGuestIds: getSelectableGuestIds(selectedGroupId, allGroups),
+      // Variant C surfaces the fact that a clear also resets the selection —
+      // production does this silently, which is easy to miss.
+      filtersClearedToast: get().leftPanelVariant === 'ledger',
     });
   },
 
@@ -605,5 +613,9 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
 
   dismissSegmentSavedToast: () => {
     set({ segmentSavedToast: null });
+  },
+
+  dismissFiltersClearedToast: () => {
+    set({ filtersClearedToast: false });
   },
 }));
