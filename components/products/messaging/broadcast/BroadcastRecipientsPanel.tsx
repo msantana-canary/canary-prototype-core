@@ -125,14 +125,14 @@ export function BroadcastRecipientsPanel({
 
             {/* Controls lifted out of the list */}
             <div className="flex items-center gap-3" style={{ marginTop: 12 }}>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <CanaryCheckbox
                   checked={allSelected}
                   indeterminate={someSelected}
                   onChange={() => (allSelected ? deselectAllGuests() : selectAllGuests())}
                 />
                 <span
-                  className="font-['Roboto',sans-serif] text-[14px] leading-[22px] font-medium"
+                  className="font-['Roboto',sans-serif] text-[14px] leading-[22px] font-medium whitespace-nowrap"
                   style={{ color: colors.colorBlack1 }}
                 >
                   Select all
@@ -142,7 +142,7 @@ export function BroadcastRecipientsPanel({
               {isBuiltIn && (
                 <button
                   onClick={openFilterModal}
-                  className="flex items-center gap-2 rounded-[6px] cursor-pointer transition-colors hover:bg-[#f9fafb]"
+                  className="flex items-center gap-2 rounded-[6px] cursor-pointer transition-colors hover:bg-[#f9fafb] shrink-0"
                   style={{
                     height: 32,
                     paddingLeft: 10,
@@ -152,7 +152,7 @@ export function BroadcastRecipientsPanel({
                 >
                   <Icon path={mdiFilterOutline} size={0.72} color={colors.colorBlack1} />
                   <span
-                    className="font-['Roboto',sans-serif] text-[13px] leading-[20px]"
+                    className="font-['Roboto',sans-serif] text-[13px] leading-[20px] whitespace-nowrap"
                     style={{ color: colors.colorBlack1 }}
                   >
                     {facts.filterActive ? `Filters (${facts.filterCount})` : 'Filters'}

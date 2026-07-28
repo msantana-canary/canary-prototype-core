@@ -483,7 +483,7 @@ export function BroadcastGuestList({
             />
           </div>
           <span
-            className="font-['Roboto',sans-serif] text-[14px] leading-[22px] font-medium flex-1"
+            className="font-['Roboto',sans-serif] text-[14px] leading-[22px] font-medium flex-1 whitespace-nowrap"
             style={{ color: colors.colorBlack1 }}
           >
             Select all
