@@ -519,10 +519,13 @@ Two builds on top of the step-1 baseline, both mirroring production semantics.
 Clicking a sent broadcast block opens a panel listing every recipient and what
 happened to their copy. Production ships this as a 420px right-edge slide-over;
 ours rides the shared floating-panel shell (480px — one narrow list, not the
-sidebar's guest cards). Anatomy follows production: "Broadcast message" title +
-right-arrow close, icon meta rows (body · sent timestamp · sender ·
+sidebar's guest cards). Anatomy follows production: "Broadcast message" title,
+icon meta rows (body · sent timestamp · sender ·
 "(Audience) N"), then a bordered rounded-8 recipient list with the status
-right-aligned. Avatars are our 32px rounded-8 squares, not production's circles.
+right-aligned. Avatars are our 32px rounded-8 squares, not production's circles,
+and the close is an **X in a 30px hover circle** matching the Conversation
+Details panel rather than production's slide-back-out arrow. (The scheduled-
+broadcast panel still uses production's left arrow — untouched.)
 
 Status vocabulary is production's `NotificationStatus` set with its own English
 labels — including FAILED and BLOCKED_HIGH_RATE_COUNTRY deliberately sharing
@@ -530,11 +533,11 @@ labels — including FAILED and BLOCKED_HIGH_RATE_COUNTRY deliberately sharing
 behind a failed send) is *derived* in production; the prototype has no
 per-channel fields to derive from, so it is stored as its own status.
 
-Colour: failed red, Pending RTC amber (`colors.warning`), the rest neutral. Two
-deliberate divergences: **blocked is red** here (production leaves it black
-because its class check is `=== FAILED`, which reads like an oversight for
-something labelled "Failed to send"), and **"Not sent" is gray** (it is a
-non-event, not a delivery).
+Colour is production's two-tint rule exactly: **only** FAILED red and Pending RTC
+amber (`colors.warning`); everything else is plain black — including
+`blocked-high-rate-country`, which reads "Failed to send" untinted because
+production's class check is `=== FAILED`, and including "Not sent". (An earlier
+pass diverged on those two; reverted — if it's in production we keep it.)
 
 The filter/segment chip keeps its own FiltersAppliedModal and stops the click
 from reaching the block. The panel sits at z 40 / scrim 39, below `zIndex.modal`

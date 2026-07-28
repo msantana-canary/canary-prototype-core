@@ -7,15 +7,17 @@
  * per the "leverage the new sidebar" call.
  *
  * Anatomy follows production (BroadcastMessageDetails.vue):
- *   title "Broadcast message" + a right-arrow close (it slides back out right)
+ *   title "Broadcast message" + close (an X in a 30px hover circle, matching the
+ *   Conversation Details panel rather than production's slide-out arrow)
  *   meta rows: message body · sent timestamp · sender · "(Audience) N"
  *   a bordered list of recipients, status right-aligned
  * …in our register: 32px rounded-8 square avatars (not production's circles),
  * rounded-8 container, colorBlack* type ramp.
  *
- * Status vocabulary is production's `NotificationStatus` set with production's
- * own English labels — note FAILED and BLOCKED_HIGH_RATE_COUNTRY deliberately
- * share the string "Failed to send" there, and we keep that.
+ * Status vocabulary AND colour are production's exactly: its `NotificationStatus`
+ * set, its English labels (FAILED and BLOCKED_HIGH_RATE_COUNTRY deliberately
+ * share the string "Failed to send"), and its two-tint rule — only FAILED red
+ * and RTC-pending amber, everything else plain black.
  */
 
 'use client';
@@ -24,7 +26,7 @@ import React from 'react';
 import { format } from 'date-fns';
 import Icon from '@mdi/react';
 import {
-  mdiArrowRight,
+  mdiClose,
   mdiMessageProcessingOutline,
   mdiClockTimeFourOutline,
   mdiAccountCircleOutline,
@@ -61,23 +63,21 @@ const STATUS_LABEL: Record<BroadcastRecipientStatus, string> = {
 };
 
 /**
- * Colour per status. Production only tints two states — FAILED red and
- * RTC-pending amber — and leaves everything else the row's inherited black,
- * including BLOCKED_HIGH_RATE_COUNTRY (its class check is `=== FAILED`, so a
- * blocked recipient reads "Failed to send" in plain black). We deliberately
- * diverge on two points, per the build spec: blocked is RED (it is a failure,
- * and production's black looks like an oversight of that `=== FAILED` check),
- * and "Not sent" is colorBlack3 gray (it is a non-event, not a delivery).
+ * Colour per status — production's treatment exactly. Only two states are
+ * tinted: FAILED red and RTC-pending amber. Everything else inherits the row's
+ * black, INCLUDING `blocked-high-rate-country`: production's class check is
+ * `=== NotificationStatus.FAILED`, so a blocked recipient reads "Failed to send"
+ * in plain black. "Not sent" is likewise plain black, not gray.
  */
 const STATUS_COLOR: Record<BroadcastRecipientStatus, string> = {
-  'not-sent': colors.colorBlack3,
+  'not-sent': colors.colorBlack1,
   sending: colors.colorBlack1,
   sent: colors.colorBlack1,
   resent: colors.colorBlack1,
   delivered: colors.colorBlack1,
   read: colors.colorBlack1,
   failed: STATUS_RED,
-  'blocked-high-rate-country': STATUS_RED,
+  'blocked-high-rate-country': colors.colorBlack1,
   'pending-rtc': colors.warning,
 };
 
@@ -188,8 +188,7 @@ export function BroadcastDeliveryPanel() {
     <FloatingPanel isOpen={!!deliveryPanelMessageId} onClose={closeDeliveryPanel} width={480}>
       {message && (
         <div className="h-full flex flex-col">
-          {/* Header — title + right-arrow close (production's affordance: the
-              panel slides back out to the right). */}
+          {/* Header — title + close */}
           <div
             className="flex items-center justify-between shrink-0"
             style={{ paddingLeft: 24, paddingRight: 16, paddingTop: 16, paddingBottom: 8 }}
@@ -200,13 +199,14 @@ export function BroadcastDeliveryPanel() {
             >
               Broadcast message
             </h2>
+            {/* Close matches the Conversation Details panel: X in a 30px hover
+                circle, not production's slide-back-out arrow. */}
             <button
               onClick={closeDeliveryPanel}
               aria-label="Close broadcast message"
-              className="flex items-center justify-center rounded-[4px] hover:bg-[#f0f0f0] transition-colors cursor-pointer"
-              style={{ padding: 8 }}
+              className="w-[30px] h-[30px] flex items-center justify-center rounded-full hover:bg-[#f0f0f0] transition-colors cursor-pointer"
             >
-              <Icon path={mdiArrowRight} size={0.83} color={colors.colorBlack3} />
+              <Icon path={mdiClose} size={0.67} color={colors.colorBlack1} />
             </button>
           </div>
 
