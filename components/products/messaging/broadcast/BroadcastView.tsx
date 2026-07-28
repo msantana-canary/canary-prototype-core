@@ -17,6 +17,7 @@ import { BroadcastAudienceCard } from './BroadcastAudienceCard';
 import { BroadcastThread } from './BroadcastThread';
 import { CreateGroupModal } from './CreateGroupModal';
 import { FilterGuestsModal } from './FilterGuestsModal';
+import { FilterGuestsModalBuilder } from './FilterGuestsModalBuilder';
 import { BroadcastDeliveryPanel } from './BroadcastDeliveryPanel';
 import { BroadcastScheduledPanel } from './BroadcastScheduledPanel';
 import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
@@ -29,6 +30,7 @@ export function BroadcastView() {
     createGroup,
     isFilterModalOpen,
     closeFilterModal,
+    filterModalVariant,
     segmentSavedToast,
     dismissSegmentSavedToast,
   } = useBroadcastStore();
@@ -67,11 +69,14 @@ export function BroadcastView() {
         onCreate={createGroup}
       />
 
-      {/* Filter Guests Modal */}
-      <FilterGuestsModal
-        isOpen={isFilterModalOpen}
-        onClose={closeFilterModal}
-      />
+      {/* Filter Guests Modal — live A/B. Classic is the shipped modal, untouched;
+          Builder is the step-3 redesign. Both write the same criteria through the
+          same applyFilters, so only the modal differs. */}
+      {filterModalVariant === 'builder' ? (
+        <FilterGuestsModalBuilder isOpen={isFilterModalOpen} onClose={closeFilterModal} />
+      ) : (
+        <FilterGuestsModal isOpen={isFilterModalOpen} onClose={closeFilterModal} />
+      )}
 
       {/* Per-recipient delivery panel — rides the shared floating-panel shell.
           Its z-index (40 / scrim 39) sits below @canary-ui's modal layer (50),
