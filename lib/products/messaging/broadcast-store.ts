@@ -9,8 +9,9 @@
  *    (`useGuestJourneyStore.segments`); the broadcast-local `savedFilters` list
  *    and its save/update/delete actions were removed along with the
  *    Manage-filters modal.
- *  - Manual row checks/unchecks are STICKY: they survive applying and clearing a
- *    filter (see `manualSelectionOverrides`).
+ *  - Selection semantics on filter apply / change / clear mirror production
+ *    (BroadcastV2BuiltInGroupGuestList.vue + ChatService.getGuestsForFolder) —
+ *    see the comments on `applyFilters` and `clearAllFilters`.
  */
 
 import { create } from 'zustand';
@@ -109,15 +110,6 @@ interface BroadcastState {
 
   // Guest selection
   selectedGuestIds: string[];
-  /**
-   * STICKY SELECTION (production rule: "manual picks survive a subsequently
-   * applied filter"). Every explicit row toggle records its resulting state
-   * here; applying or clearing a filter rebuilds the selection from the newly
-   * visible guests MINUS anyone the user manually unchecked. Bulk Select-all /
-   * Deselect-all and switching group clear the map (a blanket intent supersedes
-   * per-row history).
-   */
-  manualSelectionOverrides: Record<string, boolean>;
 
   // Messages
   messages: Record<string, BroadcastMessage[]>;
@@ -189,15 +181,16 @@ function getSelectableGuestIds(groupId: string, allGroups: BroadcastGroup[]): st
     .map(entry => entry.guestId);
 }
 
-/**
- * Re-apply sticky manual decisions to a freshly computed candidate set.
- * Manual UNCHECKS are honored (the guest stays off); manual CHECKS are already
- * covered because the candidate set is "everything currently visible and
- * messageable". Deliberately never re-adds a guest who is NOT in the candidate
- * set — an invisible recipient inflating the send count is the surprising case.
- */
-function applyManualOverrides(candidateIds: string[], overrides: Record<string, boolean>): string[] {
-  return candidateIds.filter(id => overrides[id] !== false);
+/** Messageable ids among the guest entries currently on screen for a filter. */
+function getVisibleSelectableIds(
+  groupId: string,
+  allGroups: BroadcastGroup[],
+  filters: BroadcastFilterCriteria
+): string[] {
+  const entries = isFilterEmpty(filters)
+    ? getGuestEntriesForGroup(groupId, allGroups)
+    : getFilteredGuestEntries(groupId, allGroups, filters);
+  return entries.filter(entry => guests[entry.guestId]?.phone).map(entry => entry.guestId);
 }
 
 export const useBroadcastStore = create<BroadcastState>((set, get) => ({
@@ -207,7 +200,6 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   activeGroupTab: 'active',
   selectedDate: '2026-03-11',
   selectedGuestIds: getSelectableGuestIds('group-arrivals', [...builtInGroups, ...customGroups]),
-  manualSelectionOverrides: {},
   messages: { ...mockBroadcastMessages },
   isCreateGroupModalOpen: false,
 
@@ -218,14 +210,14 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
 
   segmentSavedToast: null,
 
-  // Select a group — auto-selects all messageable guests, clears filters and
-  // any sticky per-row decisions (they belonged to the previous audience).
+  // Select a group — auto-selects all messageable guests and clears filters.
+  // Production does the same on folder change (BroadcastV2BuiltInGroupGuestList
+  // watches `folder` → clearFilters() → getGuestData() → selectGuestsForFolder).
   selectGroup: (groupId: string) => {
     const selectableIds = getSelectableGuestIds(groupId, get().allGroups);
     set({
       selectedGroupId: groupId,
       selectedGuestIds: selectableIds,
-      manualSelectionOverrides: {},
       activeFilters: { ...emptyFilterCriteria },
       loadedSegmentId: null,
     });
@@ -239,6 +231,8 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
     set({ selectedDate: date });
   },
 
+  // Plain add/remove — production's addRemoveSelectedGuest keeps no per-row
+  // bookkeeping; the "was this unchecked" fact is derived at filter-apply time.
   toggleGuestSelection: (guestId: string) => {
     set(state => {
       const isSelected = state.selectedGuestIds.includes(guestId);
@@ -246,28 +240,18 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
         selectedGuestIds: isSelected
           ? state.selectedGuestIds.filter(id => id !== guestId)
           : [...state.selectedGuestIds, guestId],
-        // Record the explicit decision so it survives the next filter apply/clear.
-        manualSelectionOverrides: {
-          ...state.manualSelectionOverrides,
-          [guestId]: !isSelected,
-        },
       };
     });
   },
 
+  // Production's onSelectAllChanged: select all accessible guests, or none.
   selectAllGuests: () => {
     const { selectedGroupId, allGroups, activeFilters } = get();
-    const entries = isFilterEmpty(activeFilters)
-      ? getGuestEntriesForGroup(selectedGroupId, allGroups)
-      : getFilteredGuestEntries(selectedGroupId, allGroups, activeFilters);
-    const selectableIds = entries
-      .filter(entry => guests[entry.guestId]?.phone)
-      .map(entry => entry.guestId);
-    set({ selectedGuestIds: selectableIds, manualSelectionOverrides: {} });
+    set({ selectedGuestIds: getVisibleSelectableIds(selectedGroupId, allGroups, activeFilters) });
   },
 
   deselectAllGuests: () => {
-    set({ selectedGuestIds: [], manualSelectionOverrides: {} });
+    set({ selectedGuestIds: [] });
   },
 
   sendBroadcast: (content: string) => {
@@ -345,33 +329,57 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
     set({ isFilterModalOpen: false });
   },
 
+  /**
+   * STICKY SELECTION — mirrors production exactly
+   * (BroadcastV2BuiltInGroupGuestList.fetchFilteredGuests):
+   *
+   *   const selectedSlugs = new Set(selectedGuests.map(s => s.slug));
+   *   const deselectedSlugs = new Set(
+   *     accessibleGuests.filter(g => !selectedSlugs.has(g.slug)).map(g => g.slug));
+   *   ...
+   *   selectedGuests = result.guests.filter(
+   *     g => canMessageGuest(g) && !deselectedSlugs.has(g.slug));
+   *
+   * The deselected set is derived FRESH from the list on screen at apply time —
+   * it is NOT a persistent history. So: a manual uncheck survives an apply while
+   * the guest is visible, but is forgotten once a filter hides them. And a
+   * manually-checked guest who falls outside the new result is dropped, because
+   * the selection is rebuilt purely from the result.
+   */
   applyFilters: (criteria: BroadcastFilterCriteria, segmentId?: string) => {
-    const { selectedGroupId, allGroups, manualSelectionOverrides } = get();
-    // Candidates = every messageable guest the filter leaves visible…
-    const visible = isFilterEmpty(criteria)
-      ? getGuestEntriesForGroup(selectedGroupId, allGroups)
-      : getFilteredGuestEntries(selectedGroupId, allGroups, criteria);
-    const selectableIds = visible
-      .filter(entry => guests[entry.guestId]?.phone)
-      .map(entry => entry.guestId);
+    const { selectedGroupId, allGroups, activeFilters, selectedGuestIds } = get();
+
+    // Snapshot the unchecked rows currently on screen.
+    const selectedSet = new Set(selectedGuestIds);
+    const deselected = new Set(
+      getVisibleSelectableIds(selectedGroupId, allGroups, activeFilters).filter(
+        id => !selectedSet.has(id)
+      )
+    );
+
+    // Rebuild from the new result, minus that snapshot.
+    const nextVisible = getVisibleSelectableIds(selectedGroupId, allGroups, criteria);
 
     set({
       activeFilters: { ...criteria },
       loadedSegmentId: segmentId || null,
-      // …minus anyone the user has manually unchecked (sticky selection).
-      selectedGuestIds: applyManualOverrides(selectableIds, manualSelectionOverrides),
+      selectedGuestIds: nextVisible.filter(id => !deselected.has(id)),
       isFilterModalOpen: false,
     });
   },
 
+  /**
+   * Clearing is a FULL RESET in production — clearFilters() calls getGuestData(),
+   * which refetches the folder and runs selectGuestsForFolder(), re-selecting
+   * every messageable guest (ChatService.getGuestsForFolder empties the
+   * selection first). Manual unchecks do NOT survive a clear.
+   */
   clearAllFilters: () => {
-    const { selectedGroupId, allGroups, manualSelectionOverrides } = get();
-    const selectableIds = getSelectableGuestIds(selectedGroupId, allGroups);
+    const { selectedGroupId, allGroups } = get();
     set({
       activeFilters: { ...emptyFilterCriteria },
       loadedSegmentId: null,
-      // Clearing a filter restores the full audience, but manual unchecks stick.
-      selectedGuestIds: applyManualOverrides(selectableIds, manualSelectionOverrides),
+      selectedGuestIds: getSelectableGuestIds(selectedGroupId, allGroups),
     });
   },
 
