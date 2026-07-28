@@ -1,11 +1,6 @@
 @import "tailwindcss";
 @import "@canary-ui/components/styles.css";
 
-/* Broadcast group list — make list items transparent so column bg shows through */
-.broadcast-group-list li {
-  background-color: transparent !important;
-}
-
 /* Broadcast guest list — strip padding from checkbox labels */
 .broadcast-guest-list label {
   padding: 0 !important;

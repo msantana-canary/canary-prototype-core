@@ -1,17 +1,23 @@
 /**
- * BroadcastGuestList Component
+ * BroadcastGuestList — REDESIGN (broadcast step 1 baseline)
  *
- * Middle column of the broadcast view.
- * Shows guest list with checkboxes, date picker (for arrivals/departures),
- * "Select all" toggle, and segmented sections.
- * Hover on guest tile shows Contact Details popover.
+ * The recipients zone: the lower half of the combined Audience card. Filters row
+ * (built-ins only) + date picker (Arrivals/Departures, knowingly decorative) +
+ * Select all + the guest list with EXPECTING / CHECKED IN section labels and the
+ * hover Contact Details popover — all preserved from the old middle column, re-
+ * dressed in the card-on-canvas register (32px rounded-8 avatars, rounded-6
+ * interactive elements, colorBlack* type ramp).
+ *
+ * NEW (parity): each row carries a small preferred-channel indicator
+ * (SMS / WhatsApp / Email). Guests with no phone on file keep the existing
+ * treatment — 0.4 opacity, disabled checkbox, "No phone number".
  */
 
 'use client';
 
-import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { CanaryCheckbox, CanaryInputDate, CanaryListItem } from '@canary-ui/components';
+import { CanaryCheckbox, CanaryInputDate, colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import {
   mdiAccountOutline,
@@ -26,6 +32,8 @@ import {
   mdiDotsHorizontal,
   mdiFilterOutline,
   mdiClose,
+  mdiMessageTextOutline,
+  mdiWhatsapp,
 } from '@mdi/js';
 import {
   useBroadcastStore,
@@ -36,7 +44,11 @@ import {
 } from '@/lib/products/messaging/broadcast-store';
 import { guests } from '@/lib/core/data/guests';
 import { reservations } from '@/lib/core/data/reservations';
-import { BroadcastGuestEntry, GuestSegment } from '@/lib/products/messaging/broadcast-types';
+import {
+  BroadcastGuestEntry,
+  GuestSegment,
+  PreferredChannel,
+} from '@/lib/products/messaging/broadcast-types';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
 import { Avatar } from '../Avatar';
@@ -49,6 +61,28 @@ const segmentLabels: Record<GuestSegment, string> = {
 };
 
 const segmentOrder: GuestSegment[] = ['expecting', 'checked-in', 'departing', 'checked-out'];
+
+/** Preferred-channel indicator meta — the channel the broadcast actually goes out on. */
+const CHANNEL_META: Record<PreferredChannel, { icon: string; label: string }> = {
+  sms: { icon: mdiMessageTextOutline, label: 'SMS' },
+  whatsapp: { icon: mdiWhatsapp, label: 'WhatsApp' },
+  email: { icon: mdiEmailOutline, label: 'Email' },
+};
+
+function ChannelIndicator({ channel }: { channel: PreferredChannel }) {
+  const meta = CHANNEL_META[channel];
+  return (
+    <div className="flex items-center gap-1 shrink-0" title={`Preferred channel: ${meta.label}`}>
+      <Icon path={meta.icon} size={0.58} color={colors.colorBlack3} />
+      <span
+        className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase whitespace-nowrap"
+        style={{ color: colors.colorBlack3 }}
+      >
+        {meta.label}
+      </span>
+    </div>
+  );
+}
 
 function ContactDetailsPopover({ guest, reservation }: { guest: Guest; reservation?: Reservation }) {
   const roomDisplay = reservation
@@ -77,27 +111,27 @@ function ContactDetailsPopover({ guest, reservation }: { guest: Guest; reservati
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
         <span
-          className="font-['Roboto',sans-serif] text-[16px] leading-[24px] font-bold"
-          style={{ color: '#333333' }}
+          className="font-['Roboto',sans-serif] text-[16px] leading-[24px] font-medium"
+          style={{ color: colors.colorBlack1 }}
         >
           Contact Details
         </span>
-        <Icon path={mdiDotsHorizontal} size={0.83} color="#666666" />
+        <Icon path={mdiDotsHorizontal} size={0.83} color={colors.colorBlack3} />
       </div>
 
       {/* Rows */}
       <div className="px-5 pb-4">
         {rows.map((row, i) => (
           <div key={i} className="flex items-center gap-3 py-2.5">
-            <Icon path={row.icon} size={0.83} color="#666666" className="shrink-0" />
+            <Icon path={row.icon} size={0.83} color={colors.colorBlack3} className="shrink-0" />
             <span
-              className="font-['Roboto',sans-serif] text-[14px] leading-[20px] flex-1 truncate"
-              style={{ color: '#333333' }}
+              className="font-['Roboto',sans-serif] text-[14px] leading-[22px] flex-1 truncate"
+              style={{ color: colors.colorBlack1 }}
             >
               {row.text}
             </span>
             {row.action && (
-              <Icon path={mdiOpenInNew} size={0.67} color="#666666" className="shrink-0" />
+              <Icon path={mdiOpenInNew} size={0.67} color={colors.colorBlack3} className="shrink-0" />
             )}
           </div>
         ))}
@@ -148,8 +182,14 @@ function GuestItem({
   return (
     <div
       ref={rowRef}
-      className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-gray-50 cursor-pointer"
-      style={{ opacity: hasPhone ? 1 : 0.4 }}
+      className="flex items-center gap-3 rounded-[6px] transition-colors hover:bg-[#f9fafb] cursor-pointer"
+      style={{
+        opacity: hasPhone ? 1 : 0.4,
+        paddingLeft: 12,
+        paddingRight: 12,
+        paddingTop: 8,
+        paddingBottom: 8,
+      }}
       onClick={() => hasPhone && onToggle()}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -163,26 +203,26 @@ function GuestItem({
         />
       </div>
 
-      {/* Avatar */}
-      <Avatar initials={guest.initials} size="medium" />
+      {/* Avatar — 32px rounded-8 square (redesign register) */}
+      <Avatar src={guest.avatar} initials={guest.initials} size="small" />
 
-      {/* Name + Room */}
+      {/* Name + room/type */}
       <div className="flex-1 min-w-0">
         <div
-          className="font-['Roboto',sans-serif] text-[14px] leading-[20px] font-medium truncate"
-          style={{ color: '#333333' }}
+          className="font-['Roboto',sans-serif] text-[14px] leading-[22px] font-medium truncate"
+          style={{ color: colors.colorBlack1 }}
         >
           {guest.name}
         </div>
         {(roomDisplay || !hasPhone) && (
           <div
-            className="font-['Roboto',sans-serif] text-[12px] leading-[16px] truncate"
-            style={{ color: '#999999' }}
+            className="font-['Roboto',sans-serif] text-[12px] leading-[18px] truncate"
+            style={{ color: colors.colorBlack3 }}
           >
             {roomDisplay}
             {!hasPhone && (
               <>
-                {roomDisplay && ' \u00B7 '}
+                {roomDisplay && ' · '}
                 No phone number
               </>
             )}
@@ -190,11 +230,21 @@ function GuestItem({
         )}
       </div>
 
+      {/* Preferred channel — what this guest would actually receive on */}
+      {hasPhone && entry.preferredChannel && (
+        <ChannelIndicator channel={entry.preferredChannel} />
+      )}
+
       {/* Contact Details Popover — rendered via portal to avoid overflow clipping */}
       {isHovered && createPortal(
         <div
-          className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 w-[320px] animate-fade-in"
-          style={{ top: popoverPos.top, left: popoverPos.left, pointerEvents: 'none' }}
+          className="fixed z-50 bg-white rounded-[12px] shadow-lg w-[320px] animate-fade-in"
+          style={{
+            top: popoverPos.top,
+            left: popoverPos.left,
+            pointerEvents: 'none',
+            border: `1px solid ${colors.colorBlack6}`,
+          }}
         >
           <ContactDetailsPopover guest={guest} reservation={reservation} />
         </div>,
@@ -232,7 +282,7 @@ export function BroadcastGuestList() {
     [selectedGroupId, allGroups, activeFilters, hasActiveFilters]
   );
 
-  // Whether this group shows a date picker
+  // Whether this group shows a date picker (decorative — not wired)
   const showDatePicker = currentGroup?.builtInType === 'arrivals' || currentGroup?.builtInType === 'departures';
 
   // Whether this group has segments
@@ -268,43 +318,49 @@ export function BroadcastGuestList() {
   if (!currentGroup) return null;
 
   return (
-    <div className="h-full flex flex-col border-r border-gray-200 broadcast-guest-list" style={{ backgroundColor: '#f0f0f0' }}>
-      {/* Filter Row (top of column, only for built-in groups) */}
+    <div className="h-full flex flex-col min-h-0 broadcast-guest-list">
+      {/* Filters row (built-in groups only) */}
       {isBuiltIn && (
-        <CanaryListItem
-          icon={<Icon path={mdiFilterOutline} size={1} color="#2858c4" />}
-          title={
+        <div className="shrink-0" style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 8 }}>
+          <div
+            onClick={openFilterModal}
+            className="flex items-center gap-2 rounded-[6px] cursor-pointer transition-opacity hover:opacity-80"
+            style={{
+              backgroundColor: colors.colorBlueDark5,
+              paddingLeft: 12,
+              paddingRight: 8,
+              paddingTop: 8,
+              paddingBottom: 8,
+            }}
+          >
+            <Icon path={mdiFilterOutline} size={0.83} color={colors.colorBlueDark1} />
             <span
-              className="font-['Roboto',sans-serif] text-[14px] font-medium"
-              style={{ color: '#2858c4' }}
+              className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] flex-1 min-w-0"
+              style={{ color: colors.colorBlueDark1 }}
             >
               {hasActiveFilters ? `${filterCount} Filter${filterCount !== 1 ? 's' : ''}` : 'Filters'}
             </span>
-          }
-          backgroundColor="#eaeef9"
-          hoverColor="#dde4f5"
-          isClickable
-          onClick={openFilterModal}
-          rightContent={
-            hasActiveFilters ? (
+            {hasActiveFilters && (
               <button
                 type="button"
-                className="flex items-center justify-center w-[24px] h-[24px] rounded cursor-pointer hover:bg-[#cdd5eb] transition-colors"
+                aria-label="Clear filters"
+                className="flex items-center justify-center rounded-[4px] cursor-pointer transition-colors hover:bg-[#cdd5eb]"
+                style={{ width: 24, height: 24 }}
                 onClick={(e) => {
                   e.stopPropagation();
                   clearAllFilters();
                 }}
               >
-                <Icon path={mdiClose} size={0.75} color="#2858c4" />
+                <Icon path={mdiClose} size={0.67} color={colors.colorBlueDark1} />
               </button>
-            ) : undefined
-          }
-        />
+            )}
+          </div>
+        </div>
       )}
 
-      {/* Date Picker (for arrivals/departures) */}
+      {/* Date picker (Arrivals / Departures) — knowingly decorative */}
       {showDatePicker && (
-        <div className="px-4 pt-4 pb-2">
+        <div className="shrink-0" style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 8 }}>
           <CanaryInputDate
             value={selectedDate}
             onChange={(date) => setSelectedDate(date)}
@@ -312,8 +368,17 @@ export function BroadcastGuestList() {
         </div>
       )}
 
-      {/* Select All */}
-      <div className="px-4 py-3 border-b border-gray-200">
+      {/* Select all */}
+      <div
+        className="shrink-0"
+        style={{
+          paddingLeft: 20,
+          paddingRight: 20,
+          paddingTop: 12,
+          paddingBottom: 12,
+          borderBottom: `1px solid ${colors.colorBlack6}`,
+        }}
+      >
         <div className="flex items-center gap-3">
           <div className="shrink-0">
             <CanaryCheckbox
@@ -323,33 +388,35 @@ export function BroadcastGuestList() {
             />
           </div>
           <span
-            className="font-['Roboto',sans-serif] text-[14px] leading-[20px] font-medium flex-1"
-            style={{ color: '#333333' }}
+            className="font-['Roboto',sans-serif] text-[14px] leading-[22px] font-medium flex-1"
+            style={{ color: colors.colorBlack1 }}
           >
             Select all
           </span>
         </div>
       </div>
 
-      {/* Guest List */}
-      <div className="relative flex-1 min-h-0">
-      <div className="absolute inset-0 overflow-y-auto">
+      {/* Guest list */}
+      <div
+        className="flex-1 min-h-0 overflow-y-auto scrollbar-invisible"
+        style={{ paddingLeft: 8, paddingRight: 8, paddingBottom: 16 }}
+      >
         {hasSegments && segmentedEntries ? (
-          // Segmented view (Arrivals/Departures)
+          // Segmented view (Arrivals / Departures)
           segmentOrder
             .filter(seg => segmentedEntries[seg]?.length)
             .map(seg => (
               <div key={seg}>
-                {/* Segment Header */}
-                <div className="px-4 pt-4">
+                {/* Segment header */}
+                <div style={{ paddingLeft: 12, paddingRight: 12, paddingTop: 16, paddingBottom: 4 }}>
                   <span
-                    className="font-['Roboto',sans-serif] text-[10px] leading-[14px] uppercase font-medium"
-                    style={{ color: '#999999' }}
+                    className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase font-medium"
+                    style={{ color: colors.colorBlack4, letterSpacing: '0.4px' }}
                   >
                     {segmentLabels[seg]}
                   </span>
                 </div>
-                {/* Segment Guests */}
+                {/* Segment guests */}
                 {segmentedEntries[seg]!.map(entry => (
                   <GuestItem
                     key={entry.guestId}
@@ -362,27 +429,28 @@ export function BroadcastGuestList() {
             ))
         ) : (
           // Flat list (In-house, custom groups)
-          guestEntries.map(entry => (
-            <GuestItem
-              key={entry.guestId}
-              entry={entry}
-              isSelected={selectedGuestIds.includes(entry.guestId)}
-              onToggle={() => toggleGuestSelection(entry.guestId)}
-            />
-          ))
+          <div style={{ paddingTop: 8 }}>
+            {guestEntries.map(entry => (
+              <GuestItem
+                key={entry.guestId}
+                entry={entry}
+                isSelected={selectedGuestIds.includes(entry.guestId)}
+                onToggle={() => toggleGuestSelection(entry.guestId)}
+              />
+            ))}
+          </div>
         )}
 
         {guestEntries.length === 0 && (
           <div className="flex items-center justify-center h-32">
             <p
               className="font-['Roboto',sans-serif] text-[14px] text-center"
-              style={{ color: '#999999' }}
+              style={{ color: colors.colorBlack4 }}
             >
               No guests in this group
             </p>
           </div>
         )}
-      </div>
       </div>
     </div>
   );

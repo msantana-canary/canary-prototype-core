@@ -1,14 +1,21 @@
 /**
- * BroadcastGroupList Component
+ * BroadcastGroupList — REDESIGN (broadcast step 1 baseline)
  *
- * Left column of the broadcast view.
- * Uses CanaryList/CanaryListItem for built-in groups (Arrivals, In-house, Departures)
- * and custom groups. Active/Archived filtering is handled by BroadcastSubNav.
+ * The audience selector: the top zone of the combined Audience card. The status
+ * trio (Arrivals / In-house / Departures) sits as compact selectable rows, then
+ * a GROUPS section (label + "+" new group + kebab) lists custom groups.
+ *
+ * Rows use the redesign selection register (soft colorBlueDark5 fill +
+ * colorBlueDark3 border, rounded-6) instead of the old solid-blue CanaryListItem
+ * rows. Deliberately LEAN: no member counts, no last-send previews (step 4).
+ *
+ * The kebab replaces the removed Active/Archived pill row — "View archived"
+ * flips the section to the archived empty state and back.
  */
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Icon from '@mdi/react';
 import {
   mdiLoginVariant,
@@ -16,8 +23,9 @@ import {
   mdiLogoutVariant,
   mdiAccountMultipleOutline,
   mdiPlus,
+  mdiDotsHorizontal,
 } from '@mdi/js';
-import { CanaryList, CanaryListItem, ButtonType, CanaryButton } from '@canary-ui/components';
+import { colors } from '@canary-ui/components';
 import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
 
 const builtInIcons: Record<string, string> = {
@@ -26,25 +34,45 @@ const builtInIcons: Record<string, string> = {
   departures: mdiLogoutVariant,
 };
 
-function CustomGroupIcon({ isSelected }: { isSelected: boolean }) {
+function AudienceRow({
+  iconPath,
+  label,
+  isSelected,
+  onClick,
+}: {
+  iconPath: string;
+  label: string;
+  isSelected: boolean;
+  onClick: () => void;
+}) {
   return (
-    <div
-      className="flex items-center justify-center shrink-0"
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 rounded-[6px] transition-colors cursor-pointer text-left ${
+        isSelected ? '' : 'hover:bg-[#f9fafb]'
+      }`}
       style={{
-        width: 40,
-        height: 40,
-        borderRadius: 8,
-        padding: 10,
-        backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#cccccc',
-        marginRight: -8,
+        paddingLeft: 12,
+        paddingRight: 12,
+        paddingTop: 8,
+        paddingBottom: 8,
+        backgroundColor: isSelected ? colors.colorBlueDark5 : 'transparent',
+        border: `1px solid ${isSelected ? colors.colorBlueDark3 : 'transparent'}`,
       }}
     >
       <Icon
-        path={mdiAccountMultipleOutline}
-        size="20px"
-        color="#ffffff"
+        path={iconPath}
+        size={0.83}
+        color={isSelected ? colors.colorBlueDark1 : colors.colorBlack3}
+        className="shrink-0"
       />
-    </div>
+      <span
+        className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] truncate min-w-0"
+        style={{ color: isSelected ? colors.colorBlueDark1 : colors.colorBlack1 }}
+      >
+        {label}
+      </span>
+    </button>
   );
 }
 
@@ -54,94 +82,124 @@ export function BroadcastGroupList() {
     selectedGroupId,
     activeGroupTab,
     selectGroup,
+    setActiveGroupTab,
     openCreateGroupModal,
   } = useBroadcastStore();
 
-  const builtInGroupsList = allGroups.filter(g => g.type === 'built-in');
-  const activeCustomGroups = allGroups.filter(g => g.type === 'custom' && !g.isArchived);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRootRef = useRef<HTMLDivElement>(null);
 
-  if (activeGroupTab === 'archived') {
-    return (
-      <div className="h-full flex flex-col border-r border-gray-200" style={{ backgroundColor: '#fafafa' }}>
-        <div className="flex items-center justify-center h-32">
-          <p
-            className="font-['Roboto',sans-serif] text-[14px] text-center"
-            style={{ color: '#999999' }}
-          >
-            No archived groups
-          </p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRootRef.current && !menuRootRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    if (isMenuOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMenuOpen]);
+
+  const builtInGroupsList = allGroups.filter(g => g.type === 'built-in');
+  const isArchivedView = activeGroupTab === 'archived';
+  const customGroupsList = allGroups.filter(
+    g => g.type === 'custom' && (isArchivedView ? g.isArchived : !g.isArchived)
+  );
 
   return (
-    <div className="h-full flex flex-col border-r border-gray-200 overflow-y-auto broadcast-group-list" style={{ backgroundColor: '#fafafa' }}>
-      {/* Built-in Groups */}
-      <CanaryList className="list-none">
-        {builtInGroupsList.map(group => {
-          const isSelected = selectedGroupId === group.id;
-          return (
-            <CanaryListItem
-              key={group.id}
-              title={group.name}
-              icon={
-                <Icon
-                  path={builtInIcons[group.builtInType!]}
-                  size={1}
-                  color={isSelected ? '#ffffff' : '#414141'}
-                />
-              }
-              isSelected={isSelected}
-              backgroundColor={isSelected ? '#2858c4' : '#fafafa'}
-              hoverColor="#f2f2f2"
-              onClick={() => selectGroup(group.id)}
-              alignment="center"
-            />
-          );
-        })}
-      </CanaryList>
-
-      {/* Divider */}
-      <div className="border-t border-gray-200" />
-
-      {/* Custom Groups Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <span
-          className="font-['Roboto',sans-serif] text-[12px] leading-[16px] uppercase font-medium"
-          style={{ color: '#999999' }}
-        >
-          Groups
-        </span>
-        <button
-          onClick={openCreateGroupModal}
-          aria-label="Create group"
-          className="p-1 rounded hover:bg-gray-200 transition-colors"
-        >
-          <Icon path={mdiPlus} size={0.67} color="#2858c4" />
-        </button>
+    <div className="flex flex-col" style={{ padding: 8 }}>
+      {/* Status trio */}
+      <div className="flex flex-col gap-1">
+        {builtInGroupsList.map(group => (
+          <AudienceRow
+            key={group.id}
+            iconPath={builtInIcons[group.builtInType!]}
+            label={group.name}
+            isSelected={selectedGroupId === group.id}
+            onClick={() => selectGroup(group.id)}
+          />
+        ))}
       </div>
 
-      {/* Custom Groups List */}
-      <CanaryList className="list-none">
-        {activeCustomGroups.map(group => {
-          const isSelected = selectedGroupId === group.id;
-          return (
-            <CanaryListItem
+      {/* GROUPS section header — label + new group + kebab (holds "View archived") */}
+      <div
+        className="flex items-center justify-between"
+        style={{ paddingLeft: 12, paddingRight: 4, paddingTop: 16, paddingBottom: 4 }}
+      >
+        <span
+          className="font-['Roboto',sans-serif] font-medium text-[10px] leading-[16px] uppercase"
+          style={{ color: colors.colorBlack3, letterSpacing: '0.4px' }}
+        >
+          {isArchivedView ? 'Archived groups' : 'Groups'}
+        </span>
+
+        <div className="flex items-center">
+          <button
+            onClick={openCreateGroupModal}
+            aria-label="New group"
+            className="rounded-[4px] hover:bg-[#f0f0f0] transition-colors cursor-pointer"
+            style={{ padding: 6 }}
+          >
+            <Icon path={mdiPlus} size={0.75} color={colors.colorBlueDark1} />
+          </button>
+
+          <div className="relative" ref={menuRootRef}>
+            <button
+              onClick={() => setIsMenuOpen(v => !v)}
+              aria-label="Group options"
+              className="rounded-[4px] hover:bg-[#f0f0f0] transition-colors cursor-pointer"
+              style={{ padding: 6 }}
+            >
+              <Icon path={mdiDotsHorizontal} size={0.75} color={colors.colorBlack3} />
+            </button>
+
+            {isMenuOpen && (
+              <div
+                className="absolute right-0 mt-1 z-50 rounded-lg bg-white py-1"
+                style={{
+                  width: 168,
+                  border: `1px solid ${colors.colorBlack6}`,
+                  boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
+                }}
+              >
+                <button
+                  onClick={() => {
+                    setActiveGroupTab(isArchivedView ? 'active' : 'archived');
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors font-['Roboto',sans-serif]"
+                  style={{ color: colors.colorBlack1 }}
+                >
+                  {isArchivedView ? 'View active' : 'View archived'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Custom groups */}
+      {customGroupsList.length === 0 ? (
+        <div className="flex items-center justify-center" style={{ paddingTop: 16, paddingBottom: 16 }}>
+          <p
+            className="font-['Roboto',sans-serif] text-[14px] text-center"
+            style={{ color: colors.colorBlack4 }}
+          >
+            {isArchivedView ? 'No archived groups' : 'No groups yet'}
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1">
+          {customGroupsList.map(group => (
+            <AudienceRow
               key={group.id}
-              title={group.name}
-              subtitle={`${group.memberCount ?? 0} guest${(group.memberCount ?? 0) !== 1 ? 's' : ''}`}
-              description={group.lastBroadcastPreview}
-              leftContent={<CustomGroupIcon isSelected={isSelected} />}
-              isSelected={isSelected}
-              backgroundColor={isSelected ? '#2858c4' : '#fafafa'}
-              hoverColor="#f2f2f2"
+              iconPath={mdiAccountMultipleOutline}
+              label={group.name}
+              isSelected={selectedGroupId === group.id}
               onClick={() => selectGroup(group.id)}
-              alignment="center"
             />
-          );
-        })}
-      </CanaryList>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
