@@ -8,9 +8,9 @@
  * dressed in the card-on-canvas register (32px rounded-8 avatars, rounded-6
  * interactive elements, colorBlack* type ramp).
  *
- * NEW (parity): each row carries a small preferred-channel indicator
- * (SMS / WhatsApp / Email). Guests with no phone on file keep the existing
- * treatment — 0.4 opacity, disabled checkbox, "No phone number".
+ * Rows are bare — checkbox, avatar, name, room — matching production, which
+ * shows no channel tag here. Guests with no phone on file keep the existing
+ * treatment: 0.4 opacity, disabled checkbox, "No phone number".
  */
 
 'use client';
@@ -32,8 +32,6 @@ import {
   mdiDotsHorizontal,
   mdiFilterOutline,
   mdiClose,
-  mdiMessageTextOutline,
-  mdiWhatsapp,
 } from '@mdi/js';
 import {
   useBroadcastStore,
@@ -47,7 +45,6 @@ import { reservations } from '@/lib/core/data/reservations';
 import {
   BroadcastGuestEntry,
   GuestSegment,
-  PreferredChannel,
 } from '@/lib/products/messaging/broadcast-types';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
@@ -61,28 +58,6 @@ const segmentLabels: Record<GuestSegment, string> = {
 };
 
 const segmentOrder: GuestSegment[] = ['expecting', 'checked-in', 'departing', 'checked-out'];
-
-/** Preferred-channel indicator meta — the channel the broadcast actually goes out on. */
-const CHANNEL_META: Record<PreferredChannel, { icon: string; label: string }> = {
-  sms: { icon: mdiMessageTextOutline, label: 'SMS' },
-  whatsapp: { icon: mdiWhatsapp, label: 'WhatsApp' },
-  email: { icon: mdiEmailOutline, label: 'Email' },
-};
-
-function ChannelIndicator({ channel }: { channel: PreferredChannel }) {
-  const meta = CHANNEL_META[channel];
-  return (
-    <div className="flex items-center gap-1 shrink-0" title={`Preferred channel: ${meta.label}`}>
-      <Icon path={meta.icon} size={0.58} color={colors.colorBlack3} />
-      <span
-        className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase whitespace-nowrap"
-        style={{ color: colors.colorBlack3 }}
-      >
-        {meta.label}
-      </span>
-    </div>
-  );
-}
 
 function ContactDetailsPopover({ guest, reservation }: { guest: Guest; reservation?: Reservation }) {
   const roomDisplay = reservation
@@ -182,11 +157,11 @@ function GuestItem({
   return (
     <div
       ref={rowRef}
-      className="flex items-center gap-2 rounded-[6px] transition-colors hover:bg-[#f9fafb] cursor-pointer"
+      className="flex items-center gap-3 rounded-[6px] transition-colors hover:bg-[#f9fafb] cursor-pointer"
       style={{
         opacity: hasPhone ? 1 : 0.4,
-        paddingLeft: 8,
-        paddingRight: 8,
+        paddingLeft: 12,
+        paddingRight: 12,
         paddingTop: 8,
         paddingBottom: 8,
       }}
@@ -206,8 +181,8 @@ function GuestItem({
       {/* Avatar — 32px rounded-8 square (redesign register) */}
       <Avatar src={guest.avatar} initials={guest.initials} size="small" />
 
-      {/* Name + room/type. The column is narrow (212px) — the name truncates
-          rather than wrapping; the full name is on the hover popover. */}
+      {/* Name + room/type. The column is narrow — the name truncates rather
+          than wrapping; the full name is on the hover popover. */}
       <div className="flex-1 min-w-0">
         <div
           className="font-['Roboto',sans-serif] text-[14px] leading-[22px] font-medium truncate"
@@ -231,11 +206,6 @@ function GuestItem({
           </div>
         )}
       </div>
-
-      {/* Preferred channel — what this guest would actually receive on */}
-      {hasPhone && entry.preferredChannel && (
-        <ChannelIndicator channel={entry.preferredChannel} />
-      )}
 
       {/* Contact Details Popover — rendered via portal to avoid overflow clipping */}
       {isHovered && createPortal(
@@ -374,8 +344,8 @@ export function BroadcastGuestList() {
       <div
         className="shrink-0"
         style={{
-          paddingLeft: 16,
-          paddingRight: 16,
+          paddingLeft: 20,
+          paddingRight: 20,
           paddingTop: 12,
           paddingBottom: 12,
           borderBottom: `1px solid ${colors.colorBlack6}`,
@@ -410,7 +380,7 @@ export function BroadcastGuestList() {
             .map(seg => (
               <div key={seg}>
                 {/* Segment header */}
-                <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 16, paddingBottom: 4 }}>
+                <div style={{ paddingLeft: 12, paddingRight: 12, paddingTop: 16, paddingBottom: 4 }}>
                   <span
                     className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase font-medium"
                     style={{ color: colors.colorBlack4, letterSpacing: '0.4px' }}
