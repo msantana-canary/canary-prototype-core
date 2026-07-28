@@ -98,4 +98,26 @@ export interface BroadcastMessage {
   recipients?: BroadcastRecipientDelivery[];
 }
 
+/**
+ * A broadcast queued to go out later.
+ *
+ * Mirrors production's `ScheduledGroupBroadcast` (shared/schemas/chat), trimmed
+ * to what the prototype models: production carries uuid/id pairs, a
+ * `broadcast_group` uuid, a nullable `broadcast` id that gets populated once the
+ * send happens, and `sent_at`/`deleted_at` tombstones. Here a scheduled
+ * broadcast simply leaves the list when it is sent or deleted.
+ *
+ * Scheduling is CUSTOM-GROUP ONLY, matching production's gate — built-in
+ * Arrivals / In-house / Departures never schedule.
+ */
+export interface ScheduledBroadcast {
+  id: string;
+  groupId: string;
+  body: string;
+  senderName: string;
+  /** When it goes out. */
+  sendAt: Date;
+  createdAt: Date;
+}
+
 export type MainNavTab = 'conversations' | 'broadcast';

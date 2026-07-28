@@ -21,6 +21,7 @@ import {
   BroadcastGuestEntry,
   BroadcastFilterCriteria,
   BroadcastRecipientDelivery,
+  ScheduledBroadcast,
 } from './broadcast-types';
 import {
   builtInGroups,
@@ -28,6 +29,7 @@ import {
   builtInGroupGuests,
   customGroupGuests,
   mockBroadcastMessages,
+  mockScheduledBroadcasts,
 } from './broadcast-mock-data';
 import { guests } from '@/lib/core/data/guests';
 import { useGuestJourneyStore } from '@/lib/products/guest-journey/store';
@@ -130,6 +132,11 @@ interface BroadcastState {
   /** Broadcast whose per-recipient delivery panel is open, if any. */
   deliveryPanelMessageId: string | null;
 
+  /** Queued sends. Custom groups only — production gates the affordance the same way. */
+  scheduledBroadcasts: ScheduledBroadcast[];
+  /** Scheduled broadcast whose detail panel is open, if any. */
+  scheduledPanelId: string | null;
+
   // Actions
   selectGroup: (groupId: string) => void;
   setActiveGroupTab: (tab: 'active' | 'archived') => void;
@@ -151,6 +158,15 @@ interface BroadcastState {
   // Delivery panel
   openDeliveryPanel: (messageId: string) => void;
   closeDeliveryPanel: () => void;
+
+  // Scheduled broadcasts
+  scheduleBroadcast: (content: string, sendAt: Date) => void;
+  openScheduledPanel: (id: string) => void;
+  closeScheduledPanel: () => void;
+  rescheduleBroadcast: (id: string, sendAt: Date) => void;
+  editScheduledBroadcastText: (id: string, body: string) => void;
+  sendScheduledBroadcastNow: (id: string) => void;
+  deleteScheduledBroadcast: (id: string) => void;
 
   // Toast
   showSegmentSavedToast: (name: string) => void;
@@ -232,6 +248,8 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
 
   segmentSavedToast: null,
   deliveryPanelMessageId: null,
+  scheduledBroadcasts: [...mockScheduledBroadcasts],
+  scheduledPanelId: null,
 
   // Select a group — auto-selects all messageable guests and clears filters.
   // Production does the same on folder change (BroadcastV2BuiltInGroupGuestList
@@ -413,6 +431,88 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
 
   closeDeliveryPanel: () => {
     set({ deliveryPanelMessageId: null });
+  },
+
+  // ── Scheduled broadcasts ───────────────────────────────────────────────────
+
+  scheduleBroadcast: (content: string, sendAt: Date) => {
+    const { selectedGroupId } = get();
+    if (!content.trim()) return;
+
+    const scheduled: ScheduledBroadcast = {
+      id: `sgb-${Date.now()}`,
+      groupId: selectedGroupId,
+      body: content.trim(),
+      senderName: 'THERESA WEBB',
+      sendAt,
+      createdAt: new Date(),
+    };
+
+    set(state => ({ scheduledBroadcasts: [...state.scheduledBroadcasts, scheduled] }));
+  },
+
+  openScheduledPanel: (id: string) => {
+    set({ scheduledPanelId: id });
+  },
+
+  closeScheduledPanel: () => {
+    set({ scheduledPanelId: null });
+  },
+
+  rescheduleBroadcast: (id: string, sendAt: Date) => {
+    set(state => ({
+      scheduledBroadcasts: state.scheduledBroadcasts.map(s =>
+        s.id === id ? { ...s, sendAt } : s
+      ),
+    }));
+  },
+
+  editScheduledBroadcastText: (id: string, body: string) => {
+    if (!body.trim()) return;
+    set(state => ({
+      scheduledBroadcasts: state.scheduledBroadcasts.map(s =>
+        s.id === id ? { ...s, body: body.trim() } : s
+      ),
+    }));
+  },
+
+  /**
+   * Send now — production posts to `/send`, then removes the record from the
+   * scheduled list; the resulting broadcast reappears in the normal feed. Same
+   * here: the scheduled entry becomes a sent BroadcastMessage (with delivery
+   * statuses) and leaves the queue.
+   */
+  sendScheduledBroadcastNow: (id: string) => {
+    const { scheduledBroadcasts, allGroups } = get();
+    const scheduled = scheduledBroadcasts.find(s => s.id === id);
+    if (!scheduled) return;
+
+    const recipientIds = getSelectableGuestIds(scheduled.groupId, allGroups);
+    const newMessage: BroadcastMessage = {
+      id: `bm-${Date.now()}`,
+      groupId: scheduled.groupId,
+      content: scheduled.body,
+      senderName: scheduled.senderName,
+      sentAt: new Date(),
+      recipientCount: recipientIds.length,
+      recipients: buildRecipientDeliveries(recipientIds),
+    };
+
+    set(state => ({
+      messages: {
+        ...state.messages,
+        [scheduled.groupId]: [...(state.messages[scheduled.groupId] || []), newMessage],
+      },
+      scheduledBroadcasts: state.scheduledBroadcasts.filter(s => s.id !== id),
+      scheduledPanelId: null,
+    }));
+  },
+
+  deleteScheduledBroadcast: (id: string) => {
+    set(state => ({
+      scheduledBroadcasts: state.scheduledBroadcasts.filter(s => s.id !== id),
+      scheduledPanelId: null,
+    }));
   },
 
   showSegmentSavedToast: (name: string) => {

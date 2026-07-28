@@ -9,6 +9,7 @@ import {
   BroadcastGroup,
   BroadcastGuestEntry,
   BroadcastMessage,
+  ScheduledBroadcast,
 } from './broadcast-types';
 
 // ===== Built-in Groups =====
@@ -366,3 +367,21 @@ export const mockBroadcastMessages: Record<string, BroadcastMessage[]> = {
     },
   ],
 };
+
+// ===== Scheduled Broadcasts =====
+// Queued sends live only on CUSTOM groups (production gates the whole affordance
+// on `!isBuiltInBroadcastFolder`). Seeded relative to "now" so the demo always
+// reads as a future send ("Scheduled for Today, ...") rather than a stale date.
+
+const inHours = (h: number): Date => new Date(Date.now() + h * 60 * 60 * 1000);
+
+export const mockScheduledBroadcasts: ScheduledBroadcast[] = [
+  {
+    id: 'sgb-corp-1',
+    groupId: 'group-corporate',
+    body: 'Reminder: the closing dinner starts at 7 PM in the Terrace Room. Dress code is smart casual.',
+    senderName: 'THERESA WEBB',
+    sendAt: inHours(3),
+    createdAt: new Date(),
+  },
+];
