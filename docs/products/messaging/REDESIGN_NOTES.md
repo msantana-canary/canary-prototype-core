@@ -689,6 +689,94 @@ loyalty quick-chips and dismissible value chips (classic hand-rolls these too),
 the "+ Add filter" popover menu, and the row remove button. Logged in the
 promotion list.
 
+## Broadcast — step 5: left-panel paradigms A/B/C (2026-07-28)
+
+Two challenger paradigms for the broadcast left panel, live behind the prototype
+toggle alongside the untouched baseline. The toggle's broadcast surface now
+carries **two stacked groups** — "Left panel" (Baseline / To-strip / Ledger) and
+the step-3 "Filter modal" (Classic / Builder) — because two experiments run at
+once.
+
+**Baseline is the control arm and renders identically.** The one shared file that
+changed is `BroadcastGuestList`, which gained two optional props whose defaults
+reproduce today's output exactly. That was a deliberate choice over duplicating
+its row / bucket / sort / popover logic: a second copy would let the control arm
+drift from the challengers, which would corrupt the comparison the A/B exists
+for. The only baseline-visible edit is a section-header `div` gaining
+`flex items-center justify-between`; with one child it lays out identically.
+
+### Variant B — "To-strip" (addressing)
+
+*A broadcast is a message TO someone, so the recipient belongs in the composer as
+an address, not in a permanently-open list holding half the surface.*
+
+- **Left card → 320px pure audience list.** Recipients column removed. Status rows
+  carry live folder populations; a group holding a queued send shows an inline
+  "N scheduled" line.
+- **Right card is the room.** The header drops its guest-count subtitle so the
+  count has exactly one home.
+- **To strip** as the composer's first child: `To:` · audience token
+  ("In-house · all 34" / "Arrivals · 18 of 26") · dismissible filter token · a
+  quiet right-hand note when something is held back ("2 removed" / "8 already
+  checked in" / "3 can't receive texts") · ghost filter button on built-ins.
+  Zero selection turns the token red — "0 of 26 — no one to send to" — and Send
+  disables.
+- **Recipients panel** (FloatingPanel, 480px) carries the baseline recipients
+  experience with its controls lifted into the header, plus a per-bucket
+  "Add all N".
+- **"Why these guests?"** drills to a level-2 slide showing the subtraction
+  ledger — source, each exclusion, the total — using the same translateX mechanic
+  as the Conversation Details sidebar.
+- **Send confirm** gains a two-line message preview, an audience sentence, an
+  overlapping avatar strip with "+N" overflow, and a "Review recipients" link
+  that reopens the panel with the draft intact.
+- ⚠ **For the designer's eye:** the panel uses the standard shell scrim for
+  consistency. Whether a recipients panel opened *from the composer* should dim
+  the app behind it — when the thing you're checking is the message you're still
+  writing — is worth a look.
+
+### Variant C — "Ledger-roster" (confidence)
+
+*Confidence comes from seeing the whole audience, including who is NOT receiving
+and why.*
+
+- **Audience card → 623px** (220px rail + hairline + 400px roster); thread card
+  takes the rest.
+- **Card-spanning ledger header.** "{N} recipients" at 20px is the largest type on
+  the surface — the result — over a caption and a token row that is the funnel
+  that produced it, in order: source → filter (an arrow, not a minus) → system →
+  locked/unreachable → your edits. Tokens render only when nonzero, so a clean
+  folder shows headline and caption alone. No "=" token; the headline is the sum.
+  Clicking an exclusion token expands NOT SENDING and scrolls to that group.
+- **Roster** splits into a sticky SENDING TO (production buckets as sub-headers,
+  each with its own checkbox) and a collapsed NOT SENDING bar carrying a summary
+  ("2 unreachable · 3 already checked in"), which expands into reason groups.
+- **Excluded rows render at FULL opacity** — the deliberate divergence from
+  production's 0.4. Dimming makes the most diagnostic information on the surface
+  the hardest to read; exclusion is carried by grouping and a lock glyph instead.
+  Unreachable rows swap the checkbox for a lock; production's row copy is kept
+  verbatim.
+- **Filter-excluded guests never appear in NOT SENDING** — they are outside the
+  audience, and the ledger's filter token already accounts for them.
+- **Select-all is variant-gated:** here it also pulls status-rule-excluded guests
+  into sending, and the ledger flips to "+ N you added". Baseline and B keep
+  production semantics.
+- **Filter-clear shows a toast** ("Filters cleared — selection reset"), because
+  production resets the selection silently and it is easy to miss.
+
+Both variants share: `broadcast-audience-facts.ts`, which derives the whole
+subtraction ledger from existing store facts, and a Send button labelled
+"Send to {N}" (baseline keeps a plain "Send" so the control arm stays honest).
+
+**Skipped for v1, logged:** row-migration animation, a live/tense ledger, and a
+frozen ledger snapshot in the delivery panel.
+
+**Note on `touchedGuestIds`:** the brief asked for it to separate "you unchecked
+this" from "the system excluded this". It proved unnecessary — a system exclusion
+is identified by the guest's own `checkInStatus` against the folder rule, so any
+other messageable unselected guest is by definition a user removal. No state was
+added for it.
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |
@@ -741,6 +829,7 @@ values are NOT finalized — when they finalize, promote into `@canary-ui/compon
 7c. **Floating panel shell** — `components/products/messaging/FloatingPanel.tsx`. Fixed inset card + scrim + two-phase mount + 240ms slide/fade + reduced-motion, z 40/39 under `zIndex.modal` (50). Used by Conversation Details, the broadcast delivery panel and the scheduled-broadcast panel. Promote once a second product needs a right-side panel.
 7d. **Overflow (kebab) menu** — hand-rolled in `BroadcastScheduledPanel` and `BroadcastGroupList`. Production has `CanaryOverflowMenu` (with an `OverflowMenuItemColor.DANGER` item variant); `@canary-ui` exports no equivalent, so every kebab in this branch is bespoke. Best single candidate for promotion.
 7e. **Scheduled pill** — the composer's rounded-24 "Scheduled for …" chip with a clear affordance. No library chip carries icon + label + dismiss.
+7g. **Ledger tokens / roster reason-groups** — variant C's 24px funnel chips and the lock-glyph row treatment. No library chip or list-group covers them.
 7f. **Filter chips** — the loyalty quick-select chips and the dismissible value chips (Rate Code / Group Code / Room Number). Hand-rolled in BOTH filter-modal variants; the library has no selectable-chip or removable-chip component.
 8. **Status pill** (online/away/offline) — dot + tonal bg + caret. Note the Figma has a 6-outer/8-inner radius mismatch on this control; we used 6 throughout.
 9. Figma mock nits to fix in the file when convenient: Chain-of-thoughts says Room 504 vs Emily's 153; dates say 2024; "TODAY" divider is 5 literal spaces + text; "AI actitivity" layer typo; Filters row hard-coded at 434 bleeding its card padding; Canary chatlog detached at fixed 862.
