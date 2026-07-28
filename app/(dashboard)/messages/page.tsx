@@ -320,10 +320,10 @@ export default function MessagesPage() {
         isAutoLinked={unlinkTarget?.isAutoLinked || false}
       />
 
-      {/* Prototype control — top-row layout experiment (full vs compact). Scoped
-          to Conversations: the variant only affects that surface, and on the
-          broadcast surface the FAB sat on top of the composer's Send button. */}
-      {activeTab === 'conversations' && <PrototypeVariantToggle />}
+      {/* Prototype control — renders the option group for the surface you're on
+          (Conversations: top-row layout; Broadcast: the filter-modal A/B). It
+          sits bottom-LEFT so it can never overlap either composer's Send. */}
+      <PrototypeVariantToggle surface={activeTab} />
     </AppLayout>
   );
 }

@@ -135,6 +135,13 @@ interface BroadcastState {
   /** Broadcast whose per-recipient delivery panel is open, if any. */
   deliveryPanelMessageId: string | null;
 
+  /**
+   * Live A/B on the filter modal: 'classic' is the shipped modal, 'builder' the
+   * step-3 redesign. Presentation only — both write the SAME criteria through
+   * the SAME applyFilters, so selection semantics are identical either way.
+   */
+  filterModalVariant: 'classic' | 'builder';
+
   /** Queued sends. Custom groups only — production gates the affordance the same way. */
   scheduledBroadcasts: ScheduledBroadcast[];
   /** Scheduled broadcast whose detail panel is open, if any. */
@@ -161,6 +168,8 @@ interface BroadcastState {
   // Delivery panel
   openDeliveryPanel: (messageId: string) => void;
   closeDeliveryPanel: () => void;
+
+  setFilterModalVariant: (variant: 'classic' | 'builder') => void;
 
   // Scheduled broadcasts
   scheduleBroadcast: (content: string, sendAt: Date) => void;
@@ -296,6 +305,7 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
 
   segmentSavedToast: null,
   deliveryPanelMessageId: null,
+  filterModalVariant: 'classic',
   scheduledBroadcasts: [...mockScheduledBroadcasts],
   scheduledPanelId: null,
 
@@ -479,6 +489,10 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
 
   closeDeliveryPanel: () => {
     set({ deliveryPanelMessageId: null });
+  },
+
+  setFilterModalVariant: (variant: 'classic' | 'builder') => {
+    set({ filterModalVariant: variant });
   },
 
   // ── Scheduled broadcasts ───────────────────────────────────────────────────
