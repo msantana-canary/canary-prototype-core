@@ -18,6 +18,7 @@ import { BroadcastThread } from './BroadcastThread';
 import { CreateGroupModal } from './CreateGroupModal';
 import { FilterGuestsModal } from './FilterGuestsModal';
 import { BroadcastDeliveryPanel } from './BroadcastDeliveryPanel';
+import { BroadcastScheduledPanel } from './BroadcastScheduledPanel';
 import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
 import { Toast } from '@/components/core/Toast';
 
@@ -76,6 +77,9 @@ export function BroadcastView() {
           Its z-index (40 / scrim 39) sits below @canary-ui's modal layer (50),
           so the filters-applied and send-confirm modals stack above it. */}
       <BroadcastDeliveryPanel />
+
+      {/* Scheduled-broadcast detail — edit text / edit time / send now / delete */}
+      <BroadcastScheduledPanel />
 
       {/* Toast: guest segment saved */}
       <Toast message="Guest segment saved" isOpen={!!segmentSavedToast} variant="success" />
