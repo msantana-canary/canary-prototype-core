@@ -640,6 +640,55 @@ production's behaviour too.
 **Sorting** (production's `sortedGuests`): unmessageable guests sink to the
 bottom of their section, alphabetical by last name within each side.
 
+## Broadcast — step 3: filter modal A/B (2026-07-28)
+
+The filter modal redesign ships as a **live A/B**, not a replacement. Both
+variants are real and switchable from the prototype FAB, so the designer can see
+before and after on the same data.
+
+**Toggle.** `PrototypeVariantToggle` now takes a `surface` prop and renders the
+option group belonging to the tab you're on — Conversations keeps "Top row"
+(full / compact), Broadcast gets "Filter modal" (Classic / Builder), wired to the
+store's `filterModalVariant`. The FAB moved to **bottom-LEFT**. Both surfaces put
+their composer's Send at the bottom-right of the right-hand card, so a
+bottom-right FAB lands on top of it — which is exactly the overlap that got it
+scoped off broadcast in the first place. Bottom-left can't collide with a Send
+button on either surface and needs no per-surface offset.
+
+**Classic is byte-identical.** `FilterGuestsModal.tsx` is untouched — it is the
+"before" side of the comparison. The cost is that the builder can't import its
+two private rule-conversion helpers, so those live in a parallel module
+(`lib/products/messaging/broadcast-segment-rules.ts`). Deliberate duplication;
+when the A/B resolves, delete the loser and make the winner the sole consumer.
+
+**Builder anatomy** (~760px, `CanaryModal`, two columns):
+
+- *Left — the builder.* "Start from: [Guest Segment]" over the guest-journey
+  segments, beside "Save as Guest Segment". Picking a segment loads its rules
+  into the rows below as editable state; editing any of them flips the caption
+  from `Using "X"` to `Custom — edited from "X"` — Loops' unsaved-segment
+  mechanic. Rules appear one at a time through **"+ Add filter"** rather than as
+  a wall of empty inputs, and each row has a remove. Loyalty is the six quick
+  chips; Rate Code / Group Code / Room Number are type-to-chip; Length of Stay and
+  Guest Recurrence are their deselectable binary radios. Room Number stays hidden
+  on Arrivals.
+- *Right — the live answer.* "N guests match" plus a scrolling preview of the
+  matched guests (avatar, name, room) that updates as rules change, over the
+  "Manage segments" link. This column is the reason the modal earns its width:
+  classic makes you apply and then go look.
+- *Footer.* Clear all · Cancel · Apply, with Apply disabled at zero matches.
+
+**Store semantics are identical between variants** — same
+`BroadcastFilterCriteria`, same `applyFilters` (including passing the segment id
+when the audience is still an unedited segment, so the sent broadcast's chip
+renders the segment name), same sticky-selection interaction, same
+save-as-segment toast. Presentation and workflow only.
+
+Hand-rolled in the builder, because `@canary-ui` exports no equivalent: the
+loyalty quick-chips and dismissible value chips (classic hand-rolls these too),
+the "+ Add filter" popover menu, and the row remove button. Logged in the
+promotion list.
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |
@@ -692,6 +741,7 @@ values are NOT finalized — when they finalize, promote into `@canary-ui/compon
 7c. **Floating panel shell** — `components/products/messaging/FloatingPanel.tsx`. Fixed inset card + scrim + two-phase mount + 240ms slide/fade + reduced-motion, z 40/39 under `zIndex.modal` (50). Used by Conversation Details, the broadcast delivery panel and the scheduled-broadcast panel. Promote once a second product needs a right-side panel.
 7d. **Overflow (kebab) menu** — hand-rolled in `BroadcastScheduledPanel` and `BroadcastGroupList`. Production has `CanaryOverflowMenu` (with an `OverflowMenuItemColor.DANGER` item variant); `@canary-ui` exports no equivalent, so every kebab in this branch is bespoke. Best single candidate for promotion.
 7e. **Scheduled pill** — the composer's rounded-24 "Scheduled for …" chip with a clear affordance. No library chip carries icon + label + dismiss.
+7f. **Filter chips** — the loyalty quick-select chips and the dismissible value chips (Rate Code / Group Code / Room Number). Hand-rolled in BOTH filter-modal variants; the library has no selectable-chip or removable-chip component.
 8. **Status pill** (online/away/offline) — dot + tonal bg + caret. Note the Figma has a 6-outer/8-inner radius mismatch on this control; we used 6 throughout.
 9. Figma mock nits to fix in the file when convenient: Chain-of-thoughts says Room 504 vs Emily's 153; dates say 2024; "TODAY" divider is 5 literal spaces + text; "AI actitivity" layer typo; Filters row hard-coded at 434 bleeding its card padding; Canary chatlog detached at fixed 862.
 
