@@ -453,13 +453,24 @@ export function FilterGuestsModal({
             {/* Left side */}
             <div className="flex items-center gap-3">
               {isEditMode ? null : filterMode === 'quick-filters' ? (
-                <CanaryButton
-                  type={ButtonType.TEXT}
-                  onClick={handleClearFilters}
-                  isDisabled={isFilterEmpty(pendingCriteria)}
-                >
-                  Clear Filters
-                </CanaryButton>
+                <>
+                  <CanaryButton
+                    type={ButtonType.TEXT}
+                    onClick={handleClearFilters}
+                    isDisabled={isFilterEmpty(pendingCriteria)}
+                  >
+                    Clear Filters
+                  </CanaryButton>
+                  {/* Live match count — was Guest Segments mode only */}
+                  {matchedCount !== null && (
+                    <span
+                      className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
+                      style={{ color: '#000000' }}
+                    >
+                      {matchedCount} guest{matchedCount !== 1 ? 's' : ''} match
+                    </span>
+                  )}
+                </>
               ) : (
                 // Guest Segments mode: show match count on left when segment selected
                 matchedCount !== null && (
@@ -794,6 +805,7 @@ function SaveAsGuestSegment({
   onSaved: (segmentId: string) => void;
 }) {
   const { createSegment } = useGuestJourneyStore();
+  const showSegmentSavedToast = useBroadcastStore(s => s.showSegmentSavedToast);
   const [name, setName] = useState('');
 
   const handleSave = () => {
@@ -806,6 +818,8 @@ function SaveAsGuestSegment({
       createdAt: Date.now(),
     };
     createSegment(segment);
+    // Fire the (previously dead) save toast off the real save action.
+    showSegmentSavedToast(segment.name);
     onSaved(segmentId);
   };
 

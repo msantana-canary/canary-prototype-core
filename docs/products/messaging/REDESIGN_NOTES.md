@@ -393,6 +393,98 @@ compact top-row mode, the GJ banner, and the drill-in register are all unchanged
 > single-guest thread renders no pager, and a long guest name clamps with an
 > ellipsis (`white-space:nowrap; overflow:hidden; text-overflow:ellipsis`). tsc 0.
 
+## Broadcast — step 1 baseline (2026-07-28)
+
+Step 1 of a staged broadcast redesign. This is the **A/B baseline**: the existing
+broadcast flows kept functionally identical, re-dressed in the card-on-canvas
+register so it can be compared against later steps. **Restraint is the spec** —
+recipients-as-floating-panel, rich audience rows (counts / last-send previews),
+the filter-modal restructure, and scheduling are all later steps and are
+deliberately absent.
+
+### Layout — two cards, not three columns
+
+The old left rail (groups) and middle column (guest list) combine into **ONE
+card**: they're closely associated — you pick an audience, then narrow it to
+recipients. The surface is now two white rounded-12 cards on the `colorBlack8`
+canvas, spaced and margined exactly like Conversations (35% / 65% flex-basis,
+16px gap, 24px page padding, 16px top).
+
+**Left card — Audience (combined).** Top zone: the status trio (Arrivals /
+In-house / Departures) as compact selectable rows with their existing icons, then
+a GROUPS section (10px uppercase label + "+" new-group button) listing custom
+groups. Rows use the redesign selection register (soft `colorBlueDark5` fill +
+`colorBlueDark3` border, rounded-6) instead of solid-blue `CanaryListItem` rows,
+and stay lean — no counts, no previews. Divider, then the recipients zone:
+Filters row (built-ins only), date picker (Arrivals/Departures — unchanged, and
+still knowingly decorative), Select-all, and the guest list with its
+EXPECTING / CHECKED IN section labels and hover contact popover.
+
+**Right card — Broadcast thread.** Header names the audience with the recipient
+count beneath it, in the Conversations thread-header register; the dead info
+button is gone. Feed and composer below.
+
+### The control-band collapse
+
+`BroadcastSubNav` (Active/Archived pills + "Manage segments" link) is **removed
+entirely**. Active is simply the default state; **Archived moved into the GROUPS
+kebab** ("View archived" ⇄ "View active", showing the existing empty state);
+**"Manage segments" remains reachable only** from the filter modal's Guest
+Segments mode, where it already lived.
+
+### Old vs new
+
+| Area | Old | Step 1 baseline |
+|---|---|---|
+| Surface | 3 flush columns separated by borders, gray column fills (`#fafafa` / `#f0f0f0`) | 2 white rounded-12 cards with `colorBlack6` borders on the `colorBlack8` canvas, Conversations spacing |
+| Control band | white sub-nav strip: Active/Archived pills + "Manage segments" | REMOVED — Active is the default, Archived in the GROUPS kebab, Manage segments only inside the filter modal |
+| Audience rows | `CanaryList`/`CanaryListItem`, solid-blue selected row, custom groups carried a 40px gray tile + member count + last-broadcast preview | lean rounded-6 rows, soft blue selection, icon + name only (counts/previews are step 4) |
+| Guest rows | 40px avatar, no channel signal | 32px rounded-8 square avatar, **NEW preferred-channel indicator** (SMS / WhatsApp / Email); no-phone treatment unchanged (0.4 opacity, disabled, "No phone number") |
+| Filters row | `CanaryListItem` in `#eaeef9` | tonal rounded-6 row, same built-ins-only content and clear "×" |
+| Thread header | 60px, generic group icon + bare "N guests", dead info button | 70px Conversations register, audience name + guest count, rounded-8 tile, info button dropped |
+| Sent broadcasts | right-aligned tinted bubbles with a trailing antenna tile and a left timestamp gutter | FLAT LEFT-ALIGNED blocks (Slack register, same anatomy as `MessageBubble`): 32px sender avatar, sender name + right-aligned uppercase time, body, meta row = antenna + recipient count + the "N FILTERS APPLIED" / segment-name chip (still opens the filters-applied modal) |
+| Composer | `#666` border rounded-4, `p-6`, ad-hoc icon buttons | Conversations composer anatomy — rounded-12 card, `colorBlack6` border w/ blue focus, hairline divider, ghost tool icons, 32px rounded-6 Send. No AI toggle (broadcasts have none) |
+| Sending | fired immediately | **"Send to N guests?" confirm** (production parity); the draft survives Cancel |
+
+### Fixes bundled into this step
+
+1. **Sticky selection.** Manual row checks/unchecks now SURVIVE applying and
+   clearing a filter (production rule). The store records every explicit row
+   toggle in `manualSelectionOverrides`; applying or clearing a filter rebuilds
+   the selection as *(every messageable guest the filter leaves visible)* **minus
+   anyone manually unchecked**. Manual checks are implicitly honored because the
+   candidate set is everything visible; a manually-checked guest who is NOT in
+   the candidate set is deliberately **not** re-added — an invisible recipient
+   silently inflating the send count is the surprising case. Bulk Select-all /
+   Deselect-all and switching audience clear the override map (a blanket intent
+   supersedes per-row history). Previously `applyFilters` overwrote the selection
+   wholesale.
+2. **Live match count in Quick Filters.** The filter modal's footer now shows
+   "N guests match" live as criteria change — it previously rendered only in
+   Guest Segments mode. Count only; the modal redesign is step 3.
+3. **Segment-name-on-chip bug.** Sending with a loaded segment showed
+   "N FILTERS APPLIED" instead of the segment name: `sendBroadcast` looked a
+   `seg-*` id up against a broadcast-local `sf-*` list, which never matched. It
+   now resolves against the guest-journey segment store — the single source.
+4. **Save-as-segment toast.** The "filter saved" toast was dead (it watched a
+   list the save flow never wrote to). It's now fired by the actual
+   save-as-segment action, via transient store state, and reads "Guest segment
+   saved".
+5. **Dead code removed.** `ManageFiltersModal` (deleted), `BroadcastSubNav`
+   (deleted), the broadcast store's `savedFilters` list and its
+   `saveFilter` / `updateFilter` / `deleteFilter` actions, the manage-filters
+   modal state, `mockSavedFilters`, and the now-orphaned
+   `.broadcast-group-list li` CSS rule. Guest Segments are the single source.
+6. **FAB overlap.** The `PrototypeVariantToggle` FAB sat on top of the broadcast
+   composer's Send button. It only drives the Conversations top-row experiment,
+   so it's now scoped to that tab.
+
+### Deliberately NOT in step 1
+
+Recipients-as-floating-panel · rich audience rows (counts, last-send previews) ·
+filter-modal restructure · scheduling · wiring the date picker (still decorative)
+· archiving a group (the archived view exists, nothing archives into it).
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |
@@ -422,7 +514,7 @@ New data affordance: `Thread.isFlagged` (flag replaces the unread dot in the row
 - **Filters panel / flag flow / assignment scoping** — v3 made the Filters **popover** real for the
   Inbox/Archived/Blocked VIEW group (wired to `currentView`); the "Assigned to" / "Channel" rows are
   still decorative placeholders. Flag flow + assignment scoping remain TBD.
-- **Broadcast** redesign — after the main surface is right.
+- **Broadcast** redesign — step 1 (the A/B baseline reskin + settled fixes) landed 2026-07-28; see "Broadcast — step 1 baseline" above. Steps 2–4 (recipients panel, filter-modal restructure, rich audience rows) are still out.
 - **AI answers** tab removed 2026-07-20 — capability moved into Settings as Knowledge Base (per Miguel), tab is redundant on the messaging surface. Gone from the nav, the `MainNavTab` type, and the page.
 - AI-message thumbs/info feedback row — dropped to match the frame; revisit if it's missed.
 - Translate composer tool — replaced by emoji per the frame; flag if translation needs a home.
@@ -450,4 +542,13 @@ values are NOT finalized — when they finalize, promote into `@canary-ui/compon
 - `lib/products/messaging/mock-data.ts` — thread `'2'` flagged (the Figma's flagged row)
 - `lib/products/messaging/store.ts` — v2 added `infoPanelStyle`/`setInfoPanelStyle`; **v3 removed them** (floating panel is now the only mechanic)
 - `components/products/messaging/` — `MainNav`, `AppLayout` (SubNav dropped for Conversations; **v3: Filters button + popover on the search row, wired to `currentView`**), `ThreadList` (**v3: segmented control + in-card Filters row removed → just rows**), `ThreadListItem`, `ThreadView`, `MessageBubble` (flat blocks), `MessageFeed`, `DateSeparator`, `MessageComposer`, `Avatar` (rounded-8), `GuestInfoSidebar` (**v3: floating panel + scrim + guest carousel + stays expand**; **v7: pager into the card header; "one fact, one home" scoped to the card header (room dropped from the header); expanded row detail is production's COMPLETE reservation-details block — phone/email/dates/room/confirmation/check-in/check-out**). `PrototypeVariantToggle` **deleted in v3**.
-- `app/(dashboard)/messages/page.tsx` — card-on-canvas composition; **v3: 35/65 flex-basis columns; floating info panel (no push resizing); `currentView`/`setCurrentView` passed to AppLayout for the Filters popover**
+- `app/(dashboard)/messages/page.tsx` — card-on-canvas composition; **v3: 35/65 flex-basis columns; floating info panel (no push resizing); `currentView`/`setCurrentView` passed to AppLayout for the Filters popover**; **broadcast step 1: the `PrototypeVariantToggle` FAB is scoped to the Conversations tab**
+
+### Broadcast — step 1 baseline
+
+- `lib/products/messaging/broadcast-types.ts` — `PreferredChannel` + `BroadcastGuestEntry.preferredChannel`
+- `lib/products/messaging/broadcast-mock-data.ts` — `preferredChannel` on every entry with a phone on file; `mockSavedFilters` removed
+- `lib/products/messaging/broadcast-store.ts` — sticky selection (`manualSelectionOverrides`), segment lookup against the guest-journey store, `segmentSavedToast`; `savedFilters` + `saveFilter`/`updateFilter`/`deleteFilter` + manage-filters modal state removed; `loadedSavedFilterId` → `loadedSegmentId`
+- `components/products/messaging/broadcast/` — NEW `BroadcastAudienceCard`; `BroadcastView` (two cards on canvas), `BroadcastGroupList` (audience selector + GROUPS kebab), `BroadcastGuestList` (recipients zone + channel indicator), `BroadcastThread` (audience header), `BroadcastMessageBubble` (flat blocks), `BroadcastMessageFeed`, `BroadcastComposer` (Conversations anatomy + send confirm), `FilterGuestsModal` (live match count + real save toast). `BroadcastSubNav` and `ManageFiltersModal` **deleted**.
+- `components/products/messaging/AppLayout.tsx` — broadcast control band removed
+- `app/globals.css` — orphaned `.broadcast-group-list li` rule removed
