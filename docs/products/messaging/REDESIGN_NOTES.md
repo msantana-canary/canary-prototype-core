@@ -421,14 +421,15 @@ column. The card is therefore 212 + 1 + 212 + borders wide and no wider.
   then a GROUPS section (10px uppercase label + "+" new-group button + kebab)
   listing custom groups. Rows use the redesign selection register (soft
   `colorBlueDark5` fill + `colorBlueDark3` border, rounded-6) instead of
-  solid-blue `CanaryListItem` rows, and stay lean — no counts, no previews.
+  solid-blue `CanaryListItem` rows. The status trio renders **bare** (icon +
+  name); **GROUPS rows keep their member count and last-broadcast preview**,
+  which both the old prototype and production show.
 - *Recipients column (212px):* Filters row (built-ins only), date picker
   (Arrivals/Departures — unchanged, and still knowingly decorative), Select-all,
   and the guest list with its EXPECTING / CHECKED IN section labels and hover
-  contact popover. At 212px the guest row is tight — the name **truncates**
-  (full name on the hover popover and as a `title`) while the checkbox, avatar
-  and channel indicator hold their size; nothing wraps. Row gaps and padding are
-  tightened to 8px to buy the name back some width.
+  contact popover. Rows are **bare** — checkbox, avatar, name, room — matching
+  production. The name truncates rather than wrapping (full name on the hover
+  popover and as a `title`).
 
 **Right card — Broadcast thread.** Header names the audience with the recipient
 count beneath it, in the Conversations thread-header register; the dead info
@@ -449,7 +450,7 @@ Segments mode, where it already lived.
 | Surface | 3 flush columns separated by borders, gray column fills (`#fafafa` / `#f0f0f0`) | 2 white rounded-12 cards with `colorBlack6` borders on the `colorBlack8` canvas, Conversations spacing; the first two columns live side by side INSIDE the Audience card at equal 212px widths, split by a vertical hairline. The Audience card is content-sized; the Thread card takes the rest |
 | Control band | white sub-nav strip: Active/Archived pills + "Manage segments" | REMOVED — Active is the default, Archived in the GROUPS kebab, Manage segments only inside the filter modal |
 | Audience rows | `CanaryList`/`CanaryListItem`, solid-blue selected row, custom groups carried a 40px gray tile + member count + last-broadcast preview | lean rounded-6 rows, soft blue selection, icon + name only (counts/previews are step 4) |
-| Guest rows | 40px avatar, no channel signal | 32px rounded-8 square avatar, **NEW preferred-channel indicator** (SMS / WhatsApp / Email); no-phone treatment unchanged (0.4 opacity, disabled, "No phone number") |
+| Guest rows | 40px avatar | 32px rounded-8 square avatar, otherwise unchanged — checkbox, avatar, name, room, and the same no-phone treatment (0.4 opacity, disabled, "No phone number") |
 | Filters row | `CanaryListItem` in `#eaeef9` | tonal rounded-6 row, same built-ins-only content and clear "×" |
 | Thread header | 60px, generic group icon + bare "N guests", dead info button | 70px Conversations register, audience name + guest count, rounded-8 tile, info button dropped |
 | Sent broadcasts | right-aligned tinted bubbles with a trailing antenna tile and a left timestamp gutter | FLAT LEFT-ALIGNED blocks (Slack register, same anatomy as `MessageBubble`): 32px sender avatar, sender name + right-aligned uppercase time, body, meta row = antenna + recipient count + the "N FILTERS APPLIED" / segment-name chip (still opens the filters-applied modal) |
@@ -458,17 +459,22 @@ Segments mode, where it already lived.
 
 ### Fixes bundled into this step
 
-1. **Sticky selection.** Manual row checks/unchecks now SURVIVE applying and
-   clearing a filter (production rule). The store records every explicit row
-   toggle in `manualSelectionOverrides`; applying or clearing a filter rebuilds
-   the selection as *(every messageable guest the filter leaves visible)* **minus
-   anyone manually unchecked**. Manual checks are implicitly honored because the
-   candidate set is everything visible; a manually-checked guest who is NOT in
-   the candidate set is deliberately **not** re-added — an invisible recipient
-   silently inflating the send count is the surprising case. Bulk Select-all /
-   Deselect-all and switching audience clear the override map (a blanket intent
-   supersedes per-row history). Previously `applyFilters` overwrote the selection
-   wholesale.
+1. **Sticky selection — mirrors production exactly.** `applyFilters` used to
+   overwrite the selection wholesale. It now reproduces production's rule:
+   snapshot the messageable rows currently on screen that are *unchecked*, then
+   rebuild the selection from the new filter result minus that snapshot. Two
+   consequences worth knowing, both matching production:
+   - The snapshot is derived **fresh at apply time**, not kept as history. A
+     manual uncheck survives while the guest stays visible, and is forgotten once
+     a filter hides them.
+   - A manually-checked guest who falls **outside** the new result is dropped —
+     the selection is rebuilt purely from the result, so there are never
+     invisible recipients in the send count.
+
+   **Clearing a filter is a full reset**: production refetches the folder and
+   re-selects every messageable guest, so manual unchecks do *not* survive a
+   clear. Select-all / Deselect-all are plain set/empty, and switching audience
+   resets — again matching production.
 2. **Live match count in Quick Filters.** The filter modal's footer now shows
    "N guests match" live as criteria change — it previously rendered only in
    Guest Segments mode. Count only; the modal redesign is step 3.
@@ -491,7 +497,7 @@ Segments mode, where it already lived.
 
 ### Deliberately NOT in step 1
 
-Recipients-as-floating-panel · rich audience rows (counts, last-send previews) ·
+Recipients-as-floating-panel · richer audience rows (beyond the count + preview production already shows) ·
 filter-modal restructure · scheduling · wiring the date picker (still decorative)
 · archiving a group (the archived view exists, nothing archives into it).
 
@@ -556,9 +562,8 @@ values are NOT finalized — when they finalize, promote into `@canary-ui/compon
 
 ### Broadcast — step 1 baseline
 
-- `lib/products/messaging/broadcast-types.ts` — `PreferredChannel` + `BroadcastGuestEntry.preferredChannel`
-- `lib/products/messaging/broadcast-mock-data.ts` — `preferredChannel` on every entry with a phone on file; `mockSavedFilters` removed
-- `lib/products/messaging/broadcast-store.ts` — sticky selection (`manualSelectionOverrides`), segment lookup against the guest-journey store, `segmentSavedToast`; `savedFilters` + `saveFilter`/`updateFilter`/`deleteFilter` + manage-filters modal state removed; `loadedSavedFilterId` → `loadedSegmentId`
-- `components/products/messaging/broadcast/` — NEW `BroadcastAudienceCard`; `BroadcastView` (two cards on canvas), `BroadcastGroupList` (audience selector + GROUPS kebab), `BroadcastGuestList` (recipients zone + channel indicator), `BroadcastThread` (audience header), `BroadcastMessageBubble` (flat blocks), `BroadcastMessageFeed`, `BroadcastComposer` (Conversations anatomy + send confirm), `FilterGuestsModal` (live match count + real save toast). `BroadcastSubNav` and `ManageFiltersModal` **deleted**.
+- `lib/products/messaging/broadcast-mock-data.ts` — `mockSavedFilters` removed
+- `lib/products/messaging/broadcast-store.ts` — sticky selection mirroring production, segment lookup against the guest-journey store, `segmentSavedToast`; `savedFilters` + `saveFilter`/`updateFilter`/`deleteFilter` + manage-filters modal state removed; `loadedSavedFilterId` → `loadedSegmentId`
+- `components/products/messaging/broadcast/` — NEW `BroadcastAudienceCard`; `BroadcastView` (two cards on canvas), `BroadcastGroupList` (audience selector + GROUPS kebab), `BroadcastGuestList` (recipients zone), `BroadcastThread` (audience header), `BroadcastMessageBubble` (flat blocks), `BroadcastMessageFeed`, `BroadcastComposer` (Conversations anatomy + send confirm), `FilterGuestsModal` (live match count + real save toast). `BroadcastSubNav` and `ManageFiltersModal` **deleted**.
 - `components/products/messaging/AppLayout.tsx` — broadcast control band removed
 - `app/globals.css` — orphaned `.broadcast-group-list li` rule removed
