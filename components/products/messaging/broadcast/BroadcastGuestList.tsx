@@ -182,11 +182,11 @@ function GuestItem({
   return (
     <div
       ref={rowRef}
-      className="flex items-center gap-3 rounded-[6px] transition-colors hover:bg-[#f9fafb] cursor-pointer"
+      className="flex items-center gap-2 rounded-[6px] transition-colors hover:bg-[#f9fafb] cursor-pointer"
       style={{
         opacity: hasPhone ? 1 : 0.4,
-        paddingLeft: 12,
-        paddingRight: 12,
+        paddingLeft: 8,
+        paddingRight: 8,
         paddingTop: 8,
         paddingBottom: 8,
       }}
@@ -206,11 +206,13 @@ function GuestItem({
       {/* Avatar — 32px rounded-8 square (redesign register) */}
       <Avatar src={guest.avatar} initials={guest.initials} size="small" />
 
-      {/* Name + room/type */}
+      {/* Name + room/type. The column is narrow (212px) — the name truncates
+          rather than wrapping; the full name is on the hover popover. */}
       <div className="flex-1 min-w-0">
         <div
           className="font-['Roboto',sans-serif] text-[14px] leading-[22px] font-medium truncate"
           style={{ color: colors.colorBlack1 }}
+          title={guest.name}
         >
           {guest.name}
         </div>
@@ -372,8 +374,8 @@ export function BroadcastGuestList() {
       <div
         className="shrink-0"
         style={{
-          paddingLeft: 20,
-          paddingRight: 20,
+          paddingLeft: 16,
+          paddingRight: 16,
           paddingTop: 12,
           paddingBottom: 12,
           borderBottom: `1px solid ${colors.colorBlack6}`,
@@ -408,7 +410,7 @@ export function BroadcastGuestList() {
             .map(seg => (
               <div key={seg}>
                 {/* Segment header */}
-                <div style={{ paddingLeft: 12, paddingRight: 12, paddingTop: 16, paddingBottom: 4 }}>
+                <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 16, paddingBottom: 4 }}>
                   <span
                     className="font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase font-medium"
                     style={{ color: colors.colorBlack4, letterSpacing: '0.4px' }}
