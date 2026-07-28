@@ -45,12 +45,13 @@
  * in stay-sort order. Failed rows keep production's Twilio error register (code +
  * curated line + Learn more). Subtitle under the title = the guest name.
  *
- * Panel mechanic — FLOATING PANEL: a fixed 600px white card inset from the window
- * edges (top 72 / right 16 / bottom 16), floating below the 56px legacy shell
- * header, large soft shadow, internal invisible scroll, slides + fades in on open.
- * A subtle scrim tints the app behind it; clicking the scrim closes the panel. The
- * panel navigates WITHIN ITSELF (translate-x track) into the drill-in detail — a
- * platform primitive (future home for AI explanations).
+ * Panel mechanic — FLOATING PANEL, now the shared `<FloatingPanel>` shell (a
+ * fixed 600px white card inset top 72 / right 16 / bottom 16, floating below the
+ * 56px legacy shell header, large soft shadow, scrim-to-close, 240ms slide+fade,
+ * reduced-motion aware). The shell was extracted verbatim from this component so
+ * the broadcast delivery panel could reuse it; behaviour here is unchanged.
+ * Inside the shell this panel navigates WITHIN ITSELF (translate-x track) into
+ * the drill-in detail — a platform primitive (future home for AI explanations).
  *
  * Linked Reservations is a one-guest-per-slide pager: slide 0 = the primary
  * phone-grouped card, slides 1+ = each staff-linked guest. The pager ("‹ 👥 N ›",
@@ -63,6 +64,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { FloatingPanel } from './FloatingPanel';
 import { LinkedReservation } from '@/lib/products/messaging/types';
 import { gjMessages, getGjSummary } from '@/lib/products/messaging/mock-data';
 import { Reservation } from '@/lib/core/types/reservation';
@@ -269,18 +271,6 @@ function GuestPager({
   );
 }
 
-/**
- * Entry/exit animation timing for the floating panel. On open the panel slides in
- * from off-screen-right (its own width + the 16px inset) to its resting position
- * with an ease-out curve while the scrim fades in; closing reverses both, and the
- * panel unmounts only after the exit transition completes. prefers-reduced-motion
- * downgrades to a near-instant fade with no translate. No animation libraries.
- */
-const PANEL_ANIM_MS = 240;
-const PANEL_ENTER_EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
-const PANEL_EXIT_EASE = 'cubic-bezier(0.4, 0, 1, 1)';
-const PANEL_REDUCED_MS = 120;
-
 interface GuestInfoSidebarProps {
   contactNumber: string;
   linkedReservations: LinkedReservation[];
@@ -304,42 +294,8 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
   if (drillTarget) lastDrillRef.current = drillTarget;
   const activeDrill = drillTarget ?? lastDrillRef.current;
 
-  // ── Entry/exit animation (two-phase: mount → visible) ──────────────────────
-  // `mounted` keeps the panel + scrim in the DOM through the exit transition so
-  // the slide-out is actually visible; `entered` drives the open/closed styles.
-  // prefers-reduced-motion downgrades to a near-instant fade with no translate.
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const sync = () => setReduced(mq.matches);
-    sync();
-    mq.addEventListener('change', sync);
-    return () => mq.removeEventListener('change', sync);
-  }, []);
-
-  const [mounted, setMounted] = useState(isOpen);
-  const [entered, setEntered] = useState(false);
-  useEffect(() => {
-    if (isOpen) {
-      // Mount first, then flip to the open state on the next frame so the browser
-      // paints the off-screen start position and the transition actually runs.
-      setMounted(true);
-      let raf2 = 0;
-      const raf1 = requestAnimationFrame(() => {
-        raf2 = requestAnimationFrame(() => setEntered(true));
-      });
-      return () => {
-        cancelAnimationFrame(raf1);
-        cancelAnimationFrame(raf2);
-      };
-    }
-    // Closing: play the exit, then unmount once it finishes. Clearing this timer
-    // on re-open keeps rapid toggling from wedging the panel in a half state.
-    setEntered(false);
-    const t = setTimeout(() => setMounted(false), reduced ? PANEL_REDUCED_MS : PANEL_ANIM_MS);
-    return () => clearTimeout(t);
-  }, [isOpen, reduced]);
-
+  // The floating-panel mechanic (mount/enter phases, scrim, slide, reduced
+  // motion) now lives in the shared <FloatingPanel> shell.
   const toggleExpand = (resId: string) => {
     setExpandedResId((prev) => (prev === resId ? null : resId));
   };
@@ -401,65 +357,13 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
     setDrillTarget(null);
   }, [slideKey, defaultExpandedResId]);
 
-  // All hooks run above this line. Once the exit transition has finished the
-  // panel leaves the DOM entirely (nothing to render while fully closed).
-  if (!mounted) return null;
-
-  // Derived animation styles for the scrim + floating panel.
-  const ease = entered ? PANEL_ENTER_EASE : PANEL_EXIT_EASE;
-  const panelTransition = reduced
-    ? `opacity ${PANEL_REDUCED_MS}ms linear`
-    : `transform ${PANEL_ANIM_MS}ms ${ease}, opacity ${PANEL_ANIM_MS}ms ${ease}`;
-  const scrimTransition = reduced
-    ? `opacity ${PANEL_REDUCED_MS}ms linear`
-    : `opacity ${PANEL_ANIM_MS}ms ${ease}`;
-  const panelTransform = reduced ? undefined : entered ? 'translateX(0)' : 'translateX(calc(100% + 16px))';
-
   const activeIndex = Math.min(activeSlide, Math.max(0, slides.length - 1));
   // Any OFF-SCREEN guest card with a failed GJ message → a small red dot appears
   // at the pager count-chip's corner (the hidden-failure signal).
   const hiddenFailure = slides.some((s, i) => i !== activeIndex && s.hasFailure);
 
   return (
-    <>
-      {/* Scrim — subtle tint over the app behind the panel; click closes. Fades
-          in/out in lockstep with the panel slide. */}
-      <div
-        aria-hidden
-        onClick={onClose}
-        className="fixed left-0 right-0 bottom-0"
-        style={{
-          top: 56,
-          backgroundColor: 'rgba(0,0,0,0.10)',
-          opacity: entered ? 1 : 0,
-          pointerEvents: entered ? 'auto' : 'none',
-          transition: scrimTransition,
-          zIndex: 39,
-        }}
-      />
-
-      {/* Floating Conversation Details panel — slides in from off-screen-right to
-          its resting inset on open, and back out on close (see the two-phase
-          mount/visible state above). */}
-      <div
-        className="fixed overflow-hidden"
-        style={{
-          top: 72,
-          right: 16,
-          bottom: 16,
-          width: 600,
-          backgroundColor: colors.colorWhite,
-          border: `1px solid ${colors.colorBlack6}`,
-          borderRadius: 12,
-          boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
-          zIndex: 40,
-          transform: panelTransform,
-          opacity: entered ? 1 : 0,
-          pointerEvents: entered ? 'auto' : 'none',
-          transition: panelTransition,
-          willChange: 'transform, opacity',
-        }}
-      >
+    <FloatingPanel isOpen={isOpen} onClose={onClose} width={600}>
         {/* Internal-navigation track: MAIN state ↔ GUEST-level DRILL-IN detail. */}
         <div
           className="flex h-full transition-transform duration-[250ms] ease-in-out"
@@ -610,8 +514,7 @@ export function GuestInfoSidebar({ contactNumber, linkedReservations, isOpen, on
           </div>
         </div>
         </div>
-      </div>
-    </>
+    </FloatingPanel>
   );
 }
 
