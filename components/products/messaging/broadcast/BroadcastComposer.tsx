@@ -14,24 +14,53 @@
 
 import React, { useState, KeyboardEvent } from 'react';
 import Icon from '@mdi/react';
-import { mdiPaperclip, mdiFormatListBulleted } from '@mdi/js';
+import { mdiPaperclip, mdiFormatListBulleted, mdiClockOutline, mdiClose } from '@mdi/js';
 import { colors, CanaryModal, CanaryButton, ButtonType } from '@canary-ui/components';
+import { ScheduleSendTimeModal } from './ScheduleSendTimeModal';
+import { formatScheduledMessageTime } from '@/lib/products/messaging/broadcast-schedule';
 
 interface BroadcastComposerProps {
   onSend: (content: string) => void;
   disabled?: boolean;
   recipientCount?: number;
+  /**
+   * Whether this audience can schedule. Production gates the clock on
+   * `!isBuiltInBroadcastFolder(currentFolder)` — custom groups only — and hides
+   * the affordance entirely rather than disabling it.
+   */
+  canSchedule?: boolean;
+  onSchedule?: (content: string, sendAt: Date) => void;
 }
 
-export function BroadcastComposer({ onSend, disabled = false, recipientCount = 0 }: BroadcastComposerProps) {
+export function BroadcastComposer({
+  onSend,
+  disabled = false,
+  recipientCount = 0,
+  canSchedule = false,
+  onSchedule,
+}: BroadcastComposerProps) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
 
   const canSend = !!message.trim() && !disabled && recipientCount > 0;
 
+  /**
+   * Production routes the Send click to `schedule()` when a time is pinned, and
+   * skips any confirmation. We do the same — the send-confirm only guards an
+   * immediate blast.
+   */
   const requestSend = () => {
-    if (canSend) setIsConfirmOpen(true);
+    if (!canSend) return;
+    if (scheduledAt && onSchedule) {
+      onSchedule(message.trim(), scheduledAt);
+      setMessage('');
+      setScheduledAt(null);
+      return;
+    }
+    setIsConfirmOpen(true);
   };
 
   const confirmSend = () => {
@@ -81,6 +110,45 @@ export function BroadcastComposer({ onSend, disabled = false, recipientCount = 0
             />
           </div>
 
+          {/* Scheduled pill — production's composer drawer. Clicking the label
+              reopens the modal to edit; the ✕ clears the schedule. */}
+          {scheduledAt && (
+            <div style={{ paddingLeft: 8, paddingRight: 8, paddingBottom: 12 }}>
+              <div
+                className="inline-flex items-center transition-colors"
+                style={{
+                  gap: 8,
+                  padding: 8,
+                  borderRadius: 24,
+                  width: 'fit-content',
+                  border: `1px solid ${colors.colorBlack6}`,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsScheduleModalOpen(true)}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <Icon path={mdiClockOutline} size={0.83} color={colors.colorBlack4} />
+                  <span
+                    className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] whitespace-nowrap"
+                    style={{ color: colors.colorBlueDark1 }}
+                  >
+                    {formatScheduledMessageTime(scheduledAt)}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScheduledAt(null)}
+                  aria-label="Clear scheduled time"
+                  className="flex items-center cursor-pointer"
+                >
+                  <Icon path={mdiClose} size={0.83} color={colors.colorBlack4} />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Divider */}
           <div className="w-full h-[1px]" style={{ backgroundColor: colors.colorBlack6 }} />
 
@@ -98,6 +166,23 @@ export function BroadcastComposer({ onSend, disabled = false, recipientCount = 0
                   <Icon path={tool.path} size={0.83} color={colors.colorBlack3} />
                 </button>
               ))}
+
+              {/* Schedule — custom-group audiences only (production's gate is on
+                  render, not on a disabled state). */}
+              {canSchedule && (
+                <button
+                  onClick={() => setIsScheduleModalOpen(true)}
+                  aria-label="Schedule send time"
+                  className="rounded-[4px] hover:bg-[#f0f0f0] transition-colors cursor-pointer"
+                  style={{ padding: 6 }}
+                >
+                  <Icon
+                    path={mdiClockOutline}
+                    size={0.83}
+                    color={scheduledAt ? colors.colorBlueDark1 : colors.colorBlack3}
+                  />
+                </button>
+              )}
             </div>
 
             {/* Right: Send */}
@@ -146,6 +231,18 @@ export function BroadcastComposer({ onSend, disabled = false, recipientCount = 0
           This message goes out to everyone selected right away. It can&apos;t be unsent.
         </p>
       </CanaryModal>
+
+      {/* Schedule send time */}
+      <ScheduleSendTimeModal
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        onConfirm={(sendAt) => {
+          setScheduledAt(sendAt);
+          setIsScheduleModalOpen(false);
+        }}
+        initialSendAt={scheduledAt ?? undefined}
+        reschedule={!!scheduledAt}
+      />
     </>
   );
 }

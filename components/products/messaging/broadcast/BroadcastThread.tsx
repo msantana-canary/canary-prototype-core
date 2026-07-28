@@ -27,11 +27,28 @@ export function BroadcastThread() {
     selectedGuestIds,
     messages,
     sendBroadcast,
+    scheduledBroadcasts,
+    scheduleBroadcast,
+    openScheduledPanel,
   } = useBroadcastStore();
 
   const groupMessages = messages[selectedGroupId] || [];
   const recipientCount = selectedGuestIds.length;
-  const groupName = allGroups.find(g => g.id === selectedGroupId)?.name ?? 'Broadcast';
+  const currentGroup = allGroups.find(g => g.id === selectedGroupId);
+  const groupName = currentGroup?.name ?? 'Broadcast';
+
+  /**
+   * Scheduling is CUSTOM-GROUP ONLY. Production passes
+   * `:group-broadcast-enabled="!isBuiltInBroadcastFolder(currentFolder)"` into
+   * the composer (BroadcastsV2.vue:213-220) and the composer renders the clock
+   * only when that is true — the affordance is absent on built-in folders, not
+   * disabled.
+   */
+  const canSchedule = currentGroup?.type === 'custom';
+
+  const groupScheduled = canSchedule
+    ? scheduledBroadcasts.filter(s => s.groupId === selectedGroupId)
+    : [];
 
   return (
     <div
@@ -80,13 +97,20 @@ export function BroadcastThread() {
       </div>
 
       {/* Message Feed */}
-      <BroadcastMessageFeed messages={groupMessages} />
+      <BroadcastMessageFeed
+        messages={groupMessages}
+        scheduled={groupScheduled}
+        memberCount={currentGroup?.memberCount ?? recipientCount}
+        onOpenScheduled={openScheduledPanel}
+      />
 
       {/* Composer */}
       <div className="shrink-0">
         <BroadcastComposer
           onSend={sendBroadcast}
           recipientCount={recipientCount}
+          canSchedule={canSchedule}
+          onSchedule={scheduleBroadcast}
         />
       </div>
     </div>
