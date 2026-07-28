@@ -140,6 +140,7 @@ export function BroadcastRoster({
 
   const [notSendingOpen, setNotSendingOpen] = useState(false);
   const notSendingRef = useRef<HTMLDivElement>(null);
+  const scrollBoxRef = useRef<HTMLDivElement>(null);
 
   const group = allGroups.find((g) => g.id === selectedGroupId);
   const builtInType = group?.builtInType;
@@ -191,7 +192,13 @@ export function BroadcastRoster({
     if (!jumpTarget) return;
     setNotSendingOpen(true);
     requestAnimationFrame(() => {
-      notSendingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Scroll the roster's own box — NOT scrollIntoView, which walks every
+      // scrollable ancestor up to the document and can slide the whole app.
+      const box = scrollBoxRef.current;
+      const target = notSendingRef.current;
+      if (box && target) {
+        box.scrollTop += target.getBoundingClientRect().top - box.getBoundingClientRect().top;
+      }
       onJumpHandled();
     });
   }, [jumpTarget, onJumpHandled]);
@@ -256,17 +263,17 @@ export function BroadcastRoster({
         >
           <Icon path={mdiFilterVariant} size={0.72} color={colors.colorBlack1} />
           <span
-            className="font-['Roboto',sans-serif] text-[13px] leading-[20px]"
+            className="font-['Roboto',sans-serif] text-[13px] leading-[20px] whitespace-nowrap"
             style={{ color: colors.colorBlack1 }}
           >
-            Narrow
+            Filters
             {filterActive ? ` (${getActiveFilterCount(activeFilters)})` : ''}
           </span>
           <Icon path={mdiChevronDown} size={0.6} color={colors.colorBlack3} />
         </button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-invisible">
+      <div ref={scrollBoxRef} className="flex-1 min-h-0 overflow-y-auto scrollbar-invisible">
         {/* ── SENDING TO ─────────────────────────────────────────────────── */}
         <div
           className="sticky top-0 z-10 flex items-center gap-2"
