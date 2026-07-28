@@ -22,6 +22,9 @@ import {
   BroadcastFilterCriteria,
   BroadcastRecipientDelivery,
   ScheduledBroadcast,
+  BroadcastCheckInStatus,
+  BroadcastBucket,
+  BuiltInGroupType,
 } from './broadcast-types';
 import {
   builtInGroups,
@@ -194,13 +197,58 @@ export function getGuestEntriesForGroup(groupId: string, allGroups: BroadcastGro
   return [];
 }
 
-/** Get selectable (has phone) guest IDs for a group */
+/**
+ * Production's `canMessageGuest`:
+ *   `!!g?.client_phone && !g.messaging_opted_out`
+ * A guest with no phone OR who has opted out of messaging is unreachable, and
+ * is never selectable anywhere in the flow.
+ */
+export function canMessageGuest(entry: BroadcastGuestEntry): boolean {
+  return !!guests[entry.guestId]?.phone && !entry.messagingOptedOut;
+}
+
+/**
+ * Which section a guest falls into for a given folder — production's
+ * `guestsByBucket`. The same status buckets differently per folder:
+ *   In-house   → one bucket, no section headers
+ *   Departures → checked-out to "out", everyone else to "expecting"
+ *   Arrivals   → in-house to "in", checked-out to "out", rest to "expecting"
+ */
+export function bucketForFolder(
+  builtInType: BuiltInGroupType,
+  status: BroadcastCheckInStatus | undefined
+): BroadcastBucket {
+  if (builtInType === 'in-house') return 'in';
+  if (status === 'checked-out') return 'out';
+  if (builtInType === 'arrivals' && status === 'in-house') return 'in';
+  return 'expecting';
+}
+
+/**
+ * The INITIAL auto-selection when you enter a folder — production's
+ * `selectGuestsForFolder`. Beyond canMessageGuest it excludes guests by status,
+ * per folder:
+ *   custom / in-house → everyone messageable
+ *   departures        → everyone except CHECKED_OUT
+ *   arrivals          → everyone except IN_HOUSE and CHECKED_OUT
+ * i.e. only the "expecting" bucket pre-selects on Arrivals and Departures.
+ *
+ * This exclusion applies ONLY here (folder entry and filter-clear). Select-all
+ * and the filter-apply rebuild select everything messageable that is visible —
+ * production does not re-apply the status rule in those paths.
+ */
 function getSelectableGuestIds(groupId: string, allGroups: BroadcastGroup[]): string[] {
   const entries = getGuestEntriesForGroup(groupId, allGroups);
+  const builtInType = allGroups.find(g => g.id === groupId)?.builtInType;
+
   return entries
     .filter(entry => {
-      const guest = guests[entry.guestId];
-      return guest?.phone;
+      if (!canMessageGuest(entry)) return false;
+      if (builtInType === 'departures') return entry.checkInStatus !== 'checked-out';
+      if (builtInType === 'arrivals') {
+        return entry.checkInStatus !== 'in-house' && entry.checkInStatus !== 'checked-out';
+      }
+      return true;
     })
     .map(entry => entry.guestId);
 }
@@ -228,7 +276,7 @@ function getVisibleSelectableIds(
   const entries = isFilterEmpty(filters)
     ? getGuestEntriesForGroup(groupId, allGroups)
     : getFilteredGuestEntries(groupId, allGroups, filters);
-  return entries.filter(entry => guests[entry.guestId]?.phone).map(entry => entry.guestId);
+  return entries.filter(canMessageGuest).map(entry => entry.guestId);
 }
 
 export const useBroadcastStore = create<BroadcastState>((set, get) => ({

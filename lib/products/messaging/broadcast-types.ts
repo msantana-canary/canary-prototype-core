@@ -7,7 +7,16 @@
 
 export type BuiltInGroupType = 'arrivals' | 'in-house' | 'departures';
 
-export type GuestSegment = 'expecting' | 'checked-in' | 'checked-out' | 'departing';
+/**
+ * The guest's stay status — production's `CheckInStatus`, which is what drives
+ * both the section buckets and the per-folder auto-select exclusions. It is NOT
+ * a per-folder label: the same status buckets differently depending on which
+ * folder you're looking at (see `bucketForFolder`).
+ */
+export type BroadcastCheckInStatus = 'expecting' | 'in-house' | 'checked-out';
+
+/** Section buckets, production's three (`expecting` / `in` / `out`). */
+export type BroadcastBucket = 'expecting' | 'in' | 'out';
 
 export type LoyaltyTier = 'non-member' | 'club-member' | 'silver-elite' | 'gold-elite' | 'platinum-elite' | 'diamond-elite';
 
@@ -50,7 +59,12 @@ export interface BroadcastGroup {
 export interface BroadcastGuestEntry {
   guestId: string;
   reservationId: string;
-  segment?: GuestSegment;
+  checkInStatus?: BroadcastCheckInStatus;
+  /**
+   * Production's `messaging_opted_out`. Together with a missing phone this is
+   * what makes a guest unmessageable (`canMessageGuest`).
+   */
+  messagingOptedOut?: boolean;
   // Filterable attributes (denormalized for prototype)
   loyaltyTier?: LoyaltyTier;
   rateCode?: string;

@@ -36,6 +36,7 @@ import {
   getFilteredGuestEntries,
   emptyFilterCriteria,
   isFilterEmpty,
+  canMessageGuest,
 } from '@/lib/products/messaging/broadcast-store';
 import { guests } from '@/lib/core/data/guests';
 import { mockSegments } from '@/lib/products/guest-journey/mock-data';
@@ -366,7 +367,7 @@ export function FilterGuestsModal({
     if (filterMode === 'quick-filters' && isFilterEmpty(pendingCriteria)) return null;
     if (filterMode === 'guest-segments' && !segmentCriteria) return null;
     const filtered = getFilteredGuestEntries(selectedGroupId, allGroups, activeCriteria);
-    return filtered.filter(e => guests[e.guestId]?.phone).length;
+    return filtered.filter(canMessageGuest).length;
   }, [activeCriteria, filterMode, pendingCriteria, segmentCriteria, selectedGroupId, allGroups]);
 
   // Toggle loyalty tier
