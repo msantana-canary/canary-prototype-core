@@ -824,6 +824,49 @@ reasonable on its own; it is the *unconstrained document* underneath it that mad
 it fragile, and that is ours to own. Worth raising with the library owner anyway
 — `100dvh` would be the better default there.
 
+## Conversations — third top-row option: "In-card" (2026-07-29)
+
+A third arm on the existing Top row experiment, joining Full and Compact.
+
+Compact floats the column-scoped controls ABOVE the thread-list card. **In-card**
+takes that one step further: the same control anatomy — column-scoped search,
+icon Filters with its count badge, icon New message — becomes the card's OWN
+header zone, inside the card border with a hairline beneath it. The controls are
+a `shrink-0` sibling of the scroll container, so they hold position while the
+rows scroll underneath; no `position: sticky` needed, and no chance of the header
+scrolling away.
+
+To stop that header cramping, this variant alone widens the list column to **45%**
+(conversation 55%). Full and Compact keep 35/65. Like Compact, the conversation
+card runs full height — `AppLayout` draws no full-width row for either
+column-scoped variant.
+
+**Full and Compact are behaviourally untouched.** Every edit is either additive
+or a conditional that evaluates identically for them: `isColumnScoped` reduces to
+the old `isCompact` for both, the flex-basis ternaries return the old 35/65, and
+`ThreadList`'s new `header` prop is `undefined`, which renders nothing.
+
+## ⚠ Schedule modal date boundary (2026-07-29)
+
+`CanaryInputDate` is a three-field **MM/DD/YYYY** control — it emits
+`${m}/${d}/${y}` and parses its `value` by splitting on `/`. `broadcast-schedule.ts`
+assumed `yyyy-MM-dd` in both directions, which broke send-later completely:
+`new Date("07/29/2026T00:00:00")` is Invalid Date, so zero time slots were
+generated, "Select time" never populated, and the confirm button was permanently
+disabled. The seed round-trip failed the same way in reverse, so Reschedule
+opened empty.
+
+Normalised at the boundary: `toDateInputValue` emits `MM/dd/yyyy`, and
+`parseDateInputValue` is the single reader — tolerant of both shapes, building at
+local midnight so a date can't slip a day, and rejecting incomplete or impossible
+dates (`02/31` would otherwise roll over to March 3).
+
+**Two date formats coexist deliberately, and this is the thing to remember:**
+`CanaryInputDate` speaks `MM/DD/YYYY`; a native `<input type="date">` — which is
+what the compact date control in the recipients column uses — speaks
+`yyyy-MM-dd`. Anything crossing into either one goes through the boundary
+helpers.
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |
