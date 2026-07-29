@@ -64,9 +64,14 @@ export default function MessagesPage() {
     topRowStyle,
   } = useMessagingStore();
 
-  // Compact mode moves the search + Filters + New-message controls INTO the left
-  // (thread-list) column; the conversation thread column then runs full height.
+  // Compact moves the search + Filters + New-message controls INTO the left
+  // (thread-list) column, floating above the card. In-card takes that one step
+  // further: the same controls become the card's OWN header zone, inside the
+  // border, and the list column widens to 45% so they aren't cramped.
+  // Both drop AppLayout's full-width row, so the thread column runs full height.
   const isCompact = topRowStyle === 'compact';
+  const isInCard = topRowStyle === 'in-card';
+  const isColumnScoped = isCompact || isInCard;
 
   // Get the selected thread
   const selectedThread = useMemo(() => {
@@ -213,12 +218,15 @@ export default function MessagesPage() {
       {activeTab === 'conversations' && (
         <div
           className="flex h-full gap-4 min-h-0"
-          style={{ paddingLeft: 24, paddingRight: 24, paddingBottom: 24, paddingTop: isCompact ? 16 : 0 }}
+          style={{ paddingLeft: 24, paddingRight: 24, paddingBottom: 24, paddingTop: isColumnScoped ? 16 : 0 }}
         >
           {/* Thread List column — 35% of the content row (scales to any width).
               In compact mode the search + Filters + New-message controls sit at the
               top of THIS column (column-scoped), above the list card. */}
-          <div className="min-w-0 h-full flex flex-col gap-3" style={{ flexBasis: '35%', flexGrow: 0, flexShrink: 1 }}>
+          <div
+            className="min-w-0 h-full flex flex-col gap-3"
+            style={{ flexBasis: isInCard ? '45%' : '35%', flexGrow: 0, flexShrink: 1 }}
+          >
             {isCompact && (
               <div className="shrink-0">
                 <ConversationControls
@@ -237,12 +245,27 @@ export default function MessagesPage() {
                 selectedThreadId={selectedThreadId}
                 onSelectThread={selectThread}
                 typingThreadId={typingThreadId}
+                header={
+                  isInCard ? (
+                    <ConversationControls
+                      searchQuery={searchQuery}
+                      onSearchChange={setSearchQuery}
+                      onNewMessage={startNewConversation}
+                      currentView={currentView}
+                      onViewChange={setCurrentView}
+                      compact
+                    />
+                  ) : undefined
+                }
               />
             </div>
           </div>
 
           {/* Thread View / Compose — 65% of the content row */}
-          <div className="min-w-0 h-full flex" style={{ flexBasis: '65%', flexGrow: 1, flexShrink: 1 }}>
+          <div
+            className="min-w-0 h-full flex"
+            style={{ flexBasis: isInCard ? '55%' : '65%', flexGrow: 1, flexShrink: 1 }}
+          >
             {isComposingNew ? (
               <div
                 className="flex-1 min-w-0 overflow-clip rounded-[12px]"

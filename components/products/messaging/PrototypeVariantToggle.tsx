@@ -6,8 +6,10 @@
  * you're on:
  *
  *   Conversations — "Top row": FULL (search + Filters + New-message across the
- *                   width) vs COMPACT (sized to the thread-list column, icon-only
- *                   buttons). Wired to `topRowStyle`.
+ *                   width), COMPACT (sized to the thread-list column, icon-only
+ *                   buttons, floating above the card), or IN-CARD (those same
+ *                   controls become the list card's own header zone). Wired to
+ *                   `topRowStyle`.
  *   Broadcast     — TWO stacked groups, because two experiments run at once:
  *                   "Left panel" (Baseline / To-strip / Ledger, the step-5
  *                   paradigms) and "Filter modal" (Classic / Builder, step 3).
@@ -26,9 +28,10 @@ import { mdiTuneVariant, mdiClose } from '@mdi/js';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
 
-const TOP_ROW_OPTIONS: { value: 'full' | 'compact'; label: string; desc: string }[] = [
+const TOP_ROW_OPTIONS: { value: 'full' | 'compact' | 'in-card'; label: string; desc: string }[] = [
   { value: 'full', label: 'Full', desc: 'Search fills the row; Filters + New message are full buttons' },
   { value: 'compact', label: 'Compact', desc: 'Search matches the list column; icon-only Filters + New message' },
+  { value: 'in-card', label: 'In-card', desc: "Controls become the list card's own header; list widens to 45%" },
 ];
 
 const FILTER_MODAL_OPTIONS: { value: 'classic' | 'builder'; label: string; desc: string }[] = [
@@ -88,7 +91,7 @@ export function PrototypeVariantToggle({
           label: 'Top row',
           options: TOP_ROW_OPTIONS,
           active: topRowStyle,
-          onSelect: (v) => setTopRowStyle(v as 'full' | 'compact'),
+          onSelect: (v) => setTopRowStyle(v as 'full' | 'compact' | 'in-card'),
         },
       ];
 
