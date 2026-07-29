@@ -31,9 +31,62 @@ export function formatScheduledDayPart(date: Date, now: Date = new Date()): stri
   return format(date, 'MMMM d, yyyy');
 }
 
-/** YYYY-MM-DD, the value shape CanaryInputDate speaks. */
+/**
+ * THE DATE BOUNDARY.
+ *
+ * `CanaryInputDate` is a three-field MM / DD / YYYY control. It EMITS
+ * `MM/DD/YYYY` (`notifyChange` builds `${m}/${d}/${y}`) and it PARSES its
+ * `value` by splitting on "/" and taking three parts — anything else is
+ * silently discarded. Everything crossing that boundary is normalised here, so
+ * no caller has to remember the shape.
+ *
+ * Note this is NOT the same shape as a native `<input type="date">`, which
+ * speaks `yyyy-MM-dd` — the compact date control in the recipients column is a
+ * native input and deliberately keeps that format.
+ */
 export function toDateInputValue(date: Date): string {
-  return format(date, 'yyyy-MM-dd');
+  return format(date, 'MM/dd/yyyy');
+}
+
+/**
+ * Parse whatever the date field hands back into a local-midnight Date.
+ * Accepts CanaryInputDate's `MM/DD/YYYY`, and tolerates `yyyy-MM-dd` so a
+ * native-input value (or a persisted one) can't silently produce Invalid Date.
+ * Returns null when the value isn't a complete, real date.
+ */
+export function parseDateInputValue(value: string): Date | null {
+  if (!value) return null;
+
+  let year: number;
+  let month: number;
+  let day: number;
+
+  if (value.includes('/')) {
+    const parts = value.split('/');
+    if (parts.length !== 3) return null;
+    [month, day, year] = parts.map(Number);
+  } else if (value.includes('-')) {
+    const parts = value.split('-');
+    if (parts.length !== 3) return null;
+    [year, month, day] = parts.map(Number);
+  } else {
+    return null;
+  }
+
+  if (!year || !month || !day) return null;
+  if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) return null;
+
+  // Local midnight, so a date can never slip a day across timezones.
+  const parsed = new Date(year, month - 1, day, 0, 0, 0, 0);
+  // Reject impossible dates (e.g. 02/31) — the Date constructor rolls them over.
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    return null;
+  }
+  return parsed;
 }
 
 /**
@@ -47,10 +100,8 @@ export function buildTimeOptions(
   dateValue: string,
   now: Date = new Date()
 ): { value: string; label: string }[] {
-  if (!dateValue) return [];
-
-  const day = new Date(`${dateValue}T00:00:00`);
-  if (Number.isNaN(day.getTime())) return [];
+  const day = parseDateInputValue(dateValue);
+  if (!day) return [];
 
   const isToday = isSameDay(day, now);
   const cursor = isToday ? new Date(now) : startOfDay(day);
@@ -70,8 +121,7 @@ export function buildTimeOptions(
 
 /** Production's `isBeforeDate` — date-granularity past check. */
 export function isBeforeToday(dateValue: string, now: Date = new Date()): boolean {
-  if (!dateValue) return false;
-  const day = new Date(`${dateValue}T00:00:00`);
-  if (Number.isNaN(day.getTime())) return false;
+  const day = parseDateInputValue(dateValue);
+  if (!day) return false;
   return day.getTime() < startOfDay(now).getTime();
 }
