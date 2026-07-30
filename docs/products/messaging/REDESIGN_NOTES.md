@@ -1009,3 +1009,94 @@ values are NOT finalized — when they finalize, promote into `@canary-ui/compon
 - `components/products/messaging/broadcast/` — NEW `BroadcastAudienceCard`; `BroadcastView` (two cards on canvas), `BroadcastGroupList` (audience selector + GROUPS kebab), `BroadcastGuestList` (recipients zone), `BroadcastThread` (audience header), `BroadcastMessageBubble` (flat blocks), `BroadcastMessageFeed`, `BroadcastComposer` (Conversations anatomy + send confirm), `FilterGuestsModal` (live match count + real save toast). `BroadcastSubNav` and `ManageFiltersModal` **deleted**.
 - `components/products/messaging/AppLayout.tsx` — broadcast control band removed
 - `app/globals.css` — orphaned `.broadcast-group-list li` rule removed
+
+## AppShell V2 migration (2026-07-30, library v0.6.0)
+
+The prototype now renders inside `CanaryAppShellV2`. V1 (`CanaryAppShell`,
+`CanarySidebar`) is deprecated in v0.6.0 — and, in practice, no longer usable:
+`CanaryAppShellProps` **dropped `propertyName`, `userProfile` and
+`reservationStatus` entirely**, so the V1 shell in 0.6.0 has no property
+switcher, no user chip and no PMS pill. The upgrade forced the migration; it
+wasn't optional. Both layouts moved — `(dashboard)` and `(settings)`.
+
+**What V2 gives us, and the exact API used** (from
+`node_modules/@canary-ui/components/AI_REFERENCE.md` + `dist/index.d.ts`):
+
+| Concern | V1 | V2 |
+|---|---|---|
+| Property | `propertyName="Statler New York"` | `property={{ name, code }}` — name **and** code in the sidebar switcher |
+| User | `userProfile={{ name, role, avatarUrl }}` | `user={{ name, avatarUrl }}` in the sidebar footer |
+| PMS pill | `reservationStatus={{ label, isConnected }}` | same shape, now on the top bar |
+| Page title | `pageTitle` | **derived from `selectedSidebarItemId`** — don't pass it |
+| Nav groupings | `standardMainSidebarSections` | `standardMainSidebarSectionsV2` (Communications · Guest Management · SDM) |
+| Settings back | `sidebarTitle` + `sidebarBackButton` slot | `sidebarBackLabel` + `onSidebarBack` |
+| Settings entry | a `settings` nav item | a sidebar **footer button** — `onSettingsClick` |
+| New | — | `teamChat={{ badge }}`, `insight={{ label }}`, `copilot={{ message }}` |
+
+Both badges the canon frames show are real props: `addBadge(...)` still works on
+the V2 sections (it is section-shape generic, and `CanarySidebarV2` renders
+`item.badge`), and Team Chat has its own `badge`.
+
+**What V2 does NOT support that we had:** the user's **role** ("Front desk").
+`SidebarV2User` is `{ name, avatarUrl }` only — the footer shows a first name.
+Following the canon frames, the user is now just "Theresa". Also gone: the
+`amenities`, `payment-links` and `id-verification` nav ids (not in the V2
+groupings), so their route-map entries were dropped; they pointed at routes
+this prototype never had.
+
+**Ours, kept:** `MainNav` (Conversations/Broadcast tab strip + online-hours
+caption + status pill) still renders full-bleed directly under the top bar,
+which is what `contentPadding="none"` is for.
+
+**Died:** `components/products/messaging/PageHeader.tsx` — a second, unused
+`CanaryPageHeader` carrying its own "Statler New York" property switcher. It
+had no importers and would not have compiled against 0.6.0 anyway.
+
+### ⚠ Height chain under V2 — re-verified, one change
+
+The `html, body { height:100%; overflow:hidden; overscroll-behavior:none }`
+lock stays, and matters MORE than before. But the `100vh → 100dvh` half of the
+fix **stopped reaching the shell**:
+
+- V1 sized its root with the Tailwind **classes** `h-screen min-h-screen`, so
+  the unlayered `@supports` override in `globals.css` won on the cascade.
+- V2 sizes its root with **inline styles** (`height: 100vh; minHeight: 100vh`).
+  No class selector can beat an inline style.
+
+Consequence if left alone: document scroll is still impossible (the html/body
+lock is doing that job), so the "app scrolled out of the viewport" bug cannot
+return — but on any browser with dynamic chrome the shell would be *taller than
+the visible area and clipped*, putting the bottom of the messaging UI below the
+fold with no way to reach it.
+
+Fix: both shells pass `className="canary-shell-dvh"` — V2's documented
+`className` prop lands on that same root — and `globals.css` clamps it with
+`height/min-height: 100dvh !important` under `@supports`. `!important` is the
+only thing that outranks an inline style; this is the one place in the branch
+it is justified.
+
+`FloatingPanel`'s hardcoded `top: 56` (scrim) and `top: 72` (panel) were old
+V1-header constants. They now read `shellV2.topBarHeight` (52) and
+`shellV2.topBarHeight + 16`, so the panel tracks the shell instead of a number
+someone has to remember.
+
+### ⚠ Cold-start crash in the broadcast store (fixed in the same pass)
+
+`getGuestEntriesForGroup` read its date as
+`useBroadcastStore.getState().selectedDate` — but the store's **initial state**
+calls it (via `getSelectableGuestIds`) inside `create()`, before the
+`useBroadcastStore` binding exists. Temporal dead zone: a cold module
+evaluation threw `Cannot access 'useBroadcastStore' before initialization` and
+every route importing the broadcast surface 500'd. It survived typecheck and
+HMR because on a warm reload the binding is already initialised — only a real
+restart (this one) exposes it.
+
+Fixed structurally, not with a guard: `date` is now an explicit required
+parameter on `getGuestEntriesForGroup`, `getFilteredGuestEntries`,
+`getSelectableGuestIds`, `getVisibleSelectableIds`, `getAudienceFacts`,
+`getAudienceSplit` and `getFolderPopulation`. Store actions pass
+`get().selectedDate`; components pass the store's `selectedDate` (which also
+makes the memos correctly date-reactive); initial state passes
+`INITIAL_SELECTED_DATE`, the same constant that seeds `selectedDate`, so the
+two cannot drift. **Nothing below the store in that module may read the store
+back** — the type signature now enforces it.
