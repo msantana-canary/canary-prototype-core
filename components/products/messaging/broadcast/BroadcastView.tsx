@@ -16,8 +16,6 @@ import React, { useEffect } from 'react';
 import { BroadcastAudienceCard } from './BroadcastAudienceCard';
 import { BroadcastThread } from './BroadcastThread';
 import { CreateGroupModal } from './CreateGroupModal';
-import { FilterGuestsModal } from './FilterGuestsModal';
-import { FilterGuestsModalBuilder } from './FilterGuestsModalBuilder';
 import { BroadcastDeliveryPanel } from './BroadcastDeliveryPanel';
 import { BroadcastScheduledPanel } from './BroadcastScheduledPanel';
 import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
@@ -28,13 +26,8 @@ export function BroadcastView() {
     isCreateGroupModalOpen,
     closeCreateGroupModal,
     createGroup,
-    isFilterModalOpen,
-    closeFilterModal,
-    filterModalVariant,
     segmentSavedToast,
     dismissSegmentSavedToast,
-    filtersClearedToast,
-    dismissFiltersClearedToast,
   } = useBroadcastStore();
 
   // Save-as-segment toast — wired to the real save action (it used to watch a
@@ -45,11 +38,6 @@ export function BroadcastView() {
     return () => clearTimeout(timer);
   }, [segmentSavedToast, dismissSegmentSavedToast]);
 
-  useEffect(() => {
-    if (!filtersClearedToast) return;
-    const timer = setTimeout(dismissFiltersClearedToast, 3000);
-    return () => clearTimeout(timer);
-  }, [filtersClearedToast, dismissFiltersClearedToast]);
 
   return (
     <>
@@ -77,14 +65,6 @@ export function BroadcastView() {
         onCreate={createGroup}
       />
 
-      {/* Filter Guests Modal — live A/B. Classic is the shipped modal, untouched;
-          Builder is the step-3 redesign. Both write the same criteria through the
-          same applyFilters, so only the modal differs. */}
-      {filterModalVariant === 'builder' ? (
-        <FilterGuestsModalBuilder isOpen={isFilterModalOpen} onClose={closeFilterModal} />
-      ) : (
-        <FilterGuestsModal isOpen={isFilterModalOpen} onClose={closeFilterModal} />
-      )}
 
       {/* Per-recipient delivery panel — rides the shared floating-panel shell.
           Its z-index (40 / scrim 39) sits below @canary-ui's modal layer (50),
@@ -97,12 +77,6 @@ export function BroadcastView() {
       {/* Toast: guest segment saved */}
       <Toast message="Guest segment saved" isOpen={!!segmentSavedToast} variant="success" />
 
-      {/* Variant C: clearing filters also resets the selection — say so. */}
-      <Toast
-        message="Filters cleared — selection reset"
-        isOpen={filtersClearedToast}
-        variant="info"
-      />
     </>
   );
 }

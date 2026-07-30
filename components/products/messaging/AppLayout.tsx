@@ -6,14 +6,6 @@
  * row. Broadcast has no sub nav — its control band collapsed into the audience
  * card (step 1 baseline).
  *
- * Top-row placement is a prototype experiment (`topRowStyle`):
- *  - FULL: AppLayout renders the search + Filters + New-message row as a
- *    full-width band above the content.
- *  - COMPACT / IN-CARD: AppLayout renders NO top row — the controls move INTO
- *    the left (thread-list) column in the page (column-scoped), and the
- *    conversation thread column runs full height from the top of the content
- *    area. IN-CARD additionally puts those controls inside the list card's own
- *    border as its header zone, and widens that column to 45%.
  */
 
 'use client';
@@ -23,7 +15,6 @@ import { colors } from '@canary-ui/components';
 import { MainNav } from './MainNav';
 import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
 import { ConversationControls, CategoryFilter } from './ConversationControls';
-import { useMessagingStore } from '@/lib/products/messaging/store';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -46,20 +37,13 @@ export function AppLayout({
   currentView,
   onViewChange,
 }: AppLayoutProps) {
-  // Prototype control: top-row layout experiment (full vs compact).
-  const topRowStyle = useMessagingStore((s) => s.topRowStyle);
-  // Both column-scoped variants render their own controls inside the left
-  // column, so AppLayout must not also draw the full-width row.
-  const isColumnScoped = topRowStyle === 'compact' || topRowStyle === 'in-card';
-
   return (
     <div className="h-full flex flex-col overflow-hidden" style={{ backgroundColor: colors.colorBlack8 }}>
       {/* Main Navigation */}
       <MainNav activeTab={activeTab} onTabChange={onTabChange} />
 
-      {/* Search + CTA row (Conversations only) — FULL mode only. In compact mode
-          the controls move into the left column (rendered by the page). */}
-      {activeTab === 'conversations' && !isColumnScoped && (
+      {/* Search + CTA row — Conversations only, full width above both columns. */}
+      {activeTab === 'conversations' && (
         <div
           className="shrink-0"
           style={{ paddingLeft: 24, paddingRight: 24, paddingTop: 16, paddingBottom: 16 }}

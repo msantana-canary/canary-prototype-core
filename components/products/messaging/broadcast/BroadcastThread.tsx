@@ -14,12 +14,12 @@
 
 import React, { useState } from 'react';
 import Icon from '@mdi/react';
-import { mdiAccountGroupOutline, mdiAccountMultipleOutline } from '@mdi/js';
+import { mdiAccountGroupOutline } from '@mdi/js';
 import { colors } from '@canary-ui/components';
 import { BroadcastMessageFeed } from './BroadcastMessageFeed';
 import { BroadcastComposer } from './BroadcastComposer';
 import { BroadcastToStrip } from './BroadcastToStrip';
-import { BroadcastRecipientsPanel } from './BroadcastRecipientsPanel';
+import { BroadcastFilterPanel } from './BroadcastFilterPanel';
 import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
 import { getAudienceFacts } from '@/lib/products/messaging/broadcast-audience-facts';
 import { Avatar } from '../Avatar';
@@ -35,16 +35,11 @@ export function BroadcastThread() {
     scheduledBroadcasts,
     scheduleBroadcast,
     openScheduledPanel,
-    leftPanelVariant,
     activeFilters,
-    openFilterModal,
     clearAllFilters,
   } = useBroadcastStore();
 
   const [isRecipientsOpen, setIsRecipientsOpen] = useState(false);
-
-  const isToStrip = leftPanelVariant === 'to-strip';
-  const isChallenger = leftPanelVariant !== 'baseline';
 
   const facts = getAudienceFacts(selectedGroupId, allGroups, activeFilters, selectedGuestIds);
 
@@ -99,19 +94,8 @@ export function BroadcastThread() {
             >
               {groupName}
             </h2>
-            {/* Variant B moves the count's home to the To strip — the header
-                becomes pure identity so the number lives in exactly one place. */}
-            {!isToStrip && (
-              <div className="flex items-center gap-1">
-                <Icon path={mdiAccountMultipleOutline} size={0.67} color={colors.colorBlack3} />
-                <span
-                  className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
-                  style={{ color: colors.colorBlack3 }}
-                >
-                  {recipientCount} guest{recipientCount !== 1 ? 's' : ''}
-                </span>
-              </div>
-            )}
+            {/* The count's home is the To strip — the header is pure identity,
+                so the number lives in exactly one place on the surface. */}
           </div>
         </div>
       </div>
@@ -124,15 +108,12 @@ export function BroadcastThread() {
         onOpenScheduled={openScheduledPanel}
       />
 
-      {/* Recipients panel (variant B) */}
-      {isToStrip && (
-        <BroadcastRecipientsPanel
-          isOpen={isRecipientsOpen}
-          onClose={() => setIsRecipientsOpen(false)}
-          audienceName={groupName}
-          facts={facts}
-        />
-      )}
+      {/* The one recipients + filter surface */}
+      <BroadcastFilterPanel
+        isOpen={isRecipientsOpen}
+        onClose={() => setIsRecipientsOpen(false)}
+        audienceName={groupName}
+      />
 
       {/* Composer */}
       <div className="shrink-0">
@@ -141,32 +122,26 @@ export function BroadcastThread() {
           recipientCount={recipientCount}
           canSchedule={canSchedule}
           onSchedule={scheduleBroadcast}
-          showSendCount={isChallenger}
+          showSendCount
           topSlot={
-            isToStrip ? (
-              <BroadcastToStrip
-                audienceName={groupName}
-                builtInType={currentGroup?.builtInType}
-                facts={facts}
-                onOpenRecipients={() => setIsRecipientsOpen(true)}
-                onOpenFilters={currentGroup?.type === 'built-in' ? openFilterModal : undefined}
-                onClearFilters={clearAllFilters}
-              />
-            ) : undefined
+            <BroadcastToStrip
+              audienceName={groupName}
+              builtInType={currentGroup?.builtInType}
+              facts={facts}
+              onOpenRecipients={() => setIsRecipientsOpen(true)}
+              onOpenFilters={() => setIsRecipientsOpen(true)}
+              onClearFilters={clearAllFilters}
+            />
           }
-          renderConfirmDetail={
-            isToStrip
-              ? (draft) => (
-                  <SendConfirmDetail
-                    draft={draft}
-                    audienceName={groupName}
-                    facts={facts}
-                    recipientIds={selectedGuestIds}
-                  />
-                )
-              : undefined
-          }
-          onReviewRecipients={isToStrip ? () => setIsRecipientsOpen(true) : undefined}
+          renderConfirmDetail={(draft) => (
+            <SendConfirmDetail
+              draft={draft}
+              audienceName={groupName}
+              facts={facts}
+              recipientIds={selectedGuestIds}
+            />
+          )}
+          onReviewRecipients={() => setIsRecipientsOpen(true)}
         />
       </div>
     </div>

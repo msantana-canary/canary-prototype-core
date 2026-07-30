@@ -1,11 +1,10 @@
 /**
  * Conversions between broadcast filter criteria and guest-journey Segment rules.
  *
- * NOTE — deliberate duplication. `FilterGuestsModal` (the CLASSIC variant) holds
- * its own private copies of these two functions. Classic is the "before" side of
- * a live A/B and must stay byte-identical, so it is not refactored to import
- * from here. When the A/B resolves, delete the losing variant and make the
- * winner the sole consumer of this module.
+ * THE single source for these conversions. The classic filter modal used to
+ * hold private copies while it was the "before" arm of a live A/B; that arm
+ * lost and was deleted, so the duplication is gone and the filter panel is the
+ * sole consumer.
  */
 
 import {

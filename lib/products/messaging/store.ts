@@ -23,7 +23,6 @@ interface MessagingState {
   isLinkReservationModalOpen: boolean;
   currentView: 'inbox' | 'archived' | 'blocked';
   searchQuery: string;
-  topRowStyle: 'full' | 'compact' | 'in-card';
 
   // Actions
   selectThread: (threadId: string) => void;
@@ -50,7 +49,6 @@ interface MessagingState {
   closeLinkReservationModal: () => void;
   linkReservation: (threadId: string, reservationId: string) => void;
   unlinkReservation: (threadId: string, reservationId: string) => void;
-  setTopRowStyle: (style: 'full' | 'compact' | 'in-card') => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set, get) => ({
@@ -66,7 +64,6 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   isLinkReservationModalOpen: false,
   currentView: 'inbox',
   searchQuery: '',
-  topRowStyle: 'full',
 
   // Select a thread
   selectThread: (threadId: string) => {
@@ -333,10 +330,5 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
           : thread
       ),
     }));
-  },
-
-  // Prototype control: top-row layout experiment (full / compact / in-card)
-  setTopRowStyle: (style: 'full' | 'compact' | 'in-card') => {
-    set({ topRowStyle: style });
   },
 }));

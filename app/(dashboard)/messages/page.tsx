@@ -15,7 +15,6 @@ import { ThreadView } from '@/components/products/messaging/ThreadView';
 import { GuestInfoSidebar } from '@/components/products/messaging/GuestInfoSidebar';
 import { ComposeHeader } from '@/components/products/messaging/ComposeHeader';
 import { UnlinkReservationModal } from '@/components/products/messaging/UnlinkReservationModal';
-import { PrototypeVariantToggle } from '@/components/products/messaging/PrototypeVariantToggle';
 import { ConversationControls } from '@/components/products/messaging/ConversationControls';
 import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
 import { useMessagingStore } from '@/lib/products/messaging/store';
@@ -61,17 +60,8 @@ export default function MessagesPage() {
     closeLinkReservationModal,
     linkReservation,
     unlinkReservation,
-    topRowStyle,
   } = useMessagingStore();
 
-  // Compact moves the search + Filters + New-message controls INTO the left
-  // (thread-list) column, floating above the card. In-card takes that one step
-  // further: the same controls become the card's OWN header zone, inside the
-  // border, and the list column widens to 45% so they aren't cramped.
-  // Both drop AppLayout's full-width row, so the thread column runs full height.
-  const isCompact = topRowStyle === 'compact';
-  const isInCard = topRowStyle === 'in-card';
-  const isColumnScoped = isCompact || isInCard;
 
   // Get the selected thread
   const selectedThread = useMemo(() => {
@@ -218,45 +208,21 @@ export default function MessagesPage() {
       {activeTab === 'conversations' && (
         <div
           className="flex h-full gap-4 min-h-0"
-          style={{ paddingLeft: 24, paddingRight: 24, paddingBottom: 24, paddingTop: isColumnScoped ? 16 : 0 }}
+          style={{ paddingLeft: 24, paddingRight: 24, paddingBottom: 24, paddingTop: 0 }}
         >
           {/* Thread List column — 35% of the content row (scales to any width).
               In compact mode the search + Filters + New-message controls sit at the
               top of THIS column (column-scoped), above the list card. */}
           <div
             className="min-w-0 h-full flex flex-col gap-3"
-            style={{ flexBasis: isInCard ? '45%' : '35%', flexGrow: 0, flexShrink: 1 }}
+            style={{ flexBasis: '35%', flexGrow: 0, flexShrink: 1 }}
           >
-            {isCompact && (
-              <div className="shrink-0">
-                <ConversationControls
-                  searchQuery={searchQuery}
-                  onSearchChange={setSearchQuery}
-                  onNewMessage={startNewConversation}
-                  currentView={currentView}
-                  onViewChange={setCurrentView}
-                  compact
-                />
-              </div>
-            )}
             <div className="flex-1 min-h-0">
               <ThreadList
                 threads={filteredThreads}
                 selectedThreadId={selectedThreadId}
                 onSelectThread={selectThread}
                 typingThreadId={typingThreadId}
-                header={
-                  isInCard ? (
-                    <ConversationControls
-                      searchQuery={searchQuery}
-                      onSearchChange={setSearchQuery}
-                      onNewMessage={startNewConversation}
-                      currentView={currentView}
-                      onViewChange={setCurrentView}
-                      compact
-                    />
-                  ) : undefined
-                }
               />
             </div>
           </div>
@@ -264,7 +230,7 @@ export default function MessagesPage() {
           {/* Thread View / Compose — 65% of the content row */}
           <div
             className="min-w-0 h-full flex"
-            style={{ flexBasis: isInCard ? '55%' : '65%', flexGrow: 1, flexShrink: 1 }}
+            style={{ flexBasis: '65%', flexGrow: 1, flexShrink: 1 }}
           >
             {isComposingNew ? (
               <div
@@ -343,10 +309,6 @@ export default function MessagesPage() {
         isAutoLinked={unlinkTarget?.isAutoLinked || false}
       />
 
-      {/* Prototype control — renders the option group for the surface you're on
-          (Conversations: top-row layout; Broadcast: the filter-modal A/B). It
-          sits bottom-LEFT so it can never overlap either composer's Send. */}
-      <PrototypeVariantToggle surface={activeTab} />
     </AppLayout>
   );
 }

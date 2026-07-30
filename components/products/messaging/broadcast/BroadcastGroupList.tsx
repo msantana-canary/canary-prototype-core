@@ -146,7 +146,14 @@ function AudienceRow({
 }
 
 /** `showPopulation` adds the live folder counts the challenger rails carry. */
-export function BroadcastGroupList({ showPopulation = false }: { showPopulation?: boolean } = {}) {
+export function BroadcastGroupList({
+  showPopulation = false,
+  section = 'all',
+}: {
+  showPopulation?: boolean;
+  /** The canon layout renders these as two separate stacked cards. */
+  section?: 'all' | 'states' | 'groups';
+} = {}) {
   const {
     allGroups,
     selectedGroupId,
@@ -179,6 +186,7 @@ export function BroadcastGroupList({ showPopulation = false }: { showPopulation?
   return (
     <div className="flex flex-col" style={{ padding: 8 }}>
       {/* Status trio */}
+      {section !== 'groups' && (
       <div className="flex flex-col gap-1">
         {builtInGroupsList.map(group => (
           <AudienceRow
@@ -191,11 +199,19 @@ export function BroadcastGroupList({ showPopulation = false }: { showPopulation?
           />
         ))}
       </div>
+      )}
 
+      {section !== 'states' && (
+      <>
       {/* GROUPS section header — label + new group + kebab (holds "View archived") */}
       <div
         className="flex items-center justify-between"
-        style={{ paddingLeft: 12, paddingRight: 4, paddingTop: 16, paddingBottom: 4 }}
+        style={{
+          paddingLeft: 12,
+          paddingRight: 4,
+          paddingTop: section === 'groups' ? 4 : 16,
+          paddingBottom: 4,
+        }}
       >
         <span
           className="font-['Roboto',sans-serif] font-medium text-[10px] leading-[16px] uppercase"
@@ -278,6 +294,8 @@ export function BroadcastGroupList({ showPopulation = false }: { showPopulation?
             />
           ))}
         </div>
+      )}
+      </>
       )}
     </div>
   );

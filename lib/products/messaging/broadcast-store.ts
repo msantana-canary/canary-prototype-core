@@ -132,24 +132,10 @@ interface BroadcastState {
   /** Name of the just-saved guest segment, drives the in-register toast. */
   segmentSavedToast: string | null;
 
-  /** Variant C announces that clearing filters also reset the selection. */
-  filtersClearedToast: boolean;
 
   /** Broadcast whose per-recipient delivery panel is open, if any. */
   deliveryPanelMessageId: string | null;
 
-  /**
-   * Live A/B on the filter modal: 'classic' is the shipped modal, 'builder' the
-   * step-3 redesign. Presentation only — both write the SAME criteria through
-   * the SAME applyFilters, so selection semantics are identical either way.
-   */
-  filterModalVariant: 'classic' | 'builder';
-
-  /**
-   * Step-5 A/B/C on the left panel. 'baseline' is the control arm and is
-   * byte-identical to what shipped; the two challengers are additive.
-   */
-  leftPanelVariant: 'baseline' | 'to-strip' | 'ledger';
 
   /** Queued sends. Custom groups only — production gates the affordance the same way. */
   scheduledBroadcasts: ScheduledBroadcast[];
@@ -180,8 +166,6 @@ interface BroadcastState {
   openDeliveryPanel: (messageId: string) => void;
   closeDeliveryPanel: () => void;
 
-  setFilterModalVariant: (variant: 'classic' | 'builder') => void;
-  setLeftPanelVariant: (variant: 'baseline' | 'to-strip' | 'ledger') => void;
 
   // Scheduled broadcasts
   scheduleBroadcast: (content: string, sendAt: Date) => void;
@@ -195,7 +179,6 @@ interface BroadcastState {
   // Toast
   showSegmentSavedToast: (name: string) => void;
   dismissSegmentSavedToast: () => void;
-  dismissFiltersClearedToast: () => void;
 }
 
 /** Get guest entries for a given group */
@@ -317,10 +300,7 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   loadedSegmentId: null,
 
   segmentSavedToast: null,
-  filtersClearedToast: false,
   deliveryPanelMessageId: null,
-  filterModalVariant: 'classic',
-  leftPanelVariant: 'baseline',
   scheduledBroadcasts: [...mockScheduledBroadcasts],
   scheduledPanelId: null,
 
@@ -503,9 +483,6 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
       activeFilters: { ...emptyFilterCriteria },
       loadedSegmentId: null,
       selectedGuestIds: getSelectableGuestIds(selectedGroupId, allGroups),
-      // Variant C surfaces the fact that a clear also resets the selection —
-      // production does this silently, which is easy to miss.
-      filtersClearedToast: get().leftPanelVariant === 'ledger',
     });
   },
 
@@ -515,14 +492,6 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
 
   closeDeliveryPanel: () => {
     set({ deliveryPanelMessageId: null });
-  },
-
-  setFilterModalVariant: (variant: 'classic' | 'builder') => {
-    set({ filterModalVariant: variant });
-  },
-
-  setLeftPanelVariant: (variant: 'baseline' | 'to-strip' | 'ledger') => {
-    set({ leftPanelVariant: variant });
   },
 
   // ── Scheduled broadcasts ───────────────────────────────────────────────────
@@ -613,9 +582,5 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
 
   dismissSegmentSavedToast: () => {
     set({ segmentSavedToast: null });
-  },
-
-  dismissFiltersClearedToast: () => {
-    set({ filtersClearedToast: false });
   },
 }));
