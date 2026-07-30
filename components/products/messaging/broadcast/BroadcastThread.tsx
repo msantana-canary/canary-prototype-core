@@ -22,6 +22,7 @@ import { BroadcastToStrip } from './BroadcastToStrip';
 import { BroadcastFilterPanel } from './BroadcastFilterPanel';
 import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
 import { getAudienceFacts } from '@/lib/products/messaging/broadcast-audience-facts';
+import { BROADCAST_TODAY } from '@/lib/products/messaging/broadcast-mock-data';
 import { Avatar } from '../Avatar';
 import { guests } from '@/lib/core/data/guests';
 
@@ -36,7 +37,9 @@ export function BroadcastThread() {
     scheduleBroadcast,
     openScheduledPanel,
     activeFilters,
-    clearAllFilters,
+    applyFilters,
+    selectedDate,
+    setSelectedDate,
   } = useBroadcastStore();
 
   const [isRecipientsOpen, setIsRecipientsOpen] = useState(false);
@@ -128,9 +131,13 @@ export function BroadcastThread() {
               audienceName={groupName}
               builtInType={currentGroup?.builtInType}
               facts={facts}
+              activeFilters={activeFilters}
+              selectedDate={selectedDate}
+              defaultDate={BROADCAST_TODAY}
               onOpenRecipients={() => setIsRecipientsOpen(true)}
               onOpenFilters={() => setIsRecipientsOpen(true)}
-              onClearFilters={clearAllFilters}
+              onSetDate={setSelectedDate}
+              onRemoveFilter={(next) => applyFilters(next)}
             />
           }
           renderConfirmDetail={(draft) => (

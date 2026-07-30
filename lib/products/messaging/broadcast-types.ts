@@ -61,6 +61,12 @@ export interface BroadcastGuestEntry {
   reservationId: string;
   checkInStatus?: BroadcastCheckInStatus;
   /**
+   * The date this guest belongs to the folder on — arrival date for Arrivals,
+   * departure date for Departures (yyyy-MM-dd). In-house and custom groups have
+   * no date dimension, so they omit it and ignore the strip's date token.
+   */
+  folderDate?: string;
+  /**
    * Production's `messaging_opted_out`. Together with a missing phone this is
    * what makes a guest unmessageable (`canMessageGuest`).
    */

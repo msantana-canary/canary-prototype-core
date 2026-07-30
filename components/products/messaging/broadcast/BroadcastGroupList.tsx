@@ -131,7 +131,7 @@ function AudienceRow({
 
         {!!scheduledCount && (
           <span className="flex items-center gap-1" style={{ marginTop: 2 }}>
-            <Icon path={mdiClockOutline} size={0.5} color={colors.colorBlueDark1} />
+            <Icon path={mdiClockOutline} size={0.58} color={colors.colorBlueDark1} />
             <span
               className="font-['Roboto',sans-serif] text-[12px] leading-[18px]"
               style={{ color: colors.colorBlueDark1 }}

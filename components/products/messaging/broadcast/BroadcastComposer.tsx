@@ -228,7 +228,9 @@ export function BroadcastComposer({
                 cursor: canSend ? 'pointer' : 'not-allowed',
               }}
             >
-              {showSendCount ? `Send to ${recipientCount}` : 'Send'}
+              {showSendCount
+                ? `Send to ${recipientCount} guest${recipientCount !== 1 ? 's' : ''}`
+                : 'Send'}
             </button>
           </div>
         </div>

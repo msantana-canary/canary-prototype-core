@@ -33,6 +33,7 @@ import {
   customGroupGuests,
   mockBroadcastMessages,
   mockScheduledBroadcasts,
+  BROADCAST_TODAY,
 } from './broadcast-mock-data';
 import { guests } from '@/lib/core/data/guests';
 import { useGuestJourneyStore } from '@/lib/products/guest-journey/store';
@@ -181,11 +182,23 @@ interface BroadcastState {
   dismissSegmentSavedToast: () => void;
 }
 
-/** Get guest entries for a given group */
+/**
+ * Get guest entries for a given group.
+ *
+ * Arrivals and Departures are DATE-SCOPED: the To strip's date token is a real
+ * filter, so only guests arriving/departing on the selected day are in the
+ * audience. In-house and custom groups have no date dimension and ignore it.
+ * The date is read from the store at call time rather than threaded through
+ * every call site — it is a property of the current view, like the folder.
+ */
 export function getGuestEntriesForGroup(groupId: string, allGroups: BroadcastGroup[]): BroadcastGuestEntry[] {
   // Check built-in groups first
   if (builtInGroupGuests[groupId]) {
-    return builtInGroupGuests[groupId];
+    const entries = builtInGroupGuests[groupId];
+    const dated = entries.some(e => e.folderDate);
+    if (!dated) return entries;
+    const date = useBroadcastStore.getState().selectedDate;
+    return entries.filter(e => !e.folderDate || e.folderDate === date);
   }
   // Check custom groups
   if (customGroupGuests[groupId]) {
@@ -289,7 +302,7 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   allGroups: [...builtInGroups, ...customGroups],
   selectedGroupId: 'group-arrivals',
   activeGroupTab: 'active',
-  selectedDate: '2026-03-11',
+  selectedDate: BROADCAST_TODAY,
   selectedGuestIds: getSelectableGuestIds('group-arrivals', [...builtInGroups, ...customGroups]),
   messages: { ...mockBroadcastMessages },
   isCreateGroupModalOpen: false,
@@ -321,8 +334,19 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
     set({ activeGroupTab: tab });
   },
 
+  /**
+   * Changing the date changes WHO is in the folder, so it re-selects exactly
+   * like switching audience — a stale selection from another day would send to
+   * guests who are no longer on screen.
+   */
   setSelectedDate: (date: string) => {
     set({ selectedDate: date });
+    const { selectedGroupId, allGroups } = get();
+    set({
+      selectedGuestIds: getSelectableGuestIds(selectedGroupId, allGroups),
+      activeFilters: { ...emptyFilterCriteria },
+      loadedSegmentId: null,
+    });
   },
 
   // Plain add/remove — production's addRemoveSelectedGuest keeps no per-row

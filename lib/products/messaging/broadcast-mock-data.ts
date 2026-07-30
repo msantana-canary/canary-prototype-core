@@ -88,23 +88,37 @@ export const customGroups: BroadcastGroup[] = [
   },
 ];
 
+
+// ===== Folder dates =====
+// Arrivals/Departures are date-scoped: the To strip's date token filters them.
+// Seeded relative to "today" so the demo always has a populated default day and
+// changing the date visibly changes the count.
+function dayOffset(offset: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+export const BROADCAST_TODAY = dayOffset(0);
+
 // ===== Guest Mappings per Built-in Group =====
 
 export const builtInGroupGuests: Record<string, BroadcastGuestEntry[]> = {
   'group-arrivals': [
-    { guestId: 'guest-gel', reservationId: 'res-gel-mar', checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'BAR', room: '101', stayNights: 2, isReturningGuest: false },
-    { guestId: 'guest-jack', reservationId: 'res-jack-mar', checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'GROUP2026', room: '215', stayNights: 3, isReturningGuest: false },
-    { guestId: 'guest-angela', reservationId: 'res-angela-mar', checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'AAA', room: '104', stayNights: 1, isReturningGuest: false },
-    { guestId: 'guest-nook', reservationId: 'res-nook-mar', checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'GROUP2026', room: '208', stayNights: 4, isReturningGuest: true },
-    { guestId: 'guest-sofia', reservationId: 'res-sofia-mar', checkInStatus: 'expecting', loyaltyTier: 'gold-elite', rateCode: 'RACK', room: '312', stayNights: 2, isReturningGuest: true },
-    { guestId: 'guest-carlos', reservationId: 'res-carlos-mar', checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'BAR', room: '103', stayNights: 1, isReturningGuest: false },
-    { guestId: 'guest-david-w', reservationId: 'res-david-w-mar', checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'CONF2026', room: '205', stayNights: 3, isReturningGuest: false },
-    { guestId: 'guest-nina', reservationId: 'res-nina-mar', checkInStatus: 'expecting', loyaltyTier: 'gold-elite', rateCode: 'CORP', room: '306', stayNights: 5, isReturningGuest: true },
-    { guestId: 'guest-grace', reservationId: 'res-grace-mar', checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'AAA', room: '110', stayNights: 1, isReturningGuest: false },
-    { guestId: 'guest-mei', reservationId: 'res-mei-mar', checkInStatus: 'expecting', loyaltyTier: 'gold-elite', rateCode: 'CORP', groupCode: 'GROUP2026', room: '407', stayNights: 4, isReturningGuest: true },
-    { guestId: 'guest-tariq', reservationId: 'res-tariq-mar', messagingOptedOut: true, checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'RACK', room: '212', stayNights: 1, isReturningGuest: false },
-    { guestId: 'guest-elena', reservationId: 'res-elena-mar', checkInStatus: 'expecting', loyaltyTier: 'club-member', rateCode: 'BAR', room: '314', stayNights: 2, isReturningGuest: true },
-    { guestId: 'guest-astrid', reservationId: 'res-astrid-mar', checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'BAR', room: '107', stayNights: 1, isReturningGuest: false },
+    { guestId: 'guest-gel', reservationId: 'res-gel-mar', folderDate: dayOffset(0), checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'BAR', room: '101', stayNights: 2, isReturningGuest: false },
+    { guestId: 'guest-jack', reservationId: 'res-jack-mar', folderDate: dayOffset(0), checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'GROUP2026', room: '215', stayNights: 3, isReturningGuest: false },
+    { guestId: 'guest-angela', reservationId: 'res-angela-mar', folderDate: dayOffset(0), checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'AAA', room: '104', stayNights: 1, isReturningGuest: false },
+    { guestId: 'guest-nook', reservationId: 'res-nook-mar', folderDate: dayOffset(1), checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'GROUP2026', room: '208', stayNights: 4, isReturningGuest: true },
+    { guestId: 'guest-sofia', reservationId: 'res-sofia-mar', folderDate: dayOffset(1), checkInStatus: 'expecting', loyaltyTier: 'gold-elite', rateCode: 'RACK', room: '312', stayNights: 2, isReturningGuest: true },
+    { guestId: 'guest-carlos', reservationId: 'res-carlos-mar', folderDate: dayOffset(2), checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'BAR', room: '103', stayNights: 1, isReturningGuest: false },
+    { guestId: 'guest-david-w', reservationId: 'res-david-w-mar', folderDate: dayOffset(0), checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'CONF2026', room: '205', stayNights: 3, isReturningGuest: false },
+    { guestId: 'guest-nina', reservationId: 'res-nina-mar', folderDate: dayOffset(0), checkInStatus: 'expecting', loyaltyTier: 'gold-elite', rateCode: 'CORP', room: '306', stayNights: 5, isReturningGuest: true },
+    { guestId: 'guest-grace', reservationId: 'res-grace-mar', folderDate: dayOffset(0), checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'AAA', room: '110', stayNights: 1, isReturningGuest: false },
+    { guestId: 'guest-mei', reservationId: 'res-mei-mar', folderDate: dayOffset(1), checkInStatus: 'expecting', loyaltyTier: 'gold-elite', rateCode: 'CORP', groupCode: 'GROUP2026', room: '407', stayNights: 4, isReturningGuest: true },
+    { guestId: 'guest-tariq', reservationId: 'res-tariq-mar', messagingOptedOut: true, folderDate: dayOffset(1), checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'RACK', room: '212', stayNights: 1, isReturningGuest: false },
+    { guestId: 'guest-elena', reservationId: 'res-elena-mar', folderDate: dayOffset(2), checkInStatus: 'expecting', loyaltyTier: 'club-member', rateCode: 'BAR', room: '314', stayNights: 2, isReturningGuest: true },
+    { guestId: 'guest-astrid', reservationId: 'res-astrid-mar', folderDate: dayOffset(0), checkInStatus: 'expecting', loyaltyTier: 'non-member', rateCode: 'BAR', room: '107', stayNights: 1, isReturningGuest: false },
   ],
   'group-in-house': [
     { guestId: 'guest-emily', reservationId: 'res-emily-mar', loyaltyTier: 'diamond-elite', rateCode: 'CORP', groupCode: 'CONF2026', room: '153', stayNights: 5, isReturningGuest: true },
@@ -133,23 +147,23 @@ export const builtInGroupGuests: Record<string, BroadcastGuestEntry[]> = {
     { guestId: 'guest-dmitri', reservationId: 'res-dmitri-mar', loyaltyTier: 'non-member', rateCode: 'GOV', room: '222', stayNights: 1, isReturningGuest: false },
   ],
   'group-departures': [
-    { guestId: 'guest-diana', reservationId: 'res-diana-mar', checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'BAR', room: '303', stayNights: 2, isReturningGuest: false },
-    { guestId: 'guest-chen', reservationId: 'res-chen-mar', checkInStatus: 'checked-out', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'CONF2026', room: '410', stayNights: 3, isReturningGuest: false },
-    { guestId: 'guest-marco', reservationId: 'res-marco-mar', checkInStatus: 'in-house', loyaltyTier: 'club-member', rateCode: 'RACK', room: '112', stayNights: 1, isReturningGuest: true },
-    { guestId: 'guest-kwame', reservationId: 'res-kwame-mar', checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'GROUP2026', room: '201', stayNights: 4, isReturningGuest: false },
-    { guestId: 'guest-carmen', reservationId: 'res-carmen-mar', checkInStatus: 'in-house', loyaltyTier: 'club-member', rateCode: 'CORP', room: '309', stayNights: 2, isReturningGuest: true },
-    { guestId: 'guest-rafael', reservationId: 'res-rafael-mar', checkInStatus: 'checked-out', loyaltyTier: 'non-member', rateCode: 'BAR', room: '412', stayNights: 1, isReturningGuest: false },
-    { guestId: 'guest-javier', reservationId: 'res-javier-mar', messagingOptedOut: true, checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'AAA', room: '316', stayNights: 3, isReturningGuest: false },
-    { guestId: 'guest-kenji', reservationId: 'res-kenji-mar', checkInStatus: 'checked-out', loyaltyTier: 'non-member', rateCode: 'RACK', room: '408', stayNights: 1, isReturningGuest: false },
-    { guestId: 'guest-raj', reservationId: 'res-raj-mar', checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'RACK', groupCode: 'GROUP2026', room: '507', stayNights: 2, isReturningGuest: false },
-    { guestId: 'guest-nook', reservationId: 'res-nook-mar', checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'GROUP2026', room: '208', stayNights: 4, isReturningGuest: true },
-    { guestId: 'guest-anya', reservationId: 'res-anya-mar', checkInStatus: 'in-house', loyaltyTier: 'silver-elite', rateCode: 'BAR', groupCode: 'GRP1027', room: '217', stayNights: 3, isReturningGuest: true },
-    { guestId: 'guest-sophie-t', reservationId: 'res-sophie-t-mar', checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'RACK', room: '115', stayNights: 1, isReturningGuest: false },
-    { guestId: 'guest-ines', reservationId: 'res-ines-mar', checkInStatus: 'in-house', loyaltyTier: 'silver-elite', rateCode: 'AAA', room: '309', stayNights: 2, isReturningGuest: false },
-    { guestId: 'guest-leila', reservationId: 'res-leila-mar', checkInStatus: 'in-house', loyaltyTier: 'gold-elite', rateCode: 'CORP', room: '411', stayNights: 3, isReturningGuest: true },
-    { guestId: 'guest-lucas', reservationId: 'res-lucas-mar', checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'BAR', room: '118', stayNights: 1, isReturningGuest: false },
-    { guestId: 'guest-kofi', reservationId: 'res-kofi-mar', checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'AAA', room: '116', stayNights: 2, isReturningGuest: false },
-    { guestId: 'guest-dmitri', reservationId: 'res-dmitri-mar', checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'GOV', room: '222', stayNights: 1, isReturningGuest: false },
+    { guestId: 'guest-diana', reservationId: 'res-diana-mar', folderDate: dayOffset(0), checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'BAR', room: '303', stayNights: 2, isReturningGuest: false },
+    { guestId: 'guest-chen', reservationId: 'res-chen-mar', folderDate: dayOffset(0), checkInStatus: 'checked-out', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'CONF2026', room: '410', stayNights: 3, isReturningGuest: false },
+    { guestId: 'guest-marco', reservationId: 'res-marco-mar', folderDate: dayOffset(0), checkInStatus: 'in-house', loyaltyTier: 'club-member', rateCode: 'RACK', room: '112', stayNights: 1, isReturningGuest: true },
+    { guestId: 'guest-kwame', reservationId: 'res-kwame-mar', folderDate: dayOffset(1), checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'GROUP2026', room: '201', stayNights: 4, isReturningGuest: false },
+    { guestId: 'guest-carmen', reservationId: 'res-carmen-mar', folderDate: dayOffset(1), checkInStatus: 'in-house', loyaltyTier: 'club-member', rateCode: 'CORP', room: '309', stayNights: 2, isReturningGuest: true },
+    { guestId: 'guest-rafael', reservationId: 'res-rafael-mar', folderDate: dayOffset(2), checkInStatus: 'checked-out', loyaltyTier: 'non-member', rateCode: 'BAR', room: '412', stayNights: 1, isReturningGuest: false },
+    { guestId: 'guest-javier', reservationId: 'res-javier-mar', messagingOptedOut: true, folderDate: dayOffset(0), checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'AAA', room: '316', stayNights: 3, isReturningGuest: false },
+    { guestId: 'guest-kenji', reservationId: 'res-kenji-mar', folderDate: dayOffset(0), checkInStatus: 'checked-out', loyaltyTier: 'non-member', rateCode: 'RACK', room: '408', stayNights: 1, isReturningGuest: false },
+    { guestId: 'guest-raj', reservationId: 'res-raj-mar', folderDate: dayOffset(0), checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'RACK', groupCode: 'GROUP2026', room: '507', stayNights: 2, isReturningGuest: false },
+    { guestId: 'guest-nook', reservationId: 'res-nook-mar', folderDate: dayOffset(1), checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'CORP', groupCode: 'GROUP2026', room: '208', stayNights: 4, isReturningGuest: true },
+    { guestId: 'guest-anya', reservationId: 'res-anya-mar', folderDate: dayOffset(1), checkInStatus: 'in-house', loyaltyTier: 'silver-elite', rateCode: 'BAR', groupCode: 'GRP1027', room: '217', stayNights: 3, isReturningGuest: true },
+    { guestId: 'guest-sophie-t', reservationId: 'res-sophie-t-mar', folderDate: dayOffset(2), checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'RACK', room: '115', stayNights: 1, isReturningGuest: false },
+    { guestId: 'guest-ines', reservationId: 'res-ines-mar', folderDate: dayOffset(0), checkInStatus: 'in-house', loyaltyTier: 'silver-elite', rateCode: 'AAA', room: '309', stayNights: 2, isReturningGuest: false },
+    { guestId: 'guest-leila', reservationId: 'res-leila-mar', folderDate: dayOffset(0), checkInStatus: 'in-house', loyaltyTier: 'gold-elite', rateCode: 'CORP', room: '411', stayNights: 3, isReturningGuest: true },
+    { guestId: 'guest-lucas', reservationId: 'res-lucas-mar', folderDate: dayOffset(0), checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'BAR', room: '118', stayNights: 1, isReturningGuest: false },
+    { guestId: 'guest-kofi', reservationId: 'res-kofi-mar', folderDate: dayOffset(1), checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'AAA', room: '116', stayNights: 2, isReturningGuest: false },
+    { guestId: 'guest-dmitri', reservationId: 'res-dmitri-mar', folderDate: dayOffset(1), checkInStatus: 'in-house', loyaltyTier: 'non-member', rateCode: 'GOV', room: '222', stayNights: 1, isReturningGuest: false },
   ],
 };
 
