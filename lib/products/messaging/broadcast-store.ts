@@ -73,9 +73,10 @@ export function getActiveFilterCount(filters: BroadcastFilterCriteria): number {
 export function getFilteredGuestEntries(
   groupId: string,
   allGroups: BroadcastGroup[],
-  filters: BroadcastFilterCriteria
+  filters: BroadcastFilterCriteria,
+  date: string
 ): BroadcastGuestEntry[] {
-  const entries = getGuestEntriesForGroup(groupId, allGroups);
+  const entries = getGuestEntriesForGroup(groupId, allGroups, date);
   if (isFilterEmpty(filters)) return entries;
 
   return entries.filter(entry => {
@@ -188,16 +189,29 @@ interface BroadcastState {
  * Arrivals and Departures are DATE-SCOPED: the To strip's date token is a real
  * filter, so only guests arriving/departing on the selected day are in the
  * audience. In-house and custom groups have no date dimension and ignore it.
- * The date is read from the store at call time rather than threaded through
- * every call site — it is a property of the current view, like the folder.
+ *
+ * ⚠ `date` is an EXPLICIT PARAMETER, deliberately. It used to be read as
+ * `useBroadcastStore.getState().selectedDate` at call time, which made this
+ * function depend on the store it lives above — and the store's INITIAL STATE
+ * calls it (via `getSelectableGuestIds`) during `create()`, i.e. before the
+ * `useBroadcastStore` binding exists. That is a temporal dead zone: cold module
+ * evaluation threw `Cannot access 'useBroadcastStore' before initialization`
+ * and every route importing the broadcast surface 500'd. HMR masked it because
+ * the binding was already initialised on a warm reload. Nothing in this file
+ * below the store may read the store back. Callers pass `selectedDate`;
+ * initial state passes `INITIAL_SELECTED_DATE`, the same constant it seeds
+ * `selectedDate` with, so the two cannot drift.
  */
-export function getGuestEntriesForGroup(groupId: string, allGroups: BroadcastGroup[]): BroadcastGuestEntry[] {
+export function getGuestEntriesForGroup(
+  groupId: string,
+  allGroups: BroadcastGroup[],
+  date: string
+): BroadcastGuestEntry[] {
   // Check built-in groups first
   if (builtInGroupGuests[groupId]) {
     const entries = builtInGroupGuests[groupId];
     const dated = entries.some(e => e.folderDate);
     if (!dated) return entries;
-    const date = useBroadcastStore.getState().selectedDate;
     return entries.filter(e => !e.folderDate || e.folderDate === date);
   }
   // Check custom groups
@@ -255,8 +269,12 @@ export function bucketForFolder(
  * and the filter-apply rebuild select everything messageable that is visible —
  * production does not re-apply the status rule in those paths.
  */
-function getSelectableGuestIds(groupId: string, allGroups: BroadcastGroup[]): string[] {
-  const entries = getGuestEntriesForGroup(groupId, allGroups);
+function getSelectableGuestIds(
+  groupId: string,
+  allGroups: BroadcastGroup[],
+  date: string
+): string[] {
+  const entries = getGuestEntriesForGroup(groupId, allGroups, date);
   const builtInType = allGroups.find(g => g.id === groupId)?.builtInType;
 
   return entries
@@ -289,21 +307,33 @@ function buildRecipientDeliveries(guestIds: string[]): BroadcastRecipientDeliver
 function getVisibleSelectableIds(
   groupId: string,
   allGroups: BroadcastGroup[],
-  filters: BroadcastFilterCriteria
+  filters: BroadcastFilterCriteria,
+  date: string
 ): string[] {
   const entries = isFilterEmpty(filters)
-    ? getGuestEntriesForGroup(groupId, allGroups)
-    : getFilteredGuestEntries(groupId, allGroups, filters);
+    ? getGuestEntriesForGroup(groupId, allGroups, date)
+    : getFilteredGuestEntries(groupId, allGroups, filters, date);
   return entries.filter(canMessageGuest).map(entry => entry.guestId);
 }
+
+/**
+ * The day the broadcast surface opens on. Seeds `selectedDate` AND the
+ * date-scoped initial selection below — one constant so the audience the store
+ * boots with always matches the date it boots on.
+ */
+const INITIAL_SELECTED_DATE = BROADCAST_TODAY;
 
 export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   // Initial state
   allGroups: [...builtInGroups, ...customGroups],
   selectedGroupId: 'group-arrivals',
   activeGroupTab: 'active',
-  selectedDate: BROADCAST_TODAY,
-  selectedGuestIds: getSelectableGuestIds('group-arrivals', [...builtInGroups, ...customGroups]),
+  selectedDate: INITIAL_SELECTED_DATE,
+  selectedGuestIds: getSelectableGuestIds(
+    'group-arrivals',
+    [...builtInGroups, ...customGroups],
+    INITIAL_SELECTED_DATE
+  ),
   messages: { ...mockBroadcastMessages },
   isCreateGroupModalOpen: false,
 
@@ -321,7 +351,8 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   // Production does the same on folder change (BroadcastV2BuiltInGroupGuestList
   // watches `folder` → clearFilters() → getGuestData() → selectGuestsForFolder).
   selectGroup: (groupId: string) => {
-    const selectableIds = getSelectableGuestIds(groupId, get().allGroups);
+    const { allGroups, selectedDate } = get();
+    const selectableIds = getSelectableGuestIds(groupId, allGroups, selectedDate);
     set({
       selectedGroupId: groupId,
       selectedGuestIds: selectableIds,
@@ -343,7 +374,7 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
     set({ selectedDate: date });
     const { selectedGroupId, allGroups } = get();
     set({
-      selectedGuestIds: getSelectableGuestIds(selectedGroupId, allGroups),
+      selectedGuestIds: getSelectableGuestIds(selectedGroupId, allGroups, date),
       activeFilters: { ...emptyFilterCriteria },
       loadedSegmentId: null,
     });
@@ -364,8 +395,15 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
 
   // Production's onSelectAllChanged: select all accessible guests, or none.
   selectAllGuests: () => {
-    const { selectedGroupId, allGroups, activeFilters } = get();
-    set({ selectedGuestIds: getVisibleSelectableIds(selectedGroupId, allGroups, activeFilters) });
+    const { selectedGroupId, allGroups, activeFilters, selectedDate } = get();
+    set({
+      selectedGuestIds: getVisibleSelectableIds(
+        selectedGroupId,
+        allGroups,
+        activeFilters,
+        selectedDate
+      ),
+    });
   },
 
   deselectAllGuests: () => {
@@ -474,18 +512,23 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
    * the selection is rebuilt purely from the result.
    */
   applyFilters: (criteria: BroadcastFilterCriteria, segmentId?: string) => {
-    const { selectedGroupId, allGroups, activeFilters, selectedGuestIds } = get();
+    const { selectedGroupId, allGroups, activeFilters, selectedGuestIds, selectedDate } = get();
 
     // Snapshot the unchecked rows currently on screen.
     const selectedSet = new Set(selectedGuestIds);
     const deselected = new Set(
-      getVisibleSelectableIds(selectedGroupId, allGroups, activeFilters).filter(
+      getVisibleSelectableIds(selectedGroupId, allGroups, activeFilters, selectedDate).filter(
         id => !selectedSet.has(id)
       )
     );
 
     // Rebuild from the new result, minus that snapshot.
-    const nextVisible = getVisibleSelectableIds(selectedGroupId, allGroups, criteria);
+    const nextVisible = getVisibleSelectableIds(
+      selectedGroupId,
+      allGroups,
+      criteria,
+      selectedDate
+    );
 
     set({
       activeFilters: { ...criteria },
@@ -502,11 +545,11 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
    * selection first). Manual unchecks do NOT survive a clear.
    */
   clearAllFilters: () => {
-    const { selectedGroupId, allGroups } = get();
+    const { selectedGroupId, allGroups, selectedDate } = get();
     set({
       activeFilters: { ...emptyFilterCriteria },
       loadedSegmentId: null,
-      selectedGuestIds: getSelectableGuestIds(selectedGroupId, allGroups),
+      selectedGuestIds: getSelectableGuestIds(selectedGroupId, allGroups, selectedDate),
     });
   },
 
@@ -568,11 +611,11 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
    * statuses) and leaves the queue.
    */
   sendScheduledBroadcastNow: (id: string) => {
-    const { scheduledBroadcasts, allGroups } = get();
+    const { scheduledBroadcasts, allGroups, selectedDate } = get();
     const scheduled = scheduledBroadcasts.find(s => s.id === id);
     if (!scheduled) return;
 
-    const recipientIds = getSelectableGuestIds(scheduled.groupId, allGroups);
+    const recipientIds = getSelectableGuestIds(scheduled.groupId, allGroups, selectedDate);
     const newMessage: BroadcastMessage = {
       id: `bm-${Date.now()}`,
       groupId: scheduled.groupId,

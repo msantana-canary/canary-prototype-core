@@ -71,15 +71,17 @@ export function getAudienceFacts(
   groupId: string,
   allGroups: BroadcastGroup[],
   activeFilters: BroadcastFilterCriteria,
-  selectedGuestIds: string[]
+  selectedGuestIds: string[],
+  /** The store's `selectedDate` — Arrivals/Departures are date-scoped. */
+  date: string
 ): AudienceFacts {
   const group = allGroups.find(g => g.id === groupId);
   const builtInType = group?.builtInType;
 
-  const sourceEntries = getGuestEntriesForGroup(groupId, allGroups);
+  const sourceEntries = getGuestEntriesForGroup(groupId, allGroups, date);
   const filterActive = !isFilterEmpty(activeFilters);
   const visible = filterActive
-    ? getFilteredGuestEntries(groupId, allGroups, activeFilters)
+    ? getFilteredGuestEntries(groupId, allGroups, activeFilters, date)
     : sourceEntries;
 
   const selected = new Set(selectedGuestIds);
@@ -141,6 +143,10 @@ export function getAudienceFacts(
 }
 
 /** Total guests in a folder — the population count on the rail's status rows. */
-export function getFolderPopulation(groupId: string, allGroups: BroadcastGroup[]): number {
-  return getGuestEntriesForGroup(groupId, allGroups).length;
+export function getFolderPopulation(
+  groupId: string,
+  allGroups: BroadcastGroup[],
+  date: string
+): number {
+  return getGuestEntriesForGroup(groupId, allGroups, date).length;
 }

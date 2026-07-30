@@ -162,6 +162,7 @@ export function BroadcastGroupList({
     setActiveGroupTab,
     openCreateGroupModal,
     scheduledBroadcasts,
+    selectedDate,
   } = useBroadcastStore();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -195,7 +196,9 @@ export function BroadcastGroupList({
             label={group.name}
             isSelected={selectedGroupId === group.id}
             onClick={() => selectGroup(group.id)}
-            population={showPopulation ? getFolderPopulation(group.id, allGroups) : undefined}
+            population={
+              showPopulation ? getFolderPopulation(group.id, allGroups, selectedDate) : undefined
+            }
           />
         ))}
       </div>

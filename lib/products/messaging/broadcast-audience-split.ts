@@ -50,12 +50,14 @@ export function getAudienceSplit(
   groupId: string,
   allGroups: BroadcastGroup[],
   activeFilters: BroadcastFilterCriteria,
-  selectedGuestIds: string[]
+  selectedGuestIds: string[],
+  /** The store's `selectedDate` — Arrivals/Departures are date-scoped. */
+  date: string
 ): AudienceSplit {
   const builtInType = allGroups.find((g) => g.id === groupId)?.builtInType;
   const visible = isFilterEmpty(activeFilters)
-    ? getGuestEntriesForGroup(groupId, allGroups)
-    : getFilteredGuestEntries(groupId, allGroups, activeFilters);
+    ? getGuestEntriesForGroup(groupId, allGroups, date)
+    : getFilteredGuestEntries(groupId, allGroups, activeFilters, date);
 
   const selected = new Set(selectedGuestIds);
   const sending: BroadcastGuestEntry[] = [];

@@ -44,7 +44,13 @@ export function BroadcastThread() {
 
   const [isRecipientsOpen, setIsRecipientsOpen] = useState(false);
 
-  const facts = getAudienceFacts(selectedGroupId, allGroups, activeFilters, selectedGuestIds);
+  const facts = getAudienceFacts(
+    selectedGroupId,
+    allGroups,
+    activeFilters,
+    selectedGuestIds,
+    selectedDate
+  );
 
   const groupMessages = messages[selectedGroupId] || [];
   const recipientCount = selectedGuestIds.length;

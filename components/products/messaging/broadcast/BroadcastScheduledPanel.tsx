@@ -144,6 +144,7 @@ export function BroadcastScheduledPanel() {
     allGroups,
     scheduledBroadcasts,
     scheduledPanelId,
+    selectedDate,
     closeScheduledPanel,
     rescheduleBroadcast,
     editScheduledBroadcastText,
@@ -168,7 +169,9 @@ export function BroadcastScheduledPanel() {
 
   const scheduled = scheduledBroadcasts.find((s) => s.id === scheduledPanelId);
   const group = scheduled ? allGroups.find((g) => g.id === scheduled.groupId) : undefined;
-  const memberIds = scheduled ? getGuestEntriesForGroup(scheduled.groupId, allGroups).map((e) => e.guestId) : [];
+  const memberIds = scheduled
+    ? getGuestEntriesForGroup(scheduled.groupId, allGroups, selectedDate).map((e) => e.guestId)
+    : [];
 
   return (
     <>

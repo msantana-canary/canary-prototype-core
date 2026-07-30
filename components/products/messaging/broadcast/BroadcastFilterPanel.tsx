@@ -194,6 +194,7 @@ export function BroadcastFilterPanel({
     selectedGroupId,
     activeFilters,
     selectedGuestIds,
+    selectedDate,
     applyFilters,
     toggleGuestSelection,
     addGuestsToSelection,
@@ -218,17 +219,18 @@ export function BroadcastFilterPanel({
   };
 
   const split = useMemo(
-    () => getAudienceSplit(selectedGroupId, allGroups, activeFilters, selectedGuestIds),
-    [selectedGroupId, allGroups, activeFilters, selectedGuestIds]
+    () => getAudienceSplit(selectedGroupId, allGroups, activeFilters, selectedGuestIds, selectedDate),
+    [selectedGroupId, allGroups, activeFilters, selectedGuestIds, selectedDate]
   );
 
   const matchedCount = useMemo(
     () =>
       isFilterEmpty(activeFilters)
         ? split.visible.filter(canMessageGuest).length
-        : getFilteredGuestEntries(selectedGroupId, allGroups, activeFilters).filter(canMessageGuest)
-            .length,
-    [activeFilters, selectedGroupId, allGroups, split.visible]
+        : getFilteredGuestEntries(selectedGroupId, allGroups, activeFilters, selectedDate).filter(
+            canMessageGuest
+          ).length,
+    [activeFilters, selectedGroupId, allGroups, split.visible, selectedDate]
   );
 
   const handleStartFrom = (segmentId: string) => {
