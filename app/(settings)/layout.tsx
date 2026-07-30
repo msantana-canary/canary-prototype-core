@@ -1,46 +1,41 @@
 'use client';
 
 /**
- * Settings Layout
+ * Settings Layout — CanaryAppShellV2 (library v0.6.0)
  *
- * Shared layout for all settings pages using CanaryAppShell
- * with SidebarVariant.SETTINGS and standardSettingsSidebarSections.
- * Adds "Segments" under General Settings via addProduct.
+ * Same component as the dashboard, different skin: `SidebarVariant.SETTINGS`
+ * swaps the navy rail for the dark one, hides Team Chat and the account footer,
+ * and renders a back row driven by `sidebarBackLabel` + `onSidebarBack` (the V1
+ * `sidebarTitle` + `sidebarBackButton` slot pair is gone — V2 owns that row).
+ *
+ * Sections come from `standardSettingsSidebarSectionsV2`, which already carries
+ * Guest Journey / Messages / Calls under a titled "Product settings" group. We
+ * add the two this prototype owns: Guest Segments and Knowledge Base.
  */
 
 import { useRouter, usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import Icon from '@mdi/react';
-import { mdiArrowLeft, mdiAccountMultipleOutline, mdiMapMarker, mdiCreation } from '@mdi/js';
+import { mdiAccountMultipleOutline, mdiCreation } from '@mdi/js';
 import {
-  CanaryAppShell,
-  CanaryButton,
-  ButtonType,
-  ButtonColor,
-  IconPosition,
+  CanaryAppShellV2,
   SidebarVariant,
-  standardSettingsSidebarSections,
+  standardSettingsSidebarSectionsV2,
   addProduct,
-  updateProduct,
   createSidebarTab,
 } from '@canary-ui/components';
 
-// Add "Guest Segments" to General Settings
+// Add "Guest Segments" to the property-level group
 const withSegments = addProduct(
-  standardSettingsSidebarSections,
+  standardSettingsSidebarSectionsV2,
   createSidebarTab('segments', 'Guest Segments', <Icon path={mdiAccountMultipleOutline} size={1} />),
-  { sectionId: 'general-settings-section' }
+  { sectionId: 'property-settings' }
 );
-// Add "Knowledge Base" to Product Settings + update Guest Journey icon
-const withKB = addProduct(
+// Add "Knowledge Base" to Product settings, next to Messages
+const settingsSections = addProduct(
   withSegments,
   createSidebarTab('knowledge-base', 'Knowledge Base', <Icon path={mdiCreation} size={1} />),
-  { sectionId: 'product-settings-section', insertAfter: 'checkout' }
-);
-const settingsSections = updateProduct(
-  withKB,
-  'guest-journey',
-  { icon: <Icon path={mdiMapMarker} size={1} /> }
+  { sectionId: 'product-settings', insertAfter: 'messages' }
 );
 
 // Map settings sidebar item IDs to routes
@@ -76,37 +71,23 @@ export default function SettingsLayout({
   };
 
   return (
-    <CanaryAppShell
+    <CanaryAppShellV2
+      className="canary-shell-dvh"
       sidebarVariant={SidebarVariant.SETTINGS}
       sidebarSections={settingsSections}
-      sidebarTitle="Settings"
-      sidebarBackButton={
-        <CanaryButton
-          type={ButtonType.TEXT}
-          color={ButtonColor.WHITE}
-          icon={<Icon path={mdiArrowLeft} size={1} />}
-          iconPosition={IconPosition.LEFT}
-          onClick={() => router.push('/messages')}
-        >
-          Back
-        </CanaryButton>
-      }
+      sidebarBackLabel="Back"
+      onSidebarBack={() => router.push('/messages')}
       selectedSidebarItemId={selectedItemId}
       onSidebarItemClick={handleSidebarItemClick}
-      propertyName="Statler New York"
-      userProfile={{
-        name: 'Theresa Webb',
-        role: 'Front desk',
-        avatarUrl: 'https://i.pravatar.cc/150?img=5',
-      }}
-      reservationStatus={{
-        label: 'Reservations',
-        isConnected: true,
-      }}
+      property={{ name: 'Days Inn & Suites by Wyndham Wausau', code: '38653' }}
+      // No pageTitle: the derived title is the nav label ("Guest Journey",
+      // "Knowledge Base", …), which is exactly right. /settings redirects to
+      // /settings/guest-journey, so the selection is never empty.
+      reservationStatus={{ isConnected: true }}
       contentPadding="none"
       contentBackground="#FAFAFA"
     >
       {children}
-    </CanaryAppShell>
+    </CanaryAppShellV2>
   );
 }

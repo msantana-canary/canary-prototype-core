@@ -1,33 +1,43 @@
 @import "tailwindcss";
-@import "@canary-ui/components/styles.css";
+
+/* The library stylesheet is imported from app/layout.tsx, BEFORE this file —
+   not with @import here. Tailwind 4 relocates @import rules and CLAUDE.md rule
+   7 forbids the pattern outright. */
 
 /* ───────────────────────────────────────────────────────────────────────────
    APP-SHELL HEIGHT CHAIN — do not remove.
 
-   CanaryAppShell's root is `h-screen min-h-screen overflow-hidden`, i.e. a
-   FIXED 100vh box that clips its own overflow. But html/body carry no height
-   and no overflow constraint, so the DOCUMENT is free to scroll independently.
-   When it does, the entire app — navy rail included — slides up as one block
-   and paints white below it. That is the recurring "everything is cut at one
-   horizontal line" bug: the app isn't collapsing, it's being scrolled out of
-   the viewport.
+   The recurring "everything is cut at one horizontal line, dead white below"
+   bug was never a collapse: the app was being SCROLLED out of the viewport.
+   The shell is a fixed 100vh box that clips its own overflow, but html/body
+   carried no height and no overflow constraint, so the DOCUMENT was free to
+   scroll independently — and when it did, the whole app (navy rail included)
+   slid up as one rigid block. `scrollIntoView` was the usual trigger; it
+   scrolls every scrollable ancestor up to and including the document.
 
-   Two things are pinned here:
+   Three things are pinned here. They survive the move to CanaryAppShellV2,
+   with one change noted below:
 
    1. html/body are locked to the viewport with overflow hidden. Nothing in the
       app ever intends the document to scroll — every scroll region is an inner
-      `overflow-auto` container — so removing document scroll entirely makes the
-      failure structurally impossible rather than merely unlikely.
+      `overflow-auto` container (V2's <main> included) — so removing document
+      scroll entirely makes the failure structurally impossible rather than
+      merely unlikely. Under V2 this rule matters MORE, not less: see (3).
 
-   2. 100vh → 100dvh where supported. 100vh resolves against the LARGE viewport,
-      so on any browser with dynamic chrome it is taller than the visible area,
-      which is what gave the document scrollable overflow in the first place.
-      These rules are unlayered, so they win over Tailwind's @layer utilities
-      regardless of import order.
+   2. 100vh → 100dvh for our own Tailwind h-screen/min-h-screen users (the
+      redirect stub at app/page.tsx). Unlayered, so it beats Tailwind's
+      @layer utilities and the library's own compiled .h-screen regardless of
+      import order.
 
-   The usual trigger was `scrollIntoView`, which scrolls every scrollable
-   ancestor up to and including the document; call sites are now
-   container-scoped instead. This CSS is the belt to that braces.
+   3. ⚠ CHANGED FOR V2. The V1 shell sized its root with the Tailwind CLASSES
+      `h-screen min-h-screen`, so rule (2) reached it. CanaryAppShellV2 sizes
+      its root with INLINE STYLES (`height: 100vh; minHeight: 100vh`), which no
+      class selector can override. `.canary-shell-dvh` is passed to the shell's
+      documented `className` prop and restores the dvh clamp with !important —
+      the only thing that outranks an inline style. Without it the shell would
+      still be 100vh: harmless for document scroll (rule 1 kills that) but on
+      any browser with dynamic chrome the bottom of the messaging UI would be
+      clipped below the fold and unreachable.
    ─────────────────────────────────────────────────────────────────────────── */
 html,
 body {
@@ -42,6 +52,11 @@ body {
   }
   .min-h-screen {
     min-height: 100dvh;
+  }
+  /* CanaryAppShellV2 root — inline-styled, so !important is required. */
+  .canary-shell-dvh {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
   }
 }
 

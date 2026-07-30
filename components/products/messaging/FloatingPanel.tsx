@@ -5,11 +5,14 @@
  * broadcast delivery panel can reuse the exact same shell rather than growing a
  * second, drifting copy. Behaviour is unchanged from the v3 sidebar:
  *
- *  - A fixed white card inset from the window edges — top 72 / right 16 /
- *    bottom 16 — so it floats BELOW the 56px legacy shell header. rounded-12,
- *    1px colorBlack6 border, large soft shadow.
- *  - A subtle scrim (rgba(0,0,0,0.10)) covers the app below the shell header,
- *    fades in with the panel, and closes it on click.
+ *  - A fixed white card inset from the window edges — right 16 / bottom 16, and
+ *    top = the shell's top bar + 16 — so it floats BELOW the app chrome.
+ *    rounded-12, 1px colorBlack6 border, large soft shadow.
+ *  - A subtle scrim (rgba(0,0,0,0.10)) covers the app below the top bar, fades
+ *    in with the panel, and closes it on click.
+ *  - Both offsets read `shellV2.topBarHeight` rather than the hardcoded 56/72
+ *    they carried against the old CanaryAppShell header. The V2 top bar is 52px;
+ *    taking it from the token means the panel can't drift if the shell changes.
  *  - Two-phase mount: `mounted` keeps the panel in the DOM through the exit
  *    transition so the slide-out is visible; `entered` drives the open/closed
  *    styles, flipped on the second animation frame so the browser paints the
@@ -24,7 +27,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { colors } from '@canary-ui/components';
+import { colors, shellV2 } from '@canary-ui/components';
+
+/** Panel rests one 16px gutter below the shell's top bar. */
+const PANEL_TOP = shellV2.topBarHeight + 16;
 
 export const PANEL_ANIM_MS = 240;
 export const PANEL_ENTER_EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
@@ -93,7 +99,7 @@ export function FloatingPanel({ isOpen, onClose, width = 600, children }: Floati
         onClick={onClose}
         className="fixed left-0 right-0 bottom-0"
         style={{
-          top: 56,
+          top: shellV2.topBarHeight,
           backgroundColor: 'rgba(0,0,0,0.10)',
           opacity: entered ? 1 : 0,
           pointerEvents: entered ? 'auto' : 'none',
@@ -107,7 +113,7 @@ export function FloatingPanel({ isOpen, onClose, width = 600, children }: Floati
       <div
         className="fixed overflow-hidden"
         style={{
-          top: 72,
+          top: PANEL_TOP,
           right: 16,
           bottom: 16,
           width,

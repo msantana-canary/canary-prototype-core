@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import { Roboto, Open_Sans } from 'next/font/google';
+// Library stylesheet FIRST, then ours — so our rules win the cascade on ties.
+// (Also keeps it out of globals.css: Tailwind 4 mangles @import placement.)
+import '@canary-ui/components/styles.css';
 import './globals.css';
 
 const roboto = Roboto({

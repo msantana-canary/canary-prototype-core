@@ -46,8 +46,8 @@
  * curated line + Learn more). Subtitle under the title = the guest name.
  *
  * Panel mechanic — FLOATING PANEL, now the shared `<FloatingPanel>` shell (a
- * fixed 600px white card inset top 72 / right 16 / bottom 16, floating below the
- * 56px legacy shell header, large soft shadow, scrim-to-close, 240ms slide+fade,
+ * fixed 600px white card inset right 16 / bottom 16 and one gutter below the
+ * shell's top bar, large soft shadow, scrim-to-close, 240ms slide+fade,
  * reduced-motion aware). The shell was extracted verbatim from this component so
  * the broadcast delivery panel could reuse it; behaviour here is unchanged.
  * Inside the shell this panel navigates WITHIN ITSELF (translate-x track) into

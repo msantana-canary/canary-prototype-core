@@ -1,36 +1,44 @@
 'use client';
 
 /**
- * Dashboard Layout
+ * Dashboard Layout — CanaryAppShellV2 (library v0.6.0)
  *
- * Shared layout for all product pages using CanaryAppShell.
- * Provides consistent sidebar navigation and page header across products.
+ * The V2 shell owns all app chrome: the 240px sidebar (property switcher,
+ * product nav, Team Chat, account footer) and the top bar (page title, insight
+ * link, Reservations and Copilot pills). Products render only their own surface
+ * inside it.
+ *
+ * Notes on the V2 API:
+ *  - The top bar title is DERIVED from `selectedSidebarItemId`, so we never
+ *    pass `pageTitle` — the nav label and the title can't drift apart.
+ *  - `contentPadding="none"` because messaging renders its own full-bleed tab
+ *    strip and split panes directly under the top bar.
+ *  - Settings is no longer a nav item; it's a footer button (`onSettingsClick`).
+ *  - `className="canary-shell-dvh"` re-applies the dvh height clamp the V2
+ *    shell's inline `height: 100vh` would otherwise block. See globals.css.
  */
 
 import { useRouter, usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import {
-  CanaryAppShell,
-  standardMainSidebarSections,
+  CanaryAppShellV2,
+  standardMainSidebarSectionsV2,
   addBadge,
 } from '@canary-ui/components';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 
-// Map sidebar item IDs to routes
+// Map V2 sidebar item IDs to routes. Only ids that exist in
+// standardMainSidebarSectionsV2 belong here; unmapped clicks are a no-op.
 const itemRouteMap: Record<string, string> = {
+  'messages': '/messages',
+  'calls': '/calls',
   'upsells': '/upsells',
   'check-in': '/check-in',
   'checkout': '/checkout',
-  'messages': '/messages',
-  'calls': '/calls',
   'digital-tips': '/digital-tips',
   'authorizations': '/authorizations',
   'contracts': '/contracts',
-  'id-verification': '/id-verification',
   'clients-on-file': '/clients-on-file',
-  'amenities': '/amenities',
-  'payment-links': '/payment-links',
-  'settings': '/settings',
 };
 
 // Map routes back to sidebar item IDs
@@ -54,12 +62,13 @@ export default function DashboardLayout({
     return threads.filter(thread => thread.isUnread && thread.status === 'inbox').length;
   }, [threads]);
 
-  // Add badge to messages item in sidebar
+  // Badge the Messages nav item. `addBadge` is section-shape generic, so it
+  // works on the V2 groupings, and CanarySidebarV2 renders `item.badge`.
   const sectionsWithBadge = useMemo(() => {
     if (unreadCount > 0) {
-      return addBadge(standardMainSidebarSections, 'messages', unreadCount);
+      return addBadge(standardMainSidebarSectionsV2, 'messages', unreadCount);
     }
-    return standardMainSidebarSections;
+    return standardMainSidebarSectionsV2;
   }, [unreadCount]);
 
   // Determine selected item from pathname
@@ -79,27 +88,25 @@ export default function DashboardLayout({
   };
 
   return (
-    <CanaryAppShell
-      // Sidebar config
+    <CanaryAppShellV2
+      className="canary-shell-dvh"
+      // Sidebar
+      property={{ name: 'Days Inn & Suites by Wyndham Wausau', code: '38653' }}
       selectedSidebarItemId={selectedItemId}
       onSidebarItemClick={handleSidebarItemClick}
       sidebarSections={sectionsWithBadge}
-      // Header config
-      propertyName="Statler New York"
-      userProfile={{
-        name: 'Theresa Webb',
-        role: 'Front desk',
-        avatarUrl: 'https://i.pravatar.cc/150?img=5',
-      }}
-      reservationStatus={{
-        label: 'Reservations',
-        isConnected: true,
-      }}
-      // Content config
+      teamChat={{ badge: 2 }}
+      user={{ name: 'Theresa' }}
+      onSettingsClick={() => router.push('/settings')}
+      // Top bar
+      insight={{ label: 'Insights' }}
+      reservationStatus={{ isConnected: true }}
+      copilot={{ message: '2 items need attention' }}
+      // Content
       contentPadding="none"
       contentBackground="#FFFFFF"
     >
       {children}
-    </CanaryAppShell>
+    </CanaryAppShellV2>
   );
 }
