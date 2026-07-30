@@ -40,9 +40,28 @@ export interface Thread {
   isEscalated?: boolean;            // Escalated conversation — the row's attention dot turns amber
                                     // (warning), mirroring production's `is_escalated` `.isEscalated`
                                     // variant. The dot shows for unread OR escalated.
+  assignedTo?: ThreadAssignment;    // Undefined = unassigned
+  channel?: ThreadChannel;          // Defaults to SMS when absent
 }
 
 export type ThreadFilter = 'inbox' | 'archived' | 'blocked';
+
+/**
+ * Thread assignment — mirrors production exactly: a thread is assigned to a USER
+ * XOR a DEPARTMENT, never both (production enforces the xor at write time, and
+ * the server rejects setting more than one). A user carries their own
+ * department, which is what makes department filtering transitive.
+ */
+export interface ThreadAssignment {
+  type: 'user' | 'department';
+  id: string;
+  name: string;
+  /** For users: the department they belong to. Drives transitive matching. */
+  departmentId?: string;
+}
+
+/** The channel a thread came in on. */
+export type ThreadChannel = 'sms' | 'whatsapp' | 'web' | 'amb' | 'email';
 
 /**
  * Resolved linked reservation — combines reservation + guest data

@@ -867,6 +867,76 @@ what the compact date control in the recipients column uses — speaks
 `yyyy-MM-dd`. Anything crossing into either one goes through the boundary
 helpers.
 
+## Team jam canon (2026-07-30)
+
+The jam resolved every open A/B and landed one design. The losing arms were
+deleted; git history is the archive.
+
+**Resolved:** the To-strip broadcast paradigm won (Baseline and Ledger deleted).
+A panel won the filter surface (both modals deleted). Conversations keeps the
+full-width search band (compact and in-card deleted). With every option group
+resolved, the prototype toggle FAB itself is gone.
+
+**Kept from the losers before deleting them:** the Builder modal's attribute
+controls and live-match logic (now `BroadcastFilterControls`), and the Ledger
+roster's reason grouping (now `broadcast-audience-split`). The ledger *layout*
+lost; "who isn't receiving, and why" was the valuable part.
+
+### Broadcast
+
+- **Left column is two STACKED cards** — status trio, then GROUPS — so the lists
+  read as separate objects rather than zones of one card. Group rows show a blue
+  clock + "N scheduled" when they hold a queued send.
+- **The To strip is the address line.** Fresh: "To: All In-house guests (21)".
+  Narrowed: wrapping dismissible chips, one per constraint, with the live count
+  and funnel right-aligned. Send reads "Send to 21 guests".
+- **The date joined the address and became real.** Arrivals and Departures carry
+  an inline date token (default today) that turns into an "Arrives/Departs on
+  {date} ×" chip once moved. Entries gained `folderDate`, seeded across today..+2,
+  and those two folders are genuinely date-scoped — this replaces the decorative
+  picker that died with the recipients column. Changing the date re-selects, like
+  switching audience: a selection held over from another day would send to guests
+  no longer on screen.
+- **One filter/recipients panel** replaces both modals and the recipients column,
+  because filtering and reviewing recipients are the same job. Filters apply
+  LIVE — no Apply button, since the panel is also the list and staged criteria
+  would leave the list disagreeing with the controls above it.
+
+### Conversations — and what the production audit found
+
+- **Search band**: full-width search + "New message". The Filters button died;
+  scoping moved into the thread-list card header, next to the list it scopes.
+- **Card header**: "Conversations" + an "Inbox ⇅" control opening the scope menu.
+
+**Production audit — the semantics we mirrored.** Production splits this across
+*two* controls (a folder pill row and a flat assignment select); the landed
+design consolidates them into one menu, but the behaviour underneath is
+production's:
+
+- **Assignment is a single exclusive axis.** Production holds three refs and
+  every setter nulls the other two, so picking a department *replaces*
+  "Assigned"; the server rejects more than one assignment param. All conversations
+  / Assigned / Unassigned / a department / a person are one single-select axis,
+  not five checkboxes.
+- **Folder and assignment STACK (AND).** Changing folder doesn't clear
+  assignment, so "Archived + Housekeeping" is reachable.
+- **Department matching is TRANSITIVE** — the department itself, or a user who
+  belongs to it. User matching is exact only.
+- **"Assigned"/"Unassigned" mean assigned to anyone**, not to me. There is no
+  "assigned to me" in production.
+- **Copy is production's verbatim**, including "Archived" (not "Archive") and
+  "All conversations".
+
+⚠ **Channels are net-new, not mirrored.** Production has NO channel filter on the
+conversation list — the request schema accepts no channel param, and "Non-Web
+Chat" appears nowhere in the codebase. It is in the landed design, so it is built
+as a third exclusive axis AND-ed with the others, with "Non-Web Chat" defined as
+everything except Web Chat. Worth a product decision rather than assuming
+parity.
+
+- **Thread header**: ⓘ, then Archive as a TEXT button, then the kebab. The
+  composer's emoji icon was already present.
+
 ## What changed vs the old surface (Conversations tab)
 
 | Area | Old | Redesign |

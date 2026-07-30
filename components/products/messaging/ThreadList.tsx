@@ -23,11 +23,9 @@ interface ThreadListProps {
   onSelectThread: (threadId: string) => void;
   typingThreadId?: string | null;
   /**
-   * IN-CARD variant only: content for the card's own header zone, inside the
-   * card border with a hairline beneath it. It is a shrink-0 sibling of the
-   * scroll container, so it holds position while the rows scroll under it —
-   * no position:sticky needed. Omitted by Full and Compact, which render the
-   * card exactly as before.
+   * The card's own header zone — "Conversations" plus the scope control. A
+   * shrink-0 sibling of the scroll container, so it holds position while the
+   * rows scroll under it; no position:sticky needed.
    */
   header?: React.ReactNode;
 }
@@ -46,11 +44,17 @@ export function ThreadList({
         className="flex-1 min-h-0 flex flex-col overflow-clip rounded-[12px]"
         style={{ backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack6}` }}
       >
-        {/* Card header zone (in-card variant) */}
+        {/* Card header zone */}
         {header && (
           <div
             className="shrink-0"
-            style={{ padding: 12, borderBottom: `1px solid ${colors.colorBlack6}` }}
+            style={{
+              paddingLeft: 16,
+              paddingRight: 12,
+              paddingTop: 10,
+              paddingBottom: 10,
+              borderBottom: `1px solid ${colors.colorBlack6}`,
+            }}
           >
             {header}
           </div>

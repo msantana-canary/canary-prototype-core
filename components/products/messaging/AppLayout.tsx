@@ -14,7 +14,7 @@ import React from 'react';
 import { colors } from '@canary-ui/components';
 import { MainNav } from './MainNav';
 import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
-import { ConversationControls, CategoryFilter } from './ConversationControls';
+import { ConversationControls } from './ConversationControls';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -23,8 +23,6 @@ interface AppLayoutProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onNewMessage: () => void;
-  currentView: CategoryFilter;
-  onViewChange: (view: CategoryFilter) => void;
 }
 
 export function AppLayout({
@@ -34,8 +32,6 @@ export function AppLayout({
   searchQuery,
   onSearchChange,
   onNewMessage,
-  currentView,
-  onViewChange,
 }: AppLayoutProps) {
   return (
     <div className="h-full flex flex-col overflow-hidden" style={{ backgroundColor: colors.colorBlack8 }}>
@@ -52,8 +48,6 @@ export function AppLayout({
             searchQuery={searchQuery}
             onSearchChange={onSearchChange}
             onNewMessage={onNewMessage}
-            currentView={currentView}
-            onViewChange={onViewChange}
           />
         </div>
       )}

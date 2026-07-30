@@ -7,7 +7,8 @@
  * inside this component — it's a sibling column (push) or overlay (drawer)
  * composed at the page level.
  *
- * Header changes vs old build: Archive is the tonal blue button; the info
+ * Header changes vs old build: Archive is a TEXT button sitting between the
+ * info button and the kebab (team jam canon — it was the tonal blue fill); the info
  * button carries a pressed state while the panel is open; the kebab uses
  * more_horiz (Figma) and keeps Block/Unblock + Mark as Unread; the standalone
  * "Link reservation" text button is gone (linking lives in the info panel).
@@ -175,18 +176,8 @@ export function ThreadView({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3 shrink-0">
-          {/* Archive (tonal) — only for inbox threads */}
-          {thread.status === 'inbox' && (
-            <button
-              onClick={onArchive}
-              className="flex items-center justify-center rounded-[6px] font-['Roboto',sans-serif] font-medium text-[14px] transition-opacity hover:opacity-80 cursor-pointer"
-              style={{ height: 40, paddingLeft: 16, paddingRight: 16, backgroundColor: 'rgba(40,88,196,0.1)', color: colors.colorBlueDark1 }}
-            >
-              Archive
-            </button>
-          )}
-
-          {/* Info button (pressed while the panel is open) */}
+          {/* Info button (pressed while the panel is open) — canon order is
+              ⓘ, then the Archive TEXT button, then the kebab. */}
           <button
             onClick={onToggleGuestInfo}
             aria-label="Conversation details"
@@ -205,6 +196,17 @@ export function ThreadView({
               color={isGuestInfoOpen ? colors.colorBlueDark1 : colors.colorBlack3}
             />
           </button>
+
+          {/* Archive — a text button in the canon, not the tonal fill */}
+          {thread.status === 'inbox' && (
+            <button
+              onClick={onArchive}
+              className="flex items-center justify-center rounded-[6px] font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] transition-colors hover:bg-[#f0f0f0] cursor-pointer"
+              style={{ height: 32, paddingLeft: 10, paddingRight: 10, color: colors.colorBlueDark1 }}
+            >
+              Archive
+            </button>
+          )}
 
           {/* Kebab menu */}
           <div className="relative">
