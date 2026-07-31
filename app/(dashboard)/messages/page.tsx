@@ -18,8 +18,6 @@ import { UnlinkReservationModal } from '@/components/products/messaging/UnlinkRe
 import {
   ThreadScopeMenu,
   AssignmentScope,
-  ChannelScope,
-  DEPARTMENTS,
 } from '@/components/products/messaging/ThreadScopeMenu';
 import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
 import { useMessagingStore } from '@/lib/products/messaging/store';
@@ -34,14 +32,13 @@ export default function MessagesPage() {
   const [activeTab, setActiveTab] = useState<MainNavTab>('conversations');
 
   /**
-   * Scope axes, mirroring production: folder (currentView) and assignment are
-   * INDEPENDENT and AND together, while assignment itself is single-select —
-   * production's setters null the other two, so a department replaces
-   * "Assigned". Channel is a third axis; see ThreadScopeMenu for why it is
-   * net-new rather than mirrored.
+   * TWO scope axes, exactly production's: folder (currentView) and assignment.
+   * They are independent and AND together, so "Archived + Housekeeping" is
+   * reachable. Assignment itself is single-select — production's setters null
+   * each other, so a department replaces "Assigned" and a person replaces the
+   * department. There is no channel axis; production has none.
    */
   const [assignmentScope, setAssignmentScope] = useState<AssignmentScope>({ kind: 'all' });
-  const [channelScope, setChannelScope] = useState<ChannelScope>('all');
 
   const {
     threads,
@@ -136,11 +133,6 @@ export default function MessagesPage() {
       );
     }
 
-    if (channelScope === 'non-web') {
-      filtered = filtered.filter((t) => (t.channel ?? 'sms') !== 'web');
-    } else if (channelScope !== 'all') {
-      filtered = filtered.filter((t) => (t.channel ?? 'sms') === channelScope);
-    }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -165,7 +157,7 @@ export default function MessagesPage() {
     // Sort by recency (newest lastMessageAt first) so the most recent thread
     // renders at the top — also makes the auto-select-first effect land on it.
     return [...filtered].sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
-  }, [threads, currentView, searchQuery, assignmentScope, channelScope]);
+  }, [threads, currentView, searchQuery, assignmentScope]);
 
   // Handle sending a message
   const handleSendMessage = async (content: string) => {
@@ -272,10 +264,8 @@ export default function MessagesPage() {
                     <ThreadScopeMenu
                       folder={currentView}
                       assignment={assignmentScope}
-                      channel={channelScope}
                       onFolderChange={setCurrentView}
                       onAssignmentChange={setAssignmentScope}
-                      onChannelChange={setChannelScope}
                     />
                   </div>
                 }

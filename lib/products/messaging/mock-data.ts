@@ -354,7 +354,6 @@ export const mockThreads: Thread[] = [
   {
     id: '14',
     assignedTo: { type: 'user', id: 'u-wenjun', name: 'Wenjun Li', departmentId: 'dept-front-office' },
-    channel: 'sms',
     contactNumber: '+16507665555',
     // John Smith (guest-john-s) is auto-linked across three stays — a past solo
     // work trip, the current in-house stay, and a future stay (all same phone).
@@ -372,7 +371,6 @@ export const mockThreads: Thread[] = [
   {
     id: '15',
     assignedTo: { type: 'department', id: 'dept-housekeeping', name: 'Housekeeping' },
-    channel: 'sms',
     contactNumber: '+13305559999',
     linkedReservationIds: ['res-emerson-jun'],
     lastMessage: 'Hi, I wanted to confirm my reservation for next month.',
@@ -394,7 +392,6 @@ export const mockThreads: Thread[] = [
   {
     id: '1',
     assignedTo: { type: 'user', id: 'u-miguel', name: 'Miguel Santana', departmentId: 'dept-front-office' },
-    channel: 'sms',
     contactNumber: '+15005550012',
     linkedReservationIds: ['res-emily-jul'],
     lastMessage: "Here are some nearby restaurant recommendations: Ithaca Ale House, Komonz Grill, MIX, Red's Place, and Chili's Grill & Bar. The hotel also recommends Il Ristorante Alga, Coltivare, Moosewood Restaurant, and Gola Osteria. Let me know if you need more assistance!",
@@ -405,7 +402,6 @@ export const mockThreads: Thread[] = [
   {
     id: '2',
     assignedTo: { type: 'department', id: 'dept-housekeeping', name: 'Housekeeping' },
-    channel: 'whatsapp',
     contactNumber: '+15005550013',
     linkedReservationIds: ['res-miguel-nov'],
     lastMessage: "Of course — I'll have extra face towels sent up to your room right away.",
@@ -416,7 +412,6 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '3',
-    channel: 'web',
     contactNumber: '+15005550014',
     linkedReservationIds: ['res-brooklyn-nov'],
     lastMessage: 'Got it, thanks.',
@@ -427,7 +422,6 @@ export const mockThreads: Thread[] = [
   {
     id: '4',
     assignedTo: { type: 'user', id: 'u-david', name: 'David Chen', departmentId: 'dept-housekeeping' },
-    channel: 'sms',
     contactNumber: '+15005550015',
     linkedReservationIds: ['res-marco-nov'],
     lastMessage: 'What time will the pool close?',
@@ -438,7 +432,6 @@ export const mockThreads: Thread[] = [
   {
     id: '5',
     assignedTo: { type: 'department', id: 'dept-food-beverage', name: 'Food and Beverage' },
-    channel: 'sms',
     contactNumber: '+15005550016',
     linkedReservationIds: ['res-kristin-nov'],
     lastMessage: "Great. That's super helpful.",
@@ -448,7 +441,6 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '6',
-    channel: 'whatsapp',
     contactNumber: '+15005550017',
     linkedReservationIds: ['res-liam-nov'],
     lastMessage: 'Awesome! That really clears things up.',
@@ -459,7 +451,6 @@ export const mockThreads: Thread[] = [
   {
     id: '7',
     assignedTo: { type: 'user', id: 'u-wenjun', name: 'Wenjun Li', departmentId: 'dept-front-office' },
-    channel: 'web',
     contactNumber: '+15005550018',
     linkedReservationIds: ['res-olivia-nov'],
     lastMessage: 'Fantastic! This is exactly what I needed.',
@@ -469,7 +460,6 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '8',
-    channel: 'sms',
     contactNumber: '+15005550019',
     linkedReservationIds: ['res-noah-nov'],
     lastMessage: 'Perfect! This information is incredibly useful.',
@@ -480,7 +470,6 @@ export const mockThreads: Thread[] = [
   {
     id: '9',
     assignedTo: { type: 'department', id: 'dept-front-office', name: 'Front Office' },
-    channel: 'sms',
     contactNumber: '+15005550024',
     linkedReservationIds: ['res-emma-nov'],
     lastMessage: 'Excellent! I appreciate your help with this.',
@@ -522,7 +511,6 @@ export const mockThreads: Thread[] = [
   {
     id: '20',
     assignedTo: { type: 'department', id: 'dept-food-beverage', name: 'Food and Beverage' },
-    channel: 'whatsapp',
     contactNumber: '+15005550045',
     linkedReservationIds: ['res-lucia-nov'],
     lastMessage: "I've been waiting over an hour for the extra blankets and room 226 is freezing. No one has come by — this is really disappointing.",
@@ -598,7 +586,6 @@ export const mockThreads: Thread[] = [
   {
     id: '10',
     assignedTo: { type: 'user', id: 'u-miguel', name: 'Miguel Santana', departmentId: 'dept-front-office' },
-    channel: 'amb',
     contactNumber: '+15005550020',
     linkedReservationIds: ['res-sarah-nov'],
     lastMessage: 'Thank you so much for the wonderful stay! Everything was perfect.',
@@ -608,7 +595,6 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '11',
-    channel: 'sms',
     contactNumber: '+15005550021',
     linkedReservationIds: ['res-james-nov'],
     lastMessage: 'All set, thanks for resolving the WiFi issue.',
@@ -619,7 +605,6 @@ export const mockThreads: Thread[] = [
   {
     id: '12',
     assignedTo: { type: 'user', id: 'u-david', name: 'David Chen', departmentId: 'dept-housekeeping' },
-    channel: 'whatsapp',
     contactNumber: '+15005550022',
     linkedReservationIds: ['res-maria-nov'],
     lastMessage: 'Perfect, the late checkout worked out great. See you next time!',
@@ -629,7 +614,6 @@ export const mockThreads: Thread[] = [
   },
   {
     id: '13',
-    channel: 'web',
     contactNumber: '+15005550023',
     linkedReservationIds: ['res-robert-nov'],
     lastMessage: 'Appreciate all your help with the room upgrade and restaurant reservations!',

@@ -927,12 +927,33 @@ production's:
 - **Copy is production's verbatim**, including "Archived" (not "Archive") and
   "All conversations".
 
-⚠ **Channels are net-new, not mirrored.** Production has NO channel filter on the
-conversation list — the request schema accepts no channel param, and "Non-Web
-Chat" appears nowhere in the codebase. It is in the landed design, so it is built
-as a third exclusive axis AND-ed with the others, with "Non-Web Chat" defined as
-everything except Web Chat. Worth a product decision rather than assuming
-parity.
+**Channels: declined.** An earlier pass built a channel axis from the mock. The
+audit found production has no channel filter on the conversation list at all — no
+channel param in the request schema, and "Non-Web Chat" appears nowhere in the
+codebase — and the designer's call was "we don't do channels then don't add it".
+The axis is gone: the CHANNELS section, the scoping predicate, `Thread.channel`
+and the `ThreadChannel` type. **Message-level channel data is untouched** — the
+inbound SMS/WhatsApp/Email label, "Send via SMS", and delivery-status rendering
+all still run on `Message.channel`; it was only ever the list-scoping axis that
+was invented.
+
+**The menu is one control with TWO stacking axes**, which is exactly production's
+model:
+
+| Axis | Options | Behaviour |
+|---|---|---|
+| Folder | Inbox / Archived / Blocked | single-select |
+| Assignment | All conversations / Assigned / Unassigned / a department / a person | single-select — a department replaces "Assigned", a person replaces the department |
+
+The two AND together, so "Archived + Housekeeping" is reachable. **Two ticks are
+visible at once** (one per axis), so an active row also takes the selection
+register's `colorBlueDark5` tint — that is what makes each read as "the choice in
+this section" rather than as multi-select. No radio pattern was invented; the
+design system has none to borrow.
+
+**The trigger names the combined scope**, not the verb: "Inbox" when assignment
+is default, otherwise "Inbox · Housekeeping" / "Archived · Unassigned". It
+truncates at the card-header width with the full scope on hover.
 
 - **Thread header**: ⓘ, then Archive as a TEXT button, then the kebab. The
   composer's emoji icon was already present.

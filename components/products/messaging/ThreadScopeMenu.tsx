@@ -29,12 +29,13 @@
  *  - Copy is production's verbatim: "Inbox" / "Archived" (not "Archive") /
  *    "Blocked", and "All conversations" / "Assigned" / "Unassigned".
  *
- *  ⚠ CHANNELS ARE NET-NEW. Production has NO channel filter on the conversation
- *  list — the request schema accepts no channel param, and "Non-Web Chat" has
- *  no meaning anywhere in the codebase. It is in the landed design, so it is
- *  built here as a THIRD exclusive axis AND-ed with the others, and "Non-Web
- *  Chat" is defined as "everything except Web Chat". Flagged as invented
- *  surface, not mirrored behaviour.
+ *  CHANNELS: none. An earlier pass built a channel axis from the mock; the
+ *  audit found production has no channel filter on the conversation list at all
+ *  (no channel param in the request schema, and "Non-Web Chat" appears nowhere
+ *  in the codebase), and the designer declined it — "we don't do channels then
+ *  don't add it". So this menu is exactly production's TWO axes. Message-level
+ *  channel data is untouched; it was only ever this list-scoping axis that was
+ *  invented.
  */
 
 'use client';
@@ -43,7 +44,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Icon from '@mdi/react';
 import { mdiUnfoldMoreHorizontal, mdiCheck } from '@mdi/js';
 import { colors } from '@canary-ui/components';
-import { ThreadFilter, ThreadChannel } from '@/lib/products/messaging/types';
+import { ThreadFilter } from '@/lib/products/messaging/types';
 
 /** The assignment axis — one value at a time, production's rule. */
 export type AssignmentScope =
@@ -52,8 +53,6 @@ export type AssignmentScope =
   | { kind: 'unassigned' }
   | { kind: 'department'; id: string }
   | { kind: 'user'; id: string };
-
-export type ChannelScope = 'all' | 'non-web' | ThreadChannel;
 
 export const DEPARTMENTS: { id: string; name: string }[] = [
   { id: 'dept-housekeeping', name: 'Housekeeping' },
@@ -71,14 +70,6 @@ const FOLDERS: { id: ThreadFilter; label: string }[] = [
   { id: 'inbox', label: 'Inbox' },
   { id: 'archived', label: 'Archived' },
   { id: 'blocked', label: 'Blocked' },
-];
-
-const CHANNELS: { id: ChannelScope; label: string }[] = [
-  { id: 'all', label: 'All channels' },
-  { id: 'non-web', label: 'Non-Web Chat' },
-  { id: 'web', label: 'Web Chat' },
-  { id: 'sms', label: 'SMS' },
-  { id: 'whatsapp', label: 'WhatsApp' },
 ];
 
 export function assignmentLabel(scope: AssignmentScope): string {
@@ -110,8 +101,20 @@ function Row({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-2 text-left transition-colors hover:bg-[#f9fafb] cursor-pointer"
-      style={{ paddingLeft: indent ? 24 : 12, paddingRight: 12, paddingTop: 7, paddingBottom: 7 }}
+      className={`w-full flex items-center gap-2 text-left transition-colors cursor-pointer ${
+        isActive ? '' : 'hover:bg-[#f9fafb]'
+      }`}
+      style={{
+        paddingLeft: indent ? 24 : 12,
+        paddingRight: 12,
+        paddingTop: 7,
+        paddingBottom: 7,
+        // Tick AND the selection-register tint. Two ticks are visible at once
+        // (one per axis), so the tint is what makes each read as "the choice in
+        // this section" rather than as multi-select. Reuses the existing
+        // register — the design system has no radio row to borrow.
+        backgroundColor: isActive ? colors.colorBlueDark5 : 'transparent',
+      }}
     >
       <span className="w-4 shrink-0 flex items-center justify-center">
         {isActive && <Icon path={mdiCheck} size={0.6} color={colors.colorBlueDark1} />}
@@ -147,17 +150,13 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 export function ThreadScopeMenu({
   folder,
   assignment,
-  channel,
   onFolderChange,
   onAssignmentChange,
-  onChannelChange,
 }: {
   folder: ThreadFilter;
   assignment: AssignmentScope;
-  channel: ChannelScope;
   onFolderChange: (f: ThreadFilter) => void;
   onAssignmentChange: (a: AssignmentScope) => void;
-  onChannelChange: (c: ChannelScope) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -170,19 +169,26 @@ export function ThreadScopeMenu({
     return () => document.removeEventListener('mousedown', onOutside);
   }, [isOpen]);
 
-  // The trigger shows the folder, matching production's habit of naming the
-  // current scope rather than the verb "Filter".
-  const triggerLabel = FOLDERS.find((f) => f.id === folder)?.label ?? 'Inbox';
+  /**
+   * The trigger names the CURRENT SCOPE, not the verb "Filter" — production's
+   * habit. Because the two axes stack, it has to name both: the folder always,
+   * and the assignment appended when it isn't the default. So "Inbox",
+   * "Inbox · Housekeeping", "Archived · Unassigned".
+   */
+  const folderLabel = FOLDERS.find((f) => f.id === folder)?.label ?? 'Inbox';
+  const triggerLabel =
+    assignment.kind === 'all' ? folderLabel : `${folderLabel} · ${assignmentLabel(assignment)}`;
 
   return (
     <div className="relative shrink-0" ref={rootRef}>
       <button
         onClick={() => setIsOpen((v) => !v)}
-        className="flex items-center gap-1 rounded-[6px] cursor-pointer transition-colors hover:bg-[#f0f0f0]"
-        style={{ height: 28, paddingLeft: 8, paddingRight: 6 }}
+        title={triggerLabel}
+        className="flex items-center gap-1 rounded-[6px] cursor-pointer transition-colors hover:bg-[#f0f0f0] min-w-0"
+        style={{ height: 28, paddingLeft: 8, paddingRight: 6, maxWidth: 200 }}
       >
         <span
-          className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] whitespace-nowrap"
+          className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] truncate min-w-0"
           style={{ color: colors.colorBlack1 }}
         >
           {triggerLabel}
@@ -222,15 +228,6 @@ export function ThreadScopeMenu({
             />
           ))}
 
-          <SectionLabel>Channels</SectionLabel>
-          {CHANNELS.map((c) => (
-            <Row
-              key={c.id}
-              label={c.label}
-              isActive={channel === c.id}
-              onClick={() => onChannelChange(c.id)}
-            />
-          ))}
 
           <SectionLabel>Departments</SectionLabel>
           {DEPARTMENTS.map((d) => (

@@ -41,7 +41,6 @@ export interface Thread {
                                     // (warning), mirroring production's `is_escalated` `.isEscalated`
                                     // variant. The dot shows for unread OR escalated.
   assignedTo?: ThreadAssignment;    // Undefined = unassigned
-  channel?: ThreadChannel;          // Defaults to SMS when absent
 }
 
 export type ThreadFilter = 'inbox' | 'archived' | 'blocked';
@@ -60,8 +59,6 @@ export interface ThreadAssignment {
   departmentId?: string;
 }
 
-/** The channel a thread came in on. */
-export type ThreadChannel = 'sms' | 'whatsapp' | 'web' | 'amb' | 'email';
 
 /**
  * Resolved linked reservation — combines reservation + guest data
