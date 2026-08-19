@@ -1,17 +1,18 @@
 /**
- * ThreadView Component — REDESIGN (Figma "Messaging" frame 29:2099, node 29:2230)
+ * ThreadView Component — REDESIGN (Figma "Messaging" frame 2038:57666)
  *
  * The conversation card: white rounded-12 bordered container holding the
- * thread header (guest identity · Archive / info / kebab), the flat-block
+ * thread header (guest identity · archive / info / kebab), the flat-block
  * message feed, and the composer. The guest info panel is NO LONGER rendered
  * inside this component — it's a sibling column (push) or overlay (drawer)
  * composed at the page level.
  *
- * Header changes vs old build: Archive is a TEXT button sitting between the
- * info button and the kebab (team jam canon — it was the tonal blue fill); the info
- * button carries a pressed state while the panel is open; the kebab uses
- * more_horiz (Figma) and keeps Block/Unblock + Mark as Unread; the standalone
- * "Link reservation" text button is gone (linking lives in the info panel).
+ * Header: avatar · name + loyalty tag on line 1; line 2 is bed-icon room +
+ * calendar-icon stay dates. Right actions are three BARE icons in order —
+ * archive, ⓘ, kebab. Archive was a TEXT button in the previous canon and the
+ * info button carried a blue tonal pressed fill; both are gone (see IconAction
+ * below). The kebab keeps Block/Unblock + Mark as Unread; the standalone "Link
+ * reservation" text button is gone (linking lives in the info panel).
  */
 
 'use client';
@@ -25,7 +26,50 @@ import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
 import { colors, CanaryTag, TagSize, TagVariant } from '@canary-ui/components';
 import Icon from '@mdi/react';
-import { mdiBedOutline, mdiCalendarOutline, mdiInformationOutline, mdiDotsHorizontal } from '@mdi/js';
+import {
+  mdiBedOutline,
+  mdiCalendarOutline,
+  mdiInformationOutline,
+  mdiDotsHorizontal,
+  mdiArchiveArrowDownOutline,
+} from '@mdi/js';
+
+/**
+ * A bare header icon button: a 28px square with ZERO padding, transparent at
+ * rest, neutral 8%-black wash on hover and while pressed. Deliberately NOT a
+ * blue tonal fill — the surface already spends blue on selection and on links.
+ */
+function IconAction({
+  path,
+  label,
+  onClick,
+  isPressed = false,
+  buttonRef,
+}: {
+  path: string;
+  label: string;
+  onClick: () => void;
+  isPressed?: boolean;
+  buttonRef?: React.Ref<HTMLButtonElement>;
+}) {
+  return (
+    <button
+      ref={buttonRef}
+      onClick={onClick}
+      aria-label={label}
+      aria-pressed={isPressed}
+      className="flex items-center justify-center rounded-[6px] transition-colors cursor-pointer hover:bg-[rgba(0,0,0,0.08)]"
+      style={{
+        width: 28,
+        height: 28,
+        padding: 0,
+        ...(isPressed ? { backgroundColor: 'rgba(0,0,0,0.08)' } : {}),
+      }}
+    >
+      <Icon path={path} size={0.83} color={colors.colorBlack3} />
+    </button>
+  );
+}
 
 interface ThreadViewProps {
   thread: Thread;
@@ -174,56 +218,39 @@ export function ThreadView({
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-3 shrink-0">
-          {/* Info button (pressed while the panel is open) — canon order is
-              ⓘ, then the Archive TEXT button, then the kebab. */}
-          <button
-            onClick={onToggleGuestInfo}
-            aria-label="Conversation details"
-            aria-pressed={isGuestInfoOpen}
-            className={`rounded-[4px] transition-colors cursor-pointer ${isGuestInfoOpen ? '' : 'hover:bg-[#f0f0f0]'}`}
-            style={{
-              padding: 10,
-              // Only set an inline bg when pressed (open); leave it unset when
-              // closed so the hover class can paint.
-              ...(isGuestInfoOpen ? { backgroundColor: colors.colorBlueDark5 } : {}),
-            }}
-          >
-            <Icon
-              path={mdiInformationOutline}
-              size={0.83}
-              color={isGuestInfoOpen ? colors.colorBlueDark1 : colors.colorBlack3}
-            />
-          </button>
-
-          {/* Archive — a text button in the canon, not the tonal fill */}
+        {/* Action Buttons — archive · ⓘ · kebab (frame 2038:57666).
+            All three are BARE icons: zero padding, no background box at rest, a
+            neutral 8%-black wash on hover, and no blue pressed tint (the info
+            button's tonal-blue pressed fill is gone — it read as a fourth
+            selection register on a surface that already has two). */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Archive — an icon in the landed frame; it was a text button before. */}
           {thread.status === 'inbox' && (
-            <button
-              onClick={onArchive}
-              className="flex items-center justify-center rounded-[6px] font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] transition-colors hover:bg-[#f0f0f0] cursor-pointer"
-              style={{ height: 32, paddingLeft: 10, paddingRight: 10, color: colors.colorBlueDark1 }}
-            >
-              Archive
-            </button>
+            <IconAction onClick={onArchive} label="Archive conversation" path={mdiArchiveArrowDownOutline} />
           )}
+
+          <IconAction
+            onClick={onToggleGuestInfo}
+            label="Conversation details"
+            path={mdiInformationOutline}
+            isPressed={isGuestInfoOpen}
+          />
 
           {/* Kebab menu */}
           <div className="relative">
-            <button
-              ref={buttonRef}
+            <IconAction
+              buttonRef={buttonRef}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              aria-label="More actions"
-              className="rounded-[4px] hover:bg-[#f0f0f0] transition-colors cursor-pointer"
-              style={{ padding: 10 }}
-            >
-              <Icon path={mdiDotsHorizontal} size={0.83} color={colors.colorBlack3} />
-            </button>
+              label="More actions"
+              path={mdiDotsHorizontal}
+              isPressed={isMenuOpen}
+            />
 
             {isMenuOpen && (
               <div
                 ref={menuRef}
-                className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
+                className="absolute right-0 mt-1 w-48 bg-white rounded-[8px] py-1 z-50"
+                style={{ border: `1px solid ${colors.colorBlack6}` }}
               >
                 {thread.status === 'blocked' ? (
                   <>
