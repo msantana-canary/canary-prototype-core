@@ -2,10 +2,10 @@
  * ThreadList Component — REDESIGN (Figma "Messaging" frame 29:2099, node 29:2137)
  *
  * The left column (35% of the content row, set by the page): a single guest-list
- * card of scrolling thread rows. The Inbox/Archived/Blocked scoping and the
- * Filters affordance now live in the Filters popover on the search row (the
- * segmented control + in-card Filters row were removed — <1% of usage is on the
- * Archived/Blocked views, so they collapse behind Filters).
+ * card of scrolling thread rows. Scoping lives in the card header as TWO selects
+ * (assignment on the left, folder on the right) — see ThreadScopeMenu. The
+ * segmented control, the in-card Filters row and the search-row Filters popover
+ * were all removed on the way here.
  */
 
 'use client';
@@ -49,8 +49,11 @@ export function ThreadList({
           <div
             className="shrink-0"
             style={{
-              paddingLeft: 16,
-              paddingRight: 12,
+              // 8px here + the selects' own 8px trigger padding lands both
+              // labels on the card's 16px text margin, while the hover wash
+              // still reads as a control rather than a flush-left block.
+              paddingLeft: 8,
+              paddingRight: 8,
               paddingTop: 10,
               paddingBottom: 10,
               borderBottom: `1px solid ${colors.colorBlack6}`,

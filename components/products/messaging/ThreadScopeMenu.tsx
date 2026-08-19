@@ -1,12 +1,15 @@
 /**
- * ThreadScopeMenu — the thread list's scoping control.
+ * ThreadScopeMenu — the thread list's scoping controls.
  *
  * PRODUCTION AUDIT (read-only, from the chat module) — what it actually does:
  *
  *  - Production splits this across TWO controls: a `CanaryTabs` pill row for the
  *    folder (Inbox / Archived / Blocked) and a separate flat `CanarySelect` for
- *    assignment. The landed design consolidates them into one menu; the
- *    SEMANTICS below are production's, unchanged.
+ *    assignment. An earlier redesign pass consolidated them into ONE menu; the
+ *    landed frame (2038:57666) splits them again — two SELECTS in the list
+ *    card's header, assignment on the left (where the card title used to sit)
+ *    and folder on the right. The SEMANTICS below are production's, unchanged
+ *    through both moves.
  *
  *  - ASSIGNMENT IS EXCLUSIVE. Production keeps three refs
  *    (assignedToDepartmentFilter / assignedToUserFilter / assignedFilter) and
@@ -17,7 +20,9 @@
  *    single-select axis, not five checkboxes.
  *
  *  - FOLDER AND ASSIGNMENT STACK (AND). Changing folder does not clear the
- *    assignment filter, so "Archived + Housekeeping" is reachable.
+ *    assignment filter, so "Archived + Housekeeping" is reachable. Splitting the
+ *    menu in two makes that stacking legible: each trigger names its own axis
+ *    ("Housekeeping" · "Archived") instead of one trigger naming both.
  *
  *  - DEPARTMENT MATCHING IS TRANSITIVE: a department matches threads assigned
  *    directly to it OR assigned to a user who belongs to it. User matching is
@@ -27,15 +32,21 @@
  *    no "assigned to me" option and never compares against the current user.
  *
  *  - Copy is production's verbatim: "Inbox" / "Archived" (not "Archive") /
- *    "Blocked", and "All conversations" / "Assigned" / "Unassigned".
+ *    "Blocked", and "All conversations" / "Assigned" / "Unassigned". The
+ *    assignment TRIGGER is the one exception — the frame title-cases it to "All
+ *    Conversations" because it occupies the card-title slot.
  *
  *  CHANNELS: none. An earlier pass built a channel axis from the mock; the
  *  audit found production has no channel filter on the conversation list at all
  *  (no channel param in the request schema, and "Non-Web Chat" appears nowhere
  *  in the codebase), and the designer declined it — "we don't do channels then
- *  don't add it". So this menu is exactly production's TWO axes. Message-level
- *  channel data is untouched; it was only ever this list-scoping axis that was
- *  invented.
+ *  don't add it". So these menus are exactly production's TWO axes.
+ *
+ * MENU REGISTER (frame `dd-allconv` / `dd-inbox`): white rounded-8 popover,
+ * 1px colorBlack6 border and NO drop shadow (branch-wide rule), uppercase gray
+ * section overlines, hairline dividers BETWEEN sections, and a right-aligned
+ * check on the active row. No blue selection tint — with one axis per menu
+ * there is only ever one tick on screen, so the tick alone carries it.
  */
 
 'use client';
@@ -87,43 +98,38 @@ export function assignmentLabel(scope: AssignmentScope): string {
   }
 }
 
+/**
+ * The trigger sits in the card-title slot, so the default reads as a title:
+ * "All Conversations" title-cased (the menu row stays production's sentence
+ * case). Every other value is the same string in both places.
+ */
+export function assignmentTriggerLabel(scope: AssignmentScope): string {
+  return scope.kind === 'all' ? 'All Conversations' : assignmentLabel(scope);
+}
+
 function Row({
   label,
   isActive,
   onClick,
-  indent,
 }: {
   label: string;
   isActive: boolean;
   onClick: () => void;
-  indent?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-2 text-left transition-colors cursor-pointer ${
-        isActive ? '' : 'hover:bg-[#f9fafb]'
-      }`}
-      style={{
-        paddingLeft: indent ? 24 : 12,
-        paddingRight: 12,
-        paddingTop: 7,
-        paddingBottom: 7,
-        // Tick AND the selection-register tint. Two ticks are visible at once
-        // (one per axis), so the tint is what makes each read as "the choice in
-        // this section" rather than as multi-select. Reuses the existing
-        // register — the design system has no radio row to borrow.
-        backgroundColor: isActive ? colors.colorBlueDark5 : 'transparent',
-      }}
+      className="w-full flex items-center gap-2 text-left transition-colors cursor-pointer hover:bg-[#f9fafb]"
+      style={{ paddingLeft: 16, paddingRight: 14, paddingTop: 8, paddingBottom: 8 }}
     >
-      <span className="w-4 shrink-0 flex items-center justify-center">
-        {isActive && <Icon path={mdiCheck} size={0.6} color={colors.colorBlueDark1} />}
-      </span>
       <span
-        className="font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate"
-        style={{ color: isActive ? colors.colorBlueDark1 : colors.colorBlack1 }}
+        className="flex-1 min-w-0 font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate"
+        style={{ color: colors.colorBlack1 }}
       >
         {label}
+      </span>
+      <span className="w-4 shrink-0 flex items-center justify-center">
+        {isActive && <Icon path={mdiCheck} size={0.7} color={colors.colorBlack3} />}
       </span>
     </button>
   );
@@ -136,8 +142,8 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       style={{
         color: colors.colorBlack4,
         letterSpacing: '0.4px',
-        paddingLeft: 12,
-        paddingRight: 12,
+        paddingLeft: 16,
+        paddingRight: 16,
         paddingTop: 10,
         paddingBottom: 4,
       }}
@@ -147,16 +153,36 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function ThreadScopeMenu({
-  folder,
-  assignment,
-  onFolderChange,
-  onAssignmentChange,
+function Divider() {
+  return <div className="w-full h-px" style={{ backgroundColor: colors.colorBlack6, marginTop: 6, marginBottom: 2 }} />;
+}
+
+/**
+ * Shared select shell: trigger + outside-click popover. `align` decides which
+ * edge the popover hangs from — the assignment select opens under the title on
+ * the left, the folder select under its own trigger on the right.
+ *
+ * The popover is absolutely positioned INSIDE the list card, which is
+ * `overflow-clip`. That is fine at these widths (both menus are narrower than
+ * the header) and the 420px max-height keeps a tall assignment list inside a
+ * short card; it scrolls rather than escaping.
+ */
+function ScopeSelect({
+  triggerLabel,
+  triggerColor,
+  triggerSize,
+  menuWidth,
+  align,
+  children,
+  onRequestClose,
 }: {
-  folder: ThreadFilter;
-  assignment: AssignmentScope;
-  onFolderChange: (f: ThreadFilter) => void;
-  onAssignmentChange: (a: AssignmentScope) => void;
+  triggerLabel: string;
+  triggerColor: string;
+  triggerSize: 14 | 16;
+  menuWidth: number;
+  align: 'left' | 'right';
+  children: (close: () => void) => React.ReactNode;
+  onRequestClose?: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -169,87 +195,156 @@ export function ThreadScopeMenu({
     return () => document.removeEventListener('mousedown', onOutside);
   }, [isOpen]);
 
-  /**
-   * The trigger names the CURRENT SCOPE, not the verb "Filter" — production's
-   * habit. Because the two axes stack, it has to name both: the folder always,
-   * and the assignment appended when it isn't the default. So "Inbox",
-   * "Inbox · Housekeeping", "Archived · Unassigned".
-   */
-  const folderLabel = FOLDERS.find((f) => f.id === folder)?.label ?? 'Inbox';
-  const triggerLabel =
-    assignment.kind === 'all' ? folderLabel : `${folderLabel} · ${assignmentLabel(assignment)}`;
+  const close = () => {
+    setIsOpen(false);
+    onRequestClose?.();
+  };
 
   return (
-    <div className="relative shrink-0" ref={rootRef}>
+    <div className="relative min-w-0" ref={rootRef}>
       <button
         onClick={() => setIsOpen((v) => !v)}
         title={triggerLabel}
-        className="flex items-center gap-1 rounded-[6px] cursor-pointer transition-colors hover:bg-[#f0f0f0] min-w-0"
-        style={{ height: 28, paddingLeft: 8, paddingRight: 6, maxWidth: 200 }}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        className="flex items-center gap-1 rounded-[6px] cursor-pointer transition-colors hover:bg-[rgba(0,0,0,0.05)] min-w-0"
+        style={{ height: 32, paddingLeft: 8, paddingRight: 6, maxWidth: '100%' }}
       >
         <span
-          className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] truncate min-w-0"
-          style={{ color: colors.colorBlack1 }}
+          className={`font-['Roboto',sans-serif] font-medium leading-[24px] truncate min-w-0 ${
+            triggerSize === 16 ? 'text-[16px]' : 'text-[14px]'
+          }`}
+          style={{ color: triggerColor }}
         >
           {triggerLabel}
         </span>
-        <Icon path={mdiUnfoldMoreHorizontal} size={0.7} color={colors.colorBlack3} />
+        <Icon path={mdiUnfoldMoreHorizontal} size={0.7} color={colors.colorBlueDark1} />
       </button>
 
       {isOpen && (
         <div
-          className="absolute right-0 z-50 rounded-[8px] bg-white overflow-y-auto scrollbar-invisible"
+          role="listbox"
+          className={`absolute z-50 rounded-[8px] bg-white overflow-y-auto scrollbar-invisible ${
+            align === 'left' ? 'left-0' : 'right-0'
+          }`}
           style={{
-            top: 32,
-            width: 240,
+            top: 36,
+            width: menuWidth,
             maxHeight: 420,
             paddingTop: 4,
             paddingBottom: 4,
             border: `1px solid ${colors.colorBlack6}`,
-            boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
           }}
         >
-          {FOLDERS.map((f) => (
-            <Row
-              key={f.id}
-              label={f.label}
-              isActive={folder === f.id}
-              onClick={() => onFolderChange(f.id)}
-            />
-          ))}
+          {children(close)}
+        </div>
+      )}
+    </div>
+  );
+}
 
+/**
+ * LEFT select — the assignment axis, sitting in the card-title slot. Sections
+ * are STATUSES / DEPARTMENTS / STAFF; the whole thing is ONE single-select
+ * group, so choosing a department clears "Assigned" and choosing a person
+ * clears the department (production's exclusivity, preserved exactly).
+ */
+export function AssignmentSelect({
+  assignment,
+  onAssignmentChange,
+}: {
+  assignment: AssignmentScope;
+  onAssignmentChange: (a: AssignmentScope) => void;
+}) {
+  return (
+    <ScopeSelect
+      triggerLabel={assignmentTriggerLabel(assignment)}
+      triggerColor={colors.colorBlack1}
+      triggerSize={16}
+      menuWidth={264}
+      align="left"
+    >
+      {(close) => (
+        <>
           <SectionLabel>Statuses</SectionLabel>
           {(['all', 'assigned', 'unassigned'] as const).map((kind) => (
             <Row
               key={kind}
               label={assignmentLabel({ kind })}
               isActive={assignment.kind === kind}
-              onClick={() => onAssignmentChange({ kind })}
+              onClick={() => {
+                onAssignmentChange({ kind });
+                close();
+              }}
             />
           ))}
 
-
+          <Divider />
           <SectionLabel>Departments</SectionLabel>
           {DEPARTMENTS.map((d) => (
             <Row
               key={d.id}
               label={d.name}
               isActive={assignment.kind === 'department' && assignment.id === d.id}
-              onClick={() => onAssignmentChange({ kind: 'department', id: d.id })}
+              onClick={() => {
+                onAssignmentChange({ kind: 'department', id: d.id });
+                close();
+              }}
             />
           ))}
 
-          <SectionLabel>Assigned to</SectionLabel>
+          <Divider />
+          <SectionLabel>Staff</SectionLabel>
           {STAFF.map((u) => (
             <Row
               key={u.id}
               label={u.name}
               isActive={assignment.kind === 'user' && assignment.id === u.id}
-              onClick={() => onAssignmentChange({ kind: 'user', id: u.id })}
+              onClick={() => {
+                onAssignmentChange({ kind: 'user', id: u.id });
+                close();
+              }}
             />
           ))}
-        </div>
+        </>
       )}
-    </div>
+    </ScopeSelect>
+  );
+}
+
+/** RIGHT select — the folder axis. Inbox / Archived / Blocked, check on active. */
+export function FolderSelect({
+  folder,
+  onFolderChange,
+}: {
+  folder: ThreadFilter;
+  onFolderChange: (f: ThreadFilter) => void;
+}) {
+  const label = FOLDERS.find((f) => f.id === folder)?.label ?? 'Inbox';
+
+  return (
+    <ScopeSelect
+      triggerLabel={label}
+      triggerColor={colors.colorBlueDark1}
+      triggerSize={14}
+      menuWidth={176}
+      align="right"
+    >
+      {(close) => (
+        <>
+          {FOLDERS.map((f) => (
+            <Row
+              key={f.id}
+              label={f.label}
+              isActive={folder === f.id}
+              onClick={() => {
+                onFolderChange(f.id);
+                close();
+              }}
+            />
+          ))}
+        </>
+      )}
+    </ScopeSelect>
   );
 }

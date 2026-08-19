@@ -16,7 +16,8 @@ import { GuestInfoSidebar } from '@/components/products/messaging/GuestInfoSideb
 import { ComposeHeader } from '@/components/products/messaging/ComposeHeader';
 import { UnlinkReservationModal } from '@/components/products/messaging/UnlinkReservationModal';
 import {
-  ThreadScopeMenu,
+  AssignmentSelect,
+  FolderSelect,
   AssignmentScope,
 } from '@/components/products/messaging/ThreadScopeMenu';
 import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
@@ -254,19 +255,16 @@ export default function MessagesPage() {
                 onSelectThread={selectThread}
                 typingThreadId={typingThreadId}
                 header={
+                  /* TWO selects, one per axis (frame 2038:57666). The assignment
+                     select occupies the slot the "Conversations" card title used
+                     to hold — the list IS the conversations, so naming the scope
+                     there says more than repeating the noun. */
                   <div className="flex items-center justify-between gap-2">
-                    <h2
-                      className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px] whitespace-nowrap"
-                      style={{ color: '#000000' }}
-                    >
-                      Conversations
-                    </h2>
-                    <ThreadScopeMenu
-                      folder={currentView}
+                    <AssignmentSelect
                       assignment={assignmentScope}
-                      onFolderChange={setCurrentView}
                       onAssignmentChange={setAssignmentScope}
                     />
+                    <FolderSelect folder={currentView} onFolderChange={setCurrentView} />
                   </div>
                 }
               />
