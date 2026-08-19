@@ -1121,3 +1121,185 @@ makes the memos correctly date-reactive); initial state passes
 `INITIAL_SELECTED_DATE`, the same constant that seeds `selectedDate`, so the
 two cannot drift. **Nothing below the store in that module may read the store
 back** — the type signature now enforces it.
+
+## Batch 2 — thread-list selects, AI message anatomy, composer (2026-08-19)
+
+Landed frame: **2038:57666** (plus the `dd-allconv` / `dd-inbox` / `composer` /
+`ai-off` / `steps-open` / `steps-hover` states). Frame 2048:39135 was reference
+only — its side panel is a later batch, and its "Filters" header button and
+older steps arrangement are both dead.
+
+### 1. The list card header is TWO selects, not a title + one menu
+
+`ThreadScopeMenu.tsx` no longer exports one consolidated menu. It exports
+`AssignmentSelect` (left) and `FolderSelect` (right) over a shared `ScopeSelect`
+shell. **The semantics did not move**: assignment is still one single-select
+axis whose choices null each other (production's rule), folder is still
+independent, and the two still AND together.
+
+What changed is legibility. One trigger naming both axes had to concatenate
+them ("Inbox · Housekeeping"), which read as a single compound state rather than
+two stackable ones. Two triggers each name their own axis, so the AND is visible
+in the layout instead of in a separator character.
+
+The assignment select occupies the slot the **"Conversations" card title** used
+to hold. The list is self-evidently the conversations; spending the title slot
+on the noun bought nothing, and spending it on the current scope buys the one
+fact a user actually needs before reading the rows.
+
+| | Trigger | Menu |
+|---|---|---|
+| Assignment | "All Conversations" 16px black + blue ⇅ | 264px · STATUSES / DEPARTMENTS / STAFF overlines, hairline dividers between sections |
+| Folder | "Inbox" 14px blue + blue ⇅ | 176px · Inbox / Archived / Blocked |
+
+Menu register: white rounded-8, 1px `colorBlack6`, **no drop shadow**, and a
+right-aligned check on the active row with **no blue selection tint** — with one
+axis per menu there is only ever one tick on screen, so the tick carries it
+alone. (The old consolidated menu needed the tint precisely because two ticks
+were visible at once and read as multi-select.)
+
+`maxHeight` is 480px, which clears the full assignment list (~460px) today. The
+popover lives inside the card's `overflow-clip`, which is fine at these widths;
+the scrollbar is invisible, so a cap that bit into the list would silently hide
+its last row — hence sizing the cap to the content rather than the reverse.
+
+### 2. AI message anatomy — the batch's centre of gravity
+
+An AI message is no longer a staff message with a different name colour:
+
+```
+[orb]  Canary · Completed 6 Steps ⌄                          5:25 PM
+       ┌────────────────────────────────────────────────┐
+       │ ✓ Search_for_reservation… · Found Emily Smith … │   (toggled)
+       └────────────────────────────────────────────────┘
+       Thanks for letting us know!
+       DELIVERED  ( 3 SOURCES ⌄ )     ⓘ  👍  👎   ← on hover
+```
+
+**Steps are UNIVERSAL, not a hero garnish.** Every `sender: 'ai'` message in the
+mock carries a trace and a `sourceCount`, because the feature is observability:
+a hotelier should be able to ask "why did it say that?" of *any* answer, not
+just an interesting one. Seeding only the exemplar would have designed a demo,
+not a feature. The card is **closed by default everywhere** — with steps on
+every message, defaulting open would bury the conversation under its own audit
+trail. The caption is the toggle.
+
+Step rows render `Tool_name · Narrative` verbatim from the trace. We do NOT
+normalise the tool names: the frame's own six steps mix snake_case
+(`Search_for_reservation_by_calling_phone_number`) with proper nouns (`Guest
+Profile`, `Decision`), and that mixture is what a real trace looks like.
+
+⚠ The primary exemplar (thread `'1'`, message `m2`) carries the frame's six
+steps verbatim, which name "Room 504, Checking Out Today" and "Gold Elite" while
+Emily is room 153, Diamond Elite, arriving. That is the Figma copy nit already
+logged in the design-system TODO above ("Chain-of-thoughts says Room 504 vs
+Emily's 153"), reproduced on purpose. Do not "fix" it in code.
+
+**The orb** is PORTED from the email-channel-ai worktree
+(`components/products/email/AiDraftCard.tsx` + its `globals.css`): an 18px
+living gradient blob — four translucent colour ribbons drifting, scaling and
+morphing at incommensurate speeds over a pearl ground, with a pulsing white
+core, all pure CSS off a single `--orb-speed` custom property. Here it keeps its
+18px size and sits centred in a 32px rounded-8 gradient-bordered tile so it
+drops into the message-avatar slot without changing the feed's rhythm. It idles
+**slower** than on the email draft button (`--orb-speed: 1.6` vs `1`) — that one
+is a transient affordance, this one sits in a message list forever.
+
+### 3. Three footer registers, one slot
+
+All three live in the same 10px uppercase caption line:
+
+1. **Delivery status** (outbound) — production's ladder, logic unchanged.
+2. **"AI CHOSE NOT TO RESPOND"** (inbound, `Message.aiDeclined`) — a blue
+   underlined link after the channel caption. Silence from the agent is a
+   decision; an unexplained silence reads as a bug. Naming it turns a gap into
+   a fact.
+3. **"MESSAGE FAILED TO SEND"** (outbound, `status: 'failed'`) — a red
+   underlined link that **replaces** the old failed register (red row + alert
+   icon + "Learn more"). The state logic is untouched, only its dress:
+   collapsing three elements into one link puts the failure in the same rhythm
+   as every other caption instead of shouting a whole extra row.
+
+All three exemplars sit on thread `'1'` so one screen shows all three.
+
+### 4. Composer
+
+- **Dead:** the "Send via SMS" split button + channel chevron. The channel is
+  already named twice (the placeholder, and every inbound caption) and the
+  picker had nothing to pick — production routes on the thread, not per send.
+  One square blue send icon-button now.
+- **Dead:** the `CanarySwitch`-in-a-gray-pill AI toggle.
+- Tool icons are **bare**: 16px, zero padding, no background boxes, 12px gaps,
+  gray → blue on hover. Five inert affordances should not out-weigh the two
+  live controls opposite them.
+- No internal divider. The textarea and the toolbar share one field, so the
+  composer reads as one place to type rather than a form with a footer.
+- The send button stays **full-strength blue when empty** (the frame's idle
+  state) while remaining `disabled`; only the cursor gives that away.
+
+**The AI pill** is the composer's second live control:
+- **On** — "AI On" in the shared AI gradient, pearl fill, static pink→lavender
+  hairline. The agent is working; it does not need to ask for attention.
+- **Off** — "AI Off" in plain gray, and the 1px border carries a slowly
+  **revolving hue wheel** (a conic gradient whose start angle animates via a
+  registered `@property`). Colour moves; geometry does not — no wobble, no
+  pulse, no scale. Hues are deliberately **desaturated**: at full chroma a 1px
+  rainbow on a 50px pill reads as a highlighter and out-shouts the send button.
+  Under `prefers-reduced-motion` the same gradient renders static.
+
+### 5. Store — AI is per-thread now
+
+`aiEnabled` was one global boolean doing two unrelated jobs. It has been split:
+
+- `aiEnabled` (unchanged, still global, still off) = the **demo auto-response
+  simulation** through `/api/claude`, read by the page's send handler. No longer
+  reachable from the composer.
+- `threadAiEnabled: Record<string, boolean>` + `isThreadAiEnabled` /
+  `toggleThreadAi` = the **AI agent switch**, scoped to the conversation, which
+  is what the pill drives. Production scopes it this way for a reason: an agent
+  paused on an angry thread must stay running on every other one. Sparse map,
+  absent ⇒ **ON**, matching production's default and the frame.
+
+### 6. Thread header
+
+Right actions are now three **bare** icons in order — archive, ⓘ, kebab. Archive
+was a text button; the info button carried a blue tonal pressed fill. Both are
+gone: `IconAction` is a 28px square with **zero padding**, transparent at rest,
+neutral 8%-black wash on hover and while pressed. No blue pressed tint — the
+surface already spends blue on selection and on links, and a third blue state
+made "pressed" compete with "selected". The kebab popover lost its drop shadow
+(border only, branch-wide).
+
+### Row parity — already there
+
+The frame's row additions needed **no new data**: `requestCount` already renders
+as ticket-icon + count (Emily 153, Marco, Kristin), `res-marco-nov.room` is
+already `"112 (reserved)"` (the row uppercases it), and PLATINUM ELITE already
+exists on `guest-olivia` — whose canonical `#E2E7EA` / `#3C5D71` tag colours are
+**pixel-identical to the frame**, and whose 43-character name is the truncation
+exemplar. Nothing was invented.
+
+### Promotion candidates (for the library pass)
+
+Add to the design-system TODO list above:
+
+10. **Gradient AI text register** — `.ai-gradient-text`, one magenta→violet ramp
+    shared by the "Canary" sender name and the "AI On" pill label. Every
+    AI-authored surface should read as one voice.
+11. **Orb avatar** — `.ai-orb*` + the 32px `.ai-orb-tile`. Second product to use
+    it (after email), so it has earned promotion.
+12. **Steps card** — bordered rounded-8 trace list, `✓ Tool · Narrative` rows,
+    12px caption register. Generic to any agent surface.
+13. **Sources chip** — bordered rounded-full 20px caption pill with a chevron.
+    The library has no caption-weight chip.
+14. **AI pill** — gradient-bordered toggle, with the animated-border "off"
+    variant. The `@property` conic technique is reusable for any "dormant, tap
+    me" control.
+15. **Two-select card header** — a title-slot select paired with a right-aligned
+    scope select. Any list card with two scoping axes wants this.
+16. **Bare-icon toolbar / `IconAction`** — zero-padding icon buttons with a
+    neutral wash, no box at rest. Now used in the thread header and the
+    composer; the library only has padded/boxed icon buttons.
+17. **Caption-link register** — 10px uppercase underlined links in the footer
+    slot (blue informational / red failure). Replaces the bespoke failed-message
+    row.

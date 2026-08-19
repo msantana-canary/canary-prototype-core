@@ -317,15 +317,19 @@ body {
   background-image: linear-gradient(160deg, #fcf8fe, #f8f9fe),
     linear-gradient(135deg, #efcaec 0%, #d6d0f4 55%, #f1c7cd 100%);
 }
+/* Hues are deliberately DESATURATED. At full chroma a 1px rainbow on a 48px
+   pill reads as a highlighter and out-shouts the send button next to it; these
+   pastels still cycle visibly but sit at the weight of the surrounding
+   hairlines. */
 .ai-pill-off {
   background-image: linear-gradient(#ffffff, #ffffff),
     conic-gradient(
       from var(--ai-pill-angle),
-      #e5559f,
-      #8a6cf0,
-      #4fbeea,
-      #5fd9be,
-      #e5559f
+      #e29ac1,
+      #a79ce4,
+      #8ec4dd,
+      #93d3c1,
+      #e29ac1
     );
   animation: ai-pill-revolve 7s linear infinite;
 }

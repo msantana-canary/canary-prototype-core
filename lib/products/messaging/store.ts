@@ -15,7 +15,21 @@ interface MessagingState {
   threads: Thread[];
   messages: Record<string, Message[]>;
   selectedThreadId: string | null;
+  /**
+   * The DEMO auto-response simulation (staff reply + guest reply through
+   * `/api/claude`). Global, off by default, and no longer reachable from the
+   * composer — the composer's pill now drives `threadAiEnabled` instead. Kept
+   * because the simulation is still wired into the page's send handler.
+   */
   aiEnabled: boolean;
+  /**
+   * The AI AGENT switch, PER THREAD — the composer's "AI On / AI Off" pill.
+   * Production scopes this to the conversation (an agent paused on an angry
+   * thread must stay running on every other one), so a single global flag was
+   * always wrong. Sparse map: absent ⇒ ON, which is production's default and
+   * the state the frame draws.
+   */
+  threadAiEnabled: Record<string, boolean>;
   isComposingNew: boolean;
   composingPhoneNumber: string;
   typingThreadId: string | null;
@@ -27,6 +41,8 @@ interface MessagingState {
   // Actions
   selectThread: (threadId: string) => void;
   setAiEnabled: (enabled: boolean) => void;
+  isThreadAiEnabled: (threadId: string) => boolean;
+  toggleThreadAi: (threadId: string) => void;
   sendMessage: (threadId: string, content: string, sender: 'staff' | 'ai' | 'guest') => Promise<void>;
   addMessage: (threadId: string, message: Message) => void;
   updateThreadLastMessage: (threadId: string, message: Message) => void;
@@ -57,6 +73,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   messages: mockMessages,
   selectedThreadId: null,
   aiEnabled: false,
+  threadAiEnabled: {},
   isComposingNew: false,
   composingPhoneNumber: '',
   typingThreadId: null,
@@ -72,9 +89,21 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     get().markThreadAsRead(threadId);
   },
 
-  // Toggle AI assistant
+  // Toggle the demo auto-response simulation (global)
   setAiEnabled: (enabled: boolean) => {
     set({ aiEnabled: enabled });
+  },
+
+  // The AI agent's per-thread switch. Absent from the map ⇒ ON.
+  isThreadAiEnabled: (threadId: string) => get().threadAiEnabled[threadId] !== false,
+
+  toggleThreadAi: (threadId: string) => {
+    set((state) => ({
+      threadAiEnabled: {
+        ...state.threadAiEnabled,
+        [threadId]: state.threadAiEnabled[threadId] === false,
+      },
+    }));
   },
 
   // Send a message (staff, AI, or guest)

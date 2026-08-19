@@ -1,20 +1,42 @@
 /**
- * MessageComposer Component — REDESIGN (Figma "Messaging" frame 29:2099, node 29:2304)
+ * MessageComposer Component — REDESIGN (Figma "Messaging" frame 2038:57666)
  *
- * Quiet card register: white rounded-12 container with a colorBlack6 border
- * (blue focus-within — the Figma draws no focus state, so the product's focus
- * treatment carries over). Toolbar: emoji / attachment / translate / templates /
- * concierge ghost icon buttons; gray rounded-6 AI-switch pill; 32px "Send via SMS"
- * split button (left/right-only radii, 1px seam).
+ * One quiet card: white rounded-12 with a colorBlack6 hairline (blue
+ * focus-within — the Figma draws no focus state, so the product's focus
+ * treatment carries over). No internal divider: the textarea and the toolbar
+ * share one field, so the composer reads as a single place to type rather than
+ * a form with a footer.
  *
- * vs old build: emoji added ahead of Translate (per the Figma); border was
- * #666 rounded-4.
+ * Toolbar (left): emoji / attachment / translate / templates / service-ticket
+ * as BARE 16px icons — zero padding, no background boxes, gray at rest, blue on
+ * hover. They are still decorative in this branch (no flows behind them), and
+ * the smaller/tighter treatment is what keeps five inert affordances from
+ * out-weighing the two live controls on the right.
+ *
+ * Right cluster: the AI pill, then a single square blue send button.
+ *
+ * ── WHAT DIED HERE ────────────────────────────────────────────────────────
+ *  - The "Send via SMS" split button + channel chevron. The channel is already
+ *    named twice (the placeholder says "Type SMS message...", every inbound
+ *    message is captioned SMS) and the picker had nothing to pick — production
+ *    routes on the thread, not on a per-send choice. It is now one send icon.
+ *  - The `CanarySwitch`-in-a-gray-pill AI toggle → the AI pill below.
+ *
+ * ── THE AI PILL ───────────────────────────────────────────────────────────
+ * ON:  "AI On" in the shared AI gradient, white fill, static pink→lavender
+ *      hairline. The agent is working; it does not need to ask for attention.
+ * OFF: "AI Off" in plain gray, and the 1px border carries a slowly REVOLVING
+ *      hue wheel (`.ai-pill-off` — a conic gradient whose start angle
+ *      animates). Colour moves, geometry does not: no wobble, no pulse, no
+ *      scale. It reads as "this is off, and it would like to be on" without
+ *      becoming the loudest thing on the screen. Under `prefers-reduced-motion`
+ *      the same gradient renders static.
  */
 
 'use client';
 
-import React, { useState, KeyboardEvent } from 'react';
-import { colors, CanarySwitch } from '@canary-ui/components';
+import React, { useEffect, useRef, useState, KeyboardEvent } from 'react';
+import { colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import {
   mdiEmoticonOutline,
@@ -22,7 +44,7 @@ import {
   mdiTranslate,
   mdiFormatListBulleted,
   mdiRoomServiceOutline,
-  mdiUnfoldMoreHorizontal,
+  mdiSend,
 } from '@mdi/js';
 
 interface MessageComposerProps {
@@ -30,20 +52,47 @@ interface MessageComposerProps {
   placeholder?: string;
   disabled?: boolean;
   aiEnabled?: boolean;
-  onAiToggle?: (enabled: boolean) => void;
+  onAiToggle?: () => void;
   onFocus?: () => void;
+}
+
+/** Bare toolbar icon — no box, no padding; gray → blue on hover. */
+function ToolIcon({ path, label }: { path: string; label: string }) {
+  const [isHovered, setIsHovered] = useState(false);
+  return (
+    <button
+      aria-label={label}
+      title={label}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="flex items-center justify-center cursor-pointer"
+      style={{ padding: 0, width: 18, height: 18 }}
+    >
+      <Icon path={path} size={0.75} color={isHovered ? colors.colorBlueDark1 : colors.colorBlack3} />
+    </button>
+  );
 }
 
 export function MessageComposer({
   onSend,
   placeholder = 'Type SMS message...',
   disabled = false,
-  aiEnabled = false,
+  aiEnabled = true,
   onAiToggle,
   onFocus,
 }: MessageComposerProps) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Autosize: collapse to one row, then grow to content (capped so the composer
+  // can't swallow the feed).
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+  }, [message]);
 
   const handleSend = () => {
     const trimmed = message.trim();
@@ -68,111 +117,85 @@ export function MessageComposer({
     { path: mdiPaperclip, label: 'Attach file' },
     { path: mdiTranslate, label: 'Translate' },
     { path: mdiFormatListBulleted, label: 'Templates' },
-    { path: mdiRoomServiceOutline, label: 'Service requests' },
+    { path: mdiRoomServiceOutline, label: 'Service ticket' },
   ];
 
   return (
     <div style={{ padding: 16 }}>
       <div
-        className="overflow-clip rounded-[12px] transition-colors"
+        className="rounded-[12px] transition-colors"
         style={{
           backgroundColor: colors.colorWhite,
           border: `1px solid ${isFocused ? colors.colorBlueDark1 : colors.colorBlack6}`,
+          padding: 12,
         }}
       >
-        {/* Input Area */}
-        <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 12, paddingBottom: 12 }}>
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={() => {
-              setIsFocused(true);
-              onFocus?.();
-            }}
-            onBlur={() => setIsFocused(false)}
-            placeholder={placeholder}
-            disabled={disabled}
-            maxLength={1600}
-            rows={1}
-            className="w-full resize-none border-0 outline-none font-['Roboto',sans-serif] text-[14px] leading-[22px] placeholder:text-[#666666]"
-            style={{ color: colors.colorBlack1, minHeight: '22px' }}
-          />
-        </div>
-
-        {/* Divider */}
-        <div className="w-full h-[1px]" style={{ backgroundColor: colors.colorBlack6 }} />
+        {/* Input */}
+        <textarea
+          ref={textareaRef}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => {
+            setIsFocused(true);
+            onFocus?.();
+          }}
+          onBlur={() => setIsFocused(false)}
+          placeholder={placeholder}
+          disabled={disabled}
+          maxLength={1600}
+          rows={1}
+          className="w-full resize-none border-0 outline-none font-['Roboto',sans-serif] text-[14px] leading-[22px] placeholder:text-[#666666] scrollbar-invisible"
+          style={{ color: colors.colorBlack1, minHeight: 22 }}
+        />
 
         {/* Toolbar */}
-        <div className="flex items-center justify-between" style={{ padding: 8 }}>
-          {/* Left: tool icons */}
-          <div className="flex gap-3 items-center">
+        <div className="flex items-center justify-between" style={{ marginTop: 12 }}>
+          {/* Left: bare tool icons */}
+          <div className="flex items-center" style={{ gap: 12 }}>
             {toolIcons.map((tool) => (
-              <button
-                key={tool.label}
-                aria-label={tool.label}
-                className="rounded-[4px] hover:bg-[#f0f0f0] transition-colors cursor-pointer"
-                style={{ padding: 6 }}
-              >
-                <Icon path={tool.path} size={0.83} color={colors.colorBlack3} />
-              </button>
+              <ToolIcon key={tool.label} path={tool.path} label={tool.label} />
             ))}
           </div>
 
-          {/* Right: AI switch pill + split send */}
-          <div className="flex gap-3 items-center">
-            <div
-              className="flex items-center rounded-[6px] self-stretch"
-              style={{ backgroundColor: colors.colorBlack7, gap: 8, paddingLeft: 8, paddingRight: 16, paddingTop: 4, paddingBottom: 4 }}
+          {/* Right: AI pill + send */}
+          <div className="flex items-center" style={{ gap: 8 }}>
+            <button
+              onClick={onAiToggle}
+              aria-pressed={aiEnabled}
+              aria-label={aiEnabled ? 'Turn the AI agent off for this conversation' : 'Turn the AI agent on for this conversation'}
+              className={`${aiEnabled ? 'ai-pill-on' : 'ai-pill-off'} flex items-center justify-center cursor-pointer`}
+              style={{ height: 28, paddingLeft: 10, paddingRight: 10 }}
             >
-              <CanarySwitch
-                checked={aiEnabled}
-                onChange={onAiToggle || (() => {})}
-                label=""
-              />
               <span
-                className="font-['Roboto',sans-serif] font-medium text-[12px] leading-[18px]"
-                style={{ color: colors.colorBlack1 }}
+                className={`font-['Roboto',sans-serif] font-medium text-[12px] leading-[18px] whitespace-nowrap ${
+                  aiEnabled ? 'ai-gradient-text' : ''
+                }`}
+                style={aiEnabled ? undefined : { color: colors.colorBlack3 }}
               >
-                AI
+                {aiEnabled ? 'AI On' : 'AI Off'}
               </span>
-            </div>
+            </button>
 
-            {/* Split send button — 1px seam, side-only radii */}
-            <div className="flex items-center" style={{ gap: 1 }}>
-              <button
-                onClick={handleSend}
-                disabled={!canSend}
-                className="flex items-center justify-center font-['Roboto',sans-serif] font-medium text-[12px] transition-opacity"
-                style={{
-                  height: 32,
-                  paddingLeft: 16,
-                  paddingRight: 16,
-                  borderTopLeftRadius: 6,
-                  borderBottomLeftRadius: 6,
-                  backgroundColor: colors.colorBlueDark1,
-                  color: colors.colorWhite,
-                  opacity: canSend ? 1 : 0.5,
-                  cursor: canSend ? 'pointer' : 'not-allowed',
-                }}
-              >
-                Send via SMS
-              </button>
-              <button
-                onClick={() => console.log('Open channel picker')}
-                aria-label="Choose channel"
-                className="flex items-center justify-center transition-opacity hover:opacity-80 cursor-pointer"
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderTopRightRadius: 6,
-                  borderBottomRightRadius: 6,
-                  backgroundColor: colors.colorBlueDark1,
-                }}
-              >
-                <Icon path={mdiUnfoldMoreHorizontal} size={0.83} color={colors.colorWhite} />
-              </button>
-            </div>
+            <button
+              onClick={handleSend}
+              disabled={!canSend}
+              aria-label="Send message"
+              /* Stays full-strength blue when empty — the frame draws it that
+                 way in the idle state, and it is the composer's only anchor on
+                 the right. It is still `disabled`, so an empty Enter/click is
+                 a no-op; only the cursor gives that away. */
+              className="flex items-center justify-center rounded-[8px]"
+              style={{
+                width: 28,
+                height: 28,
+                padding: 0,
+                backgroundColor: colors.colorBlueDark1,
+                cursor: canSend ? 'pointer' : 'default',
+              }}
+            >
+              <Icon path={mdiSend} size={0.7} color={colors.colorWhite} />
+            </button>
           </div>
         </div>
       </div>

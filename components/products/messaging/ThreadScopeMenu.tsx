@@ -164,8 +164,10 @@ function Divider() {
  *
  * The popover is absolutely positioned INSIDE the list card, which is
  * `overflow-clip`. That is fine at these widths (both menus are narrower than
- * the header) and the 420px max-height keeps a tall assignment list inside a
- * short card; it scrolls rather than escaping.
+ * the header). The 480px max-height clears the full assignment list today
+ * (~460px: 9 rows, 3 overlines, 2 dividers) and only starts scrolling if the
+ * department/staff lists grow — the scrollbar is invisible, so a cap that bit
+ * into the list would silently hide its last row.
  */
 function ScopeSelect({
   triggerLabel,
@@ -230,7 +232,7 @@ function ScopeSelect({
           style={{
             top: 36,
             width: menuWidth,
-            maxHeight: 420,
+            maxHeight: 480,
             paddingTop: 4,
             paddingBottom: 4,
             border: `1px solid ${colors.colorBlack6}`,

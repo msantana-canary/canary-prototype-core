@@ -53,7 +53,8 @@ export default function MessagesPage() {
     currentView,
     searchQuery,
     selectThread,
-    setAiEnabled,
+    isThreadAiEnabled,
+    toggleThreadAi,
     sendMessage,
     startNewConversation,
     updateComposingPhone,
@@ -295,8 +296,11 @@ export default function MessagesPage() {
                 reservation={selectedReservation}
                 messages={selectedMessages}
                 onSendMessage={handleSendMessage}
-                aiEnabled={aiEnabled}
-                onAiToggle={() => setAiEnabled(!aiEnabled)}
+                /* The composer pill is the AI AGENT's per-conversation switch —
+                   not the demo auto-response simulation, which is the separate
+                   global `aiEnabled` still read by handleSendMessage below. */
+                aiEnabled={isThreadAiEnabled(selectedThread.id)}
+                onAiToggle={() => toggleThreadAi(selectedThread.id)}
                 isGuestInfoOpen={isGuestInfoOpen}
                 onToggleGuestInfo={toggleGuestInfo}
                 onArchive={() => archiveThread(selectedThread.id)}
