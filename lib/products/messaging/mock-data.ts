@@ -625,6 +625,24 @@ export const mockThreads: Thread[] = [
 
 /**
  * Mock messages - organized by thread ID
+ *
+ * ── AI STEPS ──────────────────────────────────────────────────────────────
+ * `aiSteps` is UNIVERSAL AI-message anatomy, not a garnish on a hero message:
+ * every `sender: 'ai'` message below carries a trace that plausibly produces
+ * that exact reply, and every one of them also carries a `sourceCount` (2–4).
+ * The card is closed by default; the "Completed N Steps" caption opens it.
+ *
+ * Narratives are invented but internally coherent — they use the thread's real
+ * guest, room and stay dates, and the tool sequence matches the shape of the
+ * answer (a dining reply searches places and ranks them; a late-arrival
+ * acknowledgment looks up the reservation and flags the front desk).
+ *
+ * ⚠ ONE deliberate exception: thread '1' / `m2` carries the FRAME's six steps
+ * verbatim (frame `steps-open`), which name "Room 504, Checking Out Today" and
+ * "Gold Elite" while Emily is room 153, Diamond Elite, arriving. That
+ * incoherence is a known Figma copy nit already logged in REDESIGN_NOTES
+ * ("Chain-of-thoughts says Room 504 vs Emily's 153") — it is reproduced on
+ * purpose so the exemplar matches the design file. Do not "fix" it here.
  */
 export const mockMessages: Record<string, Message[]> = {
   // Phone-only thread (no reservation linked)
@@ -646,6 +664,14 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-16T17:25:00'),
       channel: 'SMS',
       status: 'delivered',
+      sourceCount: 2,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found John Smith — Room 504, Checking In Today' },
+        { tool: 'Classify_intent', note: 'Late Arrival Notice — Flight Delay' },
+        { tool: 'Search_knowledge_base', note: 'Front Desk Staffed 24 Hours — No Action Required' },
+        { tool: 'Update_reservation_note', note: 'Late Arrival Flagged For The Front Desk' },
+        { tool: 'Decision', note: 'Acknowledge Only — No Follow-Up Needed' },
+      ],
     },
     {
       id: 'm102',
@@ -664,6 +690,16 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-16T18:32:00'),
       channel: 'SMS',
       status: 'delivered',
+      sourceCount: 3,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found John Smith — Room 504, In-House Through Jul. 15' },
+        { tool: 'Classify_intent', note: 'Dining Recommendation Request' },
+        { tool: 'Search_knowledge_base', note: 'Hotel Dining Guide — 4 Partner Restaurants' },
+        { tool: 'Search_local_places', note: '5 Restaurants Within Half A Mile' },
+        { tool: 'Check_guest_preferences', note: 'No Dietary Restrictions On File' },
+        { tool: 'Rank_results', note: 'Partner Venues First, Then Nearest' },
+        { tool: 'Compose_reply', note: '9 Venues Listed, Follow-Up Offered' },
+      ],
     },
   ],
   // Thread 15 — single manually-linked reservation
@@ -728,6 +764,14 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-15T15:12:00'),
       channel: 'SMS',
       status: 'delivered',
+      sourceCount: 2,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Emily Smith — Room 153, Arriving Tomorrow' },
+        { tool: 'Classify_intent', note: 'Amenity Request — Extra Bath Towels' },
+        { tool: 'Check_room_status', note: 'Room 153 Vacant — Pre-Arrival Prep Window Open' },
+        { tool: 'Create_service_ticket', note: 'Housekeeping — 2 Extra Bath Towels Before Arrival' },
+        { tool: 'Compose_reply', note: 'Confirm Request, Invite Further Prep' },
+      ],
     },
     {
       id: 'm204',
@@ -738,6 +782,11 @@ export const mockMessages: Record<string, Message[]> = {
       channel: 'SMS',
       status: 'delivered',
     },
+    // FAILED-SEND EXEMPLAR. The failed state itself is unchanged production
+    // logic; only its footer register moved — a red underlined caption link
+    // ("MESSAGE FAILED TO SEND") replaces the old red row + alert icon +
+    // "Learn more" pair. Lives on thread '1' with the other two exemplars so
+    // one screen shows all three footer registers.
     {
       id: 'm205',
       threadId: '1',
@@ -745,7 +794,7 @@ export const mockMessages: Record<string, Message[]> = {
       content: 'My pleasure! We look forward to welcoming you.',
       timestamp: new Date('2026-03-15T16:05:00'),
       channel: 'SMS',
-      status: 'delivered',
+      status: 'failed',
     },
     // ── Arrival day (2026-03-16) ──
     {
@@ -757,6 +806,9 @@ export const mockMessages: Record<string, Message[]> = {
       channel: 'SMS',
       status: 'delivered',
     },
+    // PRIMARY STEPS EXEMPLAR — the frame's six steps, VERBATIM (see the
+    // module header for why the room/tier facts deliberately disagree with
+    // Emily's actual reservation).
     {
       id: 'm2',
       threadId: '1',
@@ -765,7 +817,17 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-16T17:25:00'),
       channel: 'SMS',
       status: 'delivered',
+      sourceCount: 3,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Emily Smith — Room 504, Checking Out Today' },
+        { tool: 'Offer_upsells', note: 'Late Check-Out Is Available For This Stay' },
+        { tool: 'Search_upsells', note: 'Late Check-Out Until 3:30 PM — $40, One-Time Charge' },
+        { tool: 'Guest Profile', note: 'Gold Elite — Fee Can Be Waived' },
+        { tool: 'Create_service_ticket', note: 'Housekeeping Notified — Afternoon Clean For Room 504' },
+        { tool: 'Decision', note: 'Approve — Offer 3:30 PM Checkout' },
+      ],
     },
+    // AI-DECLINED EXEMPLAR — the frame puts it on this message.
     {
       id: 'm3',
       threadId: '1',
@@ -774,6 +836,7 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-16T18:30:00'),
       channel: 'SMS',
       status: 'delivered',
+      aiDeclined: true,
     },
     {
       id: 'm4',
@@ -783,6 +846,18 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-16T18:32:00'),
       channel: 'SMS',
       status: 'delivered',
+      sourceCount: 3,
+      // The frame's hover state names this one "Completed 8 Steps".
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Emily Smith — Room 153, In-House Through Jul. 15' },
+        { tool: 'Classify_intent', note: 'Dining Recommendation Request' },
+        { tool: 'Get_property_profile', note: 'Statler New York — Downtown, Walkable Core' },
+        { tool: 'Search_knowledge_base', note: 'Hotel Dining Guide — 4 Partner Restaurants' },
+        { tool: 'Search_local_places', note: '5 Restaurants Within Half A Mile' },
+        { tool: 'Check_guest_preferences', note: 'No Dietary Restrictions On File' },
+        { tool: 'Rank_results', note: 'Partner Venues First, Then Nearest' },
+        { tool: 'Compose_reply', note: '9 Venues Listed, Follow-Up Offered' },
+      ],
     },
   ],
   // Miguel's conversation
@@ -827,6 +902,14 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-16T09:32:00'),
       channel: 'SMS',
       status: 'delivered',
+      sourceCount: 2,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Brooklyn Simmons — Room 130, Departing Mar. 18' },
+        { tool: 'Classify_intent', note: 'Check-Out Process Question' },
+        { tool: 'Search_knowledge_base', note: 'Check-Out Policy — 11:00 AM Standard' },
+        { tool: 'Check_express_checkout_eligibility', note: 'In-Room TV Check-Out Enabled For This Stay' },
+        { tool: 'Compose_reply', note: 'State The Time, Name Both Methods' },
+      ],
     },
     {
       id: 'm8',
@@ -869,6 +952,13 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-16T09:46:00'),
       channel: 'SMS',
       status: 'delivered',
+      sourceCount: 2,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Kristin Watson — Room 130, In-House' },
+        { tool: 'Classify_intent', note: 'Amenity Question — Fitness Center' },
+        { tool: 'Search_knowledge_base', note: 'Fitness Center — 2nd Floor, Open 24/7, Keycard Access' },
+        { tool: 'Compose_reply', note: 'Confirm Location And Hours' },
+      ],
     },
     {
       id: 'm12',
@@ -899,6 +989,14 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-16T09:22:00'),
       channel: 'SMS',
       status: 'delivered',
+      sourceCount: 3,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Liam Johnson — Room 318, In-House' },
+        { tool: 'Classify_intent', note: 'Parking Question' },
+        { tool: 'Search_knowledge_base', note: 'Parking — Valet $35/Day, Self-Park $25/Day' },
+        { tool: 'Check_parking_availability', note: 'Both Lots Open, Attended 24 Hours' },
+        { tool: 'Compose_reply', note: 'Present Both Options With Rates' },
+      ],
     },
     {
       id: 'm15',
@@ -929,6 +1027,14 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-16T09:02:00'),
       channel: 'SMS',
       status: 'delivered',
+      sourceCount: 2,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Olivia Brown-Henderson — Room 204, In-House' },
+        { tool: 'Classify_intent', note: 'Breakfast Hours Question' },
+        { tool: 'Guest Profile', note: 'Platinum Elite — Breakfast Included On Rate' },
+        { tool: 'Search_knowledge_base', note: 'Breakfast Buffet — 6:30–10:30 AM, Main Dining Room' },
+        { tool: 'Compose_reply', note: 'Give Hours And Location' },
+      ],
     },
     {
       id: 'm18',
@@ -959,6 +1065,15 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-16T08:47:00'),
       channel: 'SMS',
       status: 'delivered',
+      sourceCount: 4,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Noah Davis — Room 415, Departing Mar. 17' },
+        { tool: 'Classify_intent', note: 'Local Attractions Request' },
+        { tool: 'Get_property_profile', note: 'Statler New York — Walkable Downtown Core' },
+        { tool: 'Search_knowledge_base', note: 'Concierge Guide — Waterfront, Museums, Historic District' },
+        { tool: 'Search_upsells', note: 'Guided Tours Bookable Through The Concierge Desk' },
+        { tool: 'Compose_reply', note: 'Three Walkable Areas, Offer To Arrange Tours' },
+      ],
     },
     {
       id: 'm21',
@@ -989,6 +1104,15 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-16T08:32:00'),
       channel: 'SMS',
       status: 'delivered',
+      sourceCount: 3,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Emma Wilson-Rodriguez — Room 409, Departing Mar. 19' },
+        { tool: 'Classify_intent', note: 'Late Check-Out Request' },
+        { tool: 'Search_upsells', note: 'Late Check-Out Until 2:00 PM — $50, One-Time Charge' },
+        { tool: 'Check_room_status', note: 'Room 409 Not Pre-Sold For Mar. 19 — Subject To Arrivals' },
+        { tool: 'Guest Profile', note: 'Club Member — No Complimentary Late Check-Out' },
+        { tool: 'Decision', note: 'Quote The Fee, Ask Before Booking' },
+      ],
     },
     {
       id: 'm24',
@@ -1094,6 +1218,13 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-15T23:46:00'),
       channel: 'SMS',
       status: 'delivered',
+      sourceCount: 2,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Hiroshi Nakamura — Room 504, In-House' },
+        { tool: 'Classify_intent', note: 'Room Service Hours Question' },
+        { tool: 'Search_knowledge_base', note: 'In-Room Dining — 24 Hours, Overnight Menu After 11 PM' },
+        { tool: 'Compose_reply', note: 'Confirm 24-Hour Service, Offer The Digital Menu' },
+      ],
     },
   ],
   // Ingrid's conversation
@@ -1157,6 +1288,14 @@ export const mockMessages: Record<string, Message[]> = {
       timestamp: new Date('2026-03-15T15:02:00'),
       channel: 'SMS',
       status: 'delivered',
+      sourceCount: 2,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Rachel Cohen — Room 416, In-House' },
+        { tool: 'Classify_intent', note: 'Outlet Hours Question — Rooftop Bar' },
+        { tool: 'Search_knowledge_base', note: 'Rooftop Bar — Daily 4:00 PM–Midnight' },
+        { tool: 'Search_upsells', note: 'Happy Hour 4–6 PM, Half-Price Cocktails' },
+        { tool: 'Compose_reply', note: 'Give Hours, Lead With Happy Hour' },
+      ],
     },
     {
       id: 'm76',
@@ -1298,6 +1437,15 @@ export const mockMessages: Record<string, Message[]> = {
       threadId: '12',
       sender: 'ai',
       content: 'Hi Maria! Yes, we can arrange a late checkout for you. Would 3:00 PM work for your schedule?',
+      sourceCount: 3,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Maria Garcia — Room 225, Departing Mar. 10' },
+        { tool: 'Detect_language', note: 'Spanish Greeting, English Body — Reply In English' },
+        { tool: 'Classify_intent', note: 'Late Check-Out Request — 6 PM Flight' },
+        { tool: 'Check_room_status', note: 'Room 225 Has No Same-Day Arrival' },
+        { tool: 'Search_upsells', note: 'Late Check-Out Until 3:00 PM Available' },
+        { tool: 'Decision', note: 'Offer 3:00 PM, Confirm Before Booking' },
+      ],
       timestamp: new Date('2026-03-09T09:35:00'),
       channel: 'SMS',
       status: 'delivered',

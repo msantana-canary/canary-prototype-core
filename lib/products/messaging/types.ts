@@ -9,6 +9,17 @@ export type MessageChannel = 'SMS' | 'WhatsApp' | 'Email' | 'Web';
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'failed';
 export type ThreadStatus = 'inbox' | 'archived' | 'blocked';
 
+/**
+ * One tool call in an AI message's trace. `tool` is the tool name as the trace
+ * records it (snake_case, occasionally a proper noun like "Guest Profile" /
+ * "Decision" — we render whatever the trace says, we don't normalise it);
+ * `note` is the one-line, hotelier-readable result of that call.
+ */
+export interface AiStep {
+  tool: string;
+  note: string;
+}
+
 export interface Message {
   id: string;
   threadId: string;
@@ -17,6 +28,22 @@ export interface Message {
   timestamp: Date;
   channel?: MessageChannel;
   status?: MessageStatus;
+  /**
+   * OBSERVABILITY — universal AI-message anatomy, not a special case. Every AI
+   * message carries the tool-by-tool trace that produced it; the message header
+   * summarises it ("Completed N Steps") and the caption toggles the card open.
+   * Closed by default everywhere.
+   */
+  aiSteps?: AiStep[];
+  /** Knowledge-base sources the answer drew on — the "N SOURCES" footer chip. */
+  sourceCount?: number;
+  /**
+   * Inbound message the AI deliberately left alone (low confidence, policy, or
+   * a human already owned the thread). Renders "AI CHOSE NOT TO RESPOND" after
+   * the channel caption — the absence of an AI reply is itself a fact worth
+   * showing, otherwise silence reads as a bug.
+   */
+  aiDeclined?: boolean;
 }
 
 /**
