@@ -1,6 +1,6 @@
 /**
- * The panel's four tab bodies: Linked Reservations · Upsells · Service Tasks ·
- * Call History.
+ * The panel's tab STRIP and its four tab bodies: Linked Reservations · Upsells ·
+ * Service Tasks · Call History.
  *
  * Every tab is the same shape — an in-body section heading carrying that
  * section's actions, then either a bordered list of rows or a quiet empty
@@ -17,8 +17,8 @@
 
 'use client';
 
-import React from 'react';
-import { colors, TagColor } from '@canary-ui/components';
+import React, { useEffect, useRef, useState } from 'react';
+import { CanaryTabs, colors, TabSize, TabType, TagColor } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import {
   mdiBedOutline,
@@ -35,11 +35,97 @@ import {
   KebabItem,
   LifecycleTag,
   PanelTag,
+  PANEL_PAD,
   RowDivider,
   RowList,
   SectionHeading,
 } from './panel-ui';
 import { LinkedReservation, CallRecord, ServiceTask, Upsell } from '@/lib/products/messaging/types';
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The tab strip
+   ───────────────────────────────────────────────────────────────────────── */
+
+export interface PanelTabDef {
+  id: string;
+  label: string;
+  /** DERIVED count. Zero means no badge — never a "0" pill. */
+  badge?: number;
+}
+
+/**
+ * The tab strip, on `CanaryTabs` (text / compact).
+ *
+ * Miguel, 2026-08-20: "Are the tabs our components? they're missing their hover
+ * states." They weren't, and they were — the strip was four hand-rolled buttons
+ * with no pointer response at all. Everything visual now comes from the
+ * library: the hover wash, the blue active label, the 4px underline, and the
+ * pink count badge. The only thing this file still owns is where the strip sits
+ * (the panel's 24px gutter, minus the library's own 16px tab padding, so the
+ * first label lands on the same vertical as everything above it) and the
+ * hairline it sits on. Height comes from `.panel-tab-bar` in globals.css —
+ * see the note there.
+ *
+ * ⚠ TWO LIBRARY GAPS, both worked around here and both logged in
+ * REDESIGN_NOTES:
+ *
+ * 1. `CanaryTabs` is UNCONTROLLED. It takes `defaultTab` and reports `onChange`,
+ *    but has no `activeTab` prop, so it cannot be told to move. This panel moves
+ *    the tab from outside three times — on thread switch, after linking a
+ *    reservation, after creating a service task — so the strip is remounted (a
+ *    bumped `key`) whenever the outside value diverges from the last value the
+ *    library reported. Remounting ONLY on divergence, rather than keying on the
+ *    active id, keeps ordinary clicks on the library's own state where their
+ *    transitions still run.
+ * 2. `badge` is rendered under a truthiness test, so `badge={0}` prints a
+ *    literal "0" pill. Zero is passed as `undefined` instead.
+ */
+export function PanelTabBar({
+  tabs,
+  activeTab,
+  onChange,
+}: {
+  tabs: PanelTabDef[];
+  activeTab: string;
+  onChange: (id: string) => void;
+}) {
+  const [seed, setSeed] = useState(0);
+  const reported = useRef(activeTab);
+
+  useEffect(() => {
+    if (reported.current !== activeTab) {
+      reported.current = activeTab;
+      setSeed((s) => s + 1);
+    }
+  }, [activeTab]);
+
+  return (
+    <div
+      className="panel-tab-bar"
+      style={{
+        paddingLeft: PANEL_PAD - 16,
+        borderBottom: `1px solid ${colors.colorBlack6}`,
+      }}
+    >
+      <CanaryTabs
+        key={seed}
+        tabs={tabs.map((t) => ({
+          id: t.id,
+          label: t.label,
+          badge: t.badge && t.badge > 0 ? t.badge : undefined,
+          content: <></>,
+        }))}
+        tabType={TabType.TEXT}
+        tabSize={TabSize.COMPACT}
+        defaultTab={activeTab}
+        onChange={(id) => {
+          reported.current = id;
+          onChange(id);
+        }}
+      />
+    </div>
+  );
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    Linked Reservations — COMPANIONS ONLY
@@ -234,9 +320,11 @@ function serviceTaskTag(task: ServiceTask): { label: string; color: TagColor } {
 export function ServiceTasksTab({
   tasks,
   onCreate,
+  onUnlink,
 }: {
   tasks: ServiceTask[];
   onCreate: () => void;
+  onUnlink: (task: ServiceTask) => void;
 }) {
   return (
     <>
@@ -281,15 +369,22 @@ export function ServiceTasksTab({
                       )}
                     </div>
                   </div>
-                  {/* Task lifecycle lives in the Service Tickets product; these
-                      are deliberate stubs. */}
+                  {/**
+                   * ONE item, and it is production's. The earlier menu offered
+                   * "Mark as complete" / "Reassign" / "Open in Service Tickets"
+                   * — three invented stubs. Production's row menu carries
+                   * "Unlink" alone, in the danger register, because the task's
+                   * LIFECYCLE belongs to the Service Tickets product; the only
+                   * thing this panel owns is the task's ASSOCIATION with this
+                   * conversation. No confirm dialog: production unlinks the
+                   * association without one, and unlike a guest unlink this
+                   * destroys nothing — the ticket still exists in its own
+                   * product.
+                   */}
                   <Kebab
-                    items={[
-                      { label: 'Mark as complete' },
-                      { label: 'Reassign' },
-                      { label: 'Open in Service Tickets' },
-                    ]}
+                    items={[{ label: 'Unlink', danger: true, onClick: () => onUnlink(task) }]}
                     label={`Actions for ${task.title}`}
+                    width={160}
                   />
                 </div>
               </React.Fragment>

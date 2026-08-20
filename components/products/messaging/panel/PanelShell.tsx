@@ -51,7 +51,12 @@ interface PanelShellProps {
   children: React.ReactNode;
 }
 
-export function PanelShell({ isOpen, onClose, children }: PanelShellProps) {
+/**
+ * `prefers-reduced-motion: reduce`, live. Every animated surface in the panel
+ * reads it from here rather than re-implementing the listener: the shell's
+ * slide, and the details band's expand, must agree about whether motion is on.
+ */
+export function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -60,6 +65,11 @@ export function PanelShell({ isOpen, onClose, children }: PanelShellProps) {
     mq.addEventListener('change', sync);
     return () => mq.removeEventListener('change', sync);
   }, []);
+  return reduced;
+}
+
+export function PanelShell({ isOpen, onClose, children }: PanelShellProps) {
+  const reduced = useReducedMotion();
 
   // Two-phase mount: `mounted` keeps the panel in the DOM through its exit
   // transition; `entered` drives the open/closed styles and flips on the second

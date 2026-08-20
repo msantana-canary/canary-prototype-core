@@ -123,6 +123,37 @@ body {
   border-radius: 4px !important;
 }
 
+/* ---- Conversation Details panel: tab strip rhythm ------------------------
+   The panel's tab row is `CanaryTabs` (text / compact) — hover wash, active
+   colour, underline indicator and count badge all come from the library. The
+   ONE thing the library can't express is the strip's HEIGHT: text/compact draws
+   `py-1` (4px), which yields a 33px strip where the panel's frame draws 47px.
+   Padding is therefore the only override, and it is done here rather than
+   inline because the library's padding lives on an internal element the
+   component gives no prop for.
+
+   Specificity (0,1,2) already beats the library's `.py-1` utility (0,1,0), so
+   this needs no `!important`. */
+.panel-tab-bar button > div:first-child {
+  padding-top: 12px;
+  padding-bottom: 10px;
+}
+
+/* ---- Conversation Details panel: commit button --------------------------
+   `CanaryButton` SHADED is exactly the panel's tonal-blue commit register
+   (colorBlueDark1 at 10% over white ≈ `colorBlueDark5`), and it brings the
+   hover/press states a hand-rolled button was missing. Its NORMAL size is
+   h-10 / rounded-4; the panel's commit bar is 44px / rounded-8. `!important`
+   because `h-10` and `rounded-[4px]` are library utilities of identical
+   specificity to anything we could pass through `className`. */
+.panel-commit-button {
+  height: 44px !important;
+  border-radius: 8px !important;
+}
+.panel-commit-button .button-bg {
+  border-radius: 8px !important;
+}
+
 /* ---- Orb avatar tile ----------------------------------------------------- */
 /* PORTED from the email-channel-ai worktree (components/products/email/
    AiDraftCard.tsx + its globals.css). There the orb is an 18px blob inside a

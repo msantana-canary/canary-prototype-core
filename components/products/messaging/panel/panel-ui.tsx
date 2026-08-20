@@ -227,6 +227,95 @@ export function CopyIcon({ value, label }: { value: string; label?: string }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   Control card
+   ───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * The root's control card — gray label over blue value, affordance icon at the
+ * right edge. Assignment and Reservations are the only two things a hotelier
+ * CHANGES from the panel root, and they are the panel's only two cards; they
+ * share this component so their hover can never drift apart.
+ *
+ * HOVER is the SELECTION REGISTER, not a gray wash: `colorBlueDark5` fill +
+ * `colorBlueDark1` border, exactly the tint family the selected thread row and
+ * the reservation result row already use, and the label darkens #666 → #000.
+ * A card whose whole job is "click me to change this" should answer the pointer
+ * in the colour the product uses for "this one".
+ *
+ * ⚠ Hover is STATE, not a `hover:` class. Every colour here is inline, and an
+ * inline style outranks any class — the same trap documented in
+ * `ThreadListItem`, where an inline `backgroundColor` silently beat the hover
+ * class and the row never lit up at all.
+ */
+export function ControlCard({
+  label,
+  value,
+  iconPath,
+  /** Per-glyph optical size: the chevron reads smaller than the ⇅ at equal size. */
+  iconSize = 0.8,
+  onClick,
+  ariaLabel,
+  ariaHasPopup,
+  ariaExpanded,
+}: {
+  label: string;
+  value: string;
+  iconPath: string;
+  iconSize?: number;
+  onClick: () => void;
+  ariaLabel?: string;
+  ariaHasPopup?: 'listbox' | 'menu' | 'dialog';
+  ariaExpanded?: boolean;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <button
+      onClick={onClick}
+      aria-label={ariaLabel}
+      aria-haspopup={ariaHasPopup}
+      aria-expanded={ariaExpanded}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocus={() => setIsHovered(true)}
+      onBlur={() => setIsHovered(false)}
+      className="w-full text-left rounded-[8px] cursor-pointer"
+      style={{
+        border: `1px solid ${isHovered ? colors.colorBlueDark1 : colors.colorBlack6}`,
+        backgroundColor: isHovered ? colors.colorBlueDark5 : colors.colorWhite,
+        transition: 'background-color 120ms ease-out, border-color 120ms ease-out',
+        paddingLeft: 12,
+        paddingRight: 10,
+        paddingTop: 8,
+        paddingBottom: 8,
+        minHeight: 56,
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <span
+            className="block truncate font-['Roboto',sans-serif] text-[13px] leading-[20px]"
+            style={{
+              color: isHovered ? colors.colorBlack1 : colors.colorBlack3,
+              transition: 'color 120ms ease-out',
+            }}
+          >
+            {label}
+          </span>
+          <span
+            className="block truncate font-['Roboto',sans-serif] text-[14px] leading-[22px]"
+            style={{ color: colors.colorBlueDark1 }}
+          >
+            {value}
+          </span>
+        </div>
+        <Icon path={iconPath} size={iconSize} color={colors.colorBlack1} />
+      </div>
+    </button>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    Section furniture
    ───────────────────────────────────────────────────────────────────────── */
 

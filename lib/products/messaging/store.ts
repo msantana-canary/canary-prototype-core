@@ -85,6 +85,11 @@ interface MessagingState {
   setThreadPrimary: (threadId: string, reservationId: string) => void;
   assignThread: (threadId: string, assignment?: ThreadAssignment) => void;
   createServiceTask: (guestId: string, task: Omit<ServiceTask, 'id'>) => void;
+  /**
+   * Drop a service task off a guest's list. It UNLINKS the association, it does
+   * not close the ticket — the ticket's lifecycle belongs to Service Tickets.
+   */
+  unlinkServiceTask: (guestId: string, taskId: string) => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set, get) => ({
@@ -426,6 +431,17 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
       serviceTasks: {
         ...state.serviceTasks,
         [guestId]: [{ ...task, id: `task-${Date.now()}` }, ...(state.serviceTasks[guestId] ?? [])],
+      },
+    }));
+  },
+
+  // Unlink a service task from this guest — the row leaves the panel; the
+  // ticket itself is untouched.
+  unlinkServiceTask: (guestId: string, taskId: string) => {
+    set((state) => ({
+      serviceTasks: {
+        ...state.serviceTasks,
+        [guestId]: (state.serviceTasks[guestId] ?? []).filter((task) => task.id !== taskId),
       },
     }));
   },

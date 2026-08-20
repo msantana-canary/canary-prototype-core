@@ -60,8 +60,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiChevronDown, mdiChevronRight, mdiChevronUp } from '@mdi/js';
-import { PanelShell, PANEL_ANIM_MS } from './PanelShell';
+import { PanelShell, PANEL_ANIM_MS, useReducedMotion } from './PanelShell';
 import {
+  ControlCard,
   CopyIcon,
   DetailRows,
   Kebab,
@@ -72,9 +73,11 @@ import {
 } from './panel-ui';
 import { AssignSelect } from './AssignSelect';
 import { Avatar } from '../Avatar';
+import { Toast } from '@/components/core/Toast';
 import {
   CallHistoryTab,
   LinkedReservationsTab,
+  PanelTabBar,
   ServiceTasksTab,
   UpsellsTab,
 } from './PanelTabs';
@@ -116,7 +119,11 @@ const TABS: { id: TabId; label: string }[] = [
    Root furniture
    ───────────────────────────────────────────────────────────────────────── */
 
-/** The right-hand control card: label over value, chevron at the edge. */
+/**
+ * The right-hand control card: label over value, chevron at the edge. Chrome,
+ * hover and all, is the shared `<ControlCard>` — the same one the Assign card
+ * uses, so the pair can never drift.
+ */
 function DrillCard({
   label,
   value,
@@ -127,57 +134,9 @@ function DrillCard({
   onClick: () => void;
 }) {
   return (
-    <button
-      onClick={onClick}
-      className="flex-1 min-w-0 text-left rounded-[8px] transition-colors hover:bg-[rgba(0,0,0,0.02)]"
-      style={{
-        border: `1px solid ${colors.colorBlack6}`,
-        paddingLeft: 12,
-        paddingRight: 10,
-        paddingTop: 8,
-        paddingBottom: 8,
-        minHeight: 56,
-      }}
-    >
-      <div className="flex items-center gap-2">
-        <div className="flex-1 min-w-0">
-          <span
-            className="block truncate font-['Roboto',sans-serif] text-[13px] leading-[20px]"
-            style={{ color: colors.colorBlack3 }}
-          >
-            {label}
-          </span>
-          <span
-            className="block truncate font-['Roboto',sans-serif] text-[14px] leading-[22px]"
-            style={{ color: colors.colorBlueDark1 }}
-          >
-            {value}
-          </span>
-        </div>
-        <Icon path={mdiChevronRight} size={0.8} color={colors.colorBlack1} />
-      </div>
-    </button>
-  );
-}
-
-/** The count badge on the Upsells tab. Derived; hidden at zero. */
-function TabBadge({ count }: { count: number }) {
-  if (count <= 0) return null;
-  return (
-    <span
-      className="flex items-center justify-center shrink-0 font-['Roboto',sans-serif] font-bold"
-      style={{
-        width: 18,
-        height: 18,
-        borderRadius: 9999,
-        backgroundColor: colors.colorPink1,
-        color: colors.colorWhite,
-        fontSize: 11,
-        lineHeight: '18px',
-      }}
-    >
-      {count}
-    </span>
+    <div className="flex-1 min-w-0">
+      <ControlCard label={label} value={value} iconPath={mdiChevronRight} onClick={onClick} />
+    </div>
   );
 }
 
@@ -229,6 +188,14 @@ function ExpanderPill({
  */
 const BAND_BG = '#F7F8F9';
 
+/**
+ * The details band's expand. Opening is the slower of the two: it is the motion
+ * that has to be READ (a block of record you are about to scan appearing under
+ * your click). Closing is a dismissal — a dismissal that lingers reads sticky.
+ */
+const BAND_OPEN_MS = 220;
+const BAND_CLOSE_MS = 160;
+
 /* ─────────────────────────────────────────────────────────────────────────
    The panel
    ───────────────────────────────────────────────────────────────────────── */
@@ -251,7 +218,10 @@ export function ConversationDetailsPanel({
     unlinkReservation,
     unlinkGuest,
     createServiceTask,
+    unlinkServiceTask,
   } = useMessagingStore();
+
+  const reduced = useReducedMotion();
 
   const identity = useMemo(
     () => panelIdentity(thread, threadPrimaryReservationId[thread.id]),
@@ -264,6 +234,7 @@ export function ConversationDetailsPanel({
   const [stack, setStack] = useState<PanelRoute[]>([]);
   const [depth, setDepth] = useState(0);
   const [unlinkTarget, setUnlinkTarget] = useState<UnlinkTarget | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   // Switching threads resets the panel to its root — a drill-in about one guest
   // is meaningless once the panel is about another.
@@ -273,7 +244,14 @@ export function ConversationDetailsPanel({
     setTab('linked');
     setDetailsOpen(false);
     setUnlinkTarget(null);
+    setToast(null);
   }, [thread.id]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
 
   const push = (route: PanelRoute) => {
     setStack((s) => [...s, route]);
@@ -392,15 +370,34 @@ export function ConversationDetailsPanel({
               </div>
             </div>
 
-            {/* EXPANDER + DETAILS BAND. The pill is centred on the boundary,
-                so the white zone above needs no extra room and the band below
-                opens beneath it. */}
+            {/* EXPANDER + DETAILS BAND. The pill is centred on the boundary
+                line above; the band opens beneath it.
+
+                ── ONE LINE, NOT TWO ─────────────────────────────────────────
+                This zone used to carry a top hairline AND the tab strip carried
+                its own, so the closed state drew two rules 15px apart with
+                nothing between them — a band of empty gray that read as a
+                mistake. The pill's line stays (it is what the pill straddles);
+                the tab strip's top rule is gone. The strip keeps its BOTTOM
+                hairline, because that is the rail the active indicator sits on.
+
+                ── WHY grid-template-rows ───────────────────────────────────
+                The band used to mount and unmount, so a click swapped 200-odd
+                pixels in with no transit. Height can't be transitioned from
+                `auto`, and a measured max-height has to guess a number that the
+                anonymous variant (three rows) and the reservation variant (a
+                dozen) don't share. `0fr → 1fr` on a one-row grid animates to the
+                content's OWN height, whatever it is, with `overflow: hidden` on
+                the track so nothing flashes a scrollbar on the way. */}
             <div
               className="relative"
               style={{
                 borderTop: `1px solid ${colors.colorBlack6}`,
-                paddingTop: detailsOpen ? 0 : 15,
-                backgroundColor: detailsOpen ? BAND_BG : undefined,
+                paddingTop: 15,
+                backgroundColor: detailsOpen ? BAND_BG : 'transparent',
+                transition: reduced
+                  ? 'none'
+                  : `background-color ${detailsOpen ? BAND_OPEN_MS : BAND_CLOSE_MS}ms ease-out`,
               }}
             >
               <div className="absolute left-0 right-0 flex justify-center" style={{ top: -15, zIndex: 1 }}>
@@ -412,96 +409,80 @@ export function ConversationDetailsPanel({
                 />
               </div>
 
-              {detailsOpen && (
-                <div style={{ padding: `28px ${PANEL_PAD}px 18px` }}>
-                  {isAnonymous ? (
-                    <DetailRows
-                      rows={[
-                        {
-                          label: 'Name',
-                          // Stub: naming an unknown number is a real production
-                          // action, but it writes to the PMS, and inventing that
-                          // write here would demo a pipeline that doesn't exist.
-                          value: 'Add name',
-                          isLink: true,
-                          trailing: <CopyIcon value="" label="Copy name" />,
-                        },
-                        { label: 'Phone', value: thread.contactNumber },
-                        {
-                          label: 'Email',
-                          value: 'Add email',
-                          isLink: true,
-                          trailing: <CopyIcon value="" label="Copy email" />,
-                        },
-                      ]}
-                    />
-                  ) : (
-                    primary && (
-                      <>
-                        <h4
-                          className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px]"
-                          style={{ color: colors.colorBlack1, marginBottom: 8 }}
-                        >
-                          Current Reservation
-                        </h4>
-                        <ReservationRecord reservation={primary.reservation} guest={primary.guest} />
-                      </>
-                    )
-                  )}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateRows: detailsOpen ? '1fr' : '0fr',
+                  transition: reduced
+                    ? 'none'
+                    : detailsOpen
+                      ? `grid-template-rows ${BAND_OPEN_MS}ms cubic-bezier(0.16, 1, 0.3, 1)`
+                      : `grid-template-rows ${BAND_CLOSE_MS}ms cubic-bezier(0.4, 0, 1, 1)`,
+                }}
+              >
+                <div
+                  style={{
+                    minHeight: 0,
+                    overflow: 'hidden',
+                    opacity: detailsOpen ? 1 : 0,
+                    transition: reduced
+                      ? 'none'
+                      : detailsOpen
+                        ? 'opacity 170ms ease-out 60ms'
+                        : 'opacity 110ms ease-in',
+                  }}
+                >
+                  {/* 15 above (the zone's own padding, which holds the pill's
+                      lower half) + 13 here = the frame's 28. */}
+                  <div style={{ padding: `13px ${PANEL_PAD}px 18px` }} inert={!detailsOpen}>
+                    {isAnonymous ? (
+                      <DetailRows
+                        rows={[
+                          {
+                            label: 'Name',
+                            // Stub: naming an unknown number is a real production
+                            // action, but it writes to the PMS, and inventing that
+                            // write here would demo a pipeline that doesn't exist.
+                            value: 'Add name',
+                            isLink: true,
+                            trailing: <CopyIcon value="" label="Copy name" />,
+                          },
+                          { label: 'Phone', value: thread.contactNumber },
+                          {
+                            label: 'Email',
+                            value: 'Add email',
+                            isLink: true,
+                            trailing: <CopyIcon value="" label="Copy email" />,
+                          },
+                        ]}
+                      />
+                    ) : (
+                      primary && (
+                        <>
+                          <h4
+                            className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px]"
+                            style={{ color: colors.colorBlack1, marginBottom: 8 }}
+                          >
+                            Current Reservation
+                          </h4>
+                          <ReservationRecord reservation={primary.reservation} guest={primary.guest} />
+                        </>
+                      )
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* TABS */}
-            <div
-              className="flex items-center"
-              style={{
-                gap: 28,
-                paddingLeft: PANEL_PAD,
-                paddingRight: PANEL_PAD,
-                borderTop: `1px solid ${colors.colorBlack6}`,
-                borderBottom: `1px solid ${colors.colorBlack6}`,
-              }}
-            >
-              {TABS.map((t) => {
-                const isActive = tab === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    role="tab"
-                    aria-selected={isActive}
-                    onClick={() => setTab(t.id)}
-                    className="relative flex items-center gap-1.5"
-                    style={{ paddingTop: 12, paddingBottom: 12 }}
-                  >
-                    <span
-                      className="font-['Roboto',sans-serif] text-[14px] leading-[22px] whitespace-nowrap"
-                      style={{
-                        color: isActive ? colors.colorBlueDark1 : colors.colorBlack1,
-                        fontWeight: isActive ? 500 : 400,
-                      }}
-                    >
-                      {t.label}
-                    </span>
-                    {t.id === 'upsells' && <TabBadge count={upsells.length} />}
-                    {isActive && (
-                      <span
-                        aria-hidden
-                        style={{
-                          position: 'absolute',
-                          left: -2,
-                          right: -2,
-                          bottom: -1,
-                          height: 3,
-                          borderRadius: '2px 2px 0 0',
-                          backgroundColor: colors.colorBlueDark1,
-                        }}
-                      />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <PanelTabBar
+              tabs={TABS.map((t) => ({
+                ...t,
+                badge: t.id === 'upsells' ? upsells.length : undefined,
+              }))}
+              activeTab={tab}
+              onChange={(id) => setTab(id as TabId)}
+            />
 
             {/* TAB BODY */}
             <div style={{ padding: PANEL_PAD }}>
@@ -521,7 +502,18 @@ export function ConversationDetailsPanel({
               )}
               {tab === 'upsells' && <UpsellsTab upsells={upsells} />}
               {tab === 'tasks' && (
-                <ServiceTasksTab tasks={tasks} onCreate={() => push({ kind: 'create-task' })} />
+                <ServiceTasksTab
+                  tasks={tasks}
+                  onCreate={() => push({ kind: 'create-task' })}
+                  /* No confirm: production unlinks the association outright, and
+                     nothing is destroyed — the ticket lives in Service Tickets.
+                     The toast is the receipt. */
+                  onUnlink={(task) => {
+                    if (!primary) return;
+                    unlinkServiceTask(primary.guest.id, task.id);
+                    setToast('Service task unlinked');
+                  }}
+                />
               )}
               {tab === 'calls' && (
                 <CallHistoryTab calls={calls} onOpenCall={(call) => push({ kind: 'call', callId: call.id })} />
@@ -611,6 +603,9 @@ export function ConversationDetailsPanel({
         onCancel={() => setUnlinkTarget(null)}
         onConfirm={confirmUnlink}
       />
+
+      {/* Portals to <body>, so it escapes the panel's transform context. */}
+      <Toast message={toast ?? ''} isOpen={!!toast} variant="success" />
     </PanelShell>
   );
 }

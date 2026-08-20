@@ -22,10 +22,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { colors, TagColor } from '@canary-ui/components';
+import { ButtonSize, ButtonType, CanaryButton, colors, TagColor } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiPlay, mdiRewind15, mdiFastForward15 } from '@mdi/js';
 import { CopyIcon, PanelHeader, PanelTag } from './panel-ui';
+import { PanelTabBar } from './PanelTabs';
 import { truncateId } from './panel-format';
 import { AiStepsCard } from '../AiStepsCard';
 import { CallRecord } from '@/lib/products/messaging/types';
@@ -183,56 +184,19 @@ export function CallDetailsPage({
           </div>
         </div>
 
-        {/* SUMMARY / TRANSCRIPT — this page's OWN tabs. */}
-        <div
-          className="flex items-center"
-          style={{
-            gap: 24,
-            paddingLeft: 24,
-            paddingRight: 24,
-            marginTop: 16,
-            borderBottom: `1px solid ${colors.colorBlack6}`,
-          }}
-        >
-          {(
-            [
-              ['summary', 'Summary'],
-              ['transcript', 'Transcript'],
-            ] as [CallTab, string][]
-          ).map(([id, label]) => {
-            const isActive = tab === id;
-            return (
-              <button
-                key={id}
-                onClick={() => setTab(id)}
-                aria-selected={isActive}
-                role="tab"
-                className="relative font-['Roboto',sans-serif] text-[14px] leading-[22px]"
-                style={{
-                  color: isActive ? colors.colorBlueDark1 : colors.colorBlack1,
-                  fontWeight: isActive ? 500 : 400,
-                  paddingTop: 10,
-                  paddingBottom: 10,
-                }}
-              >
-                {label}
-                {isActive && (
-                  <span
-                    aria-hidden
-                    style={{
-                      position: 'absolute',
-                      left: -2,
-                      right: -2,
-                      bottom: -1,
-                      height: 3,
-                      borderRadius: '2px 2px 0 0',
-                      backgroundColor: colors.colorBlueDark1,
-                    }}
-                  />
-                )}
-              </button>
-            );
-          })}
+        {/* SUMMARY / TRANSCRIPT — this page's OWN tabs, on the SAME
+            `<PanelTabBar>` as the root strip. Two hand-rolled tab strips on one
+            surface is two chances to drift; this one was the second, and it had
+            the same missing hover the root strip did. */}
+        <div style={{ marginTop: 16 }}>
+          <PanelTabBar
+            tabs={[
+              { id: 'summary', label: 'Summary' },
+              { id: 'transcript', label: 'Transcript' },
+            ]}
+            activeTab={tab}
+            onChange={(id) => setTab(id as CallTab)}
+          />
         </div>
 
         <div style={{ padding: 24 }}>
@@ -254,14 +218,20 @@ export function CallDetailsPage({
         </div>
       </div>
 
-      {/* Stub — there is no file to hand over in a prototype. */}
+      {/* Stub — there is no file to hand over in a prototype. The CHROME is the
+          library's, though: `CanaryButton` SHADED is the tonal-blue commit
+          register this bar was hand-rolling (colorBlueDark1 at 10% over white),
+          and it brings the hover and press states the hand-rolled one never had.
+          `.panel-commit-button` restores the panel's 44px / rounded-8 geometry —
+          see globals.css. */}
       <div className="shrink-0" style={{ borderTop: `1px solid ${colors.colorBlack6}`, padding: 24 }}>
-        <button
-          className="w-full rounded-[8px] font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] transition-opacity hover:opacity-90"
-          style={{ height: 44, backgroundColor: colors.colorBlueDark5, color: colors.colorBlueDark1 }}
+        <CanaryButton
+          type={ButtonType.SHADED}
+          size={ButtonSize.NORMAL}
+          className="panel-commit-button w-full"
         >
           Download Transcript
-        </button>
+        </CanaryButton>
       </div>
     </div>
   );

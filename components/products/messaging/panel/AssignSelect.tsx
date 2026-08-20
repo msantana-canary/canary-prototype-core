@@ -12,8 +12,9 @@
  * XOR a DEPARTMENT, never both. That is structural here — the menu carries ONE
  * value, so there is nowhere to put a second assignment.
  *
- * The TRIGGER is the control card itself (label over value, ⇅ at the right
- * edge), because the frame gives assignment a card and not a form field. The
+ * The TRIGGER is the shared `<ControlCard>` (label over value, ⇅ at the right
+ * edge), because the frame gives assignment a card and not a form field —
+ * shared with the Reservations card so the two can't drift apart on hover. The
  * popover borrows the branch's menu register: white rounded-8, 1px colorBlack6,
  * NO shadow, uppercase gray section overlines, right-aligned check on the
  * active row.
@@ -25,6 +26,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiCheck, mdiUnfoldMoreHorizontal } from '@mdi/js';
+import { ControlCard } from './panel-ui';
 import { DEPARTMENTS, STAFF } from '../ThreadScopeMenu';
 import { ThreadAssignment } from '@/lib/products/messaging/types';
 
@@ -91,39 +93,16 @@ export function AssignSelect({
 
   return (
     <div className="relative flex-1 min-w-0" ref={rootRef}>
-      <button
+      <ControlCard
+        label="Assigned to"
+        value={assignment?.name ?? 'None'}
+        iconPath={mdiUnfoldMoreHorizontal}
+        iconSize={0.72}
         onClick={() => setIsOpen((v) => !v)}
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
-        aria-label="Assign this conversation"
-        className="w-full text-left rounded-[8px] transition-colors hover:bg-[rgba(0,0,0,0.02)]"
-        style={{
-          border: `1px solid ${colors.colorBlack6}`,
-          paddingLeft: 12,
-          paddingRight: 10,
-          paddingTop: 8,
-          paddingBottom: 8,
-          minHeight: 56,
-        }}
-      >
-        <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0">
-            <span
-              className="block font-['Roboto',sans-serif] text-[13px] leading-[20px]"
-              style={{ color: colors.colorBlack3 }}
-            >
-              Assigned to
-            </span>
-            <span
-              className="block truncate font-['Roboto',sans-serif] text-[14px] leading-[22px]"
-              style={{ color: colors.colorBlueDark1 }}
-            >
-              {assignment?.name ?? 'None'}
-            </span>
-          </div>
-          <Icon path={mdiUnfoldMoreHorizontal} size={0.72} color={colors.colorBlack1} />
-        </div>
-      </button>
+        ariaLabel="Assign this conversation"
+        ariaHasPopup="listbox"
+        ariaExpanded={isOpen}
+      />
 
       {isOpen && (
         <div
