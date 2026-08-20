@@ -1771,6 +1771,141 @@ correctly (the frame's stale "Show"-while-open label was not replicated).
   anonymous thread, "Download Transcript", playback controls, the error-code
   link. Playback is decorative but **coherent** — the scrubber's fill is computed
   from elapsed/total, so it can't contradict the clock the way the frame's does.
+  *(Batch 3.1: the service-task kebab is no longer a stub — its one item,
+  "Unlink", is wired.)*
 - **Full-viewport scrim.** The panel now clears the top bar, so the scrim covers
   the whole window rather than stopping under the chrome. It dims the thread you
   may still be reading; if that reads wrong, the scrim is one style block.
+
+---
+
+## Batch 3.1 — Miguel's eyeball pass on the panel (2026-08-20)
+
+Six fixes, all on the Conversation Details panel. Four are visual; two are the
+panel giving up hand-rolled chrome for the library's.
+
+### 1. The control cards answer the pointer in the SELECTION register
+
+"Assigned to" and "{Name}'s Reservations" had a 2%-black wash for hover — which
+on a card that already sits on white is indistinguishable from no hover at all.
+They now light up in the register the product already uses for "this one":
+`colorBlueDark5` fill, `colorBlueDark1` border, label darkening #666 → #000,
+120ms. That is the same tint family as the selected thread row and the selected
+reservation result row, so the panel's cards and the list's rows say "picked"
+the same way.
+
+The two cards are now ONE component (`<ControlCard>` in `panel-ui.tsx`). They
+were two copies of the same 40 lines in two files, which is exactly how the
+hover states would have drifted apart again.
+
+⚠ Hover is React STATE here, not a `hover:` class — the cards carry inline
+colours, and an inline style outranks any class. Same trap already documented
+for `ThreadListItem`.
+
+### 2. One line above the tabs, not two
+
+The details zone drew a top hairline AND the tab strip drew its own, so the
+closed panel showed two rules 15px apart with a dead gray sliver between them.
+The pill's line stays (it is the line the pill straddles); the tab strip's TOP
+rule is gone. Its BOTTOM hairline stays — that is the rail the active indicator
+sits on.
+
+### 3. The details band expands instead of appearing
+
+The band used to mount and unmount, so a click swapped ~250px of record in with
+no transit. It now animates on `grid-template-rows: 0fr → 1fr` — 220ms open on
+the panel's own `cubic-bezier(0.16, 1, 0.3, 1)`, 160ms close on an ease-in, with
+opacity trailing 60ms behind on open. `prefers-reduced-motion: reduce` drops
+every transition to `none` and the swap is instant again.
+
+Why `0fr → 1fr` and not a measured max-height: height can't be transitioned from
+`auto`, and a max-height guess has to cover both variants — the anonymous thread
+opens 109px of contact rows, a checked-in guest opens 245px of reservation
+record. The grid track animates to whatever the content actually is. The track
+carries `overflow: hidden`, so nothing flashes a scrollbar mid-transition, and
+the collapsed content is `inert` so a Tab key can't land inside a zero-height
+region.
+
+The anonymous thread-details expander is the same mechanism and got it for free.
+
+### 4. The tab strip is `CanaryTabs` now
+
+Miguel: *"Are the tabs our components? they're missing their hover states."*
+They weren't, and they were. `<PanelTabBar>` (in `PanelTabs.tsx`) is
+`CanaryTabs` text/compact, and the hover wash, the blue active label, the 4px
+underline and the pink count badge all come from the library. The CALL DETAILS
+drill-in's Summary/Transcript strip was the second hand-rolled tab row on this
+surface with the same missing hover — it is the same component now too.
+
+**What CanaryTabs could express:** the badge (`CanaryTab.badge`, a pink pill —
+no local badge component needed), the hover wash (`hover:bg-black/5`), the
+pressed state, the active blue, the underline indicator.
+
+**What it could NOT — two library asks:**
+
+27. **⚠ `CanaryTabs` is UNCONTROLLED.** It takes `defaultTab` and reports
+    `onChange`, and there is no `activeTab` prop, so a consumer cannot MOVE the
+    tab. This panel moves it from outside three times — thread switch, after
+    linking a reservation, after creating a service task. The workaround is a
+    remount (bumped `key`) whenever the outside value diverges from the last
+    value the library reported; remounting only on divergence keeps ordinary
+    clicks on the library's own state, where its transitions still run. **The
+    fix belongs in the library**: accept an optional `activeTab` and behave as a
+    controlled component when it is passed.
+28. **⚠ `CanaryTabs` renders `badge` under a truthiness test**, so `badge={0}`
+    prints a literal "0" pill. Every count badge is derived, and derived counts
+    are zero most of the time. Zero is passed as `undefined` here; the library
+    should treat `0` as "no badge" (or render it, but deliberately).
+29. **⚠ `CanaryTabs` has no ARIA tab semantics** — no `role="tablist"` /
+    `role="tab"` / `aria-selected`. The hand-rolled strip this replaced had
+    them. Worth a library pass.
+30. **`CanaryTabs` text/compact draws a 4px label row**, which yields a 33px
+    strip where this panel's frame draws 47px. There is no padding or density
+    prop, so `.panel-tab-bar` in `globals.css` overrides the internal padding.
+    A `density` or `padding` prop would remove the need.
+
+Two deliberate deviations from the old hand-rolled strip, both taken because
+they are the library's own contract: the active underline now spans the full tab
+(label + its 16px padding) rather than hugging the label ±2px, and inactive
+labels are `colorBlack2`/medium rather than `colorBlack1`/regular.
+
+### 5. The service-task kebab is production's
+
+It offered "Mark as complete" / "Reassign" / "Open in Service Tickets" — three
+invented stubs. Production's row menu carries **"Unlink" alone, in the danger
+register**, because a ticket's LIFECYCLE belongs to the Service Tickets product
+and the only thing this panel owns is the ticket's ASSOCIATION with this
+conversation. No confirm dialog: production unlinks without one, and unlike a
+guest unlink this destroys nothing — the ticket still exists in its own product.
+The row leaves the list (`unlinkServiceTask` on the store) and a toast is the
+receipt.
+
+No "Open in {vendor}" stub above it: the prototype's `ServiceTask` carries no
+vendor, and the reference menu has one item.
+
+### 6. Download Transcript is `CanaryButton`
+
+`ButtonType.SHADED` is exactly the panel's tonal-blue commit register
+(`colorBlueDark1` at 10% over white ≈ `colorBlueDark5`) and it brings hover and
+press states the hand-rolled button never had. `.panel-commit-button` in
+`globals.css` restores the panel's 44px / rounded-8 geometry — `CanaryButton`'s
+NORMAL size is h-10 / rounded-4 and neither is a prop.
+
+⚠ Its sibling `PanelFooterAction` (the drill-in commit bar) is still
+hand-rolled. Identical geometry and colour, but its hover is an opacity fade
+rather than the library's background step. One follow-up edit, deliberately not
+taken in this batch.
+
+### Files touched (batch 3.1)
+
+- `components/products/messaging/panel/` — `panel-ui.tsx` (**new**
+  `<ControlCard>`), `ConversationDetailsPanel.tsx`, `AssignSelect.tsx`,
+  `PanelTabs.tsx` (**new** `<PanelTabBar>`), `CallDetailsPage.tsx`,
+  `PanelShell.tsx` (`useReducedMotion` extracted and exported).
+- `lib/products/messaging/store.ts` — `unlinkServiceTask`.
+- `app/globals.css` — `.panel-tab-bar`, `.panel-commit-button`.
+
+### Not touched, on purpose
+
+- **The details band's ground** (`BAND_BG = '#F7F8F9'`) — Miguel is ruling on it
+  separately.
