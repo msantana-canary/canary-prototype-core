@@ -317,6 +317,14 @@ export function ThreadView({
           so it inherits the composer's own padding and edges. */}
       <div className="shrink-0">
         <MessageComposer
+          /* KEYED BY THREAD. The composer holds its text in local state, so
+             without this the box carries its contents from one conversation to
+             the next. That was survivable when the only way to fill it was to
+             type; it stopped being survivable the moment the draft card could
+             put an AI's reply to Chloe into Lucia's composer.
+             (Real per-thread drafts — kept, not cleared — are a separate
+             feature; this at least never shows one guest's text to another.) */
+          key={thread.id}
           onSend={onSendMessage}
           placeholder="Type SMS message..."
           aiEnabled={aiEnabled}
