@@ -1367,6 +1367,16 @@ every transient control state (thread-header `IconAction`, the scope-select
 trigger). Neutral vs. blue also keeps the two states in different colour
 families rather than two strengths of the same one.
 
+⚠ **Root cause, found on inspection: the hover was not weak, it was dead.** The
+row set `backgroundColor: 'transparent'` inline for the unselected case, and an
+inline style outranks any class — so `hover:bg-*` never painted, at `#f9fafb` or
+at 8%. Unselected rows now set no inline background at all and let the class own
+the state; selected rows keep the inline fill because they have no hover to
+lose. **Worth grepping for elsewhere**: the same
+`isSelected ? '' : 'hover:bg-…'` + inline-`transparent` pattern appears in
+`broadcast/BroadcastGroupList.tsx`, which is likely dead for the same reason
+(untouched here — out of scope for this batch).
+
 ### 5. Search + "New message" moved INSIDE the list card
 
 Per node `searchbar-node`. The band used to be full width above BOTH columns,
