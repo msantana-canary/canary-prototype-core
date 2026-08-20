@@ -227,6 +227,69 @@ export function CopyIcon({ value, label }: { value: string; label?: string }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   Carrier error register
+   ───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * ONE failed channel: a small gray channel overline, then one red sentence in
+ * which ONLY the carrier code is underlined.
+ *
+ * ⚠ EXTRACTED, not written (batch 4). This anatomy landed inline in the guest
+ * -journey scheduled-messages timeline, and the "Message Not Delivered" modal
+ * draws the identical thing at a larger size. Two inline copies of a failure
+ * register is how two products end up disagreeing about what a carrier said, so
+ * it is one component now — and it is already on the promotion list, because
+ * every Canary product that sends anything can fail exactly this way.
+ *
+ * The underline is the code and nothing else: the number is the searchable,
+ * quotable, support-ticketable part, and the sentence around it is our own
+ * translation of the carrier's wording. There is no "Learn more" and no tint —
+ * a hotel cannot fix a carrier failure, but the code on screen saves Canary
+ * support the investigation.
+ *
+ * `channel` renders VERBATIM. "WhatsApp" is brand-cased and "SMS" is an
+ * initialism; a `text-transform` here would invent a brand.
+ */
+export function CarrierErrorLine({
+  channel,
+  code,
+  detail,
+  compact = false,
+}: {
+  channel: string;
+  code: string;
+  detail: string;
+  /** The timeline's tighter 13px setting. The modal draws 14px. */
+  compact?: boolean;
+}) {
+  return (
+    <div>
+      <span
+        className={`block font-['Roboto',sans-serif] text-[12px] ${compact ? 'leading-[16px]' : 'leading-[18px]'}`}
+        style={{ color: colors.colorBlack3 }}
+      >
+        {channel}
+      </span>
+      <p
+        className={`font-['Roboto',sans-serif] ${compact ? 'text-[13px] leading-[19px]' : 'text-[14px] leading-[22px]'}`}
+        style={{ color: colors.colorRed1, marginTop: 2 }}
+      >
+        Error{' '}
+        <span
+          role="link"
+          tabIndex={0}
+          className="underline cursor-pointer"
+          style={{ textUnderlineOffset: 2 }}
+        >
+          {code}
+        </span>
+        : {detail}
+      </p>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    Control card
    ───────────────────────────────────────────────────────────────────────── */
 

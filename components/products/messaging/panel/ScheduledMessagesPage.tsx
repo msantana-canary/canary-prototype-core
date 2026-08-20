@@ -37,7 +37,7 @@ import React from 'react';
 import { colors, TagColor } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiEmailOutline, mdiMessageProcessingOutline, mdiWhatsapp } from '@mdi/js';
-import { EmptyState, PanelPage, PanelTag } from './panel-ui';
+import { CarrierErrorLine, EmptyState, PanelPage, PanelTag } from './panel-ui';
 import {
   buildJourneyTimeline,
   GjChannelStatus,
@@ -195,32 +195,21 @@ export function ScheduledMessagesPage({
                     ))}
                   </div>
 
-                  {/* ERROR REGISTER — one block per failed channel. Mirrors
-                      production's messaging failure copy: a small gray channel
-                      overline, then ONE red sentence where only the carrier code
-                      is underlined (the Twilio-docs link). No tint, no separate
-                      "Learn more" — a hotel can't fix a carrier failure, but the
-                      code on screen saves Canary support the investigation. */}
+                  {/* ERROR REGISTER — one block per failed channel. The anatomy
+                      moved to `<CarrierErrorLine>` in batch 4, when the carrier
+                      modal turned out to draw the identical thing; this page and
+                      that modal can no longer disagree about what a carrier
+                      said. Same copy, same underline-the-code-only rule. */}
                   {entry.channels
                     .filter((c) => c.status === 'failed' && c.errorCode)
                     .map((c, j) => (
                       <div key={`err-${j}`} style={{ marginTop: 8 }}>
-                        <span
-                          className="block font-['Roboto',sans-serif] text-[12px] leading-[16px]"
-                          style={{ color: colors.colorBlack3 }}
-                        >
-                          {GJ_CHANNEL_LABEL[c.type]}
-                        </span>
-                        <p
-                          className="font-['Roboto',sans-serif] text-[13px] leading-[19px]"
-                          style={{ color: FAIL_RED, marginTop: 2 }}
-                        >
-                          Error{' '}
-                          <span role="link" tabIndex={0} className="underline cursor-pointer">
-                            {c.errorCode}
-                          </span>
-                          : {c.errorNote}
-                        </p>
+                        <CarrierErrorLine
+                          compact
+                          channel={GJ_CHANNEL_LABEL[c.type]}
+                          code={c.errorCode ?? ''}
+                          detail={c.errorNote ?? ''}
+                        />
                       </div>
                     ))}
                 </div>

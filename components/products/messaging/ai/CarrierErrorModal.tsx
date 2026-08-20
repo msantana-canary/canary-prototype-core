@@ -30,32 +30,16 @@
 
 import React, { useEffect, useState } from 'react';
 import { CanaryModal, colors } from '@canary-ui/components';
+import { CarrierErrorLine } from '../panel/panel-ui';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { CarrierError } from '@/lib/products/messaging/types';
-
-/** `$color-red-1`. The same literal `MessageBubble` uses for the failed caption
- *  — @canary-ui exposes `colorRed1`, and this is it, kept in step by value. */
-const COLOR_RED_1 = colors.colorRed1;
 
 function ErrorRow({ error, isFirst }: { error: CarrierError; isFirst: boolean }) {
   return (
     <div style={{ borderTop: isFirst ? undefined : `1px solid ${colors.colorBlack6}`, padding: 14 }}>
-      {/* Rendered VERBATIM. "WhatsApp" is brand-cased, "SMS" is an initialism;
-          an `uppercase` here would invent a brand that does not exist. */}
-      <span
-        className="block font-['Roboto',sans-serif] text-[12px] leading-[18px]"
-        style={{ color: colors.colorBlack3 }}
-      >
-        {error.channel}
-      </span>
-      <p
-        className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
-        style={{ color: COLOR_RED_1, marginTop: 2 }}
-      >
-        Error{' '}
-        <span style={{ textDecoration: 'underline', textUnderlineOffset: 2 }}>{error.code}</span>:{' '}
-        {error.detail}
-      </p>
+      {/* The SHARED register — the same `<CarrierErrorLine>` the guest-journey
+          timeline prints, at its full (non-compact) size. */}
+      <CarrierErrorLine channel={error.channel} code={error.code} detail={error.detail} />
     </div>
   );
 }
