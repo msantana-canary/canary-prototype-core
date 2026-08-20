@@ -20,6 +20,64 @@ export interface AiStep {
   note: string;
 }
 
+/**
+ * WHY THE AI ANSWERED THE WAY IT DID — the sidebar behind the ⓘ, the sources
+ * chip and the "AI chose not to respond" link.
+ *
+ * ⚠ ONE explanation, TWO states, and the state is read off the MESSAGE it hangs
+ * on rather than off a discriminator field:
+ *
+ *   SUCCESS  (an `ai` message)              → the sidebar opens with a band
+ *            recapping what was sent; no intro paragraph, no Action Taken.
+ *   NON-RESPONSE (a `guest` message with    → there is no sent message to recap,
+ *            `aiDeclined`)                     so the `intro` paragraph carries
+ *                                              the framing and `actionTaken`
+ *                                              names what happened instead.
+ *
+ * The shape is deliberately not a union: every field that only one state uses is
+ * optional, so a message can gain a section without a type migration. What it
+ * cannot do is disagree with the message it explains — `sources.length` IS the
+ * "N SOURCES" chip's number (see `sourceCountOf`), because the chip and the
+ * sidebar are two views of one list.
+ *
+ * ── RESULT VARIANTS ───────────────────────────────────────────────────────
+ * Two are DRAWN and built: "AI successfully responded to the guest's message"
+ * and "AI chose not to respond". Three more exist in production's decision
+ * space and are deliberately NOT built here — they need their own frames before
+ * they are worth faking:
+ *   • DIDN'T KNOW      — no KB match at all; Sources Used would be empty, which
+ *                        is a different section state, not different copy.
+ *   • GUARDRAIL BLOCKED — a policy/safety rule stopped a drafted answer. Needs a
+ *                        "Blocked by" section naming the rule.
+ *   • ESCALATED        — handed to a human with an assignment. Action Taken
+ *                        would have to name the person or department.
+ */
+export interface AiExplanation {
+  /** Non-response only. The success state opens on the message band instead. */
+  intro?: string;
+  understood: string;
+  /** Knowledge-base statements, verbatim. Length drives the sources chip. */
+  sources: string[];
+  /** Non-response only. */
+  actionTaken?: string;
+  result: string;
+}
+
+/**
+ * One carrier receipt on a failed send. `channel` is rendered VERBATIM —
+ * "WhatsApp" is brand-cased and "SMS" is an initialism; the modal's overline
+ * must never `text-transform` them into agreement.
+ *
+ * `code` is the only underlined run in the error line (it reads as the link out
+ * to the carrier's documentation); `detail` is the curated, hotelier-readable
+ * sentence that replaces the carrier's own wording.
+ */
+export interface CarrierError {
+  channel: string;
+  code: string;
+  detail: string;
+}
+
 export interface Message {
   id: string;
   threadId: string;
@@ -28,6 +86,13 @@ export interface Message {
   timestamp: Date;
   channel?: MessageChannel;
   status?: MessageStatus;
+  /**
+   * Why this answer, or why this SILENCE. Present on AI messages and on the
+   * inbound messages the AI declined — the two places a hotelier can ask "why?"
+   */
+  aiExplanation?: AiExplanation;
+  /** Per-channel carrier receipts, on `status: 'failed'` messages only. */
+  carrierErrors?: CarrierError[];
   /**
    * OBSERVABILITY — universal AI-message anatomy, not a special case. Every AI
    * message carries the tool-by-tool trace that produced it; the message header
@@ -71,6 +136,48 @@ export interface Thread {
 }
 
 export type ThreadFilter = 'inbox' | 'archived' | 'blocked';
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE AI LOOP AROUND THE THREAD (batch 4, 2026-08-20)
+
+   Four things the AI can put in front of a hotelier without sending anything:
+   a DRAFT it wants approved, a FACT it wants to learn, a TICKET it thinks
+   should exist, and a NUDGE that a guest has been left waiting. All four live
+   between the feed and the composer, and all four are per-thread.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * A reply the AI wrote but did not send. It carries its own trace and source
+ * count even though the card draws neither — the draft is an AI artefact, and
+ * an artefact without provenance is one that can never be explained later.
+ */
+export interface AiDraft {
+  id: string;
+  content: string;
+  aiSteps: AiStep[];
+  sourceCount: number;
+}
+
+/**
+ * A statement the AI overheard a human make and would like to remember.
+ * The queue is SEQUENTIAL and PERSISTENT: one band at a time, the rest behind a
+ * "+N more" hint, and nothing auto-hides — dismissing is the only way out, so a
+ * fact can never quietly expire unanswered.
+ */
+export interface SuggestedFact {
+  id: string;
+  text: string;
+}
+
+/**
+ * A service ticket the AI thinks this conversation implies. Deliberately two
+ * fields and no more: they are exactly what the Create-service-task form needs
+ * prefilled, so "Review" is a hand-off and not a re-typing exercise.
+ */
+export interface TicketSuggestion {
+  room: string;
+  issueType: string;
+}
 
 /**
  * Thread assignment — mirrors production exactly: a thread is assigned to a USER

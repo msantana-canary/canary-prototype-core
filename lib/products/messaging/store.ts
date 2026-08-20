@@ -7,9 +7,42 @@
  */
 
 import { create } from 'zustand';
-import { Thread, Message, ServiceTask, ThreadAssignment } from './types';
+import { AiDraft, Thread, Message, ServiceTask, SuggestedFact, ThreadAssignment, TicketSuggestion } from './types';
 import { mockThreads, mockMessages } from './mock-data';
 import { serviceTasksByGuest } from './panel-mock';
+import {
+  draftsByThread,
+  factsByThread,
+  ticketSuggestionsByThread,
+  unansweredMinutesByThread,
+} from './ai-mock';
+
+/** The property's answering posture. Away is what turns the amber band on. */
+export type WorkspaceStatus = 'online' | 'away' | 'offline';
+
+/**
+ * A command aimed at the Conversation Details panel from OUTSIDE it.
+ *
+ * The panel owns its own navigation stack, which is right — nothing else should
+ * be able to reach into it and push a page. But the recommended-ticket band's
+ * "Review" has to land on the Create-service-task drill-in with the room and
+ * issue already filled, and the band lives above the composer, two components
+ * away. So the band states an INTENT and the panel decides how to honour it;
+ * the `nonce` makes two identical Reviews two events rather than one.
+ */
+export interface PanelIntent {
+  kind: 'create-task';
+  room?: string;
+  issue?: string;
+  nonce: number;
+}
+
+/** Text pushed into the composer from elsewhere (the draft card's "Edit"). */
+export interface ComposerInjection {
+  threadId: string;
+  text: string;
+  nonce: number;
+}
 
 interface MessagingState {
   // State
@@ -55,6 +88,40 @@ interface MessagingState {
    */
   serviceTasks: Record<string, ServiceTask[]>;
 
+  /* ── THE AI LOOP ─────────────────────────────────────────────────────────
+     Observability opens in a SIDEBAR, quick actions open in a MODAL (Miguel's
+     ruling). Both are addressed by MESSAGE id rather than by a payload: the
+     message is already the single source of the explanation, the carrier
+     receipts and the text a feedback form quotes, so passing the id keeps the
+     surfaces from carrying stale copies of what they show. */
+
+  /** The AI Explanation sidebar's subject. Null ⇒ closed. */
+  aiExplanationMessageId: string | null;
+  /** The standalone feedback modal's subject (👎). Null ⇒ closed. */
+  feedbackModalMessageId: string | null;
+  /** The carrier-error modal's subject (a failed send). Null ⇒ closed. */
+  carrierErrorMessageId: string | null;
+
+  /** The property's answering posture — drives the away band. */
+  workspaceStatus: WorkspaceStatus;
+
+  /** Drafted-but-unsent AI replies, per thread. */
+  drafts: Record<string, AiDraft>;
+  /** Suggested-fact QUEUES, per thread. Head of the list is the visible band. */
+  facts: Record<string, SuggestedFact[]>;
+  /** Detected service-ticket suggestions, per thread. */
+  ticketSuggestions: Record<string, TicketSuggestion>;
+  /** Minutes a guest has been left waiting, per thread. */
+  unansweredMinutes: Record<string, number>;
+
+  /** Text the draft card pushed at the composer. */
+  composerInjection: ComposerInjection | null;
+  /** A command for the Conversation Details panel (the ticket band's Review). */
+  panelIntent: PanelIntent | null;
+
+  /** One toast for the whole surface. Set a message; it clears itself. */
+  toast: string | null;
+
   // Actions
   selectThread: (threadId: string) => void;
   setAiEnabled: (enabled: boolean) => void;
@@ -90,6 +157,30 @@ interface MessagingState {
    * not close the ticket — the ticket's lifecycle belongs to Service Tickets.
    */
   unlinkServiceTask: (guestId: string, taskId: string) => void;
+
+  /* ── THE AI LOOP ─────────────────────────────────────────────────────── */
+  openAiExplanation: (messageId: string) => void;
+  closeAiExplanation: () => void;
+  openFeedbackModal: (messageId: string) => void;
+  closeFeedbackModal: () => void;
+  openCarrierErrors: (messageId: string) => void;
+  closeCarrierErrors: () => void;
+  setWorkspaceStatus: (status: WorkspaceStatus) => void;
+  /** Drop the draft with no feedback prompt — see the note on the action. */
+  dismissDraft: (threadId: string) => void;
+  /** Approve and send the draft as the signed-in staff member's own message. */
+  sendDraft: (threadId: string) => void;
+  /** Consume the head of a thread's fact queue (added, edited-then-added, or skipped). */
+  resolveFact: (threadId: string, factId: string) => void;
+  dismissTicketSuggestion: (threadId: string) => void;
+  injectIntoComposer: (threadId: string, text: string) => void;
+  clearComposerInjection: () => void;
+  requestCreateTask: (room?: string, issue?: string) => void;
+  clearPanelIntent: () => void;
+  showToast: (message: string) => void;
+  clearToast: () => void;
+  /** Find a message anywhere in the log. The AI surfaces address by id. */
+  findMessage: (messageId: string) => Message | undefined;
 }
 
 export const useMessagingStore = create<MessagingState>((set, get) => ({
@@ -107,6 +198,19 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   searchQuery: '',
   threadPrimaryReservationId: {},
   serviceTasks: serviceTasksByGuest,
+
+  // The AI loop
+  aiExplanationMessageId: null,
+  feedbackModalMessageId: null,
+  carrierErrorMessageId: null,
+  workspaceStatus: 'online',
+  drafts: draftsByThread,
+  facts: factsByThread,
+  ticketSuggestions: ticketSuggestionsByThread,
+  unansweredMinutes: unansweredMinutesByThread,
+  composerInjection: null,
+  panelIntent: null,
+  toast: null,
 
   // Select a thread
   selectThread: (threadId: string) => {
@@ -444,5 +548,121 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
         [guestId]: (state.serviceTasks[guestId] ?? []).filter((task) => task.id !== taskId),
       },
     }));
+  },
+
+  /* ═════════════════════════════════════════════════════════════════════
+     THE AI LOOP
+     ═════════════════════════════════════════════════════════════════════ */
+
+  /**
+   * Opening the explanation CLOSES the Conversation Details panel. Both are
+   * 600px cards pinned to the same three viewport edges, so two open at once
+   * would be one card hiding another — and the answer to "why did it say that?"
+   * is not something to read through a stack.
+   */
+  openAiExplanation: (messageId: string) => {
+    set({ aiExplanationMessageId: messageId, isGuestInfoOpen: false });
+  },
+  closeAiExplanation: () => set({ aiExplanationMessageId: null }),
+
+  openFeedbackModal: (messageId: string) => set({ feedbackModalMessageId: messageId }),
+  closeFeedbackModal: () => set({ feedbackModalMessageId: null }),
+
+  openCarrierErrors: (messageId: string) => set({ carrierErrorMessageId: messageId }),
+  closeCarrierErrors: () => set({ carrierErrorMessageId: null }),
+
+  setWorkspaceStatus: (status: WorkspaceStatus) => set({ workspaceStatus: status }),
+
+  /**
+   * ⚠ DELIBERATE DEVIATION FROM PRODUCTION (Miguel's call).
+   *
+   * Production asks WHY when you throw a draft away — dismissing opens the
+   * feedback taxonomy, on the reasoning that a rejected draft is the cheapest
+   * training signal the product will ever get. This prototype just dismisses.
+   *
+   * The reason is that the batch already has two feedback surfaces (the 👎 modal
+   * and the explanation's drill-in), and a third mouth asking the same question
+   * at the moment someone is trying to clear their screen turns the AI from an
+   * assistant into a form. If the loop needs the signal, the honest place to ask
+   * for it is once, later — not as a toll on every dismissal.
+   */
+  dismissDraft: (threadId: string) => {
+    set((state) => {
+      const drafts = { ...state.drafts };
+      delete drafts[threadId];
+      return { drafts };
+    });
+  },
+
+  /**
+   * Approve-and-send. The message lands as the SIGNED-IN STAFF MEMBER's, not as
+   * the AI's: a human read it and chose to send it, so the property owns the
+   * words. Attributing an approved draft to "Canary" would let the AI take
+   * credit for a sentence a person is accountable for — and would make the
+   * feed's three sender registers lie about who is speaking.
+   */
+  sendDraft: (threadId: string) => {
+    const draft = get().drafts[threadId];
+    if (!draft) return;
+    const message: Message = {
+      id: `m${Date.now()}`,
+      threadId,
+      sender: 'staff',
+      content: draft.content,
+      timestamp: new Date(),
+      channel: 'SMS',
+      status: 'delivered',
+    };
+    get().addMessage(threadId, message);
+    get().updateThreadLastMessage(threadId, message);
+    get().dismissDraft(threadId);
+  },
+
+  /**
+   * Take the fact off the queue. Add-to-AI, edit-then-add and skip all land
+   * here, because from the QUEUE's point of view they are the same event: this
+   * one has been answered, show the next. The queue never auto-advances on a
+   * timer and never hides itself — an unanswered suggestion staying on screen is
+   * the whole reason it is a band and not a toast.
+   */
+  resolveFact: (threadId: string, factId: string) => {
+    set((state) => ({
+      facts: {
+        ...state.facts,
+        [threadId]: (state.facts[threadId] ?? []).filter((fact) => fact.id !== factId),
+      },
+    }));
+  },
+
+  dismissTicketSuggestion: (threadId: string) => {
+    set((state) => {
+      const ticketSuggestions = { ...state.ticketSuggestions };
+      delete ticketSuggestions[threadId];
+      return { ticketSuggestions };
+    });
+  },
+
+  injectIntoComposer: (threadId: string, text: string) => {
+    set({ composerInjection: { threadId, text, nonce: Date.now() } });
+  },
+  clearComposerInjection: () => set({ composerInjection: null }),
+
+  /** Open the details panel AND tell it where to go. Order matters not; the
+   *  panel reads the intent on mount and on change. */
+  requestCreateTask: (room?: string, issue?: string) => {
+    set({ isGuestInfoOpen: true, panelIntent: { kind: 'create-task', room, issue, nonce: Date.now() } });
+  },
+  clearPanelIntent: () => set({ panelIntent: null }),
+
+  showToast: (message: string) => set({ toast: message }),
+  clearToast: () => set({ toast: null }),
+
+  findMessage: (messageId: string) => {
+    const messages = get().messages;
+    for (const list of Object.values(messages)) {
+      const found = list.find((message) => message.id === messageId);
+      if (found) return found;
+    }
+    return undefined;
   },
 }));

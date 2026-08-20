@@ -11,6 +11,7 @@
  */
 
 import { Thread, Message } from './types';
+import { aiExplanations, carrierErrorsByMessage } from './ai-mock';
 
 
 /**
@@ -337,7 +338,7 @@ export const mockThreads: Thread[] = [
  * ("Chain-of-thoughts says Room 504 vs Emily's 153") — it is reproduced on
  * purpose so the exemplar matches the design file. Do not "fix" it here.
  */
-export const mockMessages: Record<string, Message[]> = {
+const rawMessages: Record<string, Message[]> = {
   // Phone-only thread (no reservation linked)
   '14': [
     {
@@ -614,8 +615,21 @@ export const mockMessages: Record<string, Message[]> = {
       status: 'delivered',
     },
   ],
-  // Marco's conversation
+  // Marco's conversation — the RECOMMENDED-TICKET exemplar. The towel request
+  // sits BEFORE the pool question deliberately: the band's "ROOM NUMBER 112 /
+  // ISSUE TYPE Bath Towels" (the frame's own numbers) is then detected from a
+  // message you can actually read in the thread, while the row preview in the
+  // list stays the frame's "What time will the pool close?".
   '4': [
+    {
+      id: 'm9a',
+      threadId: '4',
+      sender: 'guest',
+      content: 'Could we get a couple of extra bath towels for room 112 please?',
+      timestamp: new Date('2026-03-16T09:50:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
     {
       id: 'm9',
       threadId: '4',
@@ -1184,3 +1198,39 @@ export const mockMessages: Record<string, Message[]> = {
     },
   ],
 };
+
+/**
+ * THE DECORATION PASS — the transcript above meets its footnotes.
+ *
+ * Every message picks up its explanation and its carrier receipts from
+ * `ai-mock.ts`, and — the part that matters — an AI message's `sourceCount` is
+ * OVERWRITTEN from `explanation.sources.length` whenever an explanation exists.
+ *
+ * That override is the invariant, made structural. The footer chip says "3
+ * SOURCES" and the sidebar lists the three; they cannot drift, because there is
+ * only one array and the number is `.length` of it. Hand-keeping two figures in
+ * agreement is exactly the kind of promise an observability surface breaks
+ * quietly, and a hotelier who catches it once stops believing the rest.
+ */
+export const mockMessages: Record<string, Message[]> = Object.fromEntries(
+  Object.entries(rawMessages).map(([threadId, list]) => [
+    threadId,
+    list.map((message) => {
+      const explanation = aiExplanations[message.id];
+      const carrierErrors = carrierErrorsByMessage[message.id];
+      if (!explanation && !carrierErrors) return message;
+      return {
+        ...message,
+        ...(explanation
+          ? {
+              aiExplanation: explanation,
+              // Guest messages the AI declined carry an explanation but never a
+              // sources chip — the chip is AI-message anatomy.
+              ...(message.sender === 'ai' ? { sourceCount: explanation.sources.length } : {}),
+            }
+          : {}),
+        ...(carrierErrors ? { carrierErrors } : {}),
+      };
+    }),
+  ])
+);
