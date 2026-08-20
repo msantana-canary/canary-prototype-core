@@ -49,6 +49,8 @@ interface PanelShellProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  /** The dialog's accessible name. Two panels now use this shell. */
+  label?: string;
 }
 
 /**
@@ -68,7 +70,7 @@ export function useReducedMotion(): boolean {
   return reduced;
 }
 
-export function PanelShell({ isOpen, onClose, children }: PanelShellProps) {
+export function PanelShell({ isOpen, onClose, children, label = 'Conversation Details' }: PanelShellProps) {
   const reduced = useReducedMotion();
 
   // Two-phase mount: `mounted` keeps the panel in the DOM through its exit
@@ -128,7 +130,7 @@ export function PanelShell({ isOpen, onClose, children }: PanelShellProps) {
 
       <div
         role="dialog"
-        aria-label="Conversation Details"
+        aria-label={label}
         className="fixed overflow-hidden flex flex-col"
         style={{
           top: PANEL_INSET,

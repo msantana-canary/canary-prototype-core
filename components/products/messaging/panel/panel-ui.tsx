@@ -500,19 +500,31 @@ export function Kebab({ items, label = 'More actions', width = 248 }: { items: K
    ───────────────────────────────────────────────────────────────────────── */
 
 /**
- * The panel's commit bar: full-width, tonal blue, pinned to the panel's bottom
- * edge with a hairline above it. Disabled is a wash-out, not a gray box — the
- * frames keep the same shape and drop the contrast.
+ * The panel's commit bar: full-width, pinned to the panel's bottom edge with a
+ * hairline above it. Disabled is a wash-out, not a gray box — the frames keep
+ * the same shape and drop the contrast.
+ *
+ * TWO registers, because the frames draw two and the difference is meaningful:
+ *
+ *   TONAL (default)  — the panel's own commits. "Submit" a service task, "Give
+ *                      AI Feedback". You are still inside the panel afterwards.
+ *   PRIMARY          — the solid blue the AI feedback page uses for "Submit
+ *                      Feedback". It is the end of a flow, not a step in one,
+ *                      and it is the only button on a page whose whole purpose
+ *                      is to press it.
  */
 export function PanelFooterAction({
   label,
   onClick,
   disabled,
+  variant = 'tonal',
 }: {
   label: string;
   onClick?: () => void;
   disabled?: boolean;
+  variant?: 'tonal' | 'primary';
 }) {
+  const isPrimary = variant === 'primary';
   return (
     <div
       className="shrink-0"
@@ -527,8 +539,8 @@ export function PanelFooterAction({
         className="w-full rounded-[8px] font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] transition-colors"
         style={{
           height: 44,
-          backgroundColor: colors.colorBlueDark5,
-          color: colors.colorBlueDark1,
+          backgroundColor: isPrimary ? colors.colorBlueDark1 : colors.colorBlueDark5,
+          color: isPrimary ? colors.colorWhite : colors.colorBlueDark1,
           opacity: disabled ? 0.5 : 1,
           cursor: disabled ? 'default' : 'pointer',
         }}

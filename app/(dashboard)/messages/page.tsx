@@ -13,6 +13,10 @@ import { AppLayout } from '@/components/products/messaging/AppLayout';
 import { ThreadList } from '@/components/products/messaging/ThreadList';
 import { ThreadView } from '@/components/products/messaging/ThreadView';
 import { ConversationDetailsPanel } from '@/components/products/messaging/panel/ConversationDetailsPanel';
+import { AiExplanationPanel } from '@/components/products/messaging/ai/AiExplanationPanel';
+import { AiFeedbackModal } from '@/components/products/messaging/ai/AiFeedbackModal';
+import { CarrierErrorModal } from '@/components/products/messaging/ai/CarrierErrorModal';
+import { Toast } from '@/components/core/Toast';
 import { ComposeHeader } from '@/components/products/messaging/ComposeHeader';
 import { ConversationControls } from '@/components/products/messaging/ConversationControls';
 import {
@@ -307,6 +311,39 @@ export default function MessagesPage() {
         <BroadcastView />
       )}
 
+      {/* ── THE AI LOOP'S SURFACES ───────────────────────────────────────────
+          All four mount at the PAGE, not inside the thread card, and all four
+          are addressed by message id through the store. They outlive the thing
+          that opened them: the explanation must survive a re-render of the feed
+          it explains, and a modal parented to a message block would unmount the
+          moment that block scrolled out of the list.
+
+          They sit outside the `activeTab` branch on purpose — closing one must
+          not depend on which tab you were on when it opened. */}
+      <AiExplanationPanel />
+      <AiFeedbackModal />
+      <CarrierErrorModal />
+      <AiToast />
+
     </AppLayout>
   );
+}
+
+/**
+ * The surface's ONE toast. Every AI-loop receipt lands here — feedback
+ * submitted, a fact added, a draft sent — because a toast is a statement about
+ * the whole screen, and three components each owning their own would stack
+ * three of them in the same corner.
+ */
+function AiToast() {
+  const toast = useMessagingStore((s) => s.toast);
+  const clearToast = useMessagingStore((s) => s.clearToast);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(clearToast, 3000);
+    return () => window.clearTimeout(timer);
+  }, [toast, clearToast]);
+
+  return <Toast message={toast ?? ''} isOpen={!!toast} variant="success" />;
 }

@@ -42,9 +42,20 @@
  * able to ask "why did it say that?" of ANY answer, not just the interesting
  * one. The card is CLOSED BY DEFAULT everywhere; the caption is the toggle.
  *
- * Feedback (ⓘ / 👍 / 👎) appears on hover so a quiet feed stays quiet. Thumbs-up
- * is a local visual toggle only — there is no feedback pipeline behind it yet,
- * and ⓘ / 👎 / the sources chip are deliberate no-op stubs.
+ * Feedback (ⓘ / 👍 / 👎) appears on hover so a quiet feed stays quiet.
+ *
+ * ── WHERE EACH ONE GOES (batch 4 — the stubs are gone) ────────────────────
+ *   ⓘ            → the AI Explanation SIDEBAR, success state.
+ *   3 SOURCES ⌄  → the SAME sidebar. The chip's chevron once promised a popover
+ *                  of source statements; the sidebar already lists them beside
+ *                  the reasoning that chose them, so the chip stopped competing
+ *                  with it. One source of truth, three doors.
+ *   👍           → a local latch. There is still no pipeline behind a compliment
+ *                  and inventing one would be the only unearned claim on this
+ *                  surface.
+ *   👎           → latches AND opens the standalone feedback MODAL. Disagreeing
+ *                  is a verdict with a reason, and the reason is worth asking
+ *                  for while the answer is still in front of you.
  *
  * ── FOOTER REGISTERS ──────────────────────────────────────────────────────
  * Three captions can sit under a message, all in the same 10px uppercase slot:
@@ -53,12 +64,13 @@
  *   2. "AI CHOSE NOT TO RESPOND" (inbound, `aiDeclined`) — a blue underlined
  *      link after the channel caption. Silence from the agent is a decision,
  *      and an unexplained silence reads as a bug; naming it turns a gap into a
- *      fact. No-op stub for now (it will open the reason).
+ *      fact. It opens the explanation sidebar at its non-response state.
  *   3. "MESSAGE FAILED TO SEND" (outbound, status `failed`) — a RED underlined
  *      link. This REPLACES the old failed register (red row + alert icon +
  *      "Learn more"); the state logic is untouched, only its dress. Collapsing
  *      three elements into one link makes the failure sit in the same rhythm as
- *      every other caption instead of shouting a whole extra row.
+ *      every other caption instead of shouting a whole extra row. It opens the
+ *      carrier-error modal ("Message Not Delivered").
  *
  * Loyalty/status tag: removed from message blocks (Miguel 2026-07-20) — it
  * repeated on every message and was too loud. The tier lives in the thread list
@@ -83,6 +95,7 @@ import {
 import { Avatar } from './Avatar';
 import { AiOrbTile } from './AiOrb';
 import { AiStepsCard } from './AiStepsCard';
+import { useMessagingStore } from '@/lib/products/messaging/store';
 
 const STAFF_NAME = 'Theresa Webb';
 const STAFF_INITIALS = 'TW';
@@ -212,6 +225,18 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
   const [isStepsOpen, setIsStepsOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isHelpful, setIsHelpful] = useState(false);
+  const [isNotHelpful, setIsNotHelpful] = useState(false);
+
+  /**
+   * THE THREE ENTRY POINTS INTO THE AI LOOP, taken one at a time from the store
+   * rather than by prop-drilling three callbacks through MessageFeed and
+   * ThreadView. A message block is the only thing that knows which message it
+   * is; making the page know as well would mean the page re-rendering every
+   * time a caption is clicked.
+   */
+  const openAiExplanation = useMessagingStore((s) => s.openAiExplanation);
+  const openFeedbackModal = useMessagingStore((s) => s.openFeedbackModal);
+  const openCarrierErrors = useMessagingStore((s) => s.openCarrierErrors);
 
   const displayName = isGuest ? guest?.name ?? 'Guest' : isAI ? 'Canary' : STAFF_NAME;
 
@@ -230,7 +255,7 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
   const deliveryCaption = isGuest ? message.channel : STATUS_LABELS[outboundStatus];
 
   // Feedback controls persist once used, so a rating doesn't vanish on mouse-out.
-  const showFeedback = isAI && (isHovered || isHelpful);
+  const showFeedback = isAI && (isHovered || isHelpful || isNotHelpful);
 
   return (
     <div
@@ -309,7 +334,11 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
         {/* Footer row — caption(s), the sources chip, and hover feedback. */}
         <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 6, minHeight: 20 }}>
           {isFailed ? (
-            <CaptionLink label="Message failed to send" color={COLOR_RED_1} onClick={() => {}} />
+            <CaptionLink
+              label="Message failed to send"
+              color={COLOR_RED_1}
+              onClick={() => openCarrierErrors(message.id)}
+            />
           ) : (
             <>
               {deliveryCaption && (
@@ -321,16 +350,23 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
                 <CaptionLink
                   label="AI chose not to respond"
                   color={colors.colorBlueDark1}
-                  onClick={() => {}}
+                  /* Same sidebar as the ⓘ, opened at its non-response state. The
+                     absence of a reply is an answer, and it gets the same page
+                     the replies get. */
+                  onClick={() => openAiExplanation(message.id)}
                 />
               )}
             </>
           )}
 
-          {/* Sources chip — a bordered pill, no fill, no shadow. */}
+          {/* Sources chip — a bordered pill, no fill, no shadow.
+              It opens the SAME explanation sidebar as the ⓘ. The chevron once
+              promised its own popover of source statements; that would have
+              been a second, thinner copy of a list the sidebar already prints
+              with the reasoning that selected it. One list, one place. */}
           {isAI && !!sourceCount && (
             <button
-              onClick={() => {}}
+              onClick={() => openAiExplanation(message.id)}
               className={`${CAPTION_CLASS} flex items-center gap-1 rounded-full cursor-pointer transition-colors hover:bg-[rgba(0,0,0,0.04)]`}
               style={{
                 color: colors.colorBlack3,
@@ -347,14 +383,37 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
 
           {showFeedback && (
             <div className="flex items-center gap-1">
-              <FeedbackIcon path={mdiInformationOutline} label="About this answer" onClick={() => {}} />
+              <FeedbackIcon
+                path={mdiInformationOutline}
+                label="About this answer"
+                onClick={() => openAiExplanation(message.id)}
+              />
               <FeedbackIcon
                 path={mdiThumbUp}
                 label="Helpful"
                 active={isHelpful}
-                onClick={() => setIsHelpful((v) => !v)}
+                onClick={() => {
+                  setIsHelpful((v) => !v);
+                  setIsNotHelpful(false);
+                }}
               />
-              <FeedbackIcon path={mdiThumbDown} label="Not helpful" onClick={() => {}} />
+              {/* 👎 LATCHES AND ASKS. The latch is the verdict — it survives the
+                  modal being cancelled, because you did disagree whether or not
+                  you explained why. The modal is where the verdict gets a
+                  reason. Un-latching does not re-open it. */}
+              <FeedbackIcon
+                path={mdiThumbDown}
+                label="Not helpful"
+                active={isNotHelpful}
+                onClick={() => {
+                  const next = !isNotHelpful;
+                  setIsNotHelpful(next);
+                  if (next) {
+                    setIsHelpful(false);
+                    openFeedbackModal(message.id);
+                  }
+                }}
+              />
             </div>
           )}
         </div>
