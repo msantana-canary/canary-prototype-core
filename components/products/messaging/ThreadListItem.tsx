@@ -81,12 +81,18 @@ export function ThreadListItem({
       className={`flex items-start gap-3 cursor-pointer rounded-[6px] transition-colors shrink-0 ${
         isSelected ? '' : 'hover:bg-[rgba(0,0,0,0.08)]'
       }`}
+      /* ⚠ The unselected row deliberately sets NO inline `backgroundColor`.
+         An inline style outranks any class, so the old
+         `backgroundColor: 'transparent'` silently beat the `hover:bg-*` class
+         and the row hover never rendered at all — which is what made it look
+         like the wash was too weak rather than absent. Selected rows keep the
+         inline fill because they have no hover state to lose. */
       style={{
         paddingLeft: 12,
         paddingRight: 12,
         paddingTop: 8,
         paddingBottom: 8,
-        backgroundColor: isSelected ? colors.colorBlueDark5 : 'transparent',
+        ...(isSelected ? { backgroundColor: colors.colorBlueDark5 } : {}),
         border: `1px solid ${isSelected ? colors.colorBlueDark3 : 'transparent'}`,
       }}
     >
