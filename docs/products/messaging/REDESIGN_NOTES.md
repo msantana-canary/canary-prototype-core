@@ -1303,3 +1303,232 @@ Add to the design-system TODO list above:
 17. **Caption-link register** — 10px uppercase underlined links in the footer
     slot (blue informational / red failure). Replaces the bespoke failed-message
     row.
+
+---
+
+## Batch 2.1 — Miguel's eyeball pass (2026-08-20)
+
+Same frames as batch 2 (**2038:57666** + `dd-allconv` / `dd-inbox` /
+`searchbar-node` / `steps-hover` / `composer` / `ai-off`). Eight verdicts on
+what batch 2 actually put on screen. Three of them supersede batch-2 decisions
+outright — those are marked ⚠.
+
+### 1. ⚠ Staff is blue
+
+> "Staff is blue, guest is black, AI is all the cool shit." — Miguel
+
+Supersedes "everyone's name is black; only the AI is special". The staff sender
+name is `colorBlueDark1` and the staff initials tile is `colorBlueDark5` ground
+with `colorBlueDark1` glyphs — a new `tone` prop on `Avatar` (`neutral` |
+`blue`), which photo avatars ignore because the photo is the identity.
+
+Three senders, three registers, all readable from one column:
+
+| | Name | Avatar |
+|---|---|---|
+| Guest | `colorBlack1` | photo, or gray initials tile |
+| Staff | `colorBlueDark1` | blue initials tile |
+| AI | magenta→violet gradient | the animated orb tile |
+
+Black-for-everyone made the feed one undifferentiated voice — you had to *read*
+the name to know which side sent it. Blue is already the product's "us" colour
+(actions, links, selection), so the property's own replies inherit it and stop
+reading as a third kind of guest. The escalation neutral → brand → alive is the
+point: the AI is still the only sender that gets motion.
+
+### 2. Two hover states lost their boxes
+
+- **"Completed N Steps ⌄"** sits inline with the sender name, so a hover
+  background drew a chip in the middle of a line of text. Hover is now the text
+  itself: gray → black, nothing else moves.
+- **The AI footer icons (ⓘ 👍 👎)** lose the gray chip entirely — the frame
+  draws them naked. Bare, gray at rest, each going `colorBlueDark1` on its own
+  hover. That is deliberately the SAME gray→blue the composer's tool icons use,
+  so every bare icon on this surface answers the pointer identically. Thumbs-up
+  still latches blue on click.
+
+### 3. ⚠ The indicator cluster hugs right
+
+Supersedes the reserved-slot rule. The attention dot used to render an
+always-present 10px box (transparent when idle) so "the row never shifts". What
+that bought was a hole: a flagged-but-read row parked its flag 10px plus a gap
+short of the right edge, floating against nothing.
+
+Both indicators are now conditional, in one `shrink-0` cluster pinned right by
+the preview's `flex-1`, in the frame's order — **dot, then flag**. One, the
+other, or both; whichever exist, the last one lands on the right margin.
+
+### 4. ⚠ Thread rows hover at 8% black
+
+`#f9fafb` is ~2% over white. Next to a `colorBlueDark5` selected row it was
+invisible, and "where my pointer is" has to be tellable from "what is open" at a
+glance. Rows now take the neutral 8%-black wash this branch already uses for
+every transient control state (thread-header `IconAction`, the scope-select
+trigger). Neutral vs. blue also keeps the two states in different colour
+families rather than two strengths of the same one.
+
+### 5. Search + "New message" moved INSIDE the list card
+
+Per node `searchbar-node`. The band used to be full width above BOTH columns,
+which was a lie about its reach — search filters the thread list and "New
+message" opens a thread; neither touches the 65% column it was hanging over, and
+stretching the input to ~1000px made a control that returns a 350px list look
+like a global search.
+
+The card now stacks: **header selects → hairline → search band → rows.** Every
+control that narrows the list is inside the thing it narrows, top to bottom in
+order of coarseness (which folder → which assignment → which words). No divider
+under the search band — it and the rows are one list surface. The band's
+horizontal padding is the ROWS' 8px, not the header's, so the field's edges line
+up with the row cards below rather than the triggers above.
+
+`AppLayout` shed `searchQuery` / `onSearchChange` / `onNewMessage`; threading
+them through a shell that only forwarded them is how the band ended up spanning
+columns it does not scope. The 16px it used to contribute is now the content
+row's own `paddingTop`.
+
+### 6. The scope menus are rebuilt on CanarySelect's contract
+
+> "Take the CanarySelect as the base structure so that it's not a massive
+> deviance from the real product." — Miguel
+
+**Finding: `CanarySelect` is a thin wrapper around a native `<select>`.** It
+forwards a ref to `HTMLSelectElement`, spreads `SelectHTMLAttributes` onto it,
+and renders `options` as plain `<option>` children — so its popover is drawn by
+the operating system. None of this file's design contract survives that:
+
+| The frame needs | Native `<select>` / CanarySelect gives |
+|---|---|
+| STATUSES / DEPARTMENTS / STAFF overlines | no grouping at all — `options` is a FLAT array, no `<optgroup>`; even with one, the label's type and colour are OS-controlled |
+| hairline dividers between sections | nothing; not expressible |
+| a right-aligned check row | an OS-drawn selection mark, position and glyph not ours |
+| 264px / 176px popovers, white rounded-8, 1px `colorBlack6`, no shadow | OS-sized and OS-positioned |
+| a BORDERLESS trigger in the card-title slot, 16px medium + ⇅ | a full-width bordered field on the library's fixed 32/40/48px ramp |
+
+So "keep the trigger and the popover, replace only the menu content" was not
+available — there is no separable trigger or popover to keep. What the rewrite
+keeps instead is the **contract**, so a future swap is mechanical:
+
+1. Options ARE the library's `CanarySelectOption` (`{ label, value, disabled? }`),
+   extended by exactly ONE field — `section` — which is the capability gap
+   itself. Drop `section` and the arrays feed `<CanarySelect>` unmodified.
+2. One controlled `value` + one `onChange`, single-select, `disabled` honoured.
+   Production's assignment exclusivity is now *structural*: one value, nowhere
+   to put a second assignment. (The one deliberate signature deviation:
+   `onChange` hands back the value, not a `ChangeEvent<HTMLSelectElement>` —
+   our trigger is a button, there is no such event to forge.)
+3. Trigger heights come off the library's `InputSize` ramp, not magic numbers.
+4. The a11y contract a native select gave for free is **rebuilt, not dropped**:
+   `combobox` / `listbox` / `option` roles, `aria-selected`,
+   `aria-activedescendant`, and full keyboard operation (Enter/Space/↓/↑ to
+   open, ↑/↓/Home/End to move, Enter/Space to pick, Escape/Tab to close, focus
+   returned to the trigger). The hand-rolled version this replaces had none of
+   it.
+
+⚠ **The placeholder quirk was checked.** `CanarySelect` renders its
+`placeholder` (or, failing that, its `label`) as a real `<option value=""
+disabled>` — a phantom row inside the menu. `ScopeSelect` has no placeholder
+prop at all: both axes always hold a real value ("All conversations" / "Inbox"
+are values, not empty states), so neither menu can grow one. Verified in the
+browser — 9 options and 3 options, no extras.
+
+Section overlines are `role="presentation"`: a `role="listbox"` may only contain
+options and groups, and with no library grouping to map onto, the overline stays
+a visual affordance. The option labels are unambiguous without it.
+
+### 7. The AI pill grew an orb, a state model, and an ignition
+
+Miguel approved the design ("try it"). The pill carries a **14px orb left of its
+label in both states** — the same component as the 32px message avatar, scaled
+by `--orb-size`. A toggle that only says "AI On" *describes* a state; one that
+shows the agent breathing *is* the state, and it makes the thing you flip
+visibly the thing that speaks.
+
+| State | Orb | Border | Label |
+|---|---|---|---|
+| On, idle | calm (`--orb-speed: 1.6`) | quiet pearl hairline | AI gradient |
+| On, hover | faster (`0.85`) | tint DEEPENS | AI gradient |
+| Off | dormant — grayscale, 0.72 opacity, barely drifting (`6`) | the revolving hue wheel, unchanged | plain gray |
+| Igniting | waking (see below) | a spark sweeping out of the orb | AI gradient |
+
+**Off → On is an ignition**, ~650ms ease-out, three effects in one window so it
+reads as a single gesture rather than a pile-up:
+
+- the orb **wakes** — `ai-orb-wake`: saturation blooms back from gray, a scale
+  pulse 1 → 1.35 → 1, and one full fast revolution of the whole blob. A single
+  360° turn of the orb reads as the petals whipping round once; animating each
+  ribbon's own duration instead would just restart four timers mid-flight.
+- the petals **race** — `--orb-speed` drops to `0.3` for the window, then snaps
+  back to calm when the class comes off. The snap is invisible under the wake
+  animation's own motion, which is exactly why the two are co-timed.
+- the border **fires** — `ai-pill-spark`: a conic gradient **anchored at the
+  orb** (`at 14px 50%`, the orb's own centre) sweeps its bright band around the
+  ring and fades, leaving the quiet on-border underneath. Because the origin is
+  the orb, the light reads as coming *out of it* rather than orbiting a centre
+  nothing is at.
+
+**On → Off gets no fanfare**: a quick desaturate (a 260ms `filter` transition),
+then the dormant drift. Turning something off should not be a performance.
+
+The spark is a sibling ring at `inset: -1px` (an absolutely positioned child is
+offset from the *padding* box, so `0` would sit inside the border), cut with
+`mask-composite: exclude` rather than the padding-box/border-box background
+trick the pill itself uses — that trick needs an opaque inner layer, and this
+overlay must keep its interior transparent so the pearl shows through.
+
+Ignition is driven by the **click**, not by an `aiEnabled` prop diff: AI state is
+per-thread now, so a diff would fire the animation every time the user opened a
+thread whose agent was already on, and the pill would appear to switch itself.
+
+Under `prefers-reduced-motion` the whole thing collapses to a crossfade — the
+orb's `filter` transition is the only motion, the pulse/revolution/sweep never
+run, and both borders render static.
+
+### Files touched (batch 2.1)
+
+- `components/products/messaging/AiOrb.tsx` — **new.** `<AiOrb size>` +
+  `<AiOrbTile>`; the orb is now one component at two sizes.
+- `components/products/messaging/Avatar.tsx` — `tone` prop.
+- `components/products/messaging/MessageBubble.tsx` — staff blue, `StepsToggle`,
+  boxless `FeedbackIcon`, uses `AiOrbTile`.
+- `components/products/messaging/ThreadListItem.tsx` — indicator cluster, hover.
+- `components/products/messaging/ThreadList.tsx` — `search` slot.
+- `components/products/messaging/ConversationControls.tsx` — doc only (re-housed).
+- `components/products/messaging/AppLayout.tsx` — three props dropped.
+- `components/products/messaging/ThreadScopeMenu.tsx` — rebuilt on the
+  CanarySelect contract.
+- `components/products/messaging/MessageComposer.tsx` — pill orb + ignition.
+- `app/globals.css` — `--orb-size`, the pill state model, `ai-orb-wake` /
+  `ai-pill-spark`.
+- `app/(dashboard)/messages/page.tsx` — search band wired into the card.
+
+### Promotion candidates — additions
+
+Extending the batch-2 list:
+
+18. **Sectioned single-select** — ⚠ this is the sharpest foundation ask on the
+    list. `CanarySelect` cannot express a grouped menu at all, because it is a
+    native `<select>` whose option model is a flat `{label, value, disabled}[]`.
+    Two capabilities are missing and both are generic, not messaging-specific:
+    **(a) option SECTIONS** — an overline + divider grouping, i.e. an
+    `optgroup`-equivalent the library actually styles; **(b) a CHECK-ROW
+    selected affordance** — a right-aligned tick instead of an OS mark. A third,
+    softer ask: **(c) a borderless/inline trigger variant**, for selects that sit
+    in a title slot rather than a form field. `ThreadScopeMenu.ScopeSelect` is a
+    working reference implementation of all three, keyboard and ARIA included.
+    ⚠ Also worth fixing at the source: `CanarySelect` renders its placeholder as
+    a real disabled `<option>`, so every placeholder'd select carries a phantom
+    first row.
+19. **Orb size parameterisation** — `.ai-orb` is now driven by `--orb-size`
+    (every internal layer is percentage-based) as well as `--orb-speed`. One
+    component, two sizes on this surface already (32px message avatar, 14px
+    pill). Promote the component, not two copies of the CSS.
+20. **AI pill state model** — supersedes item 14. The pill is no longer just a
+    gradient-bordered toggle: it is orb + label with four states (on / on-hover /
+    off-dormant / igniting), a ~650ms three-part activation gesture, a
+    no-fanfare deactivation, and a reduced-motion crossfade. The reusable pieces
+    are the **dormant-orb treatment** (grayscale + near-stopped drift = "asleep,
+    not gone"), the **anchored border sweep** (`mask-composite: exclude` ring
+    whose conic origin is a specific element, so light appears to come out of
+    that element), and the rule that **activation gets a gesture and
+    deactivation does not**.

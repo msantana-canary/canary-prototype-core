@@ -82,6 +82,7 @@ import {
   mdiThumbDown,
 } from '@mdi/js';
 import { Avatar } from './Avatar';
+import { AiOrbTile } from './AiOrb';
 
 const STAFF_NAME = 'Theresa Webb';
 const STAFF_INITIALS = 'TW';
@@ -101,22 +102,6 @@ const STATUS_LABELS: Record<MessageStatus, string> = {
 };
 
 const CAPTION_CLASS = "font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase";
-
-/** The AI's animated avatar — an 18px orb in a 32px gradient-bordered tile. */
-function AiOrbAvatar() {
-  return (
-    <span className="ai-orb-tile shrink-0" aria-hidden="true">
-      <span className="ai-orb">
-        <span className="ai-orb-base" />
-        <span className="ai-orb-petal ai-orb-a" />
-        <span className="ai-orb-petal ai-orb-b" />
-        <span className="ai-orb-petal ai-orb-c" />
-        <span className="ai-orb-petal ai-orb-d" />
-        <span className="ai-orb-core" />
-      </span>
-    </span>
-  );
-}
 
 /** An underlined caption link. The one interaction register for both footer
  *  links — only the color changes (blue for "declined", red for "failed"). */
@@ -256,7 +241,7 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
     >
       {/* Avatar — staff gets the blue tile, guest the neutral one. */}
       {isAI ? (
-        <AiOrbAvatar />
+        <AiOrbTile />
       ) : (
         <Avatar
           src={isGuest ? guest?.avatar : undefined}

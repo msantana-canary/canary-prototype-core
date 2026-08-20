@@ -132,23 +132,34 @@ body {
    incommensurate speeds over a light pearl ground, with a white core pulsing
    at center. All motion is pure CSS.
 
-   Speed is driven off the `--orb-speed` custom property: every layer's duration
-   is `calc(var(--orb-speed) * Ns)`, so one number retimes the WHOLE composition
-   coherently (no per-layer overrides).
+   TWO KNOBS, both custom properties, both settable from outside:
+
+   `--orb-speed` (a multiplier) — every layer's duration is
+   `calc(var(--orb-speed) * Ns)`, so one number retimes the WHOLE composition
+   coherently. It is a STATE, not a size: the message tile idles at 1.6, the
+   pill's on/hover/off/igniting classes each set their own (see the pill block).
+
+   `--orb-size` (a length) — the orb's diameter. Every internal layer is sized
+   in PERCENT of the orb and offset in percent, so one number scales the whole
+   composition. `AiOrb` sets it as an inline style, which is what makes 32px
+   message avatar and 14px pill orb ONE component instead of two copies. Only
+   the two blur radii and the inset shadow are absolute, and they are all
+   sub-pixel-to-3px — they read correctly across the 14–18px range we use.
 
    Judged at the real 18px: blur is kept under ~1px (more turns to mud), ribbons
    are sized 118–128% and pushed off-center so their overlap reads as shifting
    color, and the core stays a distinct bright dot. */
 .ai-orb {
   position: relative;
-  width: 18px;
-  height: 18px;
+  --orb-size: 18px;
+  --orb-speed: 1;
+  width: var(--orb-size);
+  height: var(--orb-size);
   border-radius: 9999px;
   overflow: hidden;
   flex-shrink: 0;
   isolation: isolate;
   box-shadow: inset 0 0 3px rgba(122, 92, 255, 0.45), inset 0 -1px 2px rgba(216, 56, 142, 0.3);
-  --orb-speed: 1;
 }
 /* Light pearl ground — white → lavender → pink-violet rim. Ribbons sit on it
    with NORMAL blending at high saturation (screen-blend on a light ground is
@@ -292,32 +303,93 @@ body {
   }
 }
 
-/* ---- Composer AI pill ---------------------------------------------------- */
-/* AI ON: quiet. White-pearl fill, static pink→lavender gradient hairline — the
-   agent is working, it does not need to ask for attention.
-   AI OFF: the pill is the invitation to turn it back on, so its 1px border
-   carries a slowly REVOLVING hue wheel (a conic gradient whose start angle
-   animates). Colour moves; nothing moves geometrically — no wobble, no scale,
-   no glow pulse. `@property` is what makes the angle interpolable instead of
-   snapping; without it the border still renders, just static. */
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMPOSER AI PILL — the agent's per-conversation switch
+   ═══════════════════════════════════════════════════════════════════════════
+
+   ⚠ SUPERSEDES the label-only pill. Miguel 2026-08-20 approved the orb-bearing
+   version ("try it"). The pill now carries a 14px `.ai-orb` LEFT of its label
+   in BOTH states, so the control shows the agent rather than describing it —
+   and it is the same orb component as the 32px message avatar, only smaller
+   (`--orb-size`), so the thing you switch is visibly the thing that speaks.
+
+   The state model is the ORB'S vitality, with the border as its echo:
+
+     AI ON (idle)   calm orb, gradient "AI On" label, quiet pearl hairline.
+                    The agent is working; it does not need to ask for attention.
+     AI ON (hover)  the orb speeds up and the border tint DEEPENS. That is all —
+                    no background fill, no lift, no shadow. The pill answers the
+                    pointer by getting more alive, not by getting more boxy.
+     AI OFF         the orb is DORMANT: desaturated to grayscale and barely
+                    drifting (`--orb-speed: 6`). Alive but asleep — not removed,
+                    not frozen. The 1px border keeps its slowly REVOLVING hue
+                    wheel, which is the invitation to wake it.
+     OFF → ON       IGNITION, ~650ms, one gesture in three parts (below).
+     ON → OFF       no fanfare: a quick desaturate and a drop to the dormant
+                    drift. Turning something off should not be a performance.
+
+   ── THE IGNITION ─────────────────────────────────────────────────────────
+   Three effects share one 650ms ease-out window so they read as ONE event:
+
+     the orb WAKES     `ai-orb-wake` — saturation blooms back in from gray,
+                       a scale pulse 1 → 1.35 → 1, and one full fast revolution
+                       of the whole blob (a single 360° turn reads as the petals
+                       whipping round once; animating each ribbon's duration
+                       instead would just restart four timers mid-flight).
+     the petals RACE   `--orb-speed` drops to 0.3 for the duration, then snaps
+                       back to the calm on-state value when the class comes off.
+                       The snap is invisible under the wake animation's own
+                       motion, which is exactly why the two are co-timed.
+     the border FIRES  `ai-pill-spark` — a conic gradient ANCHORED AT THE ORB
+                       (`at 13px 50%`, the orb's own centre) sweeps its bright
+                       band around the ring and fades out, leaving the quiet on
+                       border behind. Because the sweep's origin is the orb, the
+                       light reads as coming OUT of it rather than around it.
+
+   `@property` is what makes both angles interpolable instead of snapping;
+   without it the borders still render, just static.
+   ─────────────────────────────────────────────────────────────────────────── */
 @property --ai-pill-angle {
   syntax: '<angle>';
   inherits: false;
   initial-value: 0deg;
 }
+@property --ai-pill-spark-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: -90deg;
+}
 
 .ai-pill-on,
 .ai-pill-off {
+  position: relative;
   border: 1px solid transparent;
   border-radius: 8px;
   background-origin: border-box;
   background-clip: padding-box, border-box;
 }
+
+/* ---- ON ------------------------------------------------------------------ */
 .ai-pill-on {
   background-image: linear-gradient(160deg, #fcf8fe, #f8f9fe),
     linear-gradient(135deg, #efcaec 0%, #d6d0f4 55%, #f1c7cd 100%);
 }
-/* Hues are deliberately DESATURATED. At full chroma a 1px rainbow on a 48px
+.ai-pill-on .ai-orb {
+  --orb-speed: 1.6;
+}
+/* Hover: deeper border tint + a livelier orb. The FILL is untouched — adding a
+   wash here would make the pill the heaviest object in a toolbar whose other
+   controls are bare icons. */
+.ai-pill-on:hover {
+  background-image: linear-gradient(160deg, #fcf8fe, #f8f9fe),
+    linear-gradient(135deg, #e0a6da 0%, #b3abe8 55%, #e9a3af 100%);
+}
+.ai-pill-on:hover .ai-orb {
+  --orb-speed: 0.85;
+}
+
+/* ---- OFF ----------------------------------------------------------------- */
+/* Hues are deliberately DESATURATED. At full chroma a 1px rainbow on a 64px
    pill reads as a highlighter and out-shouts the send button next to it; these
    pastels still cycle visibly but sit at the weight of the surrounding
    hairlines. */
@@ -333,14 +405,112 @@ body {
     );
   animation: ai-pill-revolve 7s linear infinite;
 }
+/* Dormant, not dead: colour drained, motion nearly stopped. */
+.ai-pill-off .ai-orb {
+  --orb-speed: 6;
+  filter: grayscale(1) brightness(1.04);
+  opacity: 0.72;
+}
 @keyframes ai-pill-revolve {
   to {
     --ai-pill-angle: 360deg;
   }
 }
 
+/* ---- THE CROSSFADE BOTH WAYS --------------------------------------------- */
+/* Deactivation's whole treatment. On→Off it is the ONLY thing that happens
+   (quick desaturate, then the dormant drift takes over); Off→On the wake
+   animation overrides `filter` outright, so this transition never fights it. */
+.ai-orb {
+  transition: filter 260ms ease-out, opacity 260ms ease-out;
+}
+
+/* ---- IGNITION (off → on) ------------------------------------------------- */
+/* Written as a compound selector so it outranks `.ai-pill-on:hover .ai-orb` —
+   the pointer is BY DEFINITION over the pill at the moment of ignition, so the
+   hover speed would otherwise win the cascade and eat the racing petals. */
+.ai-pill-ignite.ai-pill-on .ai-orb {
+  --orb-speed: 0.3;
+  animation: ai-orb-wake 650ms cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+@keyframes ai-orb-wake {
+  0% {
+    transform: rotate(0deg) scale(1);
+    filter: grayscale(1) brightness(1.04) saturate(0.4);
+    opacity: 0.72;
+  }
+  38% {
+    transform: rotate(215deg) scale(1.35);
+    filter: grayscale(0) brightness(1.2) saturate(1.75);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    filter: grayscale(0) brightness(1) saturate(1);
+    opacity: 1;
+  }
+}
+
+/* The border's half of the gesture. A sibling RING laid exactly over the pill's
+   own 1px border (`inset: -1px` — an absolutely positioned child is offset from
+   the padding box, so 0 would sit inside the border), rather than a second
+   background on the pill itself: the calm on-border is already underneath when
+   the spark fades, so nothing has to be restored.
+
+   The ring is cut with a MASK, not the padding-box/border-box background trick
+   the pill uses. That trick needs an OPAQUE inner layer to hide the gradient
+   over the fill, and this overlay must keep its interior transparent so the
+   pill's own pearl shows through. `mask-composite: exclude` subtracts the
+   content box from the full box, leaving exactly the 1px frame.
+
+   The conic's origin is the ORB (~14px in from the pill's left edge, vertically
+   centred) — that is the whole point of the effect: the light leaves the orb
+   and runs around the border, instead of orbiting a centre nothing is at. */
+.ai-pill-spark {
+  position: absolute;
+  inset: -1px;
+  padding: 1px;
+  border-radius: 8px;
+  background: conic-gradient(
+    from var(--ai-pill-spark-angle) at 14px 50%,
+    rgba(255, 110, 199, 0) 0deg,
+    rgba(255, 110, 199, 0.95) 22deg,
+    rgba(122, 92, 255, 0.95) 52deg,
+    rgba(74, 240, 200, 0) 96deg,
+    rgba(255, 110, 199, 0) 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+}
+.ai-pill-ignite .ai-pill-spark {
+  animation: ai-pill-spark 650ms cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+@keyframes ai-pill-spark {
+  0% {
+    --ai-pill-spark-angle: -90deg;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    --ai-pill-spark-angle: 270deg;
+    opacity: 0;
+  }
+}
+
 /* Reduced motion: the orb and the pill border both keep their composition —
-   they just stop moving. Nothing disappears, so no layout or meaning is lost. */
+   they just stop moving. Nothing disappears, so no layout or meaning is lost.
+   The state change becomes a pure CROSSFADE: the orb's grayscale transition is
+   the whole animation, the ignition's pulse/revolution/sweep never run, and
+   both borders swap statically. */
 @media (prefers-reduced-motion: reduce) {
   .ai-orb-petal,
   .ai-orb-core {
@@ -348,6 +518,12 @@ body {
   }
   .ai-pill-off {
     animation: none;
+  }
+  .ai-pill-ignite.ai-pill-on .ai-orb {
+    animation: none;
+  }
+  .ai-pill-spark {
+    display: none;
   }
 }
 
