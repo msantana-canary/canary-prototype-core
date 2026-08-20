@@ -189,12 +189,12 @@ function ExpanderPill({
 }
 
 /**
- * The details band's ground. There is no token between colorBlack7 (#F0F0F0,
- * too heavy behind body text) and colorBlack8 (#FAFAFA, invisible against
- * white), so this surface picks the value the frames draw and says so out loud
- * rather than pretending a token fits.
+ * The details band's ground. The frames draw #FAFAFA — which IS colorBlack8 —
+ * so the token fits after all: batch 3.2's row-profiling corrected an earlier
+ * mis-read that had this as a #F7F8F9 literal. The band reads against the
+ * white panel via its top/bottom rules, not via contrast of the ground itself.
  */
-const BAND_BG = '#F7F8F9';
+const BAND_BG = colors.colorBlack8;
 
 /**
  * The details band's expand. Opening is the slower of the two: it is the motion
