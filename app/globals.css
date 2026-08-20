@@ -96,6 +96,28 @@ body {
   color: transparent;
 }
 
+/* The same ramp as a 2px LEFT BAR. Used by the AI steps trace when it sits in a
+   column that already speaks in speaker bars (the call transcript in the
+   Conversation Details panel) — there a bordered box would read as a foreign
+   object, so the trace takes the column's idiom and marks itself with the
+   gradient instead. */
+.ai-gradient-bar {
+  border-left: 2px solid transparent;
+  border-image: linear-gradient(180deg, #d6379f 0%, #b345c6 45%, #5758ea 100%) 1;
+}
+
+/* ---- CanaryTag radius: 2 → 4 ---------------------------------------------
+   DESIGN-SYSTEM CHANGE (Miguel, 2026-08-20). `CanaryTag` hardcodes
+   `rounded-[2px]`; at the sizes this surface uses it, 2px reads as a hard
+   rectangle beside every other rounded-4/8 object in the panel. Every tag in
+   the Conversation Details panel opts in via this class until the library
+   itself moves — see REDESIGN_NOTES' promotion list. `!important` because the
+   library's own arbitrary utility has identical specificity and we cannot rely
+   on stylesheet order to win. */
+.canary-tag-r4 {
+  border-radius: 4px !important;
+}
+
 /* ---- Orb avatar tile ----------------------------------------------------- */
 /* PORTED from the email-channel-ai worktree (components/products/email/
    AiDraftCard.tsx + its globals.css). There the orb is an 18px blob inside a

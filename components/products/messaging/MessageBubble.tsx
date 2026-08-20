@@ -74,7 +74,6 @@ import { format } from 'date-fns';
 import { colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import {
-  mdiCheck,
   mdiChevronDown,
   mdiChevronUp,
   mdiInformationOutline,
@@ -83,6 +82,7 @@ import {
 } from '@mdi/js';
 import { Avatar } from './Avatar';
 import { AiOrbTile } from './AiOrb';
+import { AiStepsCard } from './AiStepsCard';
 
 const STAFF_NAME = 'Theresa Webb';
 const STAFF_INITIALS = 'TW';
@@ -291,34 +291,11 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
           </span>
         </div>
 
-        {/* Steps card — sits ABOVE the answer, because it is what produced it. */}
-        {isAI && isStepsOpen && steps.length > 0 && (
-          <div
-            className="rounded-[8px]"
-            style={{
-              border: `1px solid ${colors.colorBlack6}`,
-              marginTop: 4,
-              marginBottom: 8,
-              paddingLeft: 10,
-              paddingRight: 10,
-              paddingTop: 6,
-              paddingBottom: 6,
-            }}
-          >
-            {steps.map((step, i) => (
-              <div key={`${step.tool}-${i}`} className="flex items-start gap-2" style={{ paddingTop: 1, paddingBottom: 1 }}>
-                <span className="shrink-0 flex items-center" style={{ height: 20 }}>
-                  <Icon path={mdiCheck} size={0.58} color={colors.colorBlack3} />
-                </span>
-                <span
-                  className="font-['Roboto',sans-serif] text-[12px] leading-[20px] min-w-0"
-                  style={{ color: colors.colorBlack3 }}
-                >
-                  {step.tool} · {step.note}
-                </span>
-              </div>
-            ))}
-          </div>
+        {/* Steps card — sits ABOVE the answer, because it is what produced it.
+            The card itself is now the shared <AiStepsCard>; the call-details
+            transcript in the Conversation Details panel renders the same one. */}
+        {isAI && isStepsOpen && (
+          <AiStepsCard steps={steps} style={{ marginTop: 4, marginBottom: 8 }} />
         )}
 
         {/* Body */}
