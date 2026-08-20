@@ -1542,3 +1542,235 @@ Extending the batch-2 list:
     whose conic origin is a specific element, so light appears to come out of
     that element), and the rule that **activation gets a gesture and
     deactivation does not**.
+
+---
+
+## Batch 3 — Conversation Details, rebuilt guest-profile-first (2026-08-20)
+
+The panel is a **wholesale replacement**, not an edit. `GuestInfoSidebar` is
+deleted, along with `LinkReservationModal` and `UnlinkReservationModal`.
+
+### Why the old one had to go
+
+The previous panel was organised around **the link**: a stack of cards, one per
+linked reservation, grouped by *how each link came to exist* (phone-matched vs.
+staff-made) and paged through a carousel. That is the shape of the data model,
+not the shape of the reader's question. A hotelier opens this panel to ask "who
+am I talking to, and what do I need to know about them" — and answering it meant
+paging a carousel to reassemble one person out of several rows.
+
+The new panel starts from **the person**:
+
+```
+[avatar]  Emily Smith  CHECKED-IN                                      ⋯
+┌─ Assigned to ─────────────┐ ┌─ Emily's Reservations ─────────────────┐
+│ Miguel Santana          ⇅ │ │ 4                                    › │
+└───────────────────────────┘ └────────────────────────────────────────┘
+                  ( Show reservation details ⌄ )
+── Linked Reservations · Upsells ④ · Service Tasks · Call History ──────
+```
+
+One person in the spotlight; her stays behind a count; everything else attached
+to her behind four tabs. **Every number on screen is derived** — the reservation
+count and the Upsells badge are `.length`s, never literals.
+
+### The panel standard (new, and the reusable thing here)
+
+`components/products/messaging/panel/PanelShell.tsx`
+
+- **600px fixed.** The contents have one right layout; a resizable panel would
+  buy nothing and cost four breakpoints.
+- **12px to the top, right and bottom of the VIEWPORT.** The same gap on three
+  sides is what makes it read as one floating object instead of a drawer hinged
+  to an edge. Height is whatever the viewport leaves; content scrolls inside.
+- **Over everything, top bar included** (panel z-index 45 / scrim 44, both below
+  `zIndex.modal` so a CanaryModal opened from inside still stacks above).
+- **rounded-16, 1px `colorBlack6`, NO shadow** — the branch-wide rule.
+- Same two-phase mount + reduced-motion downgrade + scrim-to-close as
+  `FloatingPanel`.
+
+⚠ **Deliberately NOT `FloatingPanel`.** That shell stays the right one for the
+**broadcast** panels (480px, tucked under the top bar, shadowed) and they are
+untouched. The two panels have genuinely different jobs; one component being
+both would mean five props that each mean "be the other one".
+
+### Drill-ins replace, and they stack
+
+Every drill-in takes the whole panel behind `← {Page title}` — no breadcrumb, no
+persistent profile header. At 600px a drill-in that kept the root's chrome would
+spend a third of its height re-stating where you already know you are. The X
+never moves.
+
+Navigation is a translateX track over a real **stack**, so
+`Reservations → Guest Scheduled Messages` is two levels deep and Back walks out
+one at a time. Nine pages total: root, Reservations, Guest Scheduled Messages,
+Call details, Link reservation, Set primary guest, Create service task (plus the
+anonymous root variant and the unlink confirm).
+
+### Primary is a SPOTLIGHT, not a link
+
+The load-bearing distinction, and the one most likely to be re-litigated:
+`setThreadPrimary` writes **one per-thread display preference** and touches no
+reservation. Every candidate in the picker is *already* attached to the thread —
+they auto-linked because their guest's phone IS the conversation's number.
+
+The problem it solves is that **a phone number is not a person**. When a family
+books three rooms on one mobile, Canary sees three reservations and one number
+and cannot know which human is holding it. Nothing in the data will ever tell
+it. So the panel asks the one party who does know, and remembers the answer for
+this thread. Profile header, Current Reservation band, reservation count and
+drill-in, the companion list, the thread-list row and the thread header all
+re-index off it.
+
+Link / Unlink remain data operations and are kept structurally separate.
+
+### Linked Reservations = COMPANIONS ONLY
+
+Miguel: *"linked rez are companions to this reservation — Emily's family that
+has a separate room but is connected to her."* Self is excluded; a guest listed
+as her own companion is a tautology. (The frame showing Emily inside Emily's own
+linked list is a stale iteration and was not replicated.)
+
+A **phone-matched** row's "Unlink reservation" renders **disabled with the
+reason underneath** rather than being hidden — production hard-blocks it because
+the link would only reappear on the next sync, and "you can't do this and here's
+why" is information where a missing menu item is a mystery. This is also why the
+old modal's "Unable to unlink" variant is gone: it was an error message
+pretending to be a dialog, arriving *after* the click.
+
+### Guest Scheduled Messages — a timeline, and real GJ data
+
+**A timeline, not a table.** A table says "here are some records"; a rail says
+"here is a sequence, and this is where you are in it". These touchpoints ARE a
+sequence, and the question brought to the screen is temporal: what has gone out,
+what is coming, where did it break. The rail answers all three, and its one red
+dot answers the third without reading a word.
+
+Card anatomy: title + **`CanaryTag` beside the name** — green "Sent" / red
+"Failed" / blue "Scheduled" (Miguel's addition over the drawn frame, which
+carried status only in the timestamp's *wording*) · right-aligned timestamp ·
+channel icon row with failed channels tinted red · per-channel error blocks in
+the existing register (gray channel overline, one red `Error {code}: {line}`
+with only the carrier code underlined; 30006 / 63016 copy reused verbatim).
+
+**Card rule: "Sent" if ANY channel succeeded.** A message that reached the guest
+by email and failed on SMS *did* reach the guest — calling the whole card
+"Failed" would send a hotelier chasing someone who already has the information.
+Damage stays per-channel, where it happened.
+
+**⚠ The timeline is now COMPILED from the Guest Journey product**
+(`lib/products/messaging/guest-journey-link.ts`, read-only import). It used to
+be a hand-typed literal with invented touchpoint names — "Pre-Arrival",
+"Mid-Stay Check", "Post-Stay Thank You" — none of which exist in the product
+that sends those messages. A hotelier who configures "Mid-Stay" in Guest Journey
+and reads "Mid-Stay Check" in Messaging is looking at two products describing
+one send. Now: titles verbatim from the campaigns, order by journey stage, send
+times projected from each campaign's own `timing` against the reservation's real
+dates. Booking Confirmation stays as a **system** touchpoint (it fires off the
+booking, not off the journey, and is the only card carrying an OTA chip);
+failures stay authored, because failure is the state the panel exists to surface
+and it has to be seeded to be demoable.
+
+### Reuse: the AI steps trace
+
+`MessageBubble`'s steps card is extracted to `<AiStepsCard>` and rendered inline
+in the **call transcript**, between utterances. A voice call is the one channel
+a hotelier can't skim, so it carries the same observability a chat AI message
+does — and the AI's work should look the same wherever it is shown. An optional
+`accent` dress swaps the bordered box for a 2px gradient left bar: inside a
+transcript every utterance already has a speaker bar, so a boxed trace reads as
+a foreign object in that column.
+
+### Picker / link-flow pattern
+
+One row (`ReservationResultRow`), two pages. Both ask a hotelier to do the same
+physical thing — read five facts about a stay and pick the right one — so they
+share a row rather than growing two that differ by accident. Facts in order:
+**name + lifecycle · phone · confirmation code · dates · room**. Name first
+because that's what you were told; dates and room last because those are what
+you confirm against. Selection = blue tint **and** a check (the tint alone is
+easy to miss on a light row; the check alone is easy to miss in a list of five).
+
+Both pages end in a **sticky tonal-blue commit bar**, disabled until there's a
+selection.
+
+### The anonymous variant
+
+No linked reservations ⇒ no guest ⇒ nothing to put a portrait of. The phone
+number becomes the title, the reservation card becomes "Link guest", and the
+expander opens **thread** details (Name / Phone / Email) instead of a
+reservation. This is not a degraded state — it is the ~norm for an inbound
+number the PMS has never seen. The "Show/Hide thread details" label flips
+correctly (the frame's stale "Show"-while-open label was not replicated).
+
+### Files touched (batch 3)
+
+- `components/products/messaging/panel/` — **new**: `PanelShell`, `panel-ui`,
+  `panel-format`, `AssignSelect`, `ConversationDetailsPanel`, `PanelTabs`,
+  `ReservationRecord`, `ReservationsPage`, `ScheduledMessagesPage`,
+  `CallDetailsPage`, `LinkReservationPage`, `SetPrimaryGuestPage`,
+  `CreateServiceTaskPage`, `ReservationResultRow`, `UnlinkConfirmModal`.
+- `components/products/messaging/AiStepsCard.tsx` — **new** (extracted).
+- `components/products/messaging/Avatar.tsx` — `shape` + a 48px `profile` size.
+- `components/products/messaging/{GuestInfoSidebar,LinkReservationModal,UnlinkReservationModal}.tsx`
+  — **deleted**.
+- `components/products/messaging/ThreadList.tsx` — the row now names the thread's
+  derived primary, not `linkedReservationIds[0]`.
+- `lib/products/messaging/` — `guest-journey-link.ts`, `panel-selectors.ts`,
+  `panel-mock.ts` (**new**); `types.ts`, `store.ts`, `mock-data.ts` extended.
+- `lib/core/data/` — Emily's stay history + two shared-phone travellers.
+- `app/globals.css` — `.ai-gradient-bar`, `.canary-tag-r4`.
+
+### Promotion candidates — additions
+
+21. **⚠ `CanaryTag` border-radius 2 → 4** — a **design-system change**, called by
+    Miguel on 2026-08-20, not a local override. `CanaryTag` hardcodes
+    `rounded-[2px]`; at the 10px/compact sizes this surface uses, 2px reads as a
+    hard rectangle beside every other rounded-4/8 object in the panel. Until the
+    library moves, every tag here opts in via `.canary-tag-r4`
+    (`!important`, because the library's arbitrary utility has identical
+    specificity and stylesheet order can't be relied on). **The fix belongs in
+    the library**, not in a class each consumer has to remember.
+22. **The panel standard** — 600px fixed, 12px viewport inset on top/right/
+    bottom, over the app chrome, rounded-16, 1px border, no shadow, internal
+    scroll per page, `← {Page title}` drill-ins on a real navigation stack. This
+    is the reusable primitive: any product needing a detail surface beside a
+    working canvas wants exactly this, and there is nothing like it in the
+    library today (`CanarySideSheet` is edge-hinged and full-height).
+23. **Steps-trace card** — supersedes item 12. Now two surfaces (chat message,
+    call transcript) and two dresses (bordered box, gradient left bar). One
+    component, promoted with the `accent` variant.
+24. **GJ timeline card** — rail + dot + status tag + channel icons + the
+    per-channel error register. The *error register itself* (gray channel
+    overline, one red sentence, only the carrier code underlined) is the piece
+    most worth promoting: every product that sends anything can fail this way.
+25. **Reservation result row** — name + lifecycle over phone / code / dates /
+    room, with a tint+check selection. Every product that makes a human pick a
+    reservation out of a list needs this exact row.
+26. **Label/value detail rows** (`DetailRows`) — gray label left, value right, no
+    dividers, optional trailing affordance (copy icon, chevron), optional
+    link/error colouring. The reservation record's whole anatomy is one call.
+
+### Eyeball / fix-in-post list
+
+- **Profile avatar is a CIRCLE** at 48px, per every panel frame — the feed's
+  avatars stay rounded-8 squares. Defensible (row marker vs. portrait) but it is
+  a second avatar shape on one surface; worth a look.
+- **Set-primary helper copy** is the frame's verbatim and explains the mechanism
+  where it could just give the instruction. Copy pass pending.
+- **Lifecycle tag case**: uppercase everywhere except the Reservations accordion
+  header, which draws sentence case in the frame (it sits beside a 16px date
+  line, where all-caps shouts over the date). Two registers for one vocabulary —
+  confirm or collapse.
+- **Details band ground** is `#F7F8F9`, a literal: there is no token between
+  `colorBlack7` (#F0F0F0, too heavy behind body text) and `colorBlack8`
+  (#FAFAFA, invisible against white). A token in that gap would be useful.
+- **Arrival Date** on the link flow is drawn but inert.
+- **Stubs** (deliberate, all no-ops): refresh buttons, the Upsells "+" and its
+  external-link icons, service-task kebab items, "Add name" / "Add email" on the
+  anonymous thread, "Download Transcript", playback controls, the error-code
+  link. Playback is decorative but **coherent** — the scrubber's fill is computed
+  from elapsed/total, so it can't contradict the clock the way the frame's does.
+- **Full-viewport scrim.** The panel now clears the top bar, so the scrim covers
+  the whole window rather than stopping under the chrome. It dims the thread you
+  may still be reading; if that reads wrong, the scrim is one style block.
