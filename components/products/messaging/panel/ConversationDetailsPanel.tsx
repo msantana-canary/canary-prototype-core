@@ -144,7 +144,15 @@ function DrillCard({
  * The expander pill, centred ON the boundary line. It carries a white ground
  * because it straddles two surfaces — the white profile zone above and the
  * gray details band below.
+ *
+ * HEIGHT IS 28, NOT 30, and that is measured rather than chosen: in the frames
+ * the pill's border rows sit 14px above the boundary line and 13px below it
+ * (`PILL_OVERHANG`), which only closes on a 28px box. The 2px it gives back is
+ * what lets the band's top padding and the pill's lower clearance both land on
+ * the frame's numbers instead of trading 2px against each other.
  */
+const PILL_H = 28;
+
 function ExpanderPill({
   isOpen,
   labelOpen,
@@ -162,7 +170,7 @@ function ExpanderPill({
       aria-expanded={isOpen}
       className="flex items-center gap-1 rounded-full transition-colors hover:bg-[#fafafa]"
       style={{
-        height: 30,
+        height: PILL_H,
         paddingLeft: 14,
         paddingRight: 10,
         border: `1px solid ${colors.colorBlack6}`,
@@ -195,6 +203,37 @@ const BAND_BG = '#F7F8F9';
  */
 const BAND_OPEN_MS = 220;
 const BAND_CLOSE_MS = 160;
+
+/* ── THE ZONE'S VERTICAL RHYTHM, MEASURED OFF THE FRAMES ───────────────────
+   Every number below was read out of the 600px-wide root frames (collapsed
+   `2030:50317`, expanded `2038:51492` and its three siblings) rather than
+   picked, because the zone's whole problem was that it had been picked. The
+   panel used to run the control cards into the boundary line at 24px and then
+   butt the pill/band straight against the tab strip at 0 — two hard stops in
+   the busiest 60px of the panel.
+
+        card bottom
+            │  PILL_APPROACH        32   (was 24)
+        ────┼──── boundary line, pill straddling it
+            │  PILL_OVERHANG        13   (14 above the line, 13 below)
+        band top ─ BAND_PAD_TOP     11 ─ "Current Reservation"
+            │      … rows …
+            │  BAND_PAD_BOTTOM      15   (was 18)
+        ────┴──── band's closing line (open only)
+               TABS_GAP_OPEN        14   (was 0)
+        tab strip
+
+   Closed, the same run is: line → pill's lower half → TABS_GAP_CLOSED 9 → tab
+   strip. The two gaps differ because the frames differ: closed, the eye is
+   measuring from a floating pill; open, from a ruled edge that has already
+   closed the band. Nine and fourteen are what Miguel drew, so nine and
+   fourteen are what this renders. */
+const PILL_APPROACH = 32;
+const PILL_OVERHANG = 13;
+const BAND_PAD_TOP = 11;
+const BAND_PAD_BOTTOM = 15;
+const TABS_GAP_CLOSED = 9;
+const TABS_GAP_OPEN = 14;
 
 /* ─────────────────────────────────────────────────────────────────────────
    The panel
@@ -320,7 +359,16 @@ export function ConversationDetailsPanel({
 
           <div className="flex-1 min-h-0 overflow-y-auto scrollbar-invisible">
             {/* PROFILE */}
-            <div style={{ paddingLeft: PANEL_PAD, paddingRight: PANEL_PAD, paddingTop: 20, paddingBottom: 24 }}>
+            <div
+              style={{
+                paddingLeft: PANEL_PAD,
+                paddingRight: PANEL_PAD,
+                paddingTop: 20,
+                /* The control cards' run-out to the boundary line the pill sits
+                   on. This is the gap the frames are most emphatic about. */
+                paddingBottom: PILL_APPROACH,
+              }}
+            >
               {isAnonymous ? (
                 // No guest, no portrait: the number IS the conversation.
                 <h3
@@ -381,6 +429,14 @@ export function ConversationDetailsPanel({
                 the tab strip's top rule is gone. The strip keeps its BOTTOM
                 hairline, because that is the rail the active indicator sits on.
 
+                ── THE CLOSING LINE IS NOT THAT RULE COMING BACK ─────────────
+                The zone's own bottom border only inks when the band is OPEN,
+                and it sits `TABS_GAP_OPEN` above the tab strip rather than
+                against it. It is the gray slab's bottom edge, not the strip's
+                top edge: closed, it is transparent and there is no second rule
+                anywhere in the run. It is held at 1px in both states so that
+                opening the band moves nothing but the band.
+
                 ── WHY grid-template-rows ───────────────────────────────────
                 The band used to mount and unmount, so a click swapped 200-odd
                 pixels in with no transit. Height can't be transitioned from
@@ -393,14 +449,29 @@ export function ConversationDetailsPanel({
               className="relative"
               style={{
                 borderTop: `1px solid ${colors.colorBlack6}`,
-                paddingTop: 15,
+                borderBottom: `1px solid ${detailsOpen ? colors.colorBlack6 : 'transparent'}`,
+                /* The pill's lower half. Content starts exactly where the pill
+                   ends, so the band's own top padding is measured from the pill
+                   and not from the line. */
+                paddingTop: PILL_OVERHANG,
+                marginBottom: detailsOpen ? TABS_GAP_OPEN : TABS_GAP_CLOSED,
                 backgroundColor: detailsOpen ? BAND_BG : 'transparent',
                 transition: reduced
                   ? 'none'
-                  : `background-color ${detailsOpen ? BAND_OPEN_MS : BAND_CLOSE_MS}ms ease-out`,
+                  : ['background-color', 'border-bottom-color', 'margin-bottom']
+                      .map((p) => `${p} ${detailsOpen ? BAND_OPEN_MS : BAND_CLOSE_MS}ms ease-out`)
+                      .join(', '),
               }}
             >
-              <div className="absolute left-0 right-0 flex justify-center" style={{ top: -15, zIndex: 1 }}>
+              {/* `top` resolves against the zone's PADDING box, which starts 1px
+                  below the border box — so this lands the pill's bottom exactly
+                  on the padding box's top edge, which is where the band's
+                  content starts. Everything above the line follows from that:
+                  28 − 13 = 15 up from the padding box = 14 above the rule. */}
+              <div
+                className="absolute left-0 right-0 flex justify-center"
+                style={{ top: -(PILL_H - PILL_OVERHANG), zIndex: 1 }}
+              >
                 <ExpanderPill
                   isOpen={detailsOpen}
                   labelClosed={isAnonymous ? 'Show thread details' : 'Show reservation details'}
@@ -432,9 +503,13 @@ export function ConversationDetailsPanel({
                         : 'opacity 110ms ease-in',
                   }}
                 >
-                  {/* 15 above (the zone's own padding, which holds the pill's
-                      lower half) + 13 here = the frame's 28. */}
-                  <div style={{ padding: `13px ${PANEL_PAD}px 18px` }} inert={!detailsOpen}>
+                  {/* 13 above (the zone's own padding, which holds the pill's
+                      lower half) + 11 here = the frame's 24 from the band's top
+                      edge to the section title's line box. */}
+                  <div
+                    style={{ padding: `${BAND_PAD_TOP}px ${PANEL_PAD}px ${BAND_PAD_BOTTOM}px` }}
+                    inert={!detailsOpen}
+                  >
                     {isAnonymous ? (
                       <DetailRows
                         rows={[
