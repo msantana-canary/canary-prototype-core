@@ -1756,6 +1756,88 @@ export const reservations: Record<string, Reservation> = {
     checkOutStatus: 'Not Started',
     rateCode: 'RACK',
   },
+
+  // ── Emily Smith's stay HISTORY ────────────────────────────────────────────
+  // The Messaging panel is guest-profile-first now: "Emily's Reservations → 4"
+  // and the Reservations drill-in are a guest's own stays over time, so Emily
+  // needs a history rather than a single in-house stay. Deliberately spread
+  // across all three lifecycle states so the drill-in demos its whole tag
+  // vocabulary (Checked-in / Reserved / Checked out) off real data.
+  'res-emily-sep': {
+    id: 'res-emily-sep',
+    guestId: 'guest-emily',
+    room: '311',
+    roomType: 'Double Queen',
+    roomTypeCode: 'DBO',
+    checkInDate: 'Sep. 22, 2026',
+    checkOutDate: 'Sep. 25, 2026',
+    confirmationCode: 'ESQ4TNVPWKL',
+    status: 'upcoming',
+    checkInStatus: 'Not Started',
+    checkOutStatus: 'Not Started',
+    rateCode: 'BAR',
+  },
+  'res-emily-feb-past': {
+    id: 'res-emily-feb-past',
+    guestId: 'guest-emily',
+    room: '148',
+    roomType: 'King Suite',
+    roomTypeCode: 'KST',
+    checkInDate: 'Feb. 3, 2026',
+    checkOutDate: 'Feb. 5, 2026',
+    confirmationCode: 'ESF2BKQRMTX',
+    status: 'checked-out',
+    checkInStatus: 'Completed',
+    checkOutStatus: 'Completed',
+    rateCode: 'CORP',
+  },
+  'res-emily-nov-past': {
+    id: 'res-emily-nov-past',
+    guestId: 'guest-emily',
+    room: '227',
+    roomType: 'Double Queen',
+    roomTypeCode: 'DBO',
+    checkInDate: 'Nov. 14, 2025',
+    checkOutDate: 'Nov. 17, 2025',
+    confirmationCode: 'ESN9WXKPRTV',
+    status: 'checked-out',
+    checkInStatus: 'Completed',
+    checkOutStatus: 'Completed',
+    rateCode: 'AAA',
+  },
+
+  // ── The shared-phone companions on Emily's number ─────────────────────────
+  // Separate rooms, separate stays, same phone — the exact shape Miguel named:
+  // "linked rez are companions to this reservation — family that has a separate
+  // room but is connected to her."
+  'res-nathan-jul': {
+    id: 'res-nathan-jul',
+    guestId: 'guest-nathan-r',
+    room: '155',
+    roomType: 'King',
+    roomTypeCode: 'KNG',
+    checkInDate: 'Jul. 13, 2026',
+    checkOutDate: 'Jul. 15, 2026',
+    confirmationCode: 'NR6P2XKLMQW',
+    status: 'checked-in',
+    checkInStatus: 'Submitted',
+    checkOutStatus: 'Not Started',
+    rateCode: 'CORP',
+  },
+  'res-claire-aug': {
+    id: 'res-claire-aug',
+    guestId: 'guest-claire-w',
+    room: '402',
+    roomType: 'Double Queen',
+    roomTypeCode: 'DBO',
+    checkInDate: 'Aug. 28, 2026',
+    checkOutDate: 'Aug. 31, 2026',
+    confirmationCode: 'CW3L7NQRSTZ',
+    status: 'upcoming',
+    checkInStatus: 'Not Started',
+    checkOutStatus: 'Not Started',
+    rateCode: 'BAR',
+  },
 };
 
 /**

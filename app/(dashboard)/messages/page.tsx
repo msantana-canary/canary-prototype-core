@@ -26,6 +26,7 @@ import { useMessagingStore } from '@/lib/products/messaging/store';
 import { guests } from '@/lib/core/data/guests';
 import { reservations } from '@/lib/core/data/reservations';
 import { LinkedReservation } from '@/lib/products/messaging/types';
+import { panelIdentity, resolveLinked } from '@/lib/products/messaging/panel-selectors';
 import { LinkReservationModal } from '@/components/products/messaging/LinkReservationModal';
 import { generateGuestResponse, generateStaffResponse } from '@/lib/products/messaging/services/claude-api';
 import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
@@ -70,12 +71,16 @@ export default function MessagesPage() {
     unblockThread,
     markThreadAsUnread,
     setSearchQuery,
-    isLinkReservationModalOpen,
-    openLinkReservationModal,
-    closeLinkReservationModal,
+    threadPrimaryReservationId,
     linkReservation,
     unlinkReservation,
   } = useMessagingStore();
+
+  // The link flow is mid-migration: it becomes a page INSIDE the Conversation
+  // Details panel, so its open state no longer belongs in the global store.
+  const [isLinkReservationModalOpen, setLinkReservationModalOpen] = useState(false);
+  const openLinkReservationModal = () => setLinkReservationModalOpen(true);
+  const closeLinkReservationModal = () => setLinkReservationModalOpen(false);
 
 
   // Get the selected thread
@@ -85,27 +90,21 @@ export default function MessagesPage() {
   }, [threads, selectedThreadId]);
 
   // Resolve all linked reservations with their guests and auto-link status
-  const linkedReservations: LinkedReservation[] = useMemo(() => {
-    if (!selectedThread) return [];
-    return selectedThread.linkedReservationIds
-      .map((resId) => {
-        const reservation = reservations[resId];
-        if (!reservation) return null;
-        const guest = guests[reservation.guestId];
-        if (!guest) return null;
-        return {
-          reservation,
-          guest,
-          isAutoLinked: guest.phone === selectedThread.contactNumber,
-        };
-      })
-      .filter((lr): lr is LinkedReservation => lr !== null);
-  }, [selectedThread]);
+  const linkedReservations: LinkedReservation[] = useMemo(
+    () => resolveLinked(selectedThread),
+    [selectedThread]
+  );
 
-  // Primary guest: first auto-linked, or first linked, or null
-  const primaryLinked = useMemo(() => {
-    return linkedReservations.find((lr) => lr.isAutoLinked) || linkedReservations[0] || null;
-  }, [linkedReservations]);
+  /**
+   * The thread's PRIMARY person — the same spotlight the Conversation Details
+   * panel puts in its profile header, so the thread header and the panel can
+   * never name two different people for one conversation. Honours the
+   * per-thread display preference; falls back to the in-house auto-linked stay.
+   */
+  const primaryLinked = useMemo(
+    () => panelIdentity(selectedThread, selectedThread ? threadPrimaryReservationId[selectedThread.id] : undefined).primary,
+    [selectedThread, threadPrimaryReservationId]
+  );
 
   const selectedGuest = primaryLinked?.guest || null;
   const selectedReservation = primaryLinked?.reservation || null;

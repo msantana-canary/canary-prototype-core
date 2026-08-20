@@ -66,7 +66,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FloatingPanel } from './FloatingPanel';
 import { LinkedReservation } from '@/lib/products/messaging/types';
-import { gjMessages, getGjSummary } from '@/lib/products/messaging/mock-data';
+import { buildJourneyTimeline, getGjSummary } from '@/lib/products/messaging/guest-journey-link';
 import { Reservation } from '@/lib/core/types/reservation';
 import { colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
@@ -577,7 +577,7 @@ function ChannelIcon({ type, status }: { type: 'email' | 'sms' | 'whatsapp' | 'b
  * red + adds an alert icon, and appends production's error register.
  */
 function GjMessagesTable({ reservationId }: { reservationId: string }) {
-  const msgs = gjMessages[reservationId];
+  const msgs = buildJourneyTimeline(reservationId);
   if (!msgs || msgs.length === 0) {
     return (
       <div className="rounded-[8px] px-3 py-4 text-center" style={{ border: `1px solid ${colors.colorBlack6}` }}>

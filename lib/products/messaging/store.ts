@@ -7,8 +7,9 @@
  */
 
 import { create } from 'zustand';
-import { Thread, Message } from './types';
+import { Thread, Message, ServiceTask, ThreadAssignment } from './types';
 import { mockThreads, mockMessages } from './mock-data';
+import { serviceTasksByGuest } from './panel-mock';
 
 interface MessagingState {
   // State
@@ -34,9 +35,25 @@ interface MessagingState {
   composingPhoneNumber: string;
   typingThreadId: string | null;
   isGuestInfoOpen: boolean;
-  isLinkReservationModalOpen: boolean;
   currentView: 'inbox' | 'archived' | 'blocked';
   searchQuery: string;
+  /**
+   * THE SPOTLIGHT, PER THREAD — which linked reservation's guest the
+   * Conversation Details panel puts in its profile header.
+   *
+   * ⚠ LOAD-BEARING DISTINCTION (decision log: "Primary Is a Spotlight, Not a
+   * Link"). This is a DISPLAY preference, not a data operation. When several
+   * people share one phone number, Canary cannot know which of them is holding
+   * it, so a human tells the panel who they're speaking to. Setting a primary
+   * links NOTHING and unlinks NOTHING — the thread's `linkedReservationIds` are
+   * untouched. Sparse map: absent ⇒ derive the default (see `panelPrimary`).
+   */
+  threadPrimaryReservationId: Record<string, string>;
+  /**
+   * Service tasks by GUEST id, seeded from the mock and mutable because the
+   * panel can create one. Tasks follow the person, not the stay.
+   */
+  serviceTasks: Record<string, ServiceTask[]>;
 
   // Actions
   selectThread: (threadId: string) => void;
@@ -61,10 +78,13 @@ interface MessagingState {
   unblockThread: (threadId: string) => void;
   markThreadAsUnread: (threadId: string) => void;
   setSearchQuery: (query: string) => void;
-  openLinkReservationModal: () => void;
-  closeLinkReservationModal: () => void;
   linkReservation: (threadId: string, reservationId: string) => void;
   unlinkReservation: (threadId: string, reservationId: string) => void;
+  /** Unlink EVERY reservation belonging to one guest (the panel's kebab). */
+  unlinkGuest: (threadId: string, reservationIds: string[]) => void;
+  setThreadPrimary: (threadId: string, reservationId: string) => void;
+  assignThread: (threadId: string, assignment?: ThreadAssignment) => void;
+  createServiceTask: (guestId: string, task: Omit<ServiceTask, 'id'>) => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set, get) => ({
@@ -78,9 +98,10 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   composingPhoneNumber: '',
   typingThreadId: null,
   isGuestInfoOpen: false,
-  isLinkReservationModalOpen: false,
   currentView: 'inbox',
   searchQuery: '',
+  threadPrimaryReservationId: {},
+  serviceTasks: serviceTasksByGuest,
 
   // Select a thread
   selectThread: (threadId: string) => {
@@ -329,16 +350,6 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     set({ searchQuery: query });
   },
 
-  // Open link reservation modal
-  openLinkReservationModal: () => {
-    set({ isLinkReservationModalOpen: true });
-  },
-
-  // Close link reservation modal
-  closeLinkReservationModal: () => {
-    set({ isLinkReservationModalOpen: false });
-  },
-
   // Link a reservation to a thread
   linkReservation: (threadId: string, reservationId: string) => {
     set((state) => ({
@@ -352,12 +363,70 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
 
   // Unlink a reservation from a thread
   unlinkReservation: (threadId: string, reservationId: string) => {
+    set((state) => {
+      // If the spotlight was on the reservation being removed, drop the
+      // preference too — the panel then re-derives its default primary rather
+      // than pointing at a reservation this thread no longer carries.
+      const primary = { ...state.threadPrimaryReservationId };
+      if (primary[threadId] === reservationId) delete primary[threadId];
+      return {
+        threads: state.threads.map((thread) =>
+          thread.id === threadId
+            ? { ...thread, linkedReservationIds: thread.linkedReservationIds.filter((id) => id !== reservationId) }
+            : thread
+        ),
+        threadPrimaryReservationId: primary,
+      };
+    });
+  },
+
+  // Unlink a whole guest — every reservation of theirs, in one operation.
+  unlinkGuest: (threadId: string, reservationIds: string[]) => {
+    const drop = new Set(reservationIds);
+    set((state) => {
+      const primary = { ...state.threadPrimaryReservationId };
+      if (drop.has(primary[threadId])) delete primary[threadId];
+      return {
+        threads: state.threads.map((thread) =>
+          thread.id === threadId
+            ? { ...thread, linkedReservationIds: thread.linkedReservationIds.filter((id) => !drop.has(id)) }
+            : thread
+        ),
+        threadPrimaryReservationId: primary,
+      };
+    });
+  },
+
+  /**
+   * Set the thread's DISPLAY primary. Deliberately touches nothing but the
+   * preference map — see the state comment above. A spotlight is not a link.
+   */
+  setThreadPrimary: (threadId: string, reservationId: string) => {
+    set((state) => ({
+      threadPrimaryReservationId: {
+        ...state.threadPrimaryReservationId,
+        [threadId]: reservationId,
+      },
+    }));
+  },
+
+  // Assign the thread to a user XOR a department (production's rule — the
+  // single `assignedTo` field makes the exclusivity structural).
+  assignThread: (threadId: string, assignment?: ThreadAssignment) => {
     set((state) => ({
       threads: state.threads.map((thread) =>
-        thread.id === threadId
-          ? { ...thread, linkedReservationIds: thread.linkedReservationIds.filter((id) => id !== reservationId) }
-          : thread
+        thread.id === threadId ? { ...thread, assignedTo: assignment } : thread
       ),
+    }));
+  },
+
+  // Append a locally-created service task to a guest's list.
+  createServiceTask: (guestId: string, task: Omit<ServiceTask, 'id'>) => {
+    set((state) => ({
+      serviceTasks: {
+        ...state.serviceTasks,
+        [guestId]: [{ ...task, id: `task-${Date.now()}` }, ...(state.serviceTasks[guestId] ?? [])],
+      },
     }));
   },
 }));

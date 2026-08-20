@@ -96,3 +96,84 @@ export interface LinkedReservation {
   guest: import('@/lib/core/types/guest').Guest;
   isAutoLinked: boolean;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONVERSATION DETAILS PANEL (redesign, 2026-08-20)
+
+   The panel is guest-profile-first: one PRIMARY person in the spotlight, their
+   own stays behind a count, and four tabs of things attached to them. These
+   types are the tabs' data.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export type UpsellStatus = 'requested' | 'approved' | 'denied';
+
+/**
+ * One upsell attached to a guest. `quantity` is absent for a room upgrade —
+ * you don't buy two of a King Suite, and the frames print the upgrade's name
+ * bare where an add-on prints "1x {name}".
+ */
+export interface Upsell {
+  id: string;
+  name: string;
+  quantity?: number;
+  /** "Add-on" / "Room Upgrade" — the caption under the name. */
+  category: string;
+  status: UpsellStatus;
+}
+
+/**
+ * Service-task status. `waiting` carries the elapsed minutes production prints
+ * INSIDE the tag ("WAITING 1652M") — the number is the point, so it lives on
+ * the status rather than beside it.
+ */
+export type ServiceTaskStatus = 'open' | 'waiting' | 'closed';
+
+export interface ServiceTask {
+  id: string;
+  title: string;
+  status: ServiceTaskStatus;
+  waitingMinutes?: number;
+  room?: string;
+  /** Locally created tasks (the Create service task page) carry a quantity. */
+  quantity?: number;
+}
+
+/**
+ * One utterance in a call transcript. `steps` is the AI's tool-call trace for
+ * the turn it produced — the SAME `AiStep` shape a chat message carries, so the
+ * shared <AiStepsCard> renders both.
+ */
+export interface CallTranscriptTurn {
+  /** Rendered verbatim: a phone number for the guest, "Canary AI" for the agent. */
+  speaker: string;
+  isAi?: boolean;
+  /** Pre-formatted, "2:45 PM". */
+  time: string;
+  text: string;
+  steps?: AiStep[];
+}
+
+/** Whether the AI held the call or handed it to a human. */
+export type CallHandleStatus = 'Contained' | 'Transferred';
+
+export interface CallRecord {
+  id: string;
+  /** Row line 1 — "May 12th at 10:02 AM". */
+  startedAtLabel: string;
+  /** Row line 2 — "1 min 3 sec". */
+  durationLabel: string;
+  /** Detail meta grid. */
+  guestName: string;
+  timeOfCall: string;
+  /** mm:ss. The scrubber's fill is elapsed/duration, so these must agree. */
+  durationClock: string;
+  elapsedClock: string;
+  handleStatus: CallHandleStatus;
+  /** The trace id, truncated on screen with a copy affordance. */
+  externalId: string;
+  /** Summary tab — one string per paragraph. */
+  summary: string[];
+  /** "Call Begins • 2:45 PM". */
+  beginsLabel: string;
+  transcript: CallTranscriptTurn[];
+}

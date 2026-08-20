@@ -1106,6 +1106,35 @@ export const guests: Record<string, Guest> = {
     email: 'emma.b@ikea.se',
     preferredLanguage: 'English',
   },
+
+  // ── The SHARED-PHONE set on Emily Smith's number (+15005550012) ───────────
+  // Two travellers booked on Emily's phone with their own rooms. They exist so
+  // the Messaging panel's "Set primary guest" picker has something honest to
+  // pick FROM: a phone number is not a person, and when three names share one
+  // number the only way to know who you are texting is to ask the human at the
+  // desk to say so. Different surnames deliberately — a shared phone is not
+  // evidence of a shared family (Sudarshan's identity constraint).
+  'guest-nathan-r': {
+    id: 'guest-nathan-r',
+    name: 'Nathan Reyes',
+    initials: 'NR',
+    phone: '+15005550012',
+    email: 'nathan.reyes@example.com',
+    preferredLanguage: 'English',
+    statusTag: {
+      label: 'GOLD ELITE',
+      color: '#C8B263',
+      textColor: 'white',
+    },
+  },
+  'guest-claire-w': {
+    id: 'guest-claire-w',
+    name: 'Claire Whitfield',
+    initials: 'CW',
+    phone: '+15005550012',
+    email: 'claire.whitfield@example.com',
+    preferredLanguage: 'English',
+  },
 };
 
 /**
