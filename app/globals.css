@@ -184,6 +184,29 @@ body {
   --orb-speed: 1.6;
 }
 
+/* ---- AI band / card: the gradient-bordered slab -------------------------- */
+/* The register for anything the AI is PROPOSING rather than reporting — the
+   drafted-response card and the suggested-fact band. Same two-layer trick as
+   the orb tile and the AI pill (padding-box fill over border-box gradient),
+   because `border-image` ignores border-radius.
+
+   The ramp runs LEFT TO RIGHT here, not at 135°: these are wide, short objects
+   spanning the whole composer, and a diagonal across a 750×56 box shows one
+   colour at each end with nothing legible in between. Horizontal lets the full
+   magenta→violet sweep actually read, which is what the frames draw.
+
+   The fill is a whisper of the same sweep. It sits under 14px body text without
+   tinting it — the border does the identifying; the fill only stops the band
+   reading as one more white card in a column of white cards. */
+.ai-gradient-band {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background-image: linear-gradient(100deg, #fdf5f8 0%, #fcf8fd 45%, #f8f9fe 100%),
+    linear-gradient(100deg, #e2456d 0%, #d6379f 30%, #b345c6 62%, #5758ea 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
 /* AI "Siri orb" — a living, organic gradient blob. NOT a single spinning conic
    (too slick): four translucent color "ribbons" (cyan / magenta / violet /
    teal) drift, scale, and morph their border-radius independently at

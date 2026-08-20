@@ -104,7 +104,8 @@ type PanelRoute =
   | { kind: 'call'; callId: string }
   | { kind: 'link' }
   | { kind: 'primary' }
-  | { kind: 'create-task' };
+  /** `room` / `issue` are the recommended-ticket band's prefill (see below). */
+  | { kind: 'create-task'; room?: string; issue?: string };
 
 type TabId = 'linked' | 'upsells' | 'tasks' | 'calls';
 
@@ -258,6 +259,8 @@ export function ConversationDetailsPanel({
     unlinkGuest,
     createServiceTask,
     unlinkServiceTask,
+    panelIntent,
+    clearPanelIntent,
   } = useMessagingStore();
 
   const reduced = useReducedMotion();
@@ -291,6 +294,23 @@ export function ConversationDetailsPanel({
     const timer = window.setTimeout(() => setToast(null), 3000);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  /**
+   * A COMMAND FROM OUTSIDE — the recommended-ticket band's "Review".
+   *
+   * The panel owns its navigation stack and nothing else should be able to push
+   * a page onto it. So the band states an INTENT on the store and the panel
+   * decides how to honour it: reset to the root, then push Create service task
+   * with the band's room and issue. The `nonce` in the intent is what makes two
+   * identical Reviews two events rather than one, and clearing the intent here
+   * keeps it from replaying when the panel re-opens later.
+   */
+  useEffect(() => {
+    if (panelIntent?.kind !== 'create-task') return;
+    setStack([{ kind: 'create-task', room: panelIntent.room, issue: panelIntent.issue }]);
+    setDepth(1);
+    clearPanelIntent();
+  }, [panelIntent, clearPanelIntent]);
 
   const push = (route: PanelRoute) => {
     setStack((s) => [...s, route]);
@@ -650,7 +670,11 @@ export function ConversationDetailsPanel({
 
               {r.kind === 'create-task' && (
                 <CreateServiceTaskPage
-                  defaultRoom={primary?.reservation.room}
+                  /* The band's room wins over the stay's when there is one: the
+                     band read a room out of the conversation, and the guest may
+                     well be messaging about a room that is not their own. */
+                  defaultRoom={r.room ?? primary?.reservation.room}
+                  defaultIssue={r.issue}
                   onBack={pop}
                   onClose={onClose}
                   onSubmit={({ room, issue, quantity }) => {

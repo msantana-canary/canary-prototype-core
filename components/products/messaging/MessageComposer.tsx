@@ -78,6 +78,25 @@ interface MessageComposerProps {
   aiEnabled?: boolean;
   onAiToggle?: () => void;
   onFocus?: () => void;
+  /**
+   * THE TOP SLOT — the AI's drafted-response card and the context band stack,
+   * rendered above the input card and inside the composer's own 16px padding so
+   * they share its left and right edges exactly.
+   *
+   * The composer owns the slot rather than the thread view because the slot's
+   * whole meaning is proximity to the cursor: an away band eight pixels above
+   * the box you are typing into is a condition on the message; the same band
+   * pinned under the message feed is a page header.
+   */
+  topSlot?: React.ReactNode;
+  /**
+   * Text pushed in from outside — the draft card's "Edit". Keyed by `nonce`
+   * rather than by the text itself, so injecting the same draft twice injects
+   * twice, and so a re-render can never re-fire an injection the user has since
+   * typed over.
+   */
+  injection?: { text: string; nonce: number } | null;
+  onInjectionConsumed?: () => void;
 }
 
 /** Bare toolbar icon — no box, no padding; gray → blue on hover. */
@@ -104,6 +123,9 @@ export function MessageComposer({
   aiEnabled = true,
   onAiToggle,
   onFocus,
+  topSlot,
+  injection,
+  onInjectionConsumed,
 }: MessageComposerProps) {
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -128,6 +150,28 @@ export function MessageComposer({
     }
     onAiToggle?.();
   };
+
+  /**
+   * A draft handed over from the card above. It REPLACES whatever is in the box
+   * rather than appending: the card is gone by the time this runs, so appending
+   * would fuse a half-typed sentence to the AI's and leave no way back to
+   * either. Focus lands at the end so the first keystroke edits rather than
+   * overwrites.
+   */
+  useEffect(() => {
+    if (!injection) return;
+    setMessage(injection.text);
+    const el = textareaRef.current;
+    if (el) {
+      el.focus();
+      const end = injection.text.length;
+      window.requestAnimationFrame(() => el.setSelectionRange(end, end));
+    }
+    onInjectionConsumed?.();
+    // Only the nonce may re-fire this. Depending on the text would replay the
+    // injection on every unrelated re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [injection?.nonce]);
 
   // Autosize: collapse to one row, then grow to content (capped so the composer
   // can't swallow the feed).
@@ -166,6 +210,11 @@ export function MessageComposer({
 
   return (
     <div style={{ padding: 16 }}>
+      {/* The AI's top slot. Inside the composer's padding, so the draft card and
+          every band share the input card's exact left and right edges — the
+          frames draw one column, not a card with things floating near it. */}
+      {topSlot && <div style={{ marginBottom: 12 }}>{topSlot}</div>}
+
       <div
         className="rounded-[12px] transition-colors"
         style={{

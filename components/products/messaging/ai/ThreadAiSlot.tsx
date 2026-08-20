@@ -1,0 +1,270 @@
+/**
+ * ThreadAiSlot — everything the AI puts between the feed and the composer.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * THE STACK ORDER (Miguel's rule, 2026-08-20)
+ * ═══════════════════════════════════════════════════════════════════════════
+ *   draft card              ← a whole message, waiting for a human
+ *   suggested fact  (AI)    ← the agent asking to learn something
+ *   recommended ticket (blue) ← a detection you can act on
+ *   escalation      (amber) ← a guest has been waiting
+ *   away            (amber) ← the property is not answering
+ *   ─────────────────────── the composer input
+ *
+ * AMBER IS ALWAYS NEAREST THE COMPOSER. That is the whole rule, and it is a
+ * rule about what happens when you start typing: the amber bands are conditions
+ * on the message you are about to send — it is going out while the property is
+ * marked away; this guest has already waited 24 minutes. They belong in the last
+ * line of sight before the cursor. The AI and ticket bands are things to do
+ * INSTEAD of typing, so they sit further up, where the eye meets them on its way
+ * down from the conversation rather than on its way into the box.
+ *
+ * A fixed order also means the slot never reflows into a different shape when
+ * one band resolves. Dismiss the fact and the ticket rises; the amber pair does
+ * not move, because it was never above anything.
+ *
+ * ── ONE FACT AT A TIME, AND IT DOES NOT LEAVE ─────────────────────────────
+ * The fact queue is sequential and persistent. Head of the queue is the visible
+ * band; "+N more" says how many are behind it; nothing auto-hides on a timer.
+ * A suggestion that quietly expires is a suggestion the product asked for and
+ * then threw away, and a hotelier who notices that once stops answering them.
+ */
+
+'use client';
+
+import React, { useState } from 'react';
+import { colors } from '@canary-ui/components';
+import Icon from '@mdi/react';
+import { mdiClockOutline, mdiForumOutline, mdiRoomServiceOutline } from '@mdi/js';
+import { useMessagingStore } from '@/lib/products/messaging/store';
+import { AiDraftCard } from './AiDraftCard';
+import { AddInformationModal } from './AddInformationModal';
+import { AMBER_ICON, BandButton, BandOverline, BandText, ContextBand } from './band-ui';
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The four bands
+   ───────────────────────────────────────────────────────────────────────── */
+
+function SuggestedFactBand({
+  text,
+  remaining,
+  onEdit,
+  onAdd,
+  onSkip,
+}: {
+  text: string;
+  remaining: number;
+  onEdit: () => void;
+  onAdd: () => void;
+  onSkip: () => void;
+}) {
+  return (
+    <ContextBand
+      tone="ai"
+      actions={
+        <>
+          {/* The queue depth, said quietly and only when there IS one. It sits
+              left of the buttons so answering this fact visibly shortens a
+              countdown rather than revealing a surprise. */}
+          {remaining > 0 && (
+            <span
+              className="font-['Roboto',sans-serif] text-[12px] leading-[18px] whitespace-nowrap"
+              style={{ color: colors.colorBlack3, marginRight: 2 }}
+            >
+              +{remaining} more
+            </span>
+          )}
+          <BandButton label="Edit" variant="outline" onClick={onEdit} />
+          <BandButton label="Add to AI" variant="primary" onClick={onAdd} />
+        </>
+      }
+      onDismiss={onSkip}
+      dismissLabel="Skip this suggestion"
+    >
+      <BandOverline label="Suggested fact" />
+      <BandText>{text}</BandText>
+    </ContextBand>
+  );
+}
+
+/**
+ * The recommended ticket. Two label/value pairs, because those two fields ARE
+ * the service-task form — Review is a hand-off, and what it hands off is
+ * exactly what you can already read here. Nothing is hidden behind the click.
+ */
+function TicketSuggestionBand({
+  room,
+  issueType,
+  onDismiss,
+  onReview,
+}: {
+  room: string;
+  issueType: string;
+  onDismiss: () => void;
+  onReview: () => void;
+}) {
+  const Pair = ({ label, value }: { label: string; value: string }) => (
+    <div className="min-w-0">
+      <span
+        className="block font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase whitespace-nowrap"
+        style={{ color: colors.colorBlack3, letterSpacing: '0.04em' }}
+      >
+        {label}
+      </span>
+      <span
+        className="block truncate font-['Roboto',sans-serif] font-medium text-[15px] leading-[23px]"
+        style={{ color: colors.colorBlack1 }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+
+  return (
+    <ContextBand
+      tone="blue"
+      icon={<Icon path={mdiRoomServiceOutline} size={0.95} color={colors.colorBlueDark1} />}
+      actions={
+        <>
+          <BandButton label="Dismiss" variant="outline" onClick={onDismiss} />
+          <BandButton label="Review" variant="primary" onClick={onReview} />
+        </>
+      }
+    >
+      <div className="flex items-center" style={{ gap: 28 }}>
+        <Pair label="Room number" value={room} />
+        <Pair label="Issue type" value={issueType} />
+      </div>
+    </ContextBand>
+  );
+}
+
+/**
+ * The unanswered clock. No actions and no dismiss, deliberately: you cannot
+ * agree or disagree with how long someone has been waiting, and the only way to
+ * clear it is to answer them — which is what the composer directly below is for.
+ */
+function EscalationBand({ minutes }: { minutes: number }) {
+  return (
+    <ContextBand
+      tone="amber"
+      icon={<Icon path={mdiClockOutline} size={0.85} color={AMBER_ICON} />}
+    >
+      <BandText>Unanswered for {minutes} minutes.</BandText>
+    </ContextBand>
+  );
+}
+
+/**
+ * The away notice. Global rather than per-thread — it is a fact about the
+ * PROPERTY, so it shows on every conversation the moment the status pill flips,
+ * which is also what makes it demo-able by clicking one control.
+ *
+ * ⚠ NOT BUILT: the off-hours variant. Production distinguishes "a human set us
+ * to Away" from "we are outside the online hours printed in the top bar", and
+ * the second wants different copy ("Outside online hours. Auto response is
+ * enabled."). It needs its own frame and its own schedule state; one band with
+ * a `label` prop would have been the cheap version of a decision nobody has
+ * made yet.
+ */
+function AwayBand() {
+  return (
+    <ContextBand tone="amber" icon={<Icon path={mdiForumOutline} size={0.85} color={AMBER_ICON} />}>
+      <BandText>You are away. Auto response is enabled.</BandText>
+    </ContextBand>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The slot
+   ───────────────────────────────────────────────────────────────────────── */
+
+export function ThreadAiSlot({ threadId }: { threadId: string }) {
+  const draft = useMessagingStore((s) => s.drafts[threadId]);
+  const facts = useMessagingStore((s) => s.facts[threadId]);
+  const ticket = useMessagingStore((s) => s.ticketSuggestions[threadId]);
+  const unansweredMinutes = useMessagingStore((s) => s.unansweredMinutes[threadId]);
+  const workspaceStatus = useMessagingStore((s) => s.workspaceStatus);
+
+  const dismissDraft = useMessagingStore((s) => s.dismissDraft);
+  const sendDraft = useMessagingStore((s) => s.sendDraft);
+  const resolveFact = useMessagingStore((s) => s.resolveFact);
+  const dismissTicketSuggestion = useMessagingStore((s) => s.dismissTicketSuggestion);
+  const injectIntoComposer = useMessagingStore((s) => s.injectIntoComposer);
+  const requestCreateTask = useMessagingStore((s) => s.requestCreateTask);
+  const showToast = useMessagingStore((s) => s.showToast);
+
+  const [isEditingFact, setIsEditingFact] = useState(false);
+
+  const fact = facts?.[0];
+  const remaining = Math.max(0, (facts?.length ?? 0) - 1);
+  const isAway = workspaceStatus === 'away';
+
+  const addFact = () => {
+    if (!fact) return;
+    resolveFact(threadId, fact.id);
+    setIsEditingFact(false);
+    // Post-Add is a TOAST, not an inline confirmation state on the band. The
+    // band's job is finished the moment the fact is accepted, and a band that
+    // stays behind to congratulate itself is a band still taking up the slot
+    // the next fact needs.
+    showToast('Added to AI knowledge');
+  };
+
+  const nothingToShow = !draft && !fact && !ticket && !unansweredMinutes && !isAway;
+  if (nothingToShow) return null;
+
+  return (
+    <>
+      <div className="flex flex-col" style={{ gap: 12 }}>
+        {draft && (
+          <AiDraftCard
+            draft={draft}
+            onEdit={() => {
+              injectIntoComposer(threadId, draft.content);
+              dismissDraft(threadId);
+            }}
+            onSend={() => sendDraft(threadId)}
+            onDismiss={() => dismissDraft(threadId)}
+          />
+        )}
+
+        {fact && (
+          <SuggestedFactBand
+            text={fact.text}
+            remaining={remaining}
+            onEdit={() => setIsEditingFact(true)}
+            onAdd={addFact}
+            onSkip={() => resolveFact(threadId, fact.id)}
+          />
+        )}
+
+        {ticket && (
+          <TicketSuggestionBand
+            room={ticket.room}
+            issueType={ticket.issueType}
+            onDismiss={() => dismissTicketSuggestion(threadId)}
+            /* Review does NOT open a review dialog of its own. It opens the
+               Create-service-task page that already exists in the Conversation
+               Details panel, prefilled — the form is the review. Building a
+               second one here would have been a copy that drifts. */
+            onReview={() => requestCreateTask(ticket.room, ticket.issueType)}
+          />
+        )}
+
+        {!!unansweredMinutes && <EscalationBand minutes={unansweredMinutes} />}
+
+        {isAway && <AwayBand />}
+      </div>
+
+      <AddInformationModal
+        isOpen={isEditingFact && !!fact}
+        initialText={fact?.text ?? ''}
+        onCancel={() => setIsEditingFact(false)}
+        /* Committing the edit is the SAME event as Add-to-AI from the band.
+           Edit is a detour on the way to Add, not a second outcome. */
+        onCommit={addFact}
+      />
+    </>
+  );
+}

@@ -26,17 +26,25 @@ import { PanelFooterAction, PanelHeader, PANEL_PAD } from './panel-ui';
 
 export function CreateServiceTaskPage({
   defaultRoom,
+  defaultIssue,
   onBack,
   onClose,
   onSubmit,
 }: {
   defaultRoom?: string;
+  /**
+   * Prefilled when the page is reached from the recommended-ticket band's
+   * "Review" — the band already showed the room and the issue, so arriving at
+   * an empty form would ask the hotelier to re-type what they just read and
+   * approved. Review is a hand-off; this is what gets handed over.
+   */
+  defaultIssue?: string;
   onBack: () => void;
   onClose: () => void;
   onSubmit: (task: { room: string; issue: string; quantity?: number }) => void;
 }) {
   const [room, setRoom] = useState(defaultRoom ?? '');
-  const [issue, setIssue] = useState('');
+  const [issue, setIssue] = useState(defaultIssue ?? '');
   const [quantity, setQuantity] = useState('');
 
   const canSubmit = room.trim().length > 0 && issue.trim().length > 0;

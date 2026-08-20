@@ -21,6 +21,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Avatar } from './Avatar';
 import { MessageFeed } from './MessageFeed';
 import { MessageComposer } from './MessageComposer';
+import { ThreadAiSlot } from './ai/ThreadAiSlot';
+import { useMessagingStore } from '@/lib/products/messaging/store';
 import { Thread, Message } from '@/lib/products/messaging/types';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
@@ -107,6 +109,11 @@ export function ThreadView({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // The draft card's hand-over to the composer. Scoped to THIS thread — a draft
+  // edited on one conversation must not land in another one's box.
+  const injection = useMessagingStore((s) => s.composerInjection);
+  const clearComposerInjection = useMessagingStore((s) => s.clearComposerInjection);
 
   const isGuestTyping = typingThreadId === thread.id;
 
@@ -305,13 +312,18 @@ export function ThreadView({
         </div>
       )}
 
-      {/* Composer */}
+      {/* Composer — plus the AI's top slot (drafted response, then the band
+          stack). The slot is handed to the composer rather than rendered here
+          so it inherits the composer's own padding and edges. */}
       <div className="shrink-0">
         <MessageComposer
           onSend={onSendMessage}
           placeholder="Type SMS message..."
           aiEnabled={aiEnabled}
           onAiToggle={onAiToggle}
+          topSlot={<ThreadAiSlot threadId={thread.id} />}
+          injection={injection?.threadId === thread.id ? injection : null}
+          onInjectionConsumed={clearComposerInjection}
         />
       </div>
     </div>

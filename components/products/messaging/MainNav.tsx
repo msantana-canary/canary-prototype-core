@@ -5,17 +5,25 @@
  * 16px Medium labels, 4px flush-bottom underline on the active tab, no icons.
  * Right side: "Online hours" caption + a tonal status pill (green dot +
  * "Online" + caret) that opens a small Online/Offline/Away menu.
+ *
+ * ── THE PILL IS REAL NOW (batch 4) ────────────────────────────────────────
+ * The status used to be local state: the pill changed colour and nothing else
+ * in the product knew. It now writes `workspaceStatus` to the store, because
+ * AWAY is the condition the amber away band renders on — and a band that
+ * demos by editing mock data is a band nobody can show in a meeting. One
+ * control, flipped live, and every open conversation says so.
  */
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import Icon from '@mdi/react';
 import { mdiUnfoldMoreHorizontal } from '@mdi/js';
 import { colors } from '@canary-ui/components';
 import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
+import { useMessagingStore, WorkspaceStatus } from '@/lib/products/messaging/store';
 
-type OnlineStatus = 'online' | 'offline' | 'away';
+type OnlineStatus = WorkspaceStatus;
 
 const STATUS_META: Record<OnlineStatus, { label: string; dot: string; text: string; bg: string }> = {
   online: { label: 'Online', dot: colors.colorLightGreen1, text: colors.colorLightGreen1, bg: 'rgba(0,128,64,0.1)' },
@@ -24,8 +32,9 @@ const STATUS_META: Record<OnlineStatus, { label: string; dot: string; text: stri
 };
 
 export function MainNav({ activeTab, onTabChange }: { activeTab: MainNavTab; onTabChange: (tab: MainNavTab) => void }) {
-  const [onlineStatus, setOnlineStatus] = useState<OnlineStatus>('online');
-  const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
+  const onlineStatus = useMessagingStore((s) => s.workspaceStatus);
+  const setOnlineStatus = useMessagingStore((s) => s.setWorkspaceStatus);
+  const [isStatusMenuOpen, setIsStatusMenuOpen] = React.useState(false);
   const statusRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
