@@ -17,7 +17,9 @@
  *    "Assigned", and picking a person replaces a department. The server enforces
  *    the same thing, rejecting more than one assignment param. So All
  *    conversations / Assigned / Unassigned / a department / a person are one
- *    single-select axis, not five checkboxes.
+ *    single-select axis, not five checkboxes. Here that rule is structural: the
+ *    whole assignment menu is ONE option list with ONE `value`, so it cannot
+ *    represent two simultaneous choices even by accident.
  *
  *  - FOLDER AND ASSIGNMENT STACK (AND). Changing folder does not clear the
  *    assignment filter, so "Archived + Housekeeping" is reachable. Splitting the
@@ -47,15 +49,100 @@
  * section overlines, hairline dividers BETWEEN sections, and a right-aligned
  * check on the active row. No blue selection tint — with one axis per menu
  * there is only ever one tick on screen, so the tick alone carries it.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ⚠ WHY THIS IS NOT LITERALLY `<CanarySelect>` — and what it borrows instead
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Miguel 2026-08-20: *"take the CanarySelect as the base structure so that it's
+ * not a massive deviance from the real product."* Both menus were rebuilt
+ * against that brief. The finding, recorded here so nobody re-litigates it:
+ *
+ * `@canary-ui`'s **`CanarySelect` is a thin wrapper around a native
+ * `<select>`** — it forwards a `ref` to `HTMLSelectElement`, spreads
+ * `SelectHTMLAttributes` onto it, and renders `options` as plain `<option>`
+ * children. Its popover is therefore drawn by the OPERATING SYSTEM. Nothing in
+ * this file's design contract survives that:
+ *
+ *   | The frame needs            | Native `<select>` / CanarySelect gives      |
+ *   |----------------------------|---------------------------------------------|
+ *   | STATUSES/DEPARTMENTS/STAFF | no grouping at all — `options` is a FLAT     |
+ *   |   uppercase overlines      |   array; no `<optgroup>`, and even with one  |
+ *   |                            |   the label's type/colour is OS-controlled   |
+ *   | hairline dividers between  | nothing; not expressible                     |
+ *   |   sections                 |                                              |
+ *   | a right-aligned check row  | OS-drawn selection mark, position/glyph not  |
+ *   |                            |   ours                                       |
+ *   | 264px / 176px popovers,    | OS-sized and OS-positioned                   |
+ *   |   white rounded-8, 1px     |                                              |
+ *   |   colorBlack6, no shadow   |                                              |
+ *   | a BORDERLESS trigger in    | a full-width bordered field box on the       |
+ *   |   the card-title slot,     |   library's fixed 32/40/48px ramp            |
+ *   |   16px medium + ⇅          |                                              |
+ *
+ * So "keep the trigger and the popover, replace only the menu content" is not
+ * on the table: `CanarySelect` has no separable trigger or popover to keep.
+ * What this file keeps instead is its **contract**, so a future swap is
+ * mechanical rather than a rewrite:
+ *
+ *   1. Options are the library's own `CanarySelectOption` type
+ *      (`{ label, value, disabled? }`), extended by exactly ONE field —
+ *      `section` — which is the capability gap named above. Drop `section` and
+ *      the arrays below feed `<CanarySelect>` unmodified.
+ *   2. One controlled `value` + one `onChange`, single-select, `disabled`
+ *      options honoured — same state shape as the library control.
+ *   3. Trigger sizing comes off the library's `InputSize` ramp, not magic
+ *      numbers.
+ *   4. The a11y contract a native `<select>` gave us for free is rebuilt by
+ *      hand rather than dropped: `role="combobox"`/`listbox`/`option`,
+ *      `aria-selected`, `aria-activedescendant`, and full keyboard operation
+ *      (Enter/Space/↓/↑ to open, ↑/↓/Home/End to move, Enter/Space to pick,
+ *      Escape/Tab to close). The version this replaced had NONE of that — it
+ *      was a `<button>` and a `role="listbox"` div with click handlers.
+ *
+ * ⚠ KNOWN LIBRARY QUIRK, checked: `CanarySelect` renders its `placeholder`
+ * (or, failing that, its `label`) as a real `<option value="" disabled>` — a
+ * phantom row inside the menu. `ScopeSelect` deliberately has NO placeholder
+ * prop. Both axes always hold a real selection ("All conversations" / "Inbox"
+ * are values, not empty states), so a placeholder would be a lie as well as an
+ * extra row. Nothing here can grow one.
+ *
+ * The two gaps — option SECTIONS and a stylable CHECK ROW — are logged as
+ * foundation-library asks in REDESIGN_NOTES.md.
  */
 
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import Icon from '@mdi/react';
 import { mdiUnfoldMoreHorizontal, mdiCheck } from '@mdi/js';
-import { colors } from '@canary-ui/components';
+import { colors, InputSize, type CanarySelectOption } from '@canary-ui/components';
 import { ThreadFilter } from '@/lib/products/messaging/types';
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The option model: the library's, plus one field.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * A `CanarySelectOption` that also knows which section it belongs to.
+ *
+ * Options sharing a `section` MUST be contiguous — the renderer walks the array
+ * once and opens a new overline every time the value changes, exactly the way
+ * `<optgroup>` would if the library's option model had one. `undefined` means
+ * "no overline" (the folder menu's three rows).
+ */
+export interface ScopeSelectOption extends CanarySelectOption {
+  section?: string;
+}
+
+/** Trigger heights, off the library's `InputSize` ramp — not magic numbers. */
+const TRIGGER_HEIGHT: Partial<Record<InputSize, number>> = {
+  [InputSize.COMPACT]: 32,
+  [InputSize.NORMAL]: 40,
+};
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Domain
+   ───────────────────────────────────────────────────────────────────────── */
 
 /** The assignment axis — one value at a time, production's rule. */
 export type AssignmentScope =
@@ -107,37 +194,42 @@ export function assignmentTriggerLabel(scope: AssignmentScope): string {
   return scope.kind === 'all' ? 'All Conversations' : assignmentLabel(scope);
 }
 
-function Row({
-  label,
-  isActive,
-  onClick,
-}: {
-  label: string;
-  isActive: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center gap-2 text-left transition-colors cursor-pointer hover:bg-[#f9fafb]"
-      style={{ paddingLeft: 16, paddingRight: 14, paddingTop: 8, paddingBottom: 8 }}
-    >
-      <span
-        className="flex-1 min-w-0 font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate"
-        style={{ color: colors.colorBlack1 }}
-      >
-        {label}
-      </span>
-      <span className="w-4 shrink-0 flex items-center justify-center">
-        {isActive && <Icon path={mdiCheck} size={0.7} color={colors.colorBlack3} />}
-      </span>
-    </button>
-  );
+/**
+ * AssignmentScope ⇄ option value. The select carries ONE string, which is what
+ * makes production's exclusivity structural rather than enforced by hand: there
+ * is nowhere to put a second assignment.
+ */
+function scopeToValue(scope: AssignmentScope): string {
+  switch (scope.kind) {
+    case 'department':
+      return `dept:${scope.id}`;
+    case 'user':
+      return `user:${scope.id}`;
+    default:
+      return scope.kind;
+  }
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function valueToScope(value: string): AssignmentScope {
+  if (value.startsWith('dept:')) return { kind: 'department', id: value.slice(5) };
+  if (value.startsWith('user:')) return { kind: 'user', id: value.slice(5) };
+  if (value === 'assigned' || value === 'unassigned') return { kind: value };
+  return { kind: 'all' };
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Presentation pieces
+   ───────────────────────────────────────────────────────────────────────── */
+
+function SectionLabel({ id, children }: { id: string; children: React.ReactNode }) {
   return (
     <p
+      id={id}
+      /* Presentational to the a11y tree: a `role="listbox"` may only contain
+         options and groups, and the library's option model has no grouping for
+         us to map onto (see the file header). The overline is a visual
+         affordance; the option labels are unambiguous without it. */
+      role="presentation"
       className="font-['Roboto',sans-serif] font-medium text-[10px] leading-[16px] uppercase"
       style={{
         color: colors.colorBlack4,
@@ -154,13 +246,45 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function Divider() {
-  return <div className="w-full h-px" style={{ backgroundColor: colors.colorBlack6, marginTop: 6, marginBottom: 2 }} />;
+  return (
+    <div
+      className="w-full h-px"
+      role="presentation"
+      style={{ backgroundColor: colors.colorBlack6, marginTop: 6, marginBottom: 2 }}
+    />
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ScopeSelect — the shared shell both menus are built on.
+   ───────────────────────────────────────────────────────────────────────── */
+
+interface ScopeSelectProps {
+  /** Library-shaped options, plus the `section` overline the library lacks. */
+  options: ScopeSelectOption[];
+  /** The single selected value. There is no empty state — see the file header. */
+  value: string;
+  /**
+   * CanarySelect hands back a `ChangeEvent<HTMLSelectElement>`; our trigger is
+   * a button, so there is no such event to forge. The value is handed back
+   * directly — the one deliberate deviation from the library's signature.
+   */
+  onChange: (value: string) => void;
+  /** What the trigger reads. Usually the selected option's label, but the
+   *  assignment axis title-cases its default (see `assignmentTriggerLabel`). */
+  triggerLabel: string;
+  triggerColor: string;
+  triggerTextSize: 14 | 16;
+  size?: InputSize;
+  menuWidth: number;
+  /** Which edge the popover hangs from. */
+  align: 'left' | 'right';
+  /** Names the AXIS, since the visible trigger names only its current value. */
+  ariaLabel: string;
 }
 
 /**
- * Shared select shell: trigger + outside-click popover. `align` decides which
- * edge the popover hangs from — the assignment select opens under the title on
- * the left, the folder select under its own trigger on the right.
+ * Trigger + popover listbox.
  *
  * The popover is absolutely positioned INSIDE the list card, which is
  * `overflow-clip`. That is fine at these widths (both menus are narrower than
@@ -170,51 +294,136 @@ function Divider() {
  * into the list would silently hide its last row.
  */
 function ScopeSelect({
+  options,
+  value,
+  onChange,
   triggerLabel,
   triggerColor,
-  triggerSize,
+  triggerTextSize,
+  size = InputSize.COMPACT,
   menuWidth,
   align,
-  children,
-  onRequestClose,
-}: {
-  triggerLabel: string;
-  triggerColor: string;
-  triggerSize: 14 | 16;
-  menuWidth: number;
-  align: 'left' | 'right';
-  children: (close: () => void) => React.ReactNode;
-  onRequestClose?: () => void;
-}) {
+  ariaLabel,
+}: ScopeSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const baseId = useId();
 
+  const selectedIndex = useMemo(
+    () => options.findIndex((o) => String(o.value) === value),
+    [options, value]
+  );
+
+  const optionId = (i: number) => `${baseId}-opt-${i}`;
+
+  const close = (focusTrigger = false) => {
+    setIsOpen(false);
+    setActiveIndex(-1);
+    if (focusTrigger) triggerRef.current?.focus();
+  };
+
+  const open = () => {
+    setIsOpen(true);
+    // Open ON the current selection, the way a native select does.
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : firstEnabled(options, 0, 1));
+  };
+
+  const commit = (i: number) => {
+    const option = options[i];
+    if (!option || option.disabled) return;
+    onChange(String(option.value));
+    close(true);
+  };
+
+  // Outside click closes. Kept on mousedown so a click that lands on another
+  // control does not first fire that control's own handler through an open menu.
   useEffect(() => {
+    if (!isOpen) return;
     const onOutside = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setIsOpen(false);
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) close();
     };
-    if (isOpen) document.addEventListener('mousedown', onOutside);
+    document.addEventListener('mousedown', onOutside);
     return () => document.removeEventListener('mousedown', onOutside);
   }, [isOpen]);
 
-  const close = () => {
-    setIsOpen(false);
-    onRequestClose?.();
+  // Keep the highlighted row in view when arrowing past the 480px cap.
+  useEffect(() => {
+    if (!isOpen || activeIndex < 0) return;
+    listRef.current
+      ?.querySelector<HTMLElement>(`#${CSS.escape(optionId(activeIndex))}`)
+      ?.scrollIntoView({ block: 'nearest' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, activeIndex]);
+
+  /** A native select's keyboard contract, rebuilt. */
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (!isOpen) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        open();
+      }
+      return;
+    }
+    switch (e.key) {
+      case 'Escape':
+        e.preventDefault();
+        close(true);
+        break;
+      case 'Tab':
+        close();
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        setActiveIndex((i) => firstEnabled(options, i + 1, 1));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setActiveIndex((i) => firstEnabled(options, i - 1, -1));
+        break;
+      case 'Home':
+        e.preventDefault();
+        setActiveIndex(firstEnabled(options, 0, 1));
+        break;
+      case 'End':
+        e.preventDefault();
+        setActiveIndex(firstEnabled(options, options.length - 1, -1));
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        commit(activeIndex);
+        break;
+    }
   };
 
   return (
     <div className="relative min-w-0" ref={rootRef}>
       <button
-        onClick={() => setIsOpen((v) => !v)}
+        ref={triggerRef}
+        type="button"
+        onClick={() => (isOpen ? close() : open())}
+        onKeyDown={onKeyDown}
         title={triggerLabel}
+        role="combobox"
+        aria-label={ariaLabel}
+        aria-controls={`${baseId}-list`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        aria-activedescendant={isOpen && activeIndex >= 0 ? optionId(activeIndex) : undefined}
         className="flex items-center gap-1 rounded-[6px] cursor-pointer transition-colors hover:bg-[rgba(0,0,0,0.05)] min-w-0"
-        style={{ height: 32, paddingLeft: 8, paddingRight: 6, maxWidth: '100%' }}
+        style={{
+          height: TRIGGER_HEIGHT[size] ?? 32,
+          paddingLeft: 8,
+          paddingRight: 6,
+          maxWidth: '100%',
+        }}
       >
         <span
           className={`font-['Roboto',sans-serif] font-medium leading-[24px] truncate min-w-0 ${
-            triggerSize === 16 ? 'text-[16px]' : 'text-[14px]'
+            triggerTextSize === 16 ? 'text-[16px]' : 'text-[14px]'
           }`}
           style={{ color: triggerColor }}
         >
@@ -225,7 +434,10 @@ function ScopeSelect({
 
       {isOpen && (
         <div
+          id={`${baseId}-list`}
+          ref={listRef}
           role="listbox"
+          aria-label={ariaLabel}
           className={`absolute z-50 rounded-[8px] bg-white overflow-y-auto scrollbar-invisible ${
             align === 'left' ? 'left-0' : 'right-0'
           }`}
@@ -238,18 +450,76 @@ function ScopeSelect({
             border: `1px solid ${colors.colorBlack6}`,
           }}
         >
-          {children(close)}
+          {options.map((option, i) => {
+            const previousSection = i === 0 ? undefined : options[i - 1].section;
+            const opensSection = option.section !== undefined && option.section !== previousSection;
+            const isSelected = String(option.value) === value;
+            const isActive = i === activeIndex;
+
+            return (
+              <React.Fragment key={String(option.value)}>
+                {opensSection && (
+                  <>
+                    {i > 0 && <Divider />}
+                    <SectionLabel id={`${baseId}-sec-${i}`}>{option.section}</SectionLabel>
+                  </>
+                )}
+                <div
+                  id={optionId(i)}
+                  role="option"
+                  aria-selected={isSelected}
+                  aria-disabled={option.disabled || undefined}
+                  onClick={() => commit(i)}
+                  onMouseEnter={() => !option.disabled && setActiveIndex(i)}
+                  className="w-full flex items-center gap-2 text-left transition-colors"
+                  style={{
+                    paddingLeft: 16,
+                    paddingRight: 14,
+                    paddingTop: 8,
+                    paddingBottom: 8,
+                    cursor: option.disabled ? 'default' : 'pointer',
+                    backgroundColor: isActive && !option.disabled ? '#f9fafb' : 'transparent',
+                    opacity: option.disabled ? 0.5 : 1,
+                  }}
+                >
+                  <span
+                    className="flex-1 min-w-0 font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate"
+                    style={{ color: colors.colorBlack1 }}
+                  >
+                    {option.label}
+                  </span>
+                  {/* The check is the ONLY selection signal — no blue tint. With
+                      one axis per menu there is never more than one tick. */}
+                  <span className="w-4 shrink-0 flex items-center justify-center">
+                    {isSelected && <Icon path={mdiCheck} size={0.7} color={colors.colorBlack3} />}
+                  </span>
+                </div>
+              </React.Fragment>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
+/** Next selectable index from `start` walking in `step`, clamped at the ends. */
+function firstEnabled(options: ScopeSelectOption[], start: number, step: 1 | -1): number {
+  for (let i = Math.max(0, Math.min(start, options.length - 1)); i >= 0 && i < options.length; i += step) {
+    if (!options[i].disabled) return i;
+  }
+  return start < 0 ? 0 : Math.min(start, options.length - 1);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The two axes
+   ───────────────────────────────────────────────────────────────────────── */
+
 /**
  * LEFT select — the assignment axis, sitting in the card-title slot. Sections
  * are STATUSES / DEPARTMENTS / STAFF; the whole thing is ONE single-select
- * group, so choosing a department clears "Assigned" and choosing a person
- * clears the department (production's exclusivity, preserved exactly).
+ * option list, so choosing a department clears "Assigned" and choosing a person
+ * clears the department (production's exclusivity, now structural).
  */
 export function AssignmentSelect({
   assignment,
@@ -258,59 +528,39 @@ export function AssignmentSelect({
   assignment: AssignmentScope;
   onAssignmentChange: (a: AssignmentScope) => void;
 }) {
+  const options: ScopeSelectOption[] = useMemo(
+    () => [
+      ...(['all', 'assigned', 'unassigned'] as const).map((kind) => ({
+        value: kind,
+        label: assignmentLabel({ kind }),
+        section: 'Statuses',
+      })),
+      ...DEPARTMENTS.map((d) => ({
+        value: `dept:${d.id}`,
+        label: d.name,
+        section: 'Departments',
+      })),
+      ...STAFF.map((u) => ({
+        value: `user:${u.id}`,
+        label: u.name,
+        section: 'Staff',
+      })),
+    ],
+    []
+  );
+
   return (
     <ScopeSelect
+      options={options}
+      value={scopeToValue(assignment)}
+      onChange={(v) => onAssignmentChange(valueToScope(v))}
       triggerLabel={assignmentTriggerLabel(assignment)}
       triggerColor={colors.colorBlack1}
-      triggerSize={16}
+      triggerTextSize={16}
       menuWidth={264}
       align="left"
-    >
-      {(close) => (
-        <>
-          <SectionLabel>Statuses</SectionLabel>
-          {(['all', 'assigned', 'unassigned'] as const).map((kind) => (
-            <Row
-              key={kind}
-              label={assignmentLabel({ kind })}
-              isActive={assignment.kind === kind}
-              onClick={() => {
-                onAssignmentChange({ kind });
-                close();
-              }}
-            />
-          ))}
-
-          <Divider />
-          <SectionLabel>Departments</SectionLabel>
-          {DEPARTMENTS.map((d) => (
-            <Row
-              key={d.id}
-              label={d.name}
-              isActive={assignment.kind === 'department' && assignment.id === d.id}
-              onClick={() => {
-                onAssignmentChange({ kind: 'department', id: d.id });
-                close();
-              }}
-            />
-          ))}
-
-          <Divider />
-          <SectionLabel>Staff</SectionLabel>
-          {STAFF.map((u) => (
-            <Row
-              key={u.id}
-              label={u.name}
-              isActive={assignment.kind === 'user' && assignment.id === u.id}
-              onClick={() => {
-                onAssignmentChange({ kind: 'user', id: u.id });
-                close();
-              }}
-            />
-          ))}
-        </>
-      )}
-    </ScopeSelect>
+      ariaLabel="Filter conversations by assignment"
+    />
   );
 }
 
@@ -322,31 +572,24 @@ export function FolderSelect({
   folder: ThreadFilter;
   onFolderChange: (f: ThreadFilter) => void;
 }) {
+  const options: ScopeSelectOption[] = useMemo(
+    () => FOLDERS.map((f) => ({ value: f.id, label: f.label })),
+    []
+  );
+
   const label = FOLDERS.find((f) => f.id === folder)?.label ?? 'Inbox';
 
   return (
     <ScopeSelect
+      options={options}
+      value={folder}
+      onChange={(v) => onFolderChange(v as ThreadFilter)}
       triggerLabel={label}
       triggerColor={colors.colorBlueDark1}
-      triggerSize={14}
+      triggerTextSize={14}
       menuWidth={176}
       align="right"
-    >
-      {(close) => (
-        <>
-          {FOLDERS.map((f) => (
-            <Row
-              key={f.id}
-              label={f.label}
-              isActive={folder === f.id}
-              onClick={() => {
-                onFolderChange(f.id);
-                close();
-              }}
-            />
-          ))}
-        </>
-      )}
-    </ScopeSelect>
+      ariaLabel="Filter conversations by folder"
+    />
   );
 }
