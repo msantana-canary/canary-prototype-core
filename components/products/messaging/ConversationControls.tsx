@@ -1,10 +1,22 @@
 /**
  * ConversationControls — the Conversations search band.
  *
- * TEAM JAM CANON: full-width search with the "New message" primary button to its
- * right, above both columns. The Filters button is GONE — scoping moved into the
- * thread-list card header's Inbox control, which is where the list it scopes
- * actually lives.
+ * Search input (flexible) + the "New message" primary button to its right. The
+ * Filters button is GONE — scoping moved into the thread-list card header's two
+ * selects, which is where the list it scopes actually lives.
+ *
+ * ⚠ RE-HOUSED (Miguel 2026-08-20, node `searchbar-node`). This band used to be
+ * a full-width row rendered by `AppLayout` ABOVE both columns, spanning the
+ * thread list AND the thread view. That was a lie about its reach: the search
+ * filters the thread list and "New message" opens a thread — neither one
+ * touches the 65% column it was hanging over, and stretching the input to
+ * ~1000px made a control that returns a 350px list look like a global search.
+ *
+ * It now lives INSIDE the Conversations card, between the two scope selects and
+ * the rows: header selects → search band → rows. Every control that narrows the
+ * list is inside the thing it narrows, in top-to-bottom order of coarseness
+ * (which folder → which assignment → which words). The component itself is
+ * unchanged apart from the doc — the parent supplies the padding.
  */
 
 'use client';

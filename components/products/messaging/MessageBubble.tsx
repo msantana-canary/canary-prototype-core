@@ -6,10 +6,24 @@
  * ported back to messaging): 32px rounded-8 avatar · title row (name +
  * right-aligned 10px uppercase time) · 14px body · 10px uppercase footer.
  *
- * Sender identity: guest → guest name (black); staff → staff name; AI →
- * "Canary" in the shared AI gradient (`.ai-gradient-text`) with the animated
- * orb tile for an avatar. Who-said-what reads from the name column, per the
- * redesign call ("Slack does this; it's clear").
+ * ── SENDER IDENTITY: THREE REGISTERS, ONE COLUMN ──────────────────────────
+ * ⚠ SUPERSEDES the earlier "everyone's name is black; only the AI is special"
+ * decision. Miguel 2026-08-20: **"staff is blue, guest is black, AI is all the
+ * cool shit."** Three senders, three registers, read off one column:
+ *
+ *   GUEST → name in colorBlack1, gray initials tile / photo. The outside voice.
+ *   STAFF → name in colorBlueDark1 (#2858C4) and a colorBlueDark5 initials tile
+ *           with colorBlueDark1 glyphs (`Avatar tone="blue"`). Blue is already
+ *           the product's "us" colour — actions, links, selection — so the
+ *           property's own replies inherit it and stop reading as a third kind
+ *           of guest. Black-for-everyone made the feed one undifferentiated
+ *           voice: you had to READ the name to know which side sent it.
+ *   AI    → "Canary" in the shared magenta→violet gradient
+ *           (`.ai-gradient-text`) plus the animated orb tile. Not a colour, a
+ *           whole register — the AI is the only sender that gets motion.
+ *
+ * The escalation is deliberate: neutral → brand → alive. Who-said-what reads
+ * from the name column, per the redesign call ("Slack does this; it's clear").
  *
  * ── AI MESSAGE ANATOMY (the batch-2 addition) ─────────────────────────────
  * An AI message is not a staff message with a different name. It carries its
@@ -70,6 +84,7 @@ import {
 import { Avatar } from './Avatar';
 
 const STAFF_NAME = 'Theresa Webb';
+const STAFF_INITIALS = 'TW';
 
 // Failed-state red — $color-red-1 (@canary-ui doesn't expose this as a token yet).
 const COLOR_RED_1 = '#E40046';
@@ -117,7 +132,17 @@ function CaptionLink({ label, color, onClick }: { label: string; color: string; 
   );
 }
 
-/** A bare feedback icon — no box, neutral wash on hover. */
+/**
+ * A bare feedback icon. NO box, ever — not at rest, not on hover (the gray
+ * chip that used to appear on hover boxed three icons that the frame draws
+ * naked, and it made the quietest row in the message the busiest).
+ *
+ * The whole state ladder is the ICON's own colour: gray at rest →
+ * colorBlueDark1 on its own hover. That is the same gray→blue transition the
+ * composer's tool icons use (`MessageComposer.ToolIcon`), so every bare icon on
+ * this surface answers the pointer the same way. Thumbs-up additionally LATCHES
+ * blue on click (local visual toggle only — no feedback pipeline behind it).
+ */
 function FeedbackIcon({
   path,
   label,
@@ -129,15 +154,60 @@ function FeedbackIcon({
   active?: boolean;
   onClick: () => void;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
   return (
     <button
       onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       aria-label={label}
       aria-pressed={active}
-      className="flex items-center justify-center rounded-[4px] cursor-pointer transition-colors hover:bg-[rgba(0,0,0,0.06)]"
+      className="flex items-center justify-center cursor-pointer"
       style={{ width: 20, height: 20, padding: 0 }}
     >
-      <Icon path={path} size={0.6} color={active ? colors.colorBlueDark1 : colors.colorBlack4} />
+      <Icon
+        path={path}
+        size={0.6}
+        color={active || isHovered ? colors.colorBlueDark1 : colors.colorBlack4}
+      />
+    </button>
+  );
+}
+
+/**
+ * The "Completed N Steps ⌄" caption — the steps card's toggle.
+ *
+ * It sits INSIDE the title row, inline with the sender name, so a hover
+ * background would draw a chip in the middle of a line of text. The hover
+ * state is the text itself: gray → black, and nothing else moves.
+ */
+function StepsToggle({
+  count,
+  isOpen,
+  onToggle,
+}: {
+  count: number;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const tint = isHovered ? colors.colorBlack1 : colors.colorBlack3;
+  return (
+    <button
+      onClick={onToggle}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      aria-expanded={isOpen}
+      className="flex items-center gap-1 shrink-0 cursor-pointer bg-transparent"
+      style={{ padding: 0 }}
+    >
+      <span
+        className="font-['Roboto',sans-serif] text-[12px] leading-[18px] whitespace-nowrap transition-colors"
+        style={{ color: tint }}
+      >
+        Completed {count} Steps
+      </span>
+      <Icon path={isOpen ? mdiChevronUp : mdiChevronDown} size={0.6} color={tint} />
     </button>
   );
 }
@@ -160,6 +230,10 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
 
   const displayName = isGuest ? guest?.name ?? 'Guest' : isAI ? 'Canary' : STAFF_NAME;
 
+  // Guest black / staff blue. The AI never reads this — it takes the gradient
+  // class instead of a flat colour.
+  const nameColor = isGuest ? colors.colorBlack1 : colors.colorBlueDark1;
+
   const steps = isAI ? message.aiSteps ?? [] : [];
   const sourceCount = isAI ? message.sourceCount : undefined;
 
@@ -180,14 +254,15 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Avatar */}
+      {/* Avatar — staff gets the blue tile, guest the neutral one. */}
       {isAI ? (
         <AiOrbAvatar />
       ) : (
         <Avatar
           src={isGuest ? guest?.avatar : undefined}
-          initials={isGuest ? guest?.initials ?? '' : 'TW'}
+          initials={isGuest ? guest?.initials ?? '' : STAFF_INITIALS}
           size="small"
+          tone={isGuest ? 'neutral' : 'blue'}
           className="shrink-0"
         />
       )}
@@ -200,7 +275,7 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
             className={`font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] truncate ${
               isAI ? 'ai-gradient-text' : ''
             }`}
-            style={isAI ? undefined : { color: colors.colorBlack1 }}
+            style={isAI ? undefined : { color: nameColor }}
           >
             {displayName}
           </span>
@@ -214,24 +289,11 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
               >
                 ·
               </span>
-              <button
-                onClick={() => setIsStepsOpen((v) => !v)}
-                aria-expanded={isStepsOpen}
-                className="flex items-center gap-1 shrink-0 cursor-pointer rounded-[4px] transition-colors hover:bg-[rgba(0,0,0,0.05)]"
-                style={{ padding: 0 }}
-              >
-                <span
-                  className="font-['Roboto',sans-serif] text-[12px] leading-[18px] whitespace-nowrap"
-                  style={{ color: colors.colorBlack3 }}
-                >
-                  Completed {steps.length} Steps
-                </span>
-                <Icon
-                  path={isStepsOpen ? mdiChevronUp : mdiChevronDown}
-                  size={0.6}
-                  color={colors.colorBlack2}
-                />
-              </button>
+              <StepsToggle
+                count={steps.length}
+                isOpen={isStepsOpen}
+                onToggle={() => setIsStepsOpen((v) => !v)}
+              />
             </>
           )}
 

@@ -14,6 +14,7 @@ import { ThreadList } from '@/components/products/messaging/ThreadList';
 import { ThreadView } from '@/components/products/messaging/ThreadView';
 import { GuestInfoSidebar } from '@/components/products/messaging/GuestInfoSidebar';
 import { ComposeHeader } from '@/components/products/messaging/ComposeHeader';
+import { ConversationControls } from '@/components/products/messaging/ConversationControls';
 import { UnlinkReservationModal } from '@/components/products/messaging/UnlinkReservationModal';
 import {
   AssignmentSelect,
@@ -230,21 +231,17 @@ export default function MessagesPage() {
   }, [activeTab, selectedThreadId, isComposingNew, filteredThreads, selectThread]);
 
   return (
-    <AppLayout
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      searchQuery={searchQuery}
-      onSearchChange={setSearchQuery}
-      onNewMessage={startNewConversation}
->
+    <AppLayout activeTab={activeTab} onTabChange={setActiveTab}>
       {activeTab === 'conversations' && (
         <div
           className="flex h-full gap-4 min-h-0"
-          style={{ paddingLeft: 24, paddingRight: 24, paddingBottom: 24, paddingTop: 0 }}
+          style={{ paddingLeft: 24, paddingRight: 24, paddingBottom: 24, paddingTop: 16 }}
         >
           {/* Thread List column — 35% of the content row (scales to any width).
-              In compact mode the search + Filters + New-message controls sit at the
-              top of THIS column (column-scoped), above the list card. */}
+              Search + New message are INSIDE the list card now (they scope the
+              list, not the page), so this column is one card top to bottom and
+              the 16px that used to sit under the old full-width band is now the
+              content row's own top padding. */}
           <div
             className="min-w-0 h-full flex flex-col gap-3"
             style={{ flexBasis: '35%', flexGrow: 0, flexShrink: 1 }}
@@ -267,6 +264,13 @@ export default function MessagesPage() {
                     />
                     <FolderSelect folder={currentView} onFolderChange={setCurrentView} />
                   </div>
+                }
+                search={
+                  <ConversationControls
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    onNewMessage={startNewConversation}
+                  />
                 }
               />
             </div>

@@ -2,10 +2,23 @@
  * ThreadList Component — REDESIGN (Figma "Messaging" frame 29:2099, node 29:2137)
  *
  * The left column (35% of the content row, set by the page): a single guest-list
- * card of scrolling thread rows. Scoping lives in the card header as TWO selects
- * (assignment on the left, folder on the right) — see ThreadScopeMenu. The
- * segmented control, the in-card Filters row and the search-row Filters popover
- * were all removed on the way here.
+ * card of scrolling thread rows.
+ *
+ * The card stacks THREE zones (node `searchbar-node`):
+ *
+ *   1. `header`  — the two scope selects (assignment left, folder right), see
+ *                  ThreadScopeMenu. Hairline under it.
+ *   2. `search`  — the search input + "New message" button. Moved in here from
+ *                  the full-width band `AppLayout` used to draw above both
+ *                  columns; see ConversationControls for why. NO hairline under
+ *                  it — the band and the rows are one list surface, and a second
+ *                  divider would cut a 350px card into three boxes.
+ *   3. rows      — the only scrolling zone. Both zones above are `shrink-0`
+ *                  siblings of the scroll container, so they hold position
+ *                  while the rows scroll under them; no position:sticky needed.
+ *
+ * The segmented control, the in-card Filters row and the search-row Filters
+ * popover were all removed on the way here.
  */
 
 'use client';
@@ -23,11 +36,13 @@ interface ThreadListProps {
   onSelectThread: (threadId: string) => void;
   typingThreadId?: string | null;
   /**
-   * The card's own header zone — "Conversations" plus the scope control. A
-   * shrink-0 sibling of the scroll container, so it holds position while the
-   * rows scroll under it; no position:sticky needed.
+   * The card's own header zone — the two scope selects. A shrink-0 sibling of
+   * the scroll container, so it holds position while the rows scroll under it;
+   * no position:sticky needed.
    */
   header?: React.ReactNode;
+  /** The search + "New message" band, directly under the header. Same deal. */
+  search?: React.ReactNode;
 }
 
 export function ThreadList({
@@ -36,6 +51,7 @@ export function ThreadList({
   onSelectThread,
   typingThreadId,
   header,
+  search,
 }: ThreadListProps) {
   return (
     <div className="w-full h-full flex flex-col min-h-0">
@@ -60,6 +76,20 @@ export function ThreadList({
             }}
           >
             {header}
+          </div>
+        )}
+
+        {/* Search band — sits between the header hairline and the rows, with no
+            divider of its own (see the file header). The 8px horizontal padding
+            is the ROWS' padding, not the header's, so the search field's edges
+            line up with the row cards' hover/selected rectangles below it
+            rather than with the select triggers above it. */}
+        {search && (
+          <div
+            className="shrink-0"
+            style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 12, paddingBottom: 4 }}
+          >
+            {search}
           </div>
         )}
 

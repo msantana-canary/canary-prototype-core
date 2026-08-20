@@ -4,17 +4,31 @@
  * Row anatomy: 32px rounded-8 avatar · name (14 Medium) + time (10 uppercase) ·
  * room line (bed icon + number, "(RESERVED)"-style status as plain text, and a
  * concierge request-count chip) · preview (14 Regular colorBlack3) with two
- * independent trailing indicators — the red anger flag (flagged threads) AND
- * the attention dot. They are siblings, not alternatives: neither replaces the
- * other, and when both apply the flag renders first, then the dot. The flag means
- * AI-detected guest frustration (AI paused). The dot shows for unread OR escalated
- * (production parity): plain unread = pink, escalated = amber (warning), the
- * `.isEscalated` variant — the ONLY difference is the dot color.
+ * independent trailing indicators — the attention dot AND the red anger flag.
+ * They are siblings, not alternatives: neither replaces the other. The flag
+ * means AI-detected guest frustration (AI paused). The dot shows for unread OR
+ * escalated (production parity): plain unread = pink, escalated = amber
+ * (warning), the `.isEscalated` variant — the ONLY difference is the dot color.
+ *
+ * ── INDICATORS ARE A RIGHT-HUGGING CLUSTER (frame 2038:57666) ─────────────
+ * ⚠ SUPERSEDES the reserved-slot rule. The dot used to render an always-present
+ * 10px box (transparent when idle) so the row "never shifted". What that
+ * actually bought was a hole: a flagged-but-read row (Miguel-Andre) parked its
+ * flag 10px + a gap short of the right edge, floating against nothing.
+ *
+ * Both indicators are now conditional and sit in one shrink-0 cluster pinned to
+ * the row's right edge by the preview's `flex-1`. Order is the frame's: DOT,
+ * then FLAG. Whichever indicators exist, the LAST one lands on the right
+ * margin — one, the other, or both. There is no phantom slot, so there is
+ * nothing to leave a gap.
  *
  * Selection = soft colorBlueDark5 fill + colorBlueDark3 border + rounded-6
- * (was: solid blue with white text). Unread = dot only — the row background
- * no longer tints (the old unread tint is now the SELECTED treatment, and the
- * pink dot was already the settled unread signal).
+ * (was: solid blue with white text). HOVER is the neutral 8%-black wash this
+ * branch uses for every transient row/control state (thread-header IconAction,
+ * the scope-select trigger), NOT the old near-white #f9fafb — at 2% over white
+ * that was invisible next to the blue selected row, and the two states have to
+ * be told apart at a glance. Neutral vs. blue also keeps "where my pointer is"
+ * and "what is open" in different colour families. Unread = dot only.
  */
 
 import React from 'react';
@@ -58,11 +72,14 @@ export function ThreadListItem({
   const loyalty = guest?.statusTag;
   const requestCount = reservation?.requestCount;
 
+  // Production parity: `unread_count > 0 || is_escalated`.
+  const showDot = !!(thread.isUnread || thread.isEscalated);
+
   return (
     <div
       onClick={onClick}
       className={`flex items-start gap-3 cursor-pointer rounded-[6px] transition-colors shrink-0 ${
-        isSelected ? '' : 'hover:bg-[#f9fafb]'
+        isSelected ? '' : 'hover:bg-[rgba(0,0,0,0.08)]'
       }`}
       style={{
         paddingLeft: 12,
@@ -139,7 +156,8 @@ export function ThreadListItem({
           </div>
         )}
 
-        {/* Preview + independent flag & unread indicators (siblings, not alternatives) */}
+        {/* Preview + the right-hugging indicator cluster (siblings, not
+            alternatives — see the header note). */}
         <div className="flex items-center gap-2">
           <p
             className={`flex-1 min-w-0 font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate ${isTyping ? 'italic' : ''}`}
@@ -147,36 +165,40 @@ export function ThreadListItem({
           >
             {isTyping ? `${firstName} is typing...` : thread.lastMessage}
           </p>
-          {/* Tooltip lives on a wrapping span, NOT on @mdi/react's `title` prop:
-              that prop auto-generates an `aria-labelledby` id from a module-level
-              counter, which differs between the server and client renders and
-              trips React hydration. Same pattern as the auto-link icon in
-              GuestInfoSidebar. */}
-          {thread.isFlagged && (
-            <span
-              className="flex items-center shrink-0 cursor-help"
-              role="img"
-              aria-label="Potential guest frustration detected. AI paused to avoid escalation."
-              title="Potential guest frustration detected. AI paused to avoid escalation."
-            >
-              <Icon path={mdiFlag} size={0.83} color="#E40046" />
-            </span>
+
+          {(showDot || thread.isFlagged) && (
+            <div className="flex items-center gap-[6px] shrink-0">
+              {/* Attention dot — unread OR escalated (production parity:
+                  `unread_count > 0 || is_escalated`). Escalated turns amber
+                  (warning), matching production's `.isEscalated` variant;
+                  plain unread stays pink. Rendered only when it applies: an
+                  always-present transparent box would push a lone flag off the
+                  right margin. */}
+              {showDot && (
+                <div
+                  className="w-[10px] h-[10px] rounded-full shrink-0"
+                  style={{
+                    backgroundColor: thread.isEscalated ? colors.warning : colors.colorPink1,
+                  }}
+                />
+              )}
+              {/* Tooltip lives on a wrapping span, NOT on @mdi/react's `title`
+                  prop: that prop auto-generates an `aria-labelledby` id from a
+                  module-level counter, which differs between the server and
+                  client renders and trips React hydration. Same pattern as the
+                  auto-link icon in GuestInfoSidebar. */}
+              {thread.isFlagged && (
+                <span
+                  className="flex items-center shrink-0 cursor-help"
+                  role="img"
+                  aria-label="Potential guest frustration detected. AI paused to avoid escalation."
+                  title="Potential guest frustration detected. AI paused to avoid escalation."
+                >
+                  <Icon path={mdiFlag} size={0.83} color="#E40046" />
+                </span>
+              )}
+            </div>
           )}
-          {/* Attention dot — shows for unread OR escalated (production parity:
-              `unread_count > 0 || is_escalated`). Escalated turns amber (warning),
-              matching production's `.isEscalated` variant; plain unread stays pink.
-              The 10px slot is always reserved (transparent when neither) so the
-              row layout never shifts. */}
-          <div
-            className="w-[10px] h-[10px] rounded-full shrink-0"
-            style={{
-              backgroundColor: thread.isEscalated
-                ? colors.warning
-                : thread.isUnread
-                ? colors.colorPink1
-                : 'transparent',
-            }}
-          />
         </div>
       </div>
     </div>
