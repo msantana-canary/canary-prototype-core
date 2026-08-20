@@ -12,10 +12,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AppLayout } from '@/components/products/messaging/AppLayout';
 import { ThreadList } from '@/components/products/messaging/ThreadList';
 import { ThreadView } from '@/components/products/messaging/ThreadView';
-import { GuestInfoSidebar } from '@/components/products/messaging/GuestInfoSidebar';
+import { ConversationDetailsPanel } from '@/components/products/messaging/panel/ConversationDetailsPanel';
 import { ComposeHeader } from '@/components/products/messaging/ComposeHeader';
 import { ConversationControls } from '@/components/products/messaging/ConversationControls';
-import { UnlinkReservationModal } from '@/components/products/messaging/UnlinkReservationModal';
 import {
   AssignmentSelect,
   FolderSelect,
@@ -25,9 +24,7 @@ import { BroadcastView } from '@/components/products/messaging/broadcast/Broadca
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { guests } from '@/lib/core/data/guests';
 import { reservations } from '@/lib/core/data/reservations';
-import { LinkedReservation } from '@/lib/products/messaging/types';
-import { panelIdentity, resolveLinked } from '@/lib/products/messaging/panel-selectors';
-import { LinkReservationModal } from '@/components/products/messaging/LinkReservationModal';
+import { panelIdentity } from '@/lib/products/messaging/panel-selectors';
 import { generateGuestResponse, generateStaffResponse } from '@/lib/products/messaging/services/claude-api';
 import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
 
@@ -72,15 +69,7 @@ export default function MessagesPage() {
     markThreadAsUnread,
     setSearchQuery,
     threadPrimaryReservationId,
-    linkReservation,
-    unlinkReservation,
   } = useMessagingStore();
-
-  // The link flow is mid-migration: it becomes a page INSIDE the Conversation
-  // Details panel, so its open state no longer belongs in the global store.
-  const [isLinkReservationModalOpen, setLinkReservationModalOpen] = useState(false);
-  const openLinkReservationModal = () => setLinkReservationModalOpen(true);
-  const closeLinkReservationModal = () => setLinkReservationModalOpen(false);
 
 
   // Get the selected thread
@@ -88,12 +77,6 @@ export default function MessagesPage() {
     if (!selectedThreadId) return null;
     return threads.find((t) => t.id === selectedThreadId) || null;
   }, [threads, selectedThreadId]);
-
-  // Resolve all linked reservations with their guests and auto-link status
-  const linkedReservations: LinkedReservation[] = useMemo(
-    () => resolveLinked(selectedThread),
-    [selectedThread]
-  );
 
   /**
    * The thread's PRIMARY person — the same spotlight the Conversation Details
@@ -203,21 +186,6 @@ export default function MessagesPage() {
     }
   };
 
-  // Unlink modal state — tracks which reservation row was clicked
-  const [unlinkTarget, setUnlinkTarget] = useState<LinkedReservation | null>(null);
-
-  const handleRequestUnlink = (reservationId: string) => {
-    const lr = linkedReservations.find((r) => r.reservation.id === reservationId) || null;
-    setUnlinkTarget(lr);
-  };
-
-  const handleConfirmUnlink = () => {
-    if (unlinkTarget && selectedThreadId) {
-      unlinkReservation(selectedThreadId, unlinkTarget.reservation.id);
-    }
-    setUnlinkTarget(null);
-  };
-
   // Auto-select first thread on mount (conversations only).
   // Skip while composing — startNewConversation nulls selectedThreadId, and without
   // this guard the effect would instantly re-select thread #1 (spurious mark-as-read +
@@ -322,15 +290,14 @@ export default function MessagesPage() {
             )}
           </div>
 
-          {/* Conversation Details — floating panel + scrim (fixed; out of flow) */}
+          {/* Conversation Details — the floating panel + scrim (fixed; out of
+              flow). It owns its own navigation, flows and confirm modal; the
+              page hands it a thread and a way to close. */}
           {selectedThread && !isComposingNew && (
-            <GuestInfoSidebar
-              contactNumber={selectedThread.contactNumber}
-              linkedReservations={linkedReservations}
+            <ConversationDetailsPanel
+              thread={selectedThread}
               isOpen={isGuestInfoOpen}
               onClose={closeGuestInfo}
-              onOpenLinkModal={openLinkReservationModal}
-              onUnlinkReservation={handleRequestUnlink}
             />
           )}
         </div>
@@ -339,26 +306,6 @@ export default function MessagesPage() {
       {activeTab === 'broadcast' && (
         <BroadcastView />
       )}
-
-      {/* Link Reservation Modal */}
-      <LinkReservationModal
-        isOpen={isLinkReservationModalOpen}
-        onClose={closeLinkReservationModal}
-        onLink={(resId) => {
-          if (selectedThreadId) linkReservation(selectedThreadId, resId);
-        }}
-        alreadyLinkedIds={selectedThread?.linkedReservationIds || []}
-      />
-
-      {/* Unlink Reservation Modal */}
-      <UnlinkReservationModal
-        isOpen={!!unlinkTarget}
-        onClose={() => setUnlinkTarget(null)}
-        onConfirmUnlink={handleConfirmUnlink}
-        guestName={unlinkTarget?.guest.name || ''}
-        contactNumber={selectedThread?.contactNumber || ''}
-        isAutoLinked={unlinkTarget?.isAutoLinked || false}
-      />
 
     </AppLayout>
   );

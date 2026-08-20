@@ -1,9 +1,13 @@
 /**
- * FloatingPanel — the messaging surface's floating right-side panel mechanic.
+ * FloatingPanel — the BROADCAST panels' floating right-side shell.
  *
- * Extracted verbatim from GuestInfoSidebar (Conversation Details) so the
- * broadcast delivery panel can reuse the exact same shell rather than growing a
- * second, drifting copy. Behaviour is unchanged from the v3 sidebar:
+ * ⚠ SCOPE, as of 2026-08-20: this shell was extracted from the old Conversation
+ * Details sidebar so the broadcast panels could share it. Conversation Details
+ * has since been rebuilt on its own `<PanelShell>` (600px, 12px on all three
+ * viewport edges, no shadow, over the top bar) — see
+ * `panel/PanelShell.tsx` for why the two are deliberately separate components.
+ * This one is now used ONLY by the broadcast delivery / scheduled / filter
+ * panels, and its 480px-under-the-top-bar behaviour is theirs to keep.
  *
  *  - A fixed white card inset from the window edges — right 16 / bottom 16, and
  *    top = the shell's top bar + 16 — so it floats BELOW the app chrome.

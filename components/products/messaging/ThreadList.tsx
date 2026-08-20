@@ -27,8 +27,8 @@ import React from 'react';
 import { colors } from '@canary-ui/components';
 import { ThreadListItem } from './ThreadListItem';
 import { Thread } from '@/lib/products/messaging/types';
-import { guests } from '@/lib/core/data/guests';
-import { reservations } from '@/lib/core/data/reservations';
+import { panelIdentity } from '@/lib/products/messaging/panel-selectors';
+import { useMessagingStore } from '@/lib/products/messaging/store';
 
 interface ThreadListProps {
   threads: Thread[];
@@ -53,6 +53,8 @@ export function ThreadList({
   header,
   search,
 }: ThreadListProps) {
+  const threadPrimaryReservationId = useMessagingStore((s) => s.threadPrimaryReservationId);
+
   return (
     <div className="w-full h-full flex flex-col min-h-0">
       {/* Guest list card */}
@@ -101,10 +103,16 @@ export function ThreadList({
             </div>
           ) : (
             threads.map((thread) => {
-              // Derive primary guest/reservation from first linked reservation
-              const primaryResId = thread.linkedReservationIds[0];
-              const primaryRes = primaryResId ? reservations[primaryResId] : undefined;
-              const primaryGuest = primaryRes ? guests[primaryRes.guestId] : undefined;
+              /**
+               * The row names the thread's PRIMARY person — the same spotlight
+               * the Conversation Details panel uses, so a thread cannot be
+               * "Emily Smith" in the list and "Nathan Reyes" in the panel. It
+               * used to take the first linked reservation, which ignored both
+               * the auto-link fact and the per-thread display preference.
+               */
+              const primary = panelIdentity(thread, threadPrimaryReservationId[thread.id]).primary;
+              const primaryRes = primary?.reservation;
+              const primaryGuest = primary?.guest;
 
               return (
                 <ThreadListItem

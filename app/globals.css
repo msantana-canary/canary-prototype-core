@@ -101,9 +101,14 @@ body {
    Conversation Details panel) — there a bordered box would read as a foreign
    object, so the trace takes the column's idiom and marks itself with the
    gradient instead. */
+/* Painted as a BACKGROUND strip rather than a gradient `border-image`: the
+   border-image route needs every side's border-width declared to slice
+   reliably, and a one-sided gradient border silently renders as nothing. */
 .ai-gradient-bar {
-  border-left: 2px solid transparent;
-  border-image: linear-gradient(180deg, #d6379f 0%, #b345c6 45%, #5758ea 100%) 1;
+  background-image: linear-gradient(180deg, #d6379f 0%, #b345c6 45%, #5758ea 100%);
+  background-repeat: no-repeat;
+  background-size: 2px 100%;
+  background-position: left top;
 }
 
 /* ---- CanaryTag radius: 2 → 4 ---------------------------------------------

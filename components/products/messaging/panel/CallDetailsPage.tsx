@@ -1,0 +1,327 @@
+/**
+ * CallDetailsPage — one call, with its own Summary / Transcript pair.
+ *
+ * ⚠ Those two tabs are NOT the panel's main tab row. A drill-in replaces the
+ * root's chrome entirely, so the only tabs on screen belong to the thing you
+ * drilled into — otherwise the page would carry two competing tab strips and
+ * "Transcript" would look like a sibling of "Upsells".
+ *
+ * THE TRANSCRIPT IS THE POINT. A voice call is the one channel a hotelier
+ * cannot skim, so the transcript carries the same observability the chat feed
+ * gives an AI message: speaker-labelled utterances with the agent's tool-call
+ * trace inline, rendered by the SHARED <AiStepsCard>. The AI's work looks the
+ * same whether it answered by SMS or by phone.
+ *
+ * PLAYBACK IS DECORATIVE BUT COHERENT. Nothing plays — there is no audio in a
+ * prototype — but the scrubber's fill is computed from elapsed/total rather than
+ * drawn at a pleasing position. The frame's knob sits at ~95% while its clock
+ * reads 07:32 of 15:24 (~49%); that mismatch is a logged mock nit, and copying
+ * it would teach the demo audience that the control lies.
+ */
+
+'use client';
+
+import React, { useState } from 'react';
+import { colors, TagColor } from '@canary-ui/components';
+import Icon from '@mdi/react';
+import { mdiPlay, mdiRewind15, mdiFastForward15 } from '@mdi/js';
+import { CopyIcon, PanelHeader, PanelTag } from './panel-ui';
+import { truncateId } from './panel-format';
+import { AiStepsCard } from '../AiStepsCard';
+import { CallRecord } from '@/lib/products/messaging/types';
+import { callProgress } from '@/lib/products/messaging/panel-mock';
+
+type CallTab = 'summary' | 'transcript';
+
+/** A meta-grid cell: 10px uppercase overline over a 14px value. */
+function MetaCell({
+  label,
+  children,
+  span = 1,
+}: {
+  label: string;
+  children: React.ReactNode;
+  span?: number;
+}) {
+  return (
+    <div className="min-w-0" style={{ gridColumn: `span ${span}` }}>
+      <span
+        className="block font-['Roboto',sans-serif] font-medium uppercase"
+        style={{ fontSize: 10, letterSpacing: '0.5px', color: colors.colorBlack3, lineHeight: '16px' }}
+      >
+        {label}
+      </span>
+      <div
+        className="flex items-center gap-1 font-['Roboto',sans-serif] text-[14px] leading-[22px] min-w-0"
+        style={{ color: colors.colorBlack1, marginTop: 2 }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function CallDetailsPage({
+  call,
+  onBack,
+  onClose,
+}: {
+  call: CallRecord;
+  onBack: () => void;
+  onClose: () => void;
+}) {
+  const [tab, setTab] = useState<CallTab>('summary');
+  const progress = callProgress(call);
+
+  return (
+    <div className="w-full h-full shrink-0 flex flex-col min-h-0">
+      <PanelHeader title="Call details" onBack={onBack} onClose={onClose} />
+
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-invisible">
+        {/* META GRID */}
+        <div
+          className="grid"
+          style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '14px 16px', padding: '16px 24px 0' }}
+        >
+          <MetaCell label="Guest name">{call.guestName}</MetaCell>
+          <MetaCell label="Time of call">{call.timeOfCall}</MetaCell>
+          <MetaCell label="Call duration">{call.durationClock}</MetaCell>
+          <MetaCell label="Handle status">
+            <PanelTag
+              label={call.handleStatus}
+              color={call.handleStatus === 'Contained' ? TagColor.SUCCESS : TagColor.DEFAULT}
+              uppercase={false}
+            />
+          </MetaCell>
+          <MetaCell label="ID" span={2}>
+            <span className="truncate" title={call.externalId}>
+              {truncateId(call.externalId)}
+            </span>
+            <CopyIcon value={call.externalId} label="Copy call ID" />
+          </MetaCell>
+        </div>
+
+        {/* PLAYBACK BAR — decorative, but the scrubber agrees with the clock. */}
+        <div style={{ padding: '16px 24px 0' }}>
+          <div
+            className="flex items-center gap-3 rounded-[8px]"
+            style={{ backgroundColor: colors.colorBlueDark5, padding: '10px 14px' }}
+          >
+            <button aria-label="Back 15 seconds" className="shrink-0 flex items-center justify-center" style={{ width: 24, height: 24 }}>
+              <Icon path={mdiRewind15} size={0.86} color={colors.colorBlueDark1} />
+            </button>
+            <button
+              aria-label="Play recording"
+              className="shrink-0 flex items-center justify-center rounded-[6px]"
+              style={{ width: 30, height: 30, backgroundColor: colors.colorBlueDark1 }}
+            >
+              <Icon path={mdiPlay} size={0.8} color={colors.colorWhite} />
+            </button>
+            <button aria-label="Forward 15 seconds" className="shrink-0 flex items-center justify-center" style={{ width: 24, height: 24 }}>
+              <Icon path={mdiFastForward15} size={0.86} color={colors.colorBlueDark1} />
+            </button>
+
+            <span
+              className="shrink-0 font-['Roboto',sans-serif] text-[13px] leading-[20px] tabular-nums"
+              style={{ color: colors.colorBlack2 }}
+            >
+              {call.elapsedClock}
+            </span>
+
+            <div className="relative flex-1 min-w-0" style={{ height: 20 }}>
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  top: 9,
+                  left: 0,
+                  right: 0,
+                  height: 3,
+                  borderRadius: 9999,
+                  backgroundColor: colors.colorBlueDark4,
+                }}
+              />
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  top: 9,
+                  left: 0,
+                  width: `${progress * 100}%`,
+                  height: 3,
+                  borderRadius: 9999,
+                  backgroundColor: colors.colorBlueDark1,
+                }}
+              />
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  top: 5,
+                  left: `calc(${progress * 100}% - 5px)`,
+                  width: 11,
+                  height: 11,
+                  borderRadius: 9999,
+                  backgroundColor: colors.colorBlueDark1,
+                }}
+              />
+            </div>
+
+            <span
+              className="shrink-0 font-['Roboto',sans-serif] text-[13px] leading-[20px] tabular-nums"
+              style={{ color: colors.colorBlack2 }}
+            >
+              {call.durationClock}
+            </span>
+            <button
+              aria-label="Playback speed"
+              className="shrink-0 font-['Roboto',sans-serif] font-medium text-[13px] leading-[20px]"
+              style={{ color: colors.colorBlueDark1 }}
+            >
+              1×
+            </button>
+          </div>
+        </div>
+
+        {/* SUMMARY / TRANSCRIPT — this page's OWN tabs. */}
+        <div
+          className="flex items-center"
+          style={{
+            gap: 24,
+            paddingLeft: 24,
+            paddingRight: 24,
+            marginTop: 16,
+            borderBottom: `1px solid ${colors.colorBlack6}`,
+          }}
+        >
+          {(
+            [
+              ['summary', 'Summary'],
+              ['transcript', 'Transcript'],
+            ] as [CallTab, string][]
+          ).map(([id, label]) => {
+            const isActive = tab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                aria-selected={isActive}
+                role="tab"
+                className="relative font-['Roboto',sans-serif] text-[14px] leading-[22px]"
+                style={{
+                  color: isActive ? colors.colorBlueDark1 : colors.colorBlack1,
+                  fontWeight: isActive ? 500 : 400,
+                  paddingTop: 10,
+                  paddingBottom: 10,
+                }}
+              >
+                {label}
+                {isActive && (
+                  <span
+                    aria-hidden
+                    style={{
+                      position: 'absolute',
+                      left: -2,
+                      right: -2,
+                      bottom: -1,
+                      height: 3,
+                      borderRadius: '2px 2px 0 0',
+                      backgroundColor: colors.colorBlueDark1,
+                    }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ padding: 24 }}>
+          {tab === 'summary' ? (
+            <div className="flex flex-col" style={{ gap: 16 }}>
+              {call.summary.map((paragraph, i) => (
+                <p
+                  key={i}
+                  className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
+                  style={{ color: colors.colorBlack1 }}
+                >
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <Transcript call={call} />
+          )}
+        </div>
+      </div>
+
+      {/* Stub — there is no file to hand over in a prototype. */}
+      <div className="shrink-0" style={{ borderTop: `1px solid ${colors.colorBlack6}`, padding: 24 }}>
+        <button
+          className="w-full rounded-[8px] font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] transition-opacity hover:opacity-90"
+          style={{ height: 44, backgroundColor: colors.colorBlueDark5, color: colors.colorBlueDark1 }}
+        >
+          Download Transcript
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Transcript({ call }: { call: CallRecord }) {
+  return (
+    <div>
+      {/* "Call Begins" rule — a hairline either side of the label. */}
+      <div className="flex items-center gap-3" style={{ marginBottom: 16 }}>
+        <span className="flex-1" style={{ height: 1, backgroundColor: colors.colorBlack6 }} />
+        <span
+          className="shrink-0 font-['Roboto',sans-serif] text-[13px] leading-[20px]"
+          style={{ color: colors.colorBlack3 }}
+        >
+          {call.beginsLabel}
+        </span>
+        <span className="flex-1" style={{ height: 1, backgroundColor: colors.colorBlack6 }} />
+      </div>
+
+      <div className="flex flex-col" style={{ gap: 16 }}>
+        {call.transcript.map((turn, i) => (
+          <div key={i}>
+            <div
+              style={{
+                borderLeft: `2px solid ${turn.isAi ? colors.colorBlueDark1 : colors.colorBlack5}`,
+                paddingLeft: 12,
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className="truncate font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px]"
+                  style={{ color: turn.isAi ? colors.colorBlueDark1 : colors.colorBlack1 }}
+                >
+                  {turn.speaker}
+                </span>
+                <span className="flex-1" />
+                <span
+                  className="shrink-0 font-['Roboto',sans-serif] text-[12px] leading-[18px]"
+                  style={{ color: colors.colorBlack3 }}
+                >
+                  {turn.time}
+                </span>
+              </div>
+              <p
+                className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
+                style={{ color: colors.colorBlack1 }}
+              >
+                {turn.text}
+              </p>
+            </div>
+
+            {/* The trace that this utterance produced — the SAME card the chat
+                feed renders, in its transcript dress. */}
+            {turn.steps && turn.steps.length > 0 && (
+              <AiStepsCard steps={turn.steps} accent style={{ marginTop: 8 }} />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

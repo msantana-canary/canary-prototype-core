@@ -192,7 +192,7 @@ export function ThreadListItem({
                   prop: that prop auto-generates an `aria-labelledby` id from a
                   module-level counter, which differs between the server and
                   client renders and trips React hydration. Same pattern as the
-                  auto-link icon in GuestInfoSidebar. */}
+                  failure icon in the Conversation Details panel. */}
               {thread.isFlagged && (
                 <span
                   className="flex items-center shrink-0 cursor-help"
