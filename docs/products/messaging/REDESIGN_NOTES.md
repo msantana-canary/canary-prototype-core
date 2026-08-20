@@ -1909,3 +1909,327 @@ taken in this batch.
 
 - **The details band's ground** (`BAND_BG = '#F7F8F9'`) — Miguel is ruling on it
   separately.
+
+---
+
+## Batch 4 — the AI loop: explanation, feedback, drafts, bands (2026-08-20)
+
+The observability and action layer around the thread. Batch 2 gave every AI
+message its trace and three footer registers, and left every affordance a stub.
+This batch makes all of them go somewhere, and adds the four things the AI can
+put in front of a hotelier without sending anything.
+
+### 1. THE DELINEATION — sidebar = observability, modal = quick action
+
+Miguel's ruling, and the architecture of the whole batch. It is not a taste
+call about surfaces; it is a call about ERRANDS.
+
+**Explaining an answer is reading.** You scan it, you compare it against the
+thread still visible beside you, you may go and look at a source. A modal for
+that blacks out the conversation the explanation is about. So the AI Explanation
+is a **panel**, on the panel standard from batch 3 — 600px, 12px to three
+viewport edges, over the app chrome, the same shell as Conversation Details. A
+hotelier should not have to learn two right-hand cards.
+
+The frames draw it as a floating modal card. That is Figma's convention for
+"here is a surface, in isolation" and not a placement instruction — the same
+file draws the Conversation Details panel exactly the same way, and that one is
+a panel.
+
+**Acting on a verdict is doing.** 👎, editing a one-line fact, reading a carrier
+receipt: each is a short errand with a commit and a cancel and no context worth
+keeping on screen. Those are **modals**.
+
+### 2. The explanation opens AT the explanation, and has three doors
+
+Title + X, no back arrow — there is nothing behind it. Three affordances land on
+the same page:
+
+| affordance | state |
+|---|---|
+| ⓘ on an AI message | success — a band recapping what was sent |
+| "AI CHOSE NOT TO RESPOND" on an inbound message | non-response — intro paragraph + Action Taken, and **no band**, because nothing was sent |
+| the "3 SOURCES ⌄" chip | the same page |
+
+The sources chip is the interesting one. Its chevron used to promise a popover
+of source statements. That popover would have been a thinner copy of a list the
+sidebar already prints — beside the reasoning that selected it, which is the
+part that makes the list mean anything. **One source of truth, reachable three
+ways** beat two lists that agree until they don't.
+
+Sections are hairline-separated: intro (non-response only) · AI-message band ·
+What AI understood · Sources Used + "Go to Knowledge Base" · Action Taken
+(non-response only) · Result · footer "Give AI Feedback".
+
+**The orb, not the waveform.** Every frame in this batch draws the AI as a
+five-bar equaliser tile — the VOICE product's mark, pasted into a messaging
+surface whose feed already speaks in orbs. Miguel: *orb everywhere*. One agent,
+one face, and the living one.
+
+**Result variants**: two are drawn and built ("AI successfully responded…",
+"AI chose not to respond"). Three more are enumerated in a comment on
+`AiExplanation` and deliberately not built — didn't-know (empty Sources is a
+different section STATE, not different copy), guardrail-blocked (wants a
+"Blocked by" section naming the rule), escalated (Action Taken would have to
+name a person or department). Each needs its own frame before it is worth
+faking.
+
+### 3. Feedback is one form with two chromes
+
+Sidebar page behind a back arrow (from the explanation's footer) and standalone
+modal (from 👎). Same `<AiFeedbackForm>` — not because sharing is tidy, but
+because **the taxonomy is the artefact**. The eight reasons are what the loop
+actually learns from, and two copies of a taxonomy is one taxonomy plus a future
+disagreement.
+
+Chips are **multi-select**. A reply is rarely wrong in exactly one way — "Wrong
+Information" and "Should Have Escalated" are routinely both true, and a single
+pick makes the hotelier throw away the half of the signal that doesn't fit.
+Selected fills `colorBlueDark1` with a white label: the same "this one" blue the
+thread row and the reservation result row already use. **≥1 chip gates submit**;
+the note is explicitly optional, so the chips are the real submission.
+
+👎 **latches AND asks.** The latch is the verdict and survives the modal being
+cancelled — you did disagree, whether or not you explained why. The modal is
+where the verdict gets a reason. 👍 stays a bare local latch: there is still no
+pipeline behind a compliment, and inventing one would be the only unearned claim
+on the surface.
+
+### 4. The band stack, and the rule that orders it
+
+Everything the AI puts between the feed and the composer, top to bottom:
+
+```
+  draft card                 a whole message, waiting for a human
+  suggested fact   (AI)      the agent asking to learn something
+  recommended ticket (blue)  a detection you can act on
+  escalation       (amber)   a guest has been waiting
+  away             (amber)   the property is not answering
+  ───────────────────────────  the composer input
+```
+
+**AMBER IS ALWAYS NEAREST THE COMPOSER** (Miguel). It is a rule about what
+happens when you start typing: the amber bands are CONDITIONS ON THE MESSAGE you
+are about to send — it is going out while the property is marked away, to a
+guest who has already waited 24 minutes. They belong in the last line of sight
+before the cursor. The AI and ticket bands are things to do INSTEAD of typing,
+so they meet the eye on its way down from the conversation rather than on its
+way into the box.
+
+A fixed order also means the slot never reflows into a different shape when one
+band resolves: dismiss the fact and the ticket rises, while the amber pair never
+moves, because it was never above anything.
+
+**The slot belongs to the composer**, not the thread view. Its whole meaning is
+proximity — an away band eight pixels above the box is a condition; the same
+band pinned under the feed is a page header.
+
+Three registers, and they are three on purpose:
+
+- **AI** (gradient border, whisper fill) — the agent is PROPOSING and wants
+  permission. The only register carrying the agent's own colours, because it is
+  the only one where the agent is speaking.
+- **BLUE** — the product's utility register, per the frame. A recommended
+  service ticket is a HOTEL object; dressing it as an AI artefact would file it
+  under "the robot's stuff" rather than under "my work".
+- **AMBER** — a state of the world you did not choose and cannot accept or
+  reject.
+
+The escalation band has no actions and no dismiss, deliberately: you cannot
+agree or disagree with how long someone has been waiting, and the only way to
+clear it is the composer directly below.
+
+**The Away pill is real now.** It writes `workspaceStatus` to the store instead
+of colouring itself locally, so the band demos live across every thread from one
+control. A band that demos by editing mock data is a band nobody can show in a
+meeting. (Off-hours variant enumerated in a comment, not built — it wants
+different copy and a schedule state, and one band with a `label` prop would have
+been the cheap version of a decision nobody has made.)
+
+### 5. The suggested-fact queue, and "Add Information to AI"
+
+Sequential and **persistent**. Head of the queue is the visible band, "+N more"
+says how many are behind it, and **nothing auto-hides on a timer** — Skip/× is
+the only way out. A suggestion that quietly expires is one the product asked for
+and then threw away, and a hotelier who notices that once stops answering them.
+
+Add-to-AI is a **toast**, not an inline confirmation state on the band: the
+band's job is finished the moment the fact is accepted, and a band that stays
+behind to congratulate itself is a band still occupying the slot the next fact
+needs.
+
+Edit opens the **"Add Information to AI" modal** — title, "AI knowledge update"
+label, textarea PREFILLED with the fact, Cancel / solid-blue "Add to AI".
+Prefilled because the common case is a small correction (a room number, a set of
+hours), and making someone retype a sentence they mostly agree with teaches them
+to press Dismiss instead. Committing the edit is the **same event** as Add from
+the band — Edit is a detour on the way to Add, not a second outcome.
+
+### 6. The drafted-response card
+
+Its own gradient-bordered card above the composer, separate from the band slot:
+"RESPONSE DRAFTED BY AI" overline, the draft body, Edit / Send / × dismiss.
+
+**Edit hands the draft to the composer** and the card leaves. Not an inline
+editor, not a modal: the composer is where messages get written, it already has
+send, attachments, translate and the AI pill, and it is four inches below. An
+inline editor would have been a second composer with none of the composer's
+tools.
+
+**Send attributes to the HUMAN.** The message lands as the signed-in staff
+member's, not as Canary's — a person read it and chose to send it, so the
+property owns the words. Attributing an approved draft to the AI would let it
+take credit for a sentence a person is accountable for, and would make the
+feed's three sender registers lie about who is speaking.
+
+**⚠ DELIBERATE DEVIATION FROM PRODUCTION — dismiss asks nothing.** Production
+opens the feedback taxonomy when a draft is thrown away, on the (good) argument
+that a rejected draft is the cheapest training signal the loop will ever get.
+Miguel's call: this batch already has two feedback surfaces, and a third mouth
+asking the same question at the exact moment someone is clearing their screen
+turns the assistant into a form. If the loop needs the signal, ask once, later —
+not as a toll on every dismissal. Noted in the code at `dismissDraft` and on the
+card.
+
+### 7. "Review" hands off to a form that already exists
+
+The recommended-ticket band's Review opens the Conversation Details panel's
+**existing** Create-service-task drill-in, prefilled with the band's room and
+issue. The form IS the review; a second review dialog here would have been a
+copy that drifts.
+
+The mechanic: the panel owns its navigation stack and nothing else may push onto
+it, so the band states an INTENT on the store (`panelIntent`, with a nonce so two
+identical Reviews are two events) and the panel decides how to honour it.
+
+### 8. Carrier errors — "Message Not Delivered"
+
+Reached from the red "MESSAGE FAILED TO SEND" caption. Per-channel blocks:
+WhatsApp 21212 + SMS 30006 on one send, which is not mock noise — production
+attempts the rich channel and falls back, so one red caption can stand for two
+different refusals, and showing only the last would send a hotelier to fix the
+wrong thing.
+
+The register was EXTRACTED, not written: the guest-journey timeline already drew
+it inline. It is `<CarrierErrorLine>` now, used by both.
+
+**⚠ Known dead promise, kept as drawn**: the helper paragraph says some issues
+"may require action, such as updating recipient info or retrying the message,"
+and the modal offers neither. Already on the fix-in-post list; shipped verbatim
+so the review argues about the frame rather than about a paraphrase of it.
+
+### 9. Store / mock
+
+- `AiExplanation` on the message it explains — success on `ai` messages,
+  non-response on `guest` messages carrying `aiDeclined`. State is read off the
+  message, not off a discriminator field.
+- **`sourceCount` is DERIVED** from `explanation.sources.length` at decoration
+  time. The footer chip and the sidebar's list are two views of one array. The
+  fastest way to make an observability surface untrusted is to say three and
+  then show four.
+- The footnotes live in `ai-mock.ts`, not in `mock-data.ts`: threading a
+  fifteen-line explanation through every AI message would have doubled the
+  transcript and made the conversation unreadable in the file that exists to
+  make it readable. `mock-data.ts` decorates on the way out.
+- Thread 1's two explanations are the FRAMES verbatim, inconsistencies included
+  ("Chilli's" vs "Chili's", the double space in "MIX,  and Red's Place", bullet
+  1's lone period, "What AI understood" in sentence case beside three title-case
+  headings). All are fix-in-post items; the build matches the file, and the file
+  gets fixed first.
+
+### Exemplar threads
+
+| thread | guest | carries |
+|---|---|---|
+| 1 | Emily Smith | both explanation states (⓵ `m4` success, `m3` non-response), a failed send |
+| 2 | Miguel Andre Briones Santana Rodriguez | suggested-fact queue (2 — the frame's towels fact + one more, so "+1 more" is demo-able), a failed send |
+| 4 | Marco Bitanga-Sevilla | suggested fact (pool closure, from the edit-modal frame) **and** the recommended ticket (room 112 / Bath Towels, the frame's own numbers) — the stacking demo |
+| 20 | Lucia Rossi | escalation, "Unanswered for 24 minutes." |
+| 25 | Chloe Dubois | the drafted response |
+| — | any | the away band, live off the status pill |
+
+⚠ Marco's thread gained one seeded message: a bath-towel request timestamped
+BEFORE the pool question, so the band's room-and-issue is detected from
+something you can read in the thread while the list row's preview stays the
+frame's "What time will the pool close?"
+
+⚠ The draft's BODY diverges from frame 2030:47254, which drafts a gym/mini-golf
+answer into a thread that asked about restaurants — an incoherence the frame
+audit logged. The card's chrome is the frame's; the body answers the guest who
+is actually waiting, because a demo where the draft doesn't match the question
+teaches the reviewer that drafts don't match questions.
+
+### One bug fixed on the way
+
+**The composer is keyed to its thread now.** It holds its text in local state,
+so switching conversations carried the box's contents to the next one.
+Survivable while the only way to fill it was to type; not survivable once the
+draft card could put an AI's reply to Chloe into Lucia's composer. Real
+per-thread drafts (kept, not cleared) remain a separate feature.
+
+### Files touched (batch 4)
+
+- **new** `components/products/messaging/ai/` — `AiExplanationPanel.tsx`,
+  `AiFeedbackForm.tsx`, `AiFeedbackModal.tsx`, `AiRecapBand.tsx`,
+  `CarrierErrorModal.tsx`, `AiDraftCard.tsx`, `AddInformationModal.tsx`,
+  `ThreadAiSlot.tsx`, `band-ui.tsx`.
+- **new** `lib/products/messaging/ai-mock.ts`.
+- `lib/products/messaging/` — `types.ts`, `store.ts`, `mock-data.ts`.
+- `components/products/messaging/` — `MessageBubble.tsx`, `MessageComposer.tsx`,
+  `ThreadView.tsx`, `MainNav.tsx`.
+- `components/products/messaging/panel/` — `panel-ui.tsx` (**new**
+  `<CarrierErrorLine>`, `PanelFooterAction` variant), `PanelShell.tsx` (`label`),
+  `ConversationDetailsPanel.tsx`, `CreateServiceTaskPage.tsx`,
+  `ScheduledMessagesPage.tsx`.
+- `app/globals.css` — `.ai-gradient-band`.
+- `app/(dashboard)/messages/page.tsx` — the four AI surfaces + one toast.
+
+### Promotion candidates — additions
+
+27. **The AI-band register** (`.ai-gradient-band`) — 1px gradient border,
+    whisper-tint fill, rounded-8. The dress for anything an agent PROPOSES
+    rather than reports. Already worn by two objects here (draft card,
+    suggested-fact band) and it is the same two-layer padding-box/border-box
+    trick as `.ai-orb-tile` and `.ai-pill-on`; the three should become one token
+    set rather than three near-identical gradients.
+28. **`<CarrierErrorLine>`** — supersedes the "error register" half of item 24.
+    Now genuinely shared (GJ timeline + carrier modal). Every Canary product
+    that sends anything can fail this way.
+29. **The context band** (`<ContextBand>` + `<BandButton>`) — icon · content ·
+    action pair · bare dismiss, in an AI / blue / amber register. Any product
+    with a "here is something about this record, act or dismiss" notice wants
+    it, and the amber-nearest-the-input stacking rule travels with it.
+30. **The reason-chip group** — outline-blue at rest, filled-blue selected,
+    multi-select, wrapping. A generic taxonomy picker; nothing in `@canary-ui`
+    covers it.
+31. **`PanelFooterAction` variant** — the commit bar now has tonal and primary
+    registers. Still hand-rolled (item 26 in batch 3.1's list flagged that it
+    should become `CanaryButton`); the variant makes the eventual swap a
+    two-line change.
+
+### ⚠ Library asks — additions
+
+31a. **`CanaryButton` has no small/compact size.** NORMAL is h-10 / rounded-4,
+     neither exposed as a prop. The band buttons are drawn 32px / rounded-8, and
+     a 40px button turns a 52px band into a 56px one and takes the whole slot's
+     rhythm with it — so `BandButton` is hand-rolled. A `ButtonSize.COMPACT`
+     would retire it.
+31b. **`CanaryModal` draws no header or footer rules.** Every frame in this
+     batch rules both. Each modal here bleeds a border back out through the
+     library's `px-6 py-4` padding by hand. A `dividers` prop (or just drawing
+     them) would remove three copies of the same negative-margin trick.
+
+### Stub inventory after batch 4
+
+Everything in the AI loop now does something. What remains inert, and why:
+
+- **"Go to Knowledge Base"** (explanation sidebar) — the KB is a whole other
+  product surface this prototype does not carry. A fake destination would be
+  worse than an honest dead link.
+- **Download Transcript** (call details, batch 3) — unchanged.
+- **Composer tool icons** (emoji / attach / translate / templates / service
+  ticket) — decorative since batch 2.
+- **Copilot pill, Insights, Reservations chip** (top bar) — other products.
+- **👍** — latches locally; there is no pipeline behind a compliment yet.
+- **Carrier error codes** — underlined as links, no destination (the vendor's
+  docs are external).
