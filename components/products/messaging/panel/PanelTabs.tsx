@@ -51,6 +51,7 @@ import {
   SectionHeading,
 } from './panel-ui';
 import { LinkedReservation, CallRecord, ServiceTask, Upsell } from '@/lib/products/messaging/types';
+import { useRowKeyActivation } from '@/lib/products/messaging/useRowKeyActivation';
 
 /* ─────────────────────────────────────────────────────────────────────────
    The tab strip
@@ -158,11 +159,13 @@ export function PanelTabBar({
    with `[&>*]:!pr-3`. "12px list-row padding" is logged as the design-system
    ask — the base ramp offers only compact 8px and normal 16px.
 
-   ⚠ AND IT COSTS THE ROWS THEIR BUTTON. A clickable `CanaryListItem` is a
+   ⚠ AND IT WOULD COST THE ROWS THEIR BUTTON. A clickable `CanaryListItem` is a
    `<li role="button" tabIndex=0>` with the click handler on an inner div and NO
-   key handler, so Enter and Space no longer activate a row that used to be a
-   real `<button>`. Logged as the sharpest ask this batch produced: keyboard
-   activation on `CanaryListItem`.
+   key handler — it takes focus, announces itself as a button, and then ignores
+   Enter and Space. `useRowKeyActivation` puts the keyboard back on the `<li>`
+   the base forwards its ref to. It is a stopgap for a library gap, not a
+   pattern: "keyboard activation on `CanaryListItem`" is the sharpest ask this
+   batch produced, and the hook should be deleted the day it lands.
    ───────────────────────────────────────────────────────────────────────── */
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -456,6 +459,37 @@ export function ServiceTasksTab({
    Call History
    ───────────────────────────────────────────────────────────────────────── */
 
+/**
+ * The one CLICKABLE row in these four tabs, and the reason it is a component
+ * rather than inline JSX: `useRowKeyActivation` is a hook, and a hook cannot be
+ * called inside a `.map`.
+ *
+ * `hoverColor` is left at the base's default because that default IS
+ * colorBlack8 (#FAFAFA) — the exact wash this row was hand-rolling.
+ */
+function CallHistoryRow({ call, onOpen }: { call: CallRecord; onOpen: () => void }) {
+  const rowRef = useRowKeyActivation(onOpen);
+  return (
+    <CanaryListItem ref={rowRef} onClick={onOpen} className="[&>*]:!py-3 [&>*]:!gap-2">
+      <div className="flex-1 min-w-0">
+        <span
+          className="block truncate font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px]"
+          style={{ color: colors.colorBlack1 }}
+        >
+          {call.startedAtLabel}
+        </span>
+        <span
+          className="block font-['Roboto',sans-serif] text-[13px] leading-[20px]"
+          style={{ color: colors.colorBlack3 }}
+        >
+          {call.durationLabel}
+        </span>
+      </div>
+      <Icon path={mdiChevronRight} size={0.8} color={colors.colorBlack1} />
+    </CanaryListItem>
+  );
+}
+
 export function CallHistoryTab({
   calls,
   onOpenCall,
@@ -471,30 +505,7 @@ export function CallHistoryTab({
       ) : (
         <RowList>
           {calls.map((call) => (
-            /* The one CLICKABLE row in these four tabs. `hoverColor` is left at
-               the base's default because that default IS colorBlack8 (#FAFAFA)
-               — the exact wash this row was hand-rolling. */
-            <CanaryListItem
-              key={call.id}
-              onClick={() => onOpenCall(call)}
-              className="[&>*]:!py-3 [&>*]:!gap-2"
-            >
-              <div className="flex-1 min-w-0">
-                <span
-                  className="block truncate font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px]"
-                  style={{ color: colors.colorBlack1 }}
-                >
-                  {call.startedAtLabel}
-                </span>
-                <span
-                  className="block font-['Roboto',sans-serif] text-[13px] leading-[20px]"
-                  style={{ color: colors.colorBlack3 }}
-                >
-                  {call.durationLabel}
-                </span>
-              </div>
-              <Icon path={mdiChevronRight} size={0.8} color={colors.colorBlack1} />
-            </CanaryListItem>
+            <CallHistoryRow key={call.id} call={call} onOpen={() => onOpenCall(call)} />
           ))}
         </RowList>
       )}

@@ -40,6 +40,7 @@ import { format } from 'date-fns';
 import { colors, CanaryListItem, CanaryTag, CanaryTooltip, TagSize, TagVariant, TooltipPosition } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiBedOutline, mdiRoomServiceOutline, mdiFlag } from '@mdi/js';
+import { useRowKeyActivation } from '@/lib/products/messaging/useRowKeyActivation';
 
 interface ThreadListItemProps {
   thread: Thread;
@@ -74,6 +75,7 @@ export function ThreadListItem({
 
   // Production parity: `unread_count > 0 || is_escalated`.
   const showDot = !!(thread.isUnread || thread.isEscalated);
+  const rowRef = useRowKeyActivation(onClick);
 
   return (
     /**
@@ -108,8 +110,17 @@ export function ThreadListItem({
      * frame draws but its horizontal is 16px, the base's gap is 16px where this
      * row wants 12px, and the base fades a SELECTED row to 90% opacity on hover,
      * which this row does not do.
+     *
+     * ⚠ AND IT NEEDS ITS KEYBOARD BACK. The base puts `role="button"` and
+     * `tabIndex={0}` on the `<li>` and the click handler on the inner div, with
+     * no key handler anywhere — so every row becomes a tab stop that announces
+     * itself as a button and then ignores Enter and Space. The hand-rolled row
+     * was a bare `<div onClick>`: not focusable, but at least it promised
+     * nothing. `useRowKeyActivation` keeps the base's focusability and makes the
+     * promise true. Delete it when the library handles its own keys.
      */
     <CanaryListItem
+      ref={rowRef}
       onClick={onClick}
       isSelected={isSelected}
       selectedBackgroundColor={colors.colorBlueDark5}

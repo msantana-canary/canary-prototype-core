@@ -21,11 +21,14 @@
  * on it. Soft selection is this branch's register everywhere (the thread list,
  * the control cards) and it is already on the design-system list.
  *
- * ⚠ TWO THINGS THE BASE COSTS THIS ROW, both logged. It renders
- * `<li role="button" tabIndex=0>` with the click handler on an inner div and no
- * key handler, so Enter/Space no longer pick a reservation the way they did on
- * the `<button>` this replaces; and there is no `aria-pressed`, so a screen
- * reader now hears the check glyph's absence rather than a pressed state.
+ * ⚠ TWO THINGS THE BASE COSTS THIS ROW. It renders `<li role="button"
+ * tabIndex=0>` with the click handler on an inner div and NO key handler, so
+ * Enter and Space would no longer pick a reservation the way they did on the
+ * `<button>` this replaces — `useRowKeyActivation` puts that back on the `<li>`
+ * the base forwards its ref to, and it should be deleted the day the library
+ * handles its own keys. The second cost stands: there is no `aria-pressed`, so
+ * a screen reader now hears the check glyph's absence rather than a pressed
+ * state. Both are logged as foundation asks.
  */
 
 'use client';
@@ -37,6 +40,7 @@ import { mdiBedOutline, mdiCalendarBlankOutline, mdiPhoneOutline, mdiPound } fro
 import { LifecycleTag, SelectedCheck } from './panel-ui';
 import { formatStayRangeCompact } from './panel-format';
 import { LinkedReservation } from '@/lib/products/messaging/types';
+import { useRowKeyActivation } from '@/lib/products/messaging/useRowKeyActivation';
 
 function Fact({ path, children }: { path: string; children: React.ReactNode }) {
   return (
@@ -62,8 +66,10 @@ export function ReservationResultRow({
   onSelect: () => void;
 }) {
   const { reservation, guest } = lr;
+  const rowRef = useRowKeyActivation(onSelect);
   return (
     <CanaryListItem
+      ref={rowRef}
       onClick={onSelect}
       isSelected={isSelected}
       selectedBackgroundColor={colors.colorBlueDark5}
