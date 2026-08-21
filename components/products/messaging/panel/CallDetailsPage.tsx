@@ -17,6 +17,18 @@
  * drawn at a pleasing position. The frame's knob sits at ~95% while its clock
  * reads 07:32 of 15:24 (~49%); that mismatch is a logged mock nit, and copying
  * it would teach the demo audience that the control lies.
+ *
+ * THE TRANSPORT IS FOUR `CanaryButton`s, even though none of them does
+ * anything: rewind/forward are ICON_SECONDARY at TINY (24px — an exact match
+ * for the ramp's bottom rung), play is ICON_PRIMARY re-sized to the frame's
+ * 30px/rounded-6, and the speed toggle is TEXT stripped to an inline label.
+ * They gain the hover and press states the four hand-rolled buttons never had,
+ * which is the point — a dead control that still ANSWERS the pointer is what
+ * makes a prototype read as real.
+ *
+ * The scrubber beside them — track, fill, knob — stays hand-rolled and that is
+ * legitimate: the library ships no slider, and `CanaryProgressBar` has no knob
+ * and no scrub semantics to borrow.
  */
 
 'use client';
@@ -108,19 +120,48 @@ export function CallDetailsPage({
             className="flex items-center gap-3 rounded-[8px]"
             style={{ backgroundColor: colors.colorBlueDark5, padding: '10px 14px' }}
           >
-            <button aria-label="Back 15 seconds" className="shrink-0 flex items-center justify-center" style={{ width: 24, height: 24 }}>
-              <Icon path={mdiRewind15} size={0.86} color={colors.colorBlueDark1} />
-            </button>
-            <button
-              aria-label="Play recording"
-              className="shrink-0 flex items-center justify-center rounded-[6px]"
-              style={{ width: 30, height: 30, backgroundColor: colors.colorBlueDark1 }}
-            >
-              <Icon path={mdiPlay} size={0.8} color={colors.colorWhite} />
-            </button>
-            <button aria-label="Forward 15 seconds" className="shrink-0 flex items-center justify-center" style={{ width: 24, height: 24 }}>
-              <Icon path={mdiFastForward15} size={0.86} color={colors.colorBlueDark1} />
-            </button>
+            <CanaryButton
+              type={ButtonType.ICON_SECONDARY}
+              size={ButtonSize.TINY}
+              className="icon-btn-neutral"
+              icon={
+                <Icon
+                  path={mdiRewind15}
+                  size={0.86}
+                  color={colors.colorBlueDark1}
+                  title="Back 15 seconds"
+                  id="call-playback-rewind"
+                />
+              }
+            />
+            <CanaryButton
+              type={ButtonType.ICON_PRIMARY}
+              size={ButtonSize.COMPACT}
+              className="icon-btn-30 icon-btn-r6"
+              icon={
+                <Icon
+                  path={mdiPlay}
+                  size={0.8}
+                  color={colors.colorWhite}
+                  title="Play recording"
+                  id="call-playback-play"
+                />
+              }
+            />
+            <CanaryButton
+              type={ButtonType.ICON_SECONDARY}
+              size={ButtonSize.TINY}
+              className="icon-btn-neutral"
+              icon={
+                <Icon
+                  path={mdiFastForward15}
+                  size={0.86}
+                  color={colors.colorBlueDark1}
+                  title="Forward 15 seconds"
+                  id="call-playback-forward"
+                />
+              }
+            />
 
             <span
               className="shrink-0 font-['Roboto',sans-serif] text-[13px] leading-[20px] tabular-nums"
@@ -174,13 +215,18 @@ export function CallDetailsPage({
             >
               {call.durationClock}
             </span>
-            <button
-              aria-label="Playback speed"
-              className="shrink-0 font-['Roboto',sans-serif] font-medium text-[13px] leading-[20px]"
-              style={{ color: colors.colorBlueDark1 }}
+            {/* `.text-btn-inline` takes the button chrome off a TEXT button —
+                height, padding, hover wash — so "1×" reads as the inline
+                affordance the frame draws. The blue is the library's own:
+                ButtonColor.NORMAL resolves the content colour to
+                colorBlueDark1, which is exactly this value. */}
+            <CanaryButton
+              type={ButtonType.TEXT}
+              size={ButtonSize.TINY}
+              className="text-btn-inline !text-[13px] !leading-[20px] !font-medium"
             >
               1×
-            </button>
+            </CanaryButton>
           </div>
         </div>
 

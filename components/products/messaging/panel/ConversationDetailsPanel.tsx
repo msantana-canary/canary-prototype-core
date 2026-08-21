@@ -151,6 +151,27 @@ function DrillCard({
  * (`PILL_OVERHANG`), which only closes on a 28px box. The 2px it gives back is
  * what lets the band's top padding and the pill's lower clearance both land on
  * the frame's numbers instead of trading 2px against each other.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ⚠ STRUCTURAL EXCEPTION — no base expresses a NEUTRAL-outline pill
+ * ═══════════════════════════════════════════════════════════════════════════
+ * The two candidates are `CanaryChip` and `CanaryButton`, and both are
+ * colour-locked in the one place that matters.
+ *
+ * `CanaryChip`'s SELECTABLE register hardwires BLUE — `colorBlueDark1` border
+ * and label, `rgba(40,88,196,.08)` on hover, `.16` on press — as INLINE,
+ * state-driven styles it rewrites on every pointer event. A gray-bordered pill
+ * with a black label would mean `!important`-overriding every one of those
+ * states, which is not layering an override on a component, it is fighting the
+ * component's whole state model. `CanaryButton` OUTLINED derives its border
+ * from `ButtonColor`, and that enum offers blue, red, green, yellow and white
+ * — there is no neutral `colorBlack6` — while TEXT has no border at all.
+ *
+ * So this stays hand-rolled, and the ask is logged with the rest of the
+ * pill/chip family (the Sources chip, the Scheduled pill): a NEUTRAL OUTLINE
+ * register — or, better, `customColor` on `CanaryChip` for parity with
+ * `CanaryTag.customColor`, which already has it. The 28px height and the
+ * straddling placement are this panel's own geometry either way.
  */
 const PILL_H = 28;
 

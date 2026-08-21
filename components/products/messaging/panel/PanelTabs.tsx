@@ -18,7 +18,17 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { CanaryTabs, colors, TabSize, TabType, TagColor } from '@canary-ui/components';
+import {
+  ButtonSize,
+  ButtonType,
+  CanaryButton,
+  CanaryListItem,
+  CanaryTabs,
+  colors,
+  TabSize,
+  TabType,
+  TagColor,
+} from '@canary-ui/components';
 import Icon from '@mdi/react';
 import {
   mdiBedOutline,
@@ -30,13 +40,13 @@ import {
 } from '@mdi/js';
 import {
   EmptyState,
+  glyphTitleId,
   IconAction,
   Kebab,
   KebabItem,
   LifecycleTag,
   PanelTag,
   PANEL_PAD,
-  RowDivider,
   RowList,
   SectionHeading,
 } from './panel-ui';
@@ -128,6 +138,34 @@ export function PanelTabBar({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   THE ROW REGISTER — CanaryListItem, four times
+
+   Every row in these four tabs is a `CanaryListItem` inside the shared
+   `<RowList>` (`CanaryList hasOuterBorder`). The list draws its own hairline
+   between children, so there is no divider component any more; rows map
+   straight in, keyed.
+
+   The rows keep their exact drawn anatomy through the `children` escape hatch
+   — `title`/`subtitle`/`rightContent` are ignored when `children` is passed —
+   and the base supplies the chrome: `hoverColor` (its default IS colorBlack8 /
+   #FAFAFA, exactly the wash the clickable rows were hand-rolling), the
+   selected fill, and `isClickable={false}` for the rows that are just records.
+
+   ⚠ PADDING OVERRIDES HAVE TO REACH THE INNER DIV. `CanaryListItem` renders
+   `<li class={className}>` around a `<div class="… gap-4 px-4 py-4">`, so the
+   panel's 12px vertical rhythm and 8px gap arrive as `[&>*]:!py-3
+   [&>*]:!gap-2`, and the rows whose kebab hugs the right edge trim that side
+   with `[&>*]:!pr-3`. "12px list-row padding" is logged as the design-system
+   ask — the base ramp offers only compact 8px and normal 16px.
+
+   ⚠ AND IT COSTS THE ROWS THEIR BUTTON. A clickable `CanaryListItem` is a
+   `<li role="button" tabIndex=0>` with the click handler on an inner div and NO
+   key handler, so Enter and Space no longer activate a row that used to be a
+   real `<button>`. Logged as the sharpest ask this batch produced: keyboard
+   activation on `CanaryListItem`.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────────────────
    Linked Reservations — COMPANIONS ONLY
    ───────────────────────────────────────────────────────────────────────── */
 
@@ -164,11 +202,13 @@ export function LinkedReservationsTab({
         <EmptyState label="No linked reservations" />
       ) : (
         <RowList>
-          {companions.map((lr, i) => (
-            <React.Fragment key={lr.reservation.id}>
-              <RowDivider isFirst={i === 0} />
-              <CompanionRow lr={lr} contactNumber={contactNumber} onUnlink={() => onUnlink(lr)} />
-            </React.Fragment>
+          {companions.map((lr) => (
+            <CompanionRow
+              key={lr.reservation.id}
+              lr={lr}
+              contactNumber={contactNumber}
+              onUnlink={() => onUnlink(lr)}
+            />
           ))}
         </RowList>
       )}
@@ -202,7 +242,7 @@ function CompanionRow({
     : [{ label: 'Unlink reservation', onClick: onUnlink, danger: true }];
 
   return (
-    <div className="flex items-center gap-2" style={{ padding: '12px 12px 12px 16px' }}>
+    <CanaryListItem isClickable={false} className="[&>*]:!py-3 [&>*]:!pr-3 [&>*]:!gap-2">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span
@@ -239,7 +279,7 @@ function CompanionRow({
         </div>
       </div>
       <Kebab items={items} label={`Actions for ${lr.guest.name}`} width={272} />
-    </div>
+    </CanaryListItem>
   );
 }
 
@@ -264,10 +304,14 @@ export function UpsellsTab({ upsells }: { upsells: Upsell[] }) {
         <EmptyState label="No upsells" />
       ) : (
         <RowList>
-          {upsells.map((upsell, i) => (
-            <React.Fragment key={upsell.id}>
-              <RowDivider isFirst={i === 0} />
-              <div className="flex items-center gap-2" style={{ padding: '12px 16px' }}>
+          {upsells.map((upsell) => {
+            const openLabel = `Open ${upsell.name} in Upsells`;
+            return (
+              <CanaryListItem
+                key={upsell.id}
+                isClickable={false}
+                className="[&>*]:!py-3 [&>*]:!gap-2"
+              >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span
@@ -287,16 +331,27 @@ export function UpsellsTab({ upsells }: { upsells: Upsell[] }) {
                     {upsell.category}
                   </span>
                 </div>
-                {/* Opening the upsell is the Upsells product's job — a stub here. */}
-                <button
-                  aria-label={`Open ${upsell.name} in Upsells`}
-                  className="shrink-0 w-[30px] h-[30px] flex items-center justify-center rounded-full transition-colors hover:bg-[#f0f0f0]"
-                >
-                  <Icon path={mdiOpenInNew} size={0.72} color={colors.colorBlack1} />
-                </button>
-              </div>
-            </React.Fragment>
-          ))}
+                {/* Opening the upsell is the Upsells product's job — a stub
+                    here, on the same icon-button register as the rest of the
+                    panel so a stub can't drift from a live control. */}
+                <CanaryButton
+                  type={ButtonType.ICON_SECONDARY}
+                  size={ButtonSize.COMPACT}
+                  isRounded
+                  className="icon-btn-neutral icon-btn-30"
+                  icon={
+                    <Icon
+                      path={mdiOpenInNew}
+                      size={0.72}
+                      color={colors.colorBlack1}
+                      title={openLabel}
+                      id={glyphTitleId(`upsell-open-${upsell.id}`)}
+                    />
+                  }
+                />
+              </CanaryListItem>
+            );
+          })}
         </RowList>
       )}
     </>
@@ -341,53 +396,54 @@ export function ServiceTasksTab({
         <EmptyState label="No service tickets" />
       ) : (
         <RowList>
-          {tasks.map((task, i) => {
+          {tasks.map((task) => {
             const tag = serviceTaskTag(task);
             return (
-              <React.Fragment key={task.id}>
-                <RowDivider isFirst={i === 0} />
-                <div className="flex items-center gap-2" style={{ padding: '12px 12px 12px 16px' }}>
-                  <div className="flex-1 min-w-0">
-                    <span
-                      className="block truncate font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px]"
-                      style={{ color: colors.colorBlack1 }}
-                    >
-                      {task.title}
-                    </span>
-                    <div className="flex items-center gap-3" style={{ marginTop: 4 }}>
-                      <PanelTag label={tag.label} color={tag.color} />
-                      {task.room && (
-                        <span className="flex items-center gap-1.5">
-                          <Icon path={mdiBedOutline} size={0.6} color={colors.colorBlack3} />
-                          <span
-                            className="font-['Roboto',sans-serif] text-[13px] leading-[20px]"
-                            style={{ color: colors.colorBlack3 }}
-                          >
-                            {task.room}
-                          </span>
+              <CanaryListItem
+                key={task.id}
+                isClickable={false}
+                className="[&>*]:!py-3 [&>*]:!pr-3 [&>*]:!gap-2"
+              >
+                <div className="flex-1 min-w-0">
+                  <span
+                    className="block truncate font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px]"
+                    style={{ color: colors.colorBlack1 }}
+                  >
+                    {task.title}
+                  </span>
+                  <div className="flex items-center gap-3" style={{ marginTop: 4 }}>
+                    <PanelTag label={tag.label} color={tag.color} />
+                    {task.room && (
+                      <span className="flex items-center gap-1.5">
+                        <Icon path={mdiBedOutline} size={0.6} color={colors.colorBlack3} />
+                        <span
+                          className="font-['Roboto',sans-serif] text-[13px] leading-[20px]"
+                          style={{ color: colors.colorBlack3 }}
+                        >
+                          {task.room}
                         </span>
-                      )}
-                    </div>
+                      </span>
+                    )}
                   </div>
-                  {/**
-                   * ONE item, and it is production's. The earlier menu offered
-                   * "Mark as complete" / "Reassign" / "Open in Service Tickets"
-                   * — three invented stubs. Production's row menu carries
-                   * "Unlink" alone, in the danger register, because the task's
-                   * LIFECYCLE belongs to the Service Tickets product; the only
-                   * thing this panel owns is the task's ASSOCIATION with this
-                   * conversation. No confirm dialog: production unlinks the
-                   * association without one, and unlike a guest unlink this
-                   * destroys nothing — the ticket still exists in its own
-                   * product.
-                   */}
-                  <Kebab
-                    items={[{ label: 'Unlink', danger: true, onClick: () => onUnlink(task) }]}
-                    label={`Actions for ${task.title}`}
-                    width={160}
-                  />
                 </div>
-              </React.Fragment>
+                {/**
+                 * ONE item, and it is production's. The earlier menu offered
+                 * "Mark as complete" / "Reassign" / "Open in Service Tickets"
+                 * — three invented stubs. Production's row menu carries
+                 * "Unlink" alone, in the danger register, because the task's
+                 * LIFECYCLE belongs to the Service Tickets product; the only
+                 * thing this panel owns is the task's ASSOCIATION with this
+                 * conversation. No confirm dialog: production unlinks the
+                 * association without one, and unlike a guest unlink this
+                 * destroys nothing — the ticket still exists in its own
+                 * product.
+                 */}
+                <Kebab
+                  items={[{ label: 'Unlink', danger: true, onClick: () => onUnlink(task) }]}
+                  label={`Actions for ${task.title}`}
+                  width={160}
+                />
+              </CanaryListItem>
             );
           })}
         </RowList>
@@ -414,31 +470,31 @@ export function CallHistoryTab({
         <EmptyState label="No call history" />
       ) : (
         <RowList>
-          {calls.map((call, i) => (
-            <React.Fragment key={call.id}>
-              <RowDivider isFirst={i === 0} />
-              <button
-                onClick={() => onOpenCall(call)}
-                className="w-full flex items-center gap-2 text-left transition-colors hover:bg-[#fafafa]"
-                style={{ padding: '12px 16px' }}
-              >
-                <div className="flex-1 min-w-0">
-                  <span
-                    className="block truncate font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px]"
-                    style={{ color: colors.colorBlack1 }}
-                  >
-                    {call.startedAtLabel}
-                  </span>
-                  <span
-                    className="block font-['Roboto',sans-serif] text-[13px] leading-[20px]"
-                    style={{ color: colors.colorBlack3 }}
-                  >
-                    {call.durationLabel}
-                  </span>
-                </div>
-                <Icon path={mdiChevronRight} size={0.8} color={colors.colorBlack1} />
-              </button>
-            </React.Fragment>
+          {calls.map((call) => (
+            /* The one CLICKABLE row in these four tabs. `hoverColor` is left at
+               the base's default because that default IS colorBlack8 (#FAFAFA)
+               — the exact wash this row was hand-rolling. */
+            <CanaryListItem
+              key={call.id}
+              onClick={() => onOpenCall(call)}
+              className="[&>*]:!py-3 [&>*]:!gap-2"
+            >
+              <div className="flex-1 min-w-0">
+                <span
+                  className="block truncate font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px]"
+                  style={{ color: colors.colorBlack1 }}
+                >
+                  {call.startedAtLabel}
+                </span>
+                <span
+                  className="block font-['Roboto',sans-serif] text-[13px] leading-[20px]"
+                  style={{ color: colors.colorBlack3 }}
+                >
+                  {call.durationLabel}
+                </span>
+              </div>
+              <Icon path={mdiChevronRight} size={0.8} color={colors.colorBlack1} />
+            </CanaryListItem>
           ))}
         </RowList>
       )}

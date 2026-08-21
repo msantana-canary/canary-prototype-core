@@ -15,6 +15,23 @@
  * calendar field; wiring a real date filter to a mock of ~120 reservations would
  * mostly demonstrate empty results. Logged as a stub, not forgotten.
  *
+ * It is a REAL `CanaryInput` now, held inert with `isReadonly`, rather than a
+ * div that copied an input's geometry by hand. A stub is still a control, and a
+ * hand-drawn one is a control that can silently stop matching the real field
+ * beside it — which is exactly what had happened: this div drew a `colorBlack5`
+ * border where the Guest Name input beside it draws the library's `colorBlack3`.
+ * Both fields now come from the same component and cannot disagree again.
+ *
+ * TWO OVERRIDES, and the second is a library BUG rather than a Figma delta.
+ * `!bg-white` is the delta: `isReadonly` paints the field `colorBlack8`
+ * (#FAFAFA) where the frame draws it white. `!pl-10` is the bug — `CanaryInput`
+ * insets its text for a `leftAddon` by putting a `pl-10` class on the input,
+ * but `pl-10` is not in the library's compiled `dist/styles.css` and nothing in
+ * our source emits it, so the rule simply does not exist and the size ramp's
+ * own `px-2` (8px) stands: the addon glyph lands ON TOP of the placeholder.
+ * Writing `!pl-10` here makes our own Tailwind build emit the utility. Logged
+ * as a library ask — ship `pl-10` / `pr-10` with the component that needs them.
+ *
  * COMPANIONS, NOT SELF. A committed link becomes a companion row in Linked
  * Reservations, which is where the flow returns you.
  */
@@ -25,7 +42,7 @@ import React, { useMemo, useState } from 'react';
 import { colors, CanaryInput, InputSize, InputType } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiCalendarBlankOutline } from '@mdi/js';
-import { EmptyState, PanelFooterAction, PanelHeader, RowDivider, RowList, PANEL_PAD } from './panel-ui';
+import { EmptyState, PanelFooterAction, PanelHeader, RowList, PANEL_PAD } from './panel-ui';
 import { ReservationResultRow } from './ReservationResultRow';
 import { reservationList } from '@/lib/core/data/reservations';
 import { guests } from '@/lib/core/data/guests';
@@ -98,31 +115,22 @@ export function LinkReservationPage({
               />
             </div>
             <div className="flex-1 min-w-0">
-              <p
-                className="font-['Roboto',sans-serif] text-[12px] leading-[18px]"
-                style={{ color: colors.colorBlack1, marginBottom: 4 }}
-              >
-                Arrival Date
-              </p>
-              {/* Drawn, inert — see the header note. */}
-              <div
-                className="flex items-center gap-2 rounded-[4px] cursor-default"
-                style={{
-                  height: 40,
-                  paddingLeft: 10,
-                  paddingRight: 10,
-                  border: `1px solid ${colors.colorBlack5}`,
-                  backgroundColor: colors.colorWhite,
-                }}
-              >
-                <Icon path={mdiCalendarBlankOutline} size={0.75} color={colors.colorBlack3} />
-                <span
-                  className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
-                  style={{ color: colors.colorBlack4 }}
-                >
-                  MM/DD/YYYY
-                </span>
-              </div>
+              {/* Drawn, inert — see the header note. `isReadonly` is what keeps
+                  it inert while leaving it looking like the live field beside
+                  it; `aria-label` rides the rest-prop spread onto the input,
+                  since the library's `label` element carries no `htmlFor`. */}
+              <CanaryInput
+                label="Arrival Date"
+                type={InputType.TEXT}
+                size={InputSize.NORMAL}
+                isReadonly
+                placeholder="MM/DD/YYYY"
+                aria-label="Arrival Date"
+                className="!bg-white !pl-10"
+                leftAddon={
+                  <Icon path={mdiCalendarBlankOutline} size={0.75} color={colors.colorBlack3} />
+                }
+              />
             </div>
           </div>
         </div>
@@ -133,15 +141,13 @@ export function LinkReservationPage({
               <EmptyState label="No reservations found" />
             ) : (
               <RowList>
-                {results.map((lr, i) => (
-                  <React.Fragment key={lr.reservation.id}>
-                    <RowDivider isFirst={i === 0} />
-                    <ReservationResultRow
-                      lr={lr}
-                      isSelected={selectedId === lr.reservation.id}
-                      onSelect={() => setSelectedId(lr.reservation.id)}
-                    />
-                  </React.Fragment>
+                {results.map((lr) => (
+                  <ReservationResultRow
+                    key={lr.reservation.id}
+                    lr={lr}
+                    isSelected={selectedId === lr.reservation.id}
+                    onSelect={() => setSelectedId(lr.reservation.id)}
+                  />
                 ))}
               </RowList>
             )}

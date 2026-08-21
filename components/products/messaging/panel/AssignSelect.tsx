@@ -18,6 +18,23 @@
  * popover borrows the branch's menu register: white rounded-8, 1px colorBlack6,
  * NO shadow, uppercase gray section overlines, right-aligned check on the
  * active row.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ⚠ STRUCTURAL EXCEPTION — the SAME `CanarySelect` contract gap as ScopeSelect
+ * ═══════════════════════════════════════════════════════════════════════════
+ * The nearest base is `CanarySelect`, and it cannot express this control for
+ * the reasons already written out at length in `ThreadScopeMenu.tsx` (see its
+ * header): `CanarySelect` wraps a NATIVE `<select>` — its `onChange` is a
+ * `ChangeEvent<HTMLSelectElement>` — so it cannot take a card as its trigger,
+ * cannot draw an uppercase section overline or a right-aligned check row, and
+ * its flat `CanarySelectOption` model has no notion of sections at all.
+ * `CanaryAutocomplete` is input-triggered over the same flat `{value, label}`
+ * options, so it is no closer.
+ *
+ * This file is the SECOND consumer of that one gap, not a second gap. The two
+ * library asks — option SECTIONS and a stylable CHECK ROW — are already logged
+ * in REDESIGN_NOTES.md against ScopeSelect; the exception is noted here so it
+ * is traceable from this side too, and so nobody re-litigates it per file.
  */
 
 'use client';

@@ -25,6 +25,23 @@
  * The MECHANIC below — two-phase mount, reduced-motion downgrade, scrim — is
  * the same idea, kept in step deliberately.
  *
+ * ⚠ AND IT IS NOT `<CanarySideSheet>` EITHER — a STRUCTURAL EXCEPTION, not a
+ * preference. The library's side sheet is EDGE-HINGED (`right-0 top-0
+ * bottom-0`, no viewport inset, no corner radius), which is the one thing the
+ * standard above rules out. It renders and unmounts with NO animation at all —
+ * no slide, no two-phase mount, no reduced-motion path. It hardwires its own
+ * header row, its own close button and `shadows.xl`, where this branch draws no
+ * shadows anywhere and owns its header. And it mounts at `zIndex.modal + 1`,
+ * with no prop to change it, which would stack the panel ABOVE the unlink
+ * confirm `CanaryModal` (50) and invert the exact z-order the Z-ORDER note
+ * below exists to guarantee.
+ *
+ * Every one of those is load-bearing here, so the panel standard cannot be
+ * expressed on the base. It is already seeded on the promotion list as the
+ * "side-panel standard" — the ask being an inset/floating variant of
+ * `CanarySideSheet` with a mount transition, an optional header, and a
+ * settable z-index.
+ *
  * Z-ORDER: panel 45 / scrim 44. Both above the V2 top bar (which takes no
  * z-index of its own) and both BELOW `zIndex.modal` (50), so a CanaryModal
  * opened from inside the panel — the unlink confirm — stacks above it.

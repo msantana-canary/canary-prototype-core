@@ -17,8 +17,12 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  colors,
+  ButtonSize,
+  ButtonType,
+  CanaryButton,
+  CanaryList,
   CanaryTag,
+  colors,
   TagColor,
   TagSize,
   TagVariant,
@@ -35,6 +39,22 @@ import { Reservation } from '@/lib/core/types/reservation';
 
 export const PANEL_PAD = 24;
 
+/**
+ * A STABLE dom id for an icon button's accessible name.
+ *
+ * `CanaryButton` carries no `aria-label` and spreads no rest props, so every
+ * icon button on this surface takes its name from the mdi `Icon`'s `title`,
+ * which the library renders as an `<svg><title>` the button's name computation
+ * picks up. `@mdi/react` derives that title element's id from a MODULE-LEVEL
+ * COUNTER whenever no `id` is passed, and the counter advances at different
+ * points on the server and on the client — the hydration mismatch documented in
+ * `ThreadListItem`. Deriving the id from the label never touches the counter,
+ * and a label is already unique per control on screen.
+ */
+export function glyphTitleId(label: string) {
+  return `glyph-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    Header
    ───────────────────────────────────────────────────────────────────────── */
@@ -43,6 +63,13 @@ export const PANEL_PAD = 24;
  * The panel's one header row. The ROOT reads "Conversation Details"; a drill-in
  * REPLACES the whole profile/tab chrome behind "← {Page title}". The X never
  * moves — wherever you are inside the panel, the same corner closes it.
+ *
+ * Both corner controls are `CanaryButton` ICON_SECONDARY + `isRounded` — the
+ * base already draws a transparent, zero-padding round icon button whose
+ * `.button-bg` layer washes on hover and press. `.icon-btn-neutral` repaints
+ * that layer black (the library's wash is 8% of a ButtonColor, and every
+ * non-status colour resolves to blue) and `.icon-btn-30` restores the panel's
+ * 30px, two below the ramp's COMPACT 32. See the block in globals.css.
  */
 export function PanelHeader({
   title,
@@ -65,13 +92,22 @@ export function PanelHeader({
       }}
     >
       {onBack && (
-        <button
+        <CanaryButton
+          type={ButtonType.ICON_SECONDARY}
+          size={ButtonSize.COMPACT}
+          isRounded
           onClick={onBack}
-          aria-label="Back"
-          className="w-[30px] h-[30px] shrink-0 flex items-center justify-center rounded-full transition-colors hover:bg-[#f0f0f0]"
-        >
-          <Icon path={mdiArrowLeft} size={0.8} color={colors.colorBlack1} />
-        </button>
+          className="icon-btn-neutral icon-btn-30"
+          icon={
+            <Icon
+              path={mdiArrowLeft}
+              size={0.8}
+              color={colors.colorBlack1}
+              title="Back"
+              id="panel-header-back"
+            />
+          }
+        />
       )}
       <h2
         className="flex-1 min-w-0 truncate font-['Roboto',sans-serif] font-medium text-[18px] leading-[27px]"
@@ -79,13 +115,22 @@ export function PanelHeader({
       >
         {title}
       </h2>
-      <button
+      <CanaryButton
+        type={ButtonType.ICON_SECONDARY}
+        size={ButtonSize.COMPACT}
+        isRounded
         onClick={onClose}
-        aria-label="Close conversation details"
-        className="w-[30px] h-[30px] shrink-0 flex items-center justify-center rounded-full transition-colors hover:bg-[#f0f0f0]"
-      >
-        <Icon path={mdiClose} size={0.72} color={colors.colorBlack1} />
-      </button>
+        className="icon-btn-neutral icon-btn-30"
+        icon={
+          <Icon
+            path={mdiClose}
+            size={0.72}
+            color={colors.colorBlack1}
+            title="Close conversation details"
+            id="panel-header-close"
+          />
+        }
+      />
     </div>
   );
 }
@@ -209,20 +254,43 @@ export function DetailRows({ rows }: { rows: DetailRow[] }) {
   );
 }
 
-/** Copy affordance — blue, bare, and a no-op stub beyond the clipboard write. */
+/**
+ * Copy affordance — blue, bare, and a no-op stub beyond the clipboard write.
+ *
+ * The SMALLEST icon button on the surface, and the one the base contributes
+ * least to: `ButtonSize.TINY` is 24px, the bottom of the library's ramp, while
+ * a DetailRow's 20px line-height budget has room for exactly 20. It still rides
+ * `CanaryButton` — the register (transparent at rest, a wash on hover, a 4px
+ * radius, a ReactNode glyph whose colour stays ours) is the same one every
+ * other icon button here uses, and one register implemented twice is how two
+ * icon buttons end up disagreeing about their hover. `.icon-btn-20` supplies
+ * the size and releases the library's 20px glyph box so an 18px glyph hugs.
+ * "Sub-24px icon button" is logged as the design-system ask.
+ *
+ * `stopPropagation` stays: the copy icon sits INSIDE clickable rows, and
+ * copying a confirmation number must not also open the row behind it.
+ */
 export function CopyIcon({ value, label }: { value: string; label?: string }) {
+  const name = label ?? 'Copy';
   return (
-    <button
-      aria-label={label ?? 'Copy'}
+    <CanaryButton
+      type={ButtonType.ICON_SECONDARY}
+      size={ButtonSize.TINY}
       onClick={(e) => {
         e.stopPropagation();
         void navigator.clipboard?.writeText(value).catch(() => {});
       }}
-      className="shrink-0 flex items-center justify-center rounded-[4px] transition-colors hover:bg-[rgba(0,0,0,0.06)]"
-      style={{ width: 20, height: 20 }}
-    >
-      <Icon path={mdiContentCopy} size={0.62} color={colors.colorBlueDark1} />
-    </button>
+      className="icon-btn-neutral icon-btn-20"
+      icon={
+        <Icon
+          path={mdiContentCopy}
+          size={0.62}
+          color={colors.colorBlueDark1}
+          title={name}
+          id={glyphTitleId(name)}
+        />
+      }
+    />
   );
 }
 
@@ -407,7 +475,19 @@ export function SectionHeading({
   );
 }
 
-/** A bare round icon action — the panel's one icon-button register. */
+/**
+ * A bare round icon action — the panel's one icon-button register, and the
+ * component every section heading's refresh / "+" goes through.
+ *
+ * `CanaryButton` ICON_SECONDARY + `isRounded` IS this register: transparent at
+ * rest, `p-0`, round, with an 8% / 16% wash layer for hover and press that the
+ * hand-rolled button never had at all. Two overrides, both shared and both
+ * explained in globals.css: `.icon-btn-neutral` repaints the wash black (the
+ * library keys it to a ButtonColor, and every non-status colour resolves to
+ * blue) and also carries the panel's 40% disabled fade over the library's 50%;
+ * `.icon-btn-30` restores the 30px the frames draw, since the ramp stops at
+ * COMPACT's 32.
+ */
 export function IconAction({
   path,
   label,
@@ -420,14 +500,23 @@ export function IconAction({
   disabled?: boolean;
 }) {
   return (
-    <button
+    <CanaryButton
+      type={ButtonType.ICON_SECONDARY}
+      size={ButtonSize.COMPACT}
+      isRounded
+      isDisabled={disabled}
       onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      className="w-[30px] h-[30px] flex items-center justify-center rounded-full transition-colors enabled:hover:bg-[#f0f0f0] disabled:opacity-40"
-    >
-      <Icon path={path} size={0.72} color={colors.colorBlack1} />
-    </button>
+      className="icon-btn-neutral icon-btn-30"
+      icon={
+        <Icon
+          path={path}
+          size={0.72}
+          color={colors.colorBlack1}
+          title={label}
+          id={glyphTitleId(label)}
+        />
+      }
+    />
   );
 }
 
@@ -448,18 +537,29 @@ export function EmptyState({ label }: { label: string }) {
   );
 }
 
-/** A bordered container of hairline-divided rows — the panel's list idiom. */
+/**
+ * A bordered container of hairline-divided rows — the panel's list idiom.
+ *
+ * `CanaryList hasOuterBorder` is pixel-identical to what this was hand-rolling:
+ * a `<ul>` with a 1px `colorBlack6` border, `rounded-lg` (8px), a white ground
+ * and `overflow-hidden`.
+ *
+ * ⚠ IT ALSO DRAWS THE HAIRLINES. Every child is wrapped in a motion div that
+ * carries `borderBottom: 1px solid colorBlack6` unless it is the last one, so
+ * the `<RowDivider>` this file used to export is GONE rather than swapped for
+ * `CanaryDivider` — keeping either would have put a 2px rule between rows.
+ * Consumers map their rows STRAIGHT into this component, keyed: the library
+ * reads `children` as `Array.isArray(children) ? children : [children]`, so a
+ * fragment wrapping the map would count as one child and every divider would
+ * disappear with it.
+ *
+ * ⚠ AND IT ANIMATES. Each wrapper mounts with `opacity 0→1, y −8→0` over 350ms
+ * and there is no prop to turn it off — rows fade and slide into place, which
+ * the hand-rolled list did not do. Logged as the ask ("an opt-out for
+ * CanaryList's per-child mount animation").
+ */
 export function RowList({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="rounded-[8px] overflow-hidden" style={{ border: `1px solid ${colors.colorBlack6}` }}>
-      {children}
-    </div>
-  );
-}
-
-export function RowDivider({ isFirst }: { isFirst: boolean }) {
-  if (isFirst) return null;
-  return <div style={{ height: 1, backgroundColor: colors.colorBlack6 }} />;
+  return <CanaryList hasOuterBorder>{children}</CanaryList>;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -479,20 +579,51 @@ export interface KebabItem {
 /**
  * The ⋯ menu. A disabled item is rendered, not hidden: "you can't unlink this"
  * plus the reason is information; a missing menu item is a mystery.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ⚠ STRUCTURAL EXCEPTION — the POPOVER is hand-rolled; the TRIGGER is not
+ * ═══════════════════════════════════════════════════════════════════════════
+ * The nearest base is `CanaryOverflowMenu`, and to be clear about the record:
+ * v0.6.0 DOES export it — with a custom trigger slot, `placement`, `isDanger`
+ * and `isDivider`. Any claim on this branch that the library "exports no
+ * equivalent" (REDESIGN_NOTES 7d) is STALE and should be read as describing an
+ * older version. The exception below is about the item CONTRACT, not about
+ * whether the component exists.
+ *
+ * What the contract cannot express is the one thing this menu is for. In
+ * `CanaryOverflowMenu`, `item.label` is typed `string`; every non-divider item
+ * is unconditionally clickable — `cursor-pointer`, a hover wash, and a click
+ * handler that closes the menu regardless of what the item does; and there is
+ * no per-item `disabled` flag, no hint slot, and no class hook to kill pointer
+ * events on one row. The disabled-item-plus-reason row — the phone-matched
+ * auto-link in `CompanionRow`, and the profile kebab — needs all four: a
+ * two-line ReactNode label, an item that does not respond to the pointer, and
+ * a click on it that leaves the menu OPEN so the reason stays on screen.
+ *
+ * ServiceTasksTab's enabled-only "Unlink" menu could ride the base today, but
+ * splitting one register across two implementations recreates exactly the
+ * drift this component exists to prevent. So: one hand-rolled popover, and the
+ * library ask logged as item-level `disabled` + `hint` + ReactNode `label` +
+ * stay-open-on-disabled-click.
+ *
+ * The TRIGGER is not part of the exception — it is the panel's ordinary 30px
+ * round icon button and it rides `CanaryButton` like every other one.
+ *
+ * ⚠ ONE ARIA LOSS, unavoidable: the hand-rolled trigger carried
+ * `aria-expanded={isOpen}`. `CanaryButton` renders a bare `<button>`, spreads
+ * no rest props and forwards no ref, so nothing outside can attach it. Logged
+ * with the `aria-label` passthrough ask.
  */
 export function Kebab({ items, label = 'More actions', width = 248 }: { items: KebabItem[]; label?: string; width?: number }) {
   const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
+  // One ref on the ROOT rather than one each on the trigger and the menu:
+  // `CanaryButton` forwards no ref, and "inside the root" is the same test —
+  // both the trigger and the popover are its descendants.
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onDocMouseDown = (event: MouseEvent) => {
-      if (
-        menuRef.current &&
-        btnRef.current &&
-        !menuRef.current.contains(event.target as Node) &&
-        !btnRef.current.contains(event.target as Node)
-      ) {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -501,23 +632,29 @@ export function Kebab({ items, label = 'More actions', width = 248 }: { items: K
   }, [isOpen]);
 
   return (
-    <div className="relative shrink-0">
-      <button
-        ref={btnRef}
-        aria-label={label}
-        aria-expanded={isOpen}
-        className="w-[30px] h-[30px] flex items-center justify-center rounded-full transition-colors hover:bg-[#f0f0f0]"
+    <div className="relative shrink-0" ref={rootRef}>
+      <CanaryButton
+        type={ButtonType.ICON_SECONDARY}
+        size={ButtonSize.COMPACT}
+        isRounded
+        className="icon-btn-neutral icon-btn-30"
         onClick={(e) => {
           e.stopPropagation();
           setIsOpen((v) => !v);
         }}
-      >
-        <Icon path={mdiDotsHorizontal} size={0.8} color={colors.colorBlack1} />
-      </button>
+        icon={
+          <Icon
+            path={mdiDotsHorizontal}
+            size={0.8}
+            color={colors.colorBlack1}
+            title={label}
+            id={glyphTitleId(label)}
+          />
+        }
+      />
 
       {isOpen && (
         <div
-          ref={menuRef}
           className="absolute right-0 bg-white rounded-[8px] py-1 z-50"
           style={{ top: 34, width, border: `1px solid ${colors.colorBlack6}` }}
           onClick={(e) => e.stopPropagation()}
@@ -575,6 +712,21 @@ export function Kebab({ items, label = 'More actions', width = 248 }: { items: K
  *                      Feedback". It is the end of a flow, not a step in one,
  *                      and it is the only button on a page whose whole purpose
  *                      is to press it.
+ *
+ * Both registers are `CanaryButton` and the mapping is exact: SHADED is
+ * `colorBlueDark1` at 10% over white, which IS the tonal bar's `colorBlueDark5`
+ * with a `colorBlueDark1` label, and PRIMARY is the solid blue with a white
+ * one. The base also brings the hover and press states this bar never had —
+ * SHADED washes to 25% / 50%, PRIMARY fades its label to 80% / 60%.
+ *
+ * `.panel-commit-button` is the one override, and it was already blessed:
+ * `CanaryButton` NORMAL is h-10 / rounded-4 where the panel draws 44px /
+ * rounded-8, and PRIMARY is the one type the library gives a drop shadow, which
+ * this branch draws nowhere. `CallDetailsPage`'s "Download Transcript" has been
+ * on this exact route since batch 4 — this is the same bar, so it is the same
+ * two lines. Disabled needs nothing: the library's own `canary-opacity-50` is
+ * precisely the 0.5 wash-out this was setting by hand, and `isDisabled` sets
+ * the native `disabled` attribute and `cursor-default` alongside it.
  */
 export function PanelFooterAction({
   label,
@@ -596,20 +748,15 @@ export function PanelFooterAction({
         padding: PANEL_PAD,
       }}
     >
-      <button
+      <CanaryButton
+        type={isPrimary ? ButtonType.PRIMARY : ButtonType.SHADED}
+        size={ButtonSize.NORMAL}
+        isDisabled={disabled}
         onClick={onClick}
-        disabled={disabled}
-        className="w-full rounded-[8px] font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] transition-colors"
-        style={{
-          height: 44,
-          backgroundColor: isPrimary ? colors.colorBlueDark1 : colors.colorBlueDark5,
-          color: isPrimary ? colors.colorWhite : colors.colorBlueDark1,
-          opacity: disabled ? 0.5 : 1,
-          cursor: disabled ? 'default' : 'pointer',
-        }}
+        className="panel-commit-button w-full"
       >
         {label}
-      </button>
+      </CanaryButton>
     </div>
   );
 }

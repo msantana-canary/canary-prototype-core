@@ -29,7 +29,7 @@
 
 import React, { useState } from 'react';
 import { colors } from '@canary-ui/components';
-import { EmptyState, PanelFooterAction, PanelHeader, RowDivider, RowList, PANEL_PAD } from './panel-ui';
+import { EmptyState, PanelFooterAction, PanelHeader, RowList, PANEL_PAD } from './panel-ui';
 import { ReservationResultRow } from './ReservationResultRow';
 import { LinkedReservation } from '@/lib/products/messaging/types';
 
@@ -70,15 +70,13 @@ export function SetPrimaryGuestPage({
             <EmptyState label="No reservations on this number" />
           ) : (
             <RowList>
-              {candidates.map((lr, i) => (
-                <React.Fragment key={lr.reservation.id}>
-                  <RowDivider isFirst={i === 0} />
-                  <ReservationResultRow
-                    lr={lr}
-                    isSelected={selectedId === lr.reservation.id}
-                    onSelect={() => setSelectedId(lr.reservation.id)}
-                  />
-                </React.Fragment>
+              {candidates.map((lr) => (
+                <ReservationResultRow
+                  key={lr.reservation.id}
+                  lr={lr}
+                  isSelected={selectedId === lr.reservation.id}
+                  onSelect={() => setSelectedId(lr.reservation.id)}
+                />
               ))}
             </RowList>
           )}

@@ -12,12 +12,26 @@
  * last because those are what you confirm against once you think you've found
  * it. Selection is a blue tint plus a check — the tint alone is easy to miss on
  * a light row, and the check alone is easy to miss in a list of five.
+ *
+ * The row is a `CanaryListItem` with the `children` escape hatch, so the five
+ * facts stay laid out exactly as drawn while the base owns the chrome. Its
+ * selection props do the tint: `isSelected` plus an explicit
+ * `selectedBackgroundColor` of `colorBlueDark5`, because the library's default
+ * selected fill is SOLID `colorBlueDark1` — a filled navy row with black text
+ * on it. Soft selection is this branch's register everywhere (the thread list,
+ * the control cards) and it is already on the design-system list.
+ *
+ * ⚠ TWO THINGS THE BASE COSTS THIS ROW, both logged. It renders
+ * `<li role="button" tabIndex=0>` with the click handler on an inner div and no
+ * key handler, so Enter/Space no longer pick a reservation the way they did on
+ * the `<button>` this replaces; and there is no `aria-pressed`, so a screen
+ * reader now hears the check glyph's absence rather than a pressed state.
  */
 
 'use client';
 
 import React from 'react';
-import { colors } from '@canary-ui/components';
+import { CanaryListItem, colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiBedOutline, mdiCalendarBlankOutline, mdiPhoneOutline, mdiPound } from '@mdi/js';
 import { LifecycleTag, SelectedCheck } from './panel-ui';
@@ -49,14 +63,11 @@ export function ReservationResultRow({
 }) {
   const { reservation, guest } = lr;
   return (
-    <button
+    <CanaryListItem
       onClick={onSelect}
-      aria-pressed={isSelected}
-      className="w-full flex items-center gap-2 text-left transition-colors"
-      style={{
-        padding: '12px 16px',
-        backgroundColor: isSelected ? colors.colorBlueDark5 : 'transparent',
-      }}
+      isSelected={isSelected}
+      selectedBackgroundColor={colors.colorBlueDark5}
+      className="[&>*]:!py-3 [&>*]:!gap-2"
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -78,6 +89,6 @@ export function ReservationResultRow({
         </div>
       </div>
       {isSelected && <SelectedCheck />}
-    </button>
+    </CanaryListItem>
   );
 }
