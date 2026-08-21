@@ -17,7 +17,7 @@
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { Avatar } from './Avatar';
 import { MessageFeed } from './MessageFeed';
 import { MessageComposer } from './MessageComposer';
@@ -26,7 +26,18 @@ import { useMessagingStore } from '@/lib/products/messaging/store';
 import { Thread, Message } from '@/lib/products/messaging/types';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
-import { colors, CanaryTag, TagSize, TagVariant } from '@canary-ui/components';
+import {
+  colors,
+  ButtonSize,
+  ButtonType,
+  CanaryButton,
+  CanaryCard,
+  CanaryOverflowMenu,
+  CanaryTag,
+  CardPadding,
+  TagSize,
+  TagVariant,
+} from '@canary-ui/components';
 import Icon from '@mdi/react';
 import {
   mdiBedOutline,
@@ -40,36 +51,51 @@ import {
  * A bare header icon button: a 28px square with ZERO padding, transparent at
  * rest, neutral 8%-black wash on hover and while pressed. Deliberately NOT a
  * blue tonal fill — the surface already spends blue on selection and on links.
+ *
+ * It is a `CanaryButton` (ICON_SECONDARY / COMPACT). The base already draws the
+ * wash as an 8%-hover / 16%-press opacity ladder on its own `.button-bg` layer;
+ * `.icon-btn-neutral` only repaints that layer black, because the library keys
+ * the colour to `ButtonColor` and every non-status colour resolves to blue. The
+ * 8% the library lands on is EXACTLY the `rgba(0,0,0,0.08)` this header used to
+ * hand-roll, so the rest/hover register is unchanged to the pixel.
+ * `.icon-btn-28` and `.icon-btn-r6` supply the two bits of geometry the size
+ * ramp stops short of (it bottoms out at 24px / 4px), and `.icon-btn-latched`
+ * pins the wash on for a control whose panel is open.
+ *
+ * ⚠ `aria-pressed` IS LOST. `CanaryButton` declares no ARIA props and spreads no
+ * rest props, so the info button's toggle now announces as a plain button and
+ * its "open" state is visual only. Logged as a foundation ask; do not paper over
+ * it by wrapping the button in a labelled span, which would double the name.
+ *
+ * The accessible name rides the mdi `Icon`'s `title` — the library gives icon
+ * buttons no `aria-label` — with an EXPLICIT, STABLE `id` beside it. Without one
+ * `@mdi/react` numbers the `<title>` element off a module-level counter, which
+ * is the SSR/client hydration mismatch documented in `ThreadListItem`.
  */
 function IconAction({
   path,
   label,
+  id,
   onClick,
   isPressed = false,
-  buttonRef,
 }: {
   path: string;
   label: string;
-  onClick: () => void;
+  /** Stable DOM id for the mdi `<title>`. See the hydration note above. */
+  id: string;
+  /** Omitted for the kebab: CanaryOverflowMenu wraps the trigger in its own
+   *  click handler, so a second one here would toggle the menu twice. */
+  onClick?: () => void;
   isPressed?: boolean;
-  buttonRef?: React.Ref<HTMLButtonElement>;
 }) {
   return (
-    <button
-      ref={buttonRef}
+    <CanaryButton
+      type={ButtonType.ICON_SECONDARY}
+      size={ButtonSize.COMPACT}
       onClick={onClick}
-      aria-label={label}
-      aria-pressed={isPressed}
-      className="flex items-center justify-center rounded-[6px] transition-colors cursor-pointer hover:bg-[rgba(0,0,0,0.08)]"
-      style={{
-        width: 28,
-        height: 28,
-        padding: 0,
-        ...(isPressed ? { backgroundColor: 'rgba(0,0,0,0.08)' } : {}),
-      }}
-    >
-      <Icon path={path} size={0.83} color={colors.colorBlack3} />
-    </button>
+      className={`icon-btn-neutral icon-btn-28 icon-btn-r6${isPressed ? ' icon-btn-latched' : ''}`}
+      icon={<Icon path={path} size={0.83} color={colors.colorBlack3} title={label} id={id} />}
+    />
   );
 }
 
@@ -106,10 +132,6 @@ export function ThreadView({
   onMarkUnread,
   typingThreadId,
 }: ThreadViewProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
   // The draft card's hand-over to the composer. Scoped to THIS thread — a draft
   // edited on one conversation must not land in another one's box.
   const injection = useMessagingStore((s) => s.composerInjection);
@@ -117,48 +139,46 @@ export function ThreadView({
 
   const isGuestTyping = typingThreadId === thread.id;
 
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        menuRef.current &&
-        buttonRef.current &&
-        !menuRef.current.contains(event.target as Node) &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
-        setIsMenuOpen(false);
-      }
-    };
-
-    if (isMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isMenuOpen]);
-
-  const handleMenuAction = (action: 'block' | 'unblock' | 'markUnread') => {
-    setIsMenuOpen(false);
-
-    switch (action) {
-      case 'block':
-        onBlock();
-        break;
-      case 'unblock':
-        onUnblock();
-        break;
-      case 'markUnread':
-        onMarkUnread();
-        break;
-    }
-  };
+  /**
+   * The kebab's items, as `CanaryOverflowMenu` models them. The component owns
+   * open/closed state and click-outside itself, which is why this file no longer
+   * carries either — the hand-rolled version's `mousedown` listener and its two
+   * refs are gone.
+   *
+   * ⚠ TWO COLOURS CHANGE HERE, deliberately. The base sets item colour inline
+   * from one flag: `danger` when `isDanger`, `colorBlack2` (#333) otherwise, with
+   * no per-item hook. So "Unblock" loses its blue (#2858C4 → #333333) and "Mark
+   * as Unread" moves off pure black (#000000 → #333333); the hover wash moves
+   * from Tailwind `gray-50` to `colorBlack7` (#F0F0F0). Blue "Unblock" was the
+   * odd one out anyway — a menu row is not a link — and taking the component's
+   * colour model whole is the point of the exercise. Logged as a foundation ask
+   * (per-item colour / `customColor` on overflow-menu items).
+   */
+  const menuItems =
+    thread.status === 'blocked'
+      ? [
+          { id: 'unblock', label: 'Unblock', onClick: onUnblock },
+          { id: 'markUnread', label: 'Mark as Unread', onClick: onMarkUnread },
+        ]
+      : [
+          { id: 'block', label: 'Block', isDanger: true, onClick: onBlock },
+          { id: 'markUnread', label: 'Mark as Unread', onClick: onMarkUnread },
+        ];
 
   return (
-    <div
-      className="flex-1 min-w-0 flex flex-col h-full overflow-clip rounded-[12px]"
-      style={{ backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack6}` }}
+    /* The conversation card. `CanaryCard` with no padding and a border is
+       already white / `colorBlack6` / bordered; only the radius is ours (the
+       base bakes `rounded-lg` = 8px, this surface draws 12px).
+
+       ⚠ The base nests its children in a SECOND div, so the flex column and the
+       `min-h-0` that lets the message feed scroll instead of pushing the card
+       open both have to be re-established on that child — hence the `[&>div]:`
+       run. Without it the feed's `flex-1 overflow-y-auto` has no bounded parent
+       and the composer is pushed off the bottom of the card. */
+    <CanaryCard
+      cardPadding={CardPadding.NONE}
+      hasBorder
+      className="flex-1 min-w-0 flex flex-col h-full overflow-clip !rounded-[12px] [&>div]:flex-1 [&>div]:min-h-0 [&>div]:flex [&>div]:flex-col"
     >
       {/* Thread Header */}
       <div
@@ -233,69 +253,54 @@ export function ThreadView({
         <div className="flex items-center gap-2 shrink-0">
           {/* Archive — an icon in the landed frame; it was a text button before. */}
           {thread.status === 'inbox' && (
-            <IconAction onClick={onArchive} label="Archive conversation" path={mdiArchiveArrowDownOutline} />
+            <IconAction
+              onClick={onArchive}
+              label="Archive conversation"
+              id="thread-archive"
+              path={mdiArchiveArrowDownOutline}
+            />
           )}
 
           <IconAction
             onClick={onToggleGuestInfo}
             label="Conversation details"
+            id="thread-details"
             path={mdiInformationOutline}
             isPressed={isGuestInfoOpen}
           />
 
-          {/* Kebab menu */}
-          <div className="relative">
-            <IconAction
-              buttonRef={buttonRef}
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              label="More actions"
-              path={mdiDotsHorizontal}
-              isPressed={isMenuOpen}
-            />
+          {/* Kebab menu.
+              `--overflow-menu-w` rides a wrapper because `CanaryOverflowMenu`
+              takes a `className` but no `style`; `.overflow-menu-w` reads it off
+              an ancestor and re-widths the popover past the base's hardcoded
+              180px floor to the 192px this header drew. The wrapper is `flex` so
+              the menu's `inline-block` root can't pick up a text baseline and
+              sit a couple of pixels off the other two icons.
 
-            {isMenuOpen && (
-              <div
-                ref={menuRef}
-                className="absolute right-0 mt-1 w-48 bg-white rounded-[8px] py-1 z-50"
-                style={{ border: `1px solid ${colors.colorBlack6}` }}
-              >
-                {thread.status === 'blocked' ? (
-                  <>
-                    <button
-                      onClick={() => handleMenuAction('unblock')}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
-                      style={{ color: '#2858C4' }}
-                    >
-                      Unblock
-                    </button>
-                    <button
-                      onClick={() => handleMenuAction('markUnread')}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
-                      style={{ color: '#000000' }}
-                    >
-                      Mark as Unread
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => handleMenuAction('block')}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
-                      style={{ color: '#E40046' }}
-                    >
-                      Block
-                    </button>
-                    <button
-                      onClick={() => handleMenuAction('markUnread')}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors"
-                      style={{ color: '#000000' }}
-                    >
-                      Mark as Unread
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
+              Three more deltas ride `className`. `.overflow-menu-flat` removes
+              the base's inline `shadows.lg` (this branch draws no shadows), and
+              the `mt-1` restores the 4px the hand-rolled popover left between
+              the trigger and the menu — the base's popover has no offset at all.
+              The `flex` on the FIRST child is the base's trigger wrapper: it is
+              a plain block, so an inline-flex trigger inside it grows a ~2.5px
+              baseline descender, which measured as the kebab sitting 1.2px above
+              the other two header icons and the menu opening 6.5px below it
+              instead of 4px.
+
+              The `:has()` rule is the kebab's own pressed LATCH. The base keeps
+              `isOpen` private, so "menu is open" can only be read off the DOM:
+              the popover is the root's second child and exists only while open.
+              That is the same 8% wash `.icon-btn-latched` paints, applied from a
+              state we cannot otherwise see. */}
+          <div className="flex" style={{ ['--overflow-menu-w' as string]: '192px' } as React.CSSProperties}>
+            <CanaryOverflowMenu
+              items={menuItems}
+              placement="bottom-end"
+              className="overflow-menu-flat overflow-menu-w [&>div:first-child]:flex [&>div:nth-child(2)]:!mt-1 [&:has(>div:nth-child(2))_.button-bg]:!opacity-[0.08]"
+              trigger={
+                <IconAction label="More actions" id="thread-more" path={mdiDotsHorizontal} />
+              }
+            />
           </div>
         </div>
       </div>
@@ -334,6 +339,6 @@ export function ThreadView({
           onInjectionConsumed={clearComposerInjection}
         />
       </div>
-    </div>
+    </CanaryCard>
   );
 }

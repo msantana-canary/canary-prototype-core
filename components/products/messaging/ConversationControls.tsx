@@ -22,9 +22,13 @@
 'use client';
 
 import React from 'react';
-import Icon from '@mdi/react';
-import { mdiMagnify } from '@mdi/js';
-import { colors, CanaryButton, ButtonType, ButtonSize } from '@canary-ui/components';
+import {
+  ButtonSize,
+  ButtonType,
+  CanaryButton,
+  CanaryInputSearch,
+  InputSize,
+} from '@canary-ui/components';
 
 export type CategoryFilter = 'inbox' | 'archived' | 'blocked';
 
@@ -41,26 +45,25 @@ export function ConversationControls({
 }: ConversationControlsProps) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex-1 min-w-0">
-        <div
-          className="flex items-center gap-2 rounded-[6px]"
-          style={{
-            backgroundColor: colors.colorWhite,
-            border: `1px solid ${colors.colorBlack5}`,
-            height: 40,
-            paddingLeft: 8,
-            paddingRight: 16,
-          }}
-        >
-          <Icon path={mdiMagnify} size={0.83} color={colors.colorBlack3} />
-          <input
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search"
-            className="flex-1 min-w-0 border-0 outline-none bg-transparent font-['Roboto',sans-serif] text-[14px] leading-[22px] placeholder:text-[#666666]"
-            style={{ color: colors.colorBlack1 }}
-          />
-        </div>
+      {/* The field is `CanaryInputSearch` — it already draws the magnifier, the
+          40px height and the 14px type, so the hand-rolled div + mdiMagnify +
+          bare input is gone entirely.
+
+          Every delta rides ONE wrapper class. `.input-search-quiet` has to be a
+          WRAPPER rather than the component's own `className` because two of the
+          four deltas land on the glyph, which the base renders as a SIBLING of
+          the input: the 6px radius and the `colorBlack5` quiet border go on the
+          input, while re-sizing the base's fixed 24px black magnifier to a 20px
+          `colorBlack3` one (and moving the text inset from 40px to 36px to
+          match) can only be reached from above. It also hides the WebKit clear
+          ×, which exists only because the base renders `type="search"`. */}
+      <div className="flex-1 min-w-0 input-search-quiet">
+        <CanaryInputSearch
+          size={InputSize.NORMAL}
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Search"
+        />
       </div>
       <CanaryButton type={ButtonType.PRIMARY} size={ButtonSize.NORMAL} onClick={onNewMessage}>
         New message

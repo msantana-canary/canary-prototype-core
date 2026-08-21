@@ -24,7 +24,7 @@
 'use client';
 
 import React from 'react';
-import { colors } from '@canary-ui/components';
+import { colors, CanaryCard, CardPadding } from '@canary-ui/components';
 import { ThreadListItem } from './ThreadListItem';
 import { Thread } from '@/lib/products/messaging/types';
 import { panelIdentity } from '@/lib/products/messaging/panel-selectors';
@@ -57,10 +57,18 @@ export function ThreadList({
 
   return (
     <div className="w-full h-full flex flex-col min-h-0">
-      {/* Guest list card */}
-      <div
-        className="flex-1 min-h-0 flex flex-col overflow-clip rounded-[12px]"
-        style={{ backgroundColor: colors.colorWhite, border: `1px solid ${colors.colorBlack6}` }}
+      {/* Guest list card. `CanaryCard` already IS white / bordered /
+          `colorBlack6`; only the 12px radius is this surface's own (the base
+          bakes `rounded-lg` = 8px).
+
+          ⚠ The base nests its children in a SECOND div, so the whole height
+          chain — `flex-1 min-h-0 flex flex-col`, which is what keeps the rows
+          scrolling under the two fixed zones instead of stretching the card —
+          has to be restated on that child through `[&>div]:`. */}
+      <CanaryCard
+        cardPadding={CardPadding.NONE}
+        hasBorder
+        className="flex-1 min-h-0 flex flex-col overflow-clip !rounded-[12px] [&>div]:flex-1 [&>div]:min-h-0 [&>div]:flex [&>div]:flex-col"
       >
         {/* Card header zone */}
         {header && (
@@ -95,12 +103,21 @@ export function ThreadList({
           </div>
         )}
 
-        {/* Rows */}
-        <div className="flex-1 overflow-y-auto scrollbar-invisible flex flex-col gap-2" style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 8, paddingBottom: 16 }}>
+        {/* Rows.
+            A real `<ul>`, not a div: the rows are `CanaryListItem`s and the base
+            renders each one as an `<li>`. They are NOT wrapped in `CanaryList` —
+            that component draws its own `colorBlack6` hairline between children
+            and fades each row in on mount, and these rows are 6px-radius cards
+            separated by a 6px gap with no dividers at all. So the list element
+            is ours and only the ITEM comes from the library.
+            `list-none m-0` cancels the UA's marker and block margins; the
+            horizontal padding is set inline below, which also cancels the UA's
+            40px `padding-inline-start`. */}
+        <ul className="flex-1 overflow-y-auto scrollbar-invisible flex flex-col gap-2 list-none m-0" style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 8, paddingBottom: 16 }}>
           {threads.length === 0 ? (
-            <div className="p-8 text-center font-['Roboto',sans-serif] text-[14px]" style={{ color: colors.colorBlack4 }}>
+            <li className="list-none p-8 text-center font-['Roboto',sans-serif] text-[14px]" style={{ color: colors.colorBlack4 }}>
               No conversations
-            </div>
+            </li>
           ) : (
             threads.map((thread) => {
               /**
@@ -127,8 +144,8 @@ export function ThreadList({
               );
             })
           )}
-        </div>
-      </div>
+        </ul>
+      </CanaryCard>
     </div>
   );
 }

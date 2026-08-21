@@ -22,7 +22,7 @@
 'use client';
 
 import React from 'react';
-import { colors } from '@canary-ui/components';
+import { colors, CanaryCard, CardPadding } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiCheck } from '@mdi/js';
 import { AiStep } from '@/lib/products/messaging/types';
@@ -32,45 +32,62 @@ interface AiStepsCardProps {
   /** Transcript dress: gradient left bar instead of the bordered box. */
   accent?: boolean;
   className?: string;
+  /**
+   * ⚠ ACCENT ONLY. The boxed variant is a `CanaryCard`, and that component takes
+   * a `className` but exposes no `style` — so a boxed caller has to spend
+   * classes on its own margins. (Logged as a foundation ask: `style`
+   * passthrough on `CanaryCard`.) The one boxed caller, `MessageBubble`, was
+   * moved onto `mt-1 mb-2` accordingly.
+   */
   style?: React.CSSProperties;
 }
 
 export function AiStepsCard({ steps, accent = false, className = '', style }: AiStepsCardProps) {
   if (steps.length === 0) return null;
 
-  return (
+  const rows = steps.map((step, i) => (
     <div
-      className={`${accent ? 'ai-gradient-bar' : 'rounded-[8px]'} ${className}`}
-      style={{
-        ...(accent
-          ? { paddingLeft: 12, paddingRight: 10, paddingTop: 4, paddingBottom: 4 }
-          : {
-              border: `1px solid ${colors.colorBlack6}`,
-              paddingLeft: 10,
-              paddingRight: 10,
-              paddingTop: 6,
-              paddingBottom: 6,
-            }),
-        ...style,
-      }}
+      key={`${step.tool}-${i}`}
+      className="flex items-start gap-2"
+      style={{ paddingTop: 1, paddingBottom: 1 }}
     >
-      {steps.map((step, i) => (
-        <div
-          key={`${step.tool}-${i}`}
-          className="flex items-start gap-2"
-          style={{ paddingTop: 1, paddingBottom: 1 }}
-        >
-          <span className="shrink-0 flex items-center" style={{ height: 20 }}>
-            <Icon path={mdiCheck} size={0.58} color={colors.colorBlack3} />
-          </span>
-          <span
-            className="font-['Roboto',sans-serif] text-[12px] leading-[20px] min-w-0"
-            style={{ color: colors.colorBlack3 }}
-          >
-            {step.tool} · {step.note}
-          </span>
-        </div>
-      ))}
+      <span className="shrink-0 flex items-center" style={{ height: 20 }}>
+        <Icon path={mdiCheck} size={0.58} color={colors.colorBlack3} />
+      </span>
+      <span
+        className="font-['Roboto',sans-serif] text-[12px] leading-[20px] min-w-0"
+        style={{ color: colors.colorBlack3 }}
+      >
+        {step.tool} · {step.note}
+      </span>
     </div>
+  ));
+
+  // The transcript dress is genuinely new: a gradient left bar and no box at
+  // all. There is no base under it, so it stays a plain div.
+  if (accent) {
+    return (
+      <div
+        className={`ai-gradient-bar ${className}`}
+        style={{ paddingLeft: 12, paddingRight: 10, paddingTop: 4, paddingBottom: 4, ...style }}
+      >
+        {rows}
+      </div>
+    );
+  }
+
+  /* The boxed dress needs no dress at all: `CanaryCard` with a border IS this
+     box — `rounded-lg` is the 8px radius the frame draws and the border is
+     already `colorBlack6`. Only the trace's tighter inset (10px/6px against the
+     card ramp's 12px or 24px) is ours, and it has to reach the SECOND div the
+     base nests its children in. */
+  return (
+    <CanaryCard
+      cardPadding={CardPadding.NONE}
+      hasBorder
+      className={`[&>div]:!px-[10px] [&>div]:!py-[6px] ${className}`}
+    >
+      {rows}
+    </CanaryCard>
   );
 }

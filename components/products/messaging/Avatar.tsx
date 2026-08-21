@@ -10,6 +10,33 @@
  * colorBlueDark5 ground, colorBlueDark1 glyphs — so a staff message reads as
  * "one of us" from the avatar column alone, matching the blue staff sender
  * name beside it. Photo avatars ignore tone (the photo is the identity).
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ⚠ WHY THIS IS NOT `<CanaryProfileImage>` — a documented, deliberate exception
+ * ═══════════════════════════════════════════════════════════════════════════
+ * The nearest base IS `CanaryProfileImage`, and its size ramp even lines up
+ * (32 / 40 / 48 = small / medium / profile). Every other axis this component
+ * carries is one the base cannot express, and none of them are decoration:
+ *
+ *   1. SHAPE. The base bakes `rounded-full`. This surface's avatars are
+ *      rounded-8 SQUARES everywhere except the panel's one 48px portrait — a
+ *      distinction the file argues for below, not an accident.
+ *   2. TONE. The base's initials tile hardcodes `colorBlueDark1` on white as
+ *      INLINE styles with no prop to reach them. The neutral/blue split above is
+ *      how a staff message is told from a guest message in the avatar column.
+ *   3. ICON FALLBACK. With empty initials the base renders a literal "?".
+ *      Phone-only threads have no initials, and a question mark reads as
+ *      "we don't know who this is" rather than "nobody has a name yet".
+ *   4. IMAGE TRANSFORM. The avatar PNGs are pre-cropped CIRCLES with transparent
+ *      corners, so a square tile needs the ~1.45x re-crop applied below. The
+ *      base exposes no hook on the `<img>`.
+ *
+ * Forcing it would mean `!important` warfare on four or five inline properties
+ * per tone AND still hand-building the icon fallback outside it — the base would
+ * contribute a div. So it stays hand-rolled, and the four gaps (a `shape` axis,
+ * a `tone`/custom colour on the initials tile, an icon fallback, an image
+ * transform hook) are logged as foundation asks. Revisit when they land: at that
+ * point this file should shrink to a thin wrapper, not be rewritten.
  */
 
 import React from 'react';

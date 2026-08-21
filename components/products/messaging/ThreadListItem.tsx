@@ -37,7 +37,7 @@ import { Thread } from '@/lib/products/messaging/types';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
 import { format } from 'date-fns';
-import { colors, CanaryTag, TagSize, TagVariant } from '@canary-ui/components';
+import { colors, CanaryListItem, CanaryTag, CanaryTooltip, TagSize, TagVariant, TooltipPosition } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiBedOutline, mdiRoomServiceOutline, mdiFlag } from '@mdi/js';
 
@@ -76,25 +76,49 @@ export function ThreadListItem({
   const showDot = !!(thread.isUnread || thread.isEscalated);
 
   return (
-    <div
+    /**
+     * The row is a `CanaryListItem` — the base ships exactly the escape hatches
+     * this anatomy needs: `children` (so the avatar / name / tag / indicator
+     * cluster below is untouched), `isSelected` + `selectedBackgroundColor`,
+     * `hoverColor`, and `onClick`.
+     *
+     * ⚠ IT IS NOT WRAPPED IN `CanaryList`, on purpose. That component draws a
+     * `colorBlack6` hairline between every pair of children and fades each row
+     * in on mount; these rows are separated 6px-radius cards with no dividers.
+     * The `<ul>` they sit in belongs to `ThreadList`.
+     *
+     * ⚠ WHY THE BORDER IS `!important` AND NOT INLINE. The library's own
+     * stylesheet gives every `.canary-list-item` a `border-bottom: 1px solid
+     * #D9D9D9` (exempting `:last-child`) — a divider it expects `CanaryList` to
+     * absorb. Outside a `CanaryList` it renders, so the row's own border has to
+     * outrank it on all four sides. `!border !border-solid !border-<color>` does
+     * that; `!border-b-0` would too, but it would also take the bottom edge off
+     * the SELECTED row's blue outline.
+     *
+     * ⚠ HOVER IS A PROP, NOT A CLASS — and this is the same trap the hand-rolled
+     * row documented. The base applies its hover fill by writing
+     * `style.backgroundColor` in `onMouseEnter`, and an inline style outranks
+     * any class, so a `hover:bg-*` utility could never win. `hoverColor` is the
+     * only door. (Historically this row set `backgroundColor: 'transparent'`
+     * inline and its hover silently never rendered — which read as "the wash is
+     * too weak" rather than "the wash is absent".)
+     *
+     * Padding, gap and the selected row's hover-dim reach the base's INNER div
+     * through `[&>*]:` variants: `padding="compact"` is the 8px vertical the
+     * frame draws but its horizontal is 16px, the base's gap is 16px where this
+     * row wants 12px, and the base fades a SELECTED row to 90% opacity on hover,
+     * which this row does not do.
+     */
+    <CanaryListItem
       onClick={onClick}
-      className={`flex items-start gap-3 cursor-pointer rounded-[6px] transition-colors shrink-0 ${
-        isSelected ? '' : 'hover:bg-[rgba(0,0,0,0.08)]'
-      }`}
-      /* ⚠ The unselected row deliberately sets NO inline `backgroundColor`.
-         An inline style outranks any class, so the old
-         `backgroundColor: 'transparent'` silently beat the `hover:bg-*` class
-         and the row hover never rendered at all — which is what made it look
-         like the wash was too weak rather than absent. Selected rows keep the
-         inline fill because they have no hover state to lose. */
-      style={{
-        paddingLeft: 12,
-        paddingRight: 12,
-        paddingTop: 8,
-        paddingBottom: 8,
-        ...(isSelected ? { backgroundColor: colors.colorBlueDark5 } : {}),
-        border: `1px solid ${isSelected ? colors.colorBlueDark3 : 'transparent'}`,
-      }}
+      isSelected={isSelected}
+      selectedBackgroundColor={colors.colorBlueDark5}
+      hoverColor="rgba(0,0,0,0.08)"
+      padding="compact"
+      alignment="start"
+      className={`shrink-0 rounded-[6px] overflow-clip !border !border-solid ${
+        isSelected ? '!border-[#93ABE1]' : '!border-transparent'
+      } [&>*]:!px-3 [&>*]:!gap-3 [&>*]:hover:!opacity-100`}
     >
       {/* Avatar */}
       <div className="pt-1 shrink-0">
@@ -188,25 +212,54 @@ export function ThreadListItem({
                   }}
                 />
               )}
-              {/* Tooltip lives on a wrapping span, NOT on @mdi/react's `title`
-                  prop: that prop auto-generates an `aria-labelledby` id from a
+              {/* The flag's explanation is a `CanaryTooltip`, not the native
+                  `title` attribute it used to be, and not @mdi/react's `title`
+                  prop — that one auto-generates an `aria-labelledby` id from a
                   module-level counter, which differs between the server and
-                  client renders and trips React hydration. Same pattern as the
-                  failure icon in the Conversation Details panel. */}
+                  client renders and trips React hydration. CanaryTooltip touches
+                  no ids, so that hazard does not reach it.
+                  (The same hydration note still governs the failure icon in the
+                  Conversation Details panel.)
+
+                  TWO THINGS THE BASE MADE US DO, both measured rather than
+                  assumed:
+
+                  1. THE SPAN CARRIES NO `aria-label` ANY MORE. The base renders
+                     its bubble ALWAYS — hidden by `opacity: 0`, which does not
+                     remove a node from the accessibility tree — and never marks
+                     it `aria-hidden`. So the bubble's sentence is folded into
+                     the accessible name of every ancestor, this row's button
+                     included. With the old `aria-label` still on the span the
+                     row announced the sentence TWICE. Deleting the label leaves
+                     the bubble as the single source of it, which is exactly what
+                     the row said before.
+                  2. NO SHADOW. The base's bubble ships Tailwind's `shadow`;
+                     this branch draws none, anywhere.
+
+                  The bubble is `position: absolute` and `whitespace-nowrap`, so
+                  it lives or dies by its ancestors' overflow. Measured here: the
+                  bubble is 370×26 inside a 405×80 row and clears all eight
+                  clipping ancestors with zero cut on every side. It sits ABOVE
+                  the flag and to its LEFT — which is the only reason a 370px
+                  bubble fits beside an indicator 20px from the row's right edge.
+                  Both facts are contingent on this row's size; a shorter or
+                  narrower row would clip it. Logged as a foundation ask
+                  (portal the bubble / let it wrap / flip on collision). */}
               {thread.isFlagged && (
-                <span
-                  className="flex items-center shrink-0 cursor-help"
-                  role="img"
-                  aria-label="Potential guest frustration detected. AI paused to avoid escalation."
-                  title="Potential guest frustration detected. AI paused to avoid escalation."
+                <CanaryTooltip
+                  content="Potential guest frustration detected. AI paused to avoid escalation."
+                  position={TooltipPosition.TOP}
+                  className="shrink-0 [&>div]:!shadow-none"
                 >
-                  <Icon path={mdiFlag} size={0.83} color="#E40046" />
-                </span>
+                  <span className="flex items-center shrink-0 cursor-help">
+                    <Icon path={mdiFlag} size={0.83} color="#E40046" />
+                  </span>
+                </CanaryTooltip>
               )}
             </div>
           )}
         </div>
       </div>
-    </div>
+    </CanaryListItem>
   );
 }

@@ -187,6 +187,24 @@ body {
    internal markup — `.button-bg`, `.button-content`, `.canary-list-item`, and
    CanaryExpand's header-div/panel-div anatomy. When the library grows the prop
    an override is standing in for, DELETE the block; do not keep both.
+
+   ⚠⚠ THE CASCADE TRAP, found the hard way on 2026-08-21. These classes are
+   UNLAYERED; Tailwind's `!` utilities live inside `@layer utilities`. For
+   IMPORTANT declarations the cascade's layer order REVERSES — a layered
+   important declaration beats an unlayered one regardless of specificity. So a
+   `!` utility at a call site ALWAYS beats the same property in a class here,
+   even a more specific one.
+
+   That is the right precedence for a per-instance override beating a shared
+   register, and it is exactly what these classes are designed around: the class
+   carries the register, the call site carries the instance. But it bites in one
+   shape — a class rule on a PSEUDO-CLASS (`:focus`, `:hover`) competing with a
+   REST-state utility for the same property. `.textarea-boxed:focus`'s blue
+   border lost to `!border-[#E5E5E5]` and the field never turned blue on focus,
+   while the same class's `outline: none` (which nothing competed with) worked
+   fine — so the class looked alive. When you pair one of these classes with a
+   `!` utility on the same property, re-assert the state as a utility too
+   (`focus:!border-[#2858C4]`), where the extra pseudo-class wins honestly.
    ─────────────────────────────────────────────────────────────────────────── */
 
 /* ---- Neutral icon buttons — CanaryButton ICON_SECONDARY ------------------
@@ -426,13 +444,21 @@ body {
    the base must contribute its behaviour (autosize, refs, native props) and
    none of its chrome. Everything the base paints is switched off here.
 
-   The max-height is the composer's own cap — the base's `autoExpand` grows to
-   content without one, and `overflow-hidden` would clip rather than scroll past
-   it. Logged as the "chromeless / embedded field variant" library ask. */
+   The max-height is the composer's own cap. Logged as the "chromeless /
+   embedded field variant" library ask.
+
+   ⚠ HEIGHT IS NOT IN HERE, and that is deliberate. `CanaryInput` sizes itself
+   with an `h-[40px]` CLASS (kill it with `!h-auto` at the call site), but
+   `CanaryTextArea`'s `autoExpand` sizes itself with an INLINE height it
+   recomputes on every keystroke — and a `height: auto !important` in this block
+   would outrank that inline value and silently disable the base's own autosize.
+   The composer went one round with exactly that: the sizing died, and CSS
+   `field-sizing: content` was standing in for it, which only Chromium
+   implements. Leaving height out means the base's autosize works, in every
+   browser, and `.textarea-composer` only has to move its floor and its cap. */
 .field-chromeless {
   border: 0 !important;
   padding: 0 !important;
-  height: auto !important;
   background: transparent !important;
 }
 .field-chromeless:focus {

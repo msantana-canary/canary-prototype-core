@@ -83,7 +83,16 @@ import React, { useState } from 'react';
 import { Message, MessageStatus } from '@/lib/products/messaging/types';
 import { Guest } from '@/lib/core/types/guest';
 import { format } from 'date-fns';
-import { colors } from '@canary-ui/components';
+import {
+  ButtonColor,
+  ButtonSize,
+  ButtonType,
+  CanaryButton,
+  CanaryChip,
+  ChipType,
+  IconPosition,
+  colors,
+} from '@canary-ui/components';
 import Icon from '@mdi/react';
 import {
   mdiChevronDown,
@@ -100,9 +109,6 @@ import { useMessagingStore } from '@/lib/products/messaging/store';
 const STAFF_NAME = 'Theresa Webb';
 const STAFF_INITIALS = 'TW';
 
-// Failed-state red — $color-red-1 (@canary-ui doesn't expose this as a token yet).
-const COLOR_RED_1 = '#E40046';
-
 // Production (MessageAtomBubble.vue): status renders on every outbound message
 // from carrier receipts; Read>Delivered>Sent>Sending. We map the prototype's
 // MessageStatus to the production English labels. (The prototype has no 'read'
@@ -116,17 +122,41 @@ const STATUS_LABELS: Record<MessageStatus, string> = {
 
 const CAPTION_CLASS = "font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase";
 
-/** An underlined caption link. The one interaction register for both footer
- *  links — only the color changes (blue for "declined", red for "failed"). */
-function CaptionLink({ label, color, onClick }: { label: string; color: string; onClick: () => void }) {
+/**
+ * An underlined caption link. The one interaction register for both footer
+ * links — only the colour changes (blue for "declined", red for "failed").
+ *
+ * The library has no link primitive, so `ButtonType.TEXT` is the ancestor, and
+ * TINY is already the ramp's 10px step. The colour arrives as a `ButtonColor`
+ * rather than a hex: TEXT resolves its content colour FROM that enum, and
+ * NORMAL → `colorBlueDark1` (#2858C4) and DANGER → #E40046 are exactly the two
+ * values this file used to hardcode. That is the point of the swap — two hex
+ * literals retired, including the `COLOR_RED_1` local that existed only because
+ * the token was not reachable from here.
+ *
+ * `.text-btn-inline` takes the button chrome off: the size ramp's 24px height,
+ * the 16px side padding, the medium weight and the hover wash. A link inside a
+ * line of text may not carry a box.
+ */
+function CaptionLink({
+  label,
+  color,
+  onClick,
+}: {
+  label: string;
+  color: ButtonColor;
+  onClick: () => void;
+}) {
   return (
-    <button
+    <CanaryButton
+      type={ButtonType.TEXT}
+      size={ButtonSize.TINY}
+      color={color}
       onClick={onClick}
-      className={`${CAPTION_CLASS} underline cursor-pointer text-left`}
-      style={{ color, textUnderlineOffset: 2 }}
+      className={`${CAPTION_CLASS} text-btn-inline underline [text-underline-offset:2px]`}
     >
       {label}
-    </button>
+    </CanaryButton>
   );
 }
 
@@ -140,35 +170,57 @@ function CaptionLink({ label, color, onClick }: { label: string; color: string; 
  * composer's tool icons use (`MessageComposer.ToolIcon`), so every bare icon on
  * this surface answers the pointer the same way. Thumbs-up additionally LATCHES
  * blue on click (local visual toggle only — no feedback pipeline behind it).
+ *
+ * `CanaryButton` ICON_SECONDARY at TINY, shrunk from 24px to 20px by
+ * `.icon-btn-20` (which also releases the library's fixed 20px glyph box).
+ * `.icon-btn-bare` deletes the `.button-bg` wash layer outright — that IS this
+ * register: no box, ever, at any state.
+ *
+ * ⚠ `aria-pressed` IS LOST on the thumbs-up/-down latch. `CanaryButton` declares
+ * no ARIA props and spreads no rest props, so "I rated this" is now visual only.
+ * Logged as a foundation ask alongside the same loss on the thread header.
+ *
+ * ⚠ The wrapping span exists ONLY to carry the mouse handlers the base has
+ * nowhere to put — same as `MessageComposer.ToolIcon`.
  */
 function FeedbackIcon({
   path,
   label,
+  id,
   active,
   onClick,
 }: {
   path: string;
   label: string;
+  /** Stable DOM id for the mdi `<title>`; suffixed with the message id by the
+   *  caller, because this control renders once per message. */
+  id: string;
   active?: boolean;
   onClick: () => void;
 }) {
   const [isHovered, setIsHovered] = useState(false);
   return (
-    <button
-      onClick={onClick}
+    <span
+      className="inline-flex"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      aria-label={label}
-      aria-pressed={active}
-      className="flex items-center justify-center cursor-pointer"
-      style={{ width: 20, height: 20, padding: 0 }}
     >
-      <Icon
-        path={path}
-        size={0.6}
-        color={active || isHovered ? colors.colorBlueDark1 : colors.colorBlack4}
+      <CanaryButton
+        type={ButtonType.ICON_SECONDARY}
+        size={ButtonSize.TINY}
+        onClick={onClick}
+        className="icon-btn-bare icon-btn-20"
+        icon={
+          <Icon
+            path={path}
+            size={0.6}
+            color={active || isHovered ? colors.colorBlueDark1 : colors.colorBlack4}
+            title={label}
+            id={id}
+          />
+        }
       />
-    </button>
+    </span>
   );
 }
 
@@ -178,6 +230,25 @@ function FeedbackIcon({
  * It sits INSIDE the title row, inline with the sender name, so a hover
  * background would draw a chip in the middle of a line of text. The hover
  * state is the text itself: gray → black, and nothing else moves.
+ *
+ * `ButtonType.TEXT` with the chevron in the base's own `icon` slot at
+ * `IconPosition.RIGHT`. `.text-btn-inline` strips the button chrome and
+ * `.text-btn-quiet` carries the grey→black ladder on `.button-content` — which
+ * is where the library paints TEXT's content colour, inline, keyed to
+ * `ButtonColor` with no grey option (HEADING_TEXT and FONT_SECONDARY are
+ * unimplemented in the compiled switch and fall through to blue). The chevron is
+ * passed with NO `color` so it inherits `currentColor` and follows the label;
+ * that is what retired this component's `isHovered` state.
+ *
+ * The three `[&_.button-content>div]:` overrides are the base's icon slot: it
+ * reserves a fixed 20px box for the glyph and puts an 8px margin between label
+ * and icon, where this caption draws a hugging 14px glyph 4px away.
+ *
+ * ⚠ `aria-expanded` IS LOST — `CanaryButton` has no ARIA passthrough — so the
+ * toggle no longer announces whether the trace is open. Logged as a foundation
+ * ask. `CanaryExpand` was checked and rejected for this control in the audit
+ * (its header and panel are one unit with baked padding and a hairline); it is
+ * not revisited here.
  */
 function StepsToggle({
   count,
@@ -188,25 +259,16 @@ function StepsToggle({
   isOpen: boolean;
   onToggle: () => void;
 }) {
-  const [isHovered, setIsHovered] = useState(false);
-  const tint = isHovered ? colors.colorBlack1 : colors.colorBlack3;
   return (
-    <button
+    <CanaryButton
+      type={ButtonType.TEXT}
       onClick={onToggle}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      aria-expanded={isOpen}
-      className="flex items-center gap-1 shrink-0 cursor-pointer bg-transparent"
-      style={{ padding: 0 }}
+      icon={<Icon path={isOpen ? mdiChevronUp : mdiChevronDown} size={0.6} />}
+      iconPosition={IconPosition.RIGHT}
+      className="text-btn-inline text-btn-quiet shrink-0 whitespace-nowrap font-['Roboto',sans-serif] !text-[12px] leading-[18px] [&_.button-content>div]:!ml-1 [&_.button-content>div]:!w-auto [&_.button-content>div]:!h-auto"
     >
-      <span
-        className="font-['Roboto',sans-serif] text-[12px] leading-[18px] whitespace-nowrap transition-colors"
-        style={{ color: tint }}
-      >
-        Completed {count} Steps
-      </span>
-      <Icon path={isOpen ? mdiChevronUp : mdiChevronDown} size={0.6} color={tint} />
-    </button>
+      Completed {count} Steps
+    </CanaryButton>
   );
 }
 
@@ -319,9 +381,10 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
         {/* Steps card — sits ABOVE the answer, because it is what produced it.
             The card itself is now the shared <AiStepsCard>; the call-details
             transcript in the Conversation Details panel renders the same one. */}
-        {isAI && isStepsOpen && (
-          <AiStepsCard steps={steps} style={{ marginTop: 4, marginBottom: 8 }} />
-        )}
+        {/* Margins as CLASSES, not a `style` prop: the boxed variant of
+            `AiStepsCard` is a `CanaryCard` now, and that component takes a
+            `className` but exposes no `style`. */}
+        {isAI && isStepsOpen && <AiStepsCard steps={steps} className="mt-1 mb-2" />}
 
         {/* Body */}
         <p
@@ -336,7 +399,7 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
           {isFailed ? (
             <CaptionLink
               label="Message failed to send"
-              color={COLOR_RED_1}
+              color={ButtonColor.DANGER}
               onClick={() => openCarrierErrors(message.id)}
             />
           ) : (
@@ -349,7 +412,7 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
               {isGuest && message.aiDeclined && (
                 <CaptionLink
                   label="AI chose not to respond"
-                  color={colors.colorBlueDark1}
+                  color={ButtonColor.NORMAL}
                   /* Same sidebar as the ⓘ, opened at its non-response state. The
                      absence of a reply is an answer, and it gets the same page
                      the replies get. */
@@ -364,21 +427,27 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
               promised its own popover of source statements; that would have
               been a second, thinner copy of a list the sidebar already prints
               with the reasoning that selected it. One list, one place. */}
+          {/* `CanaryChip` is the right interactive-pill primitive — it brings
+              `role="button"`, Enter/Space handling, the rounded-full geometry
+              and a trailing-icon slot. What it does NOT bring is this register:
+              both of its own (blue SELECTABLE, grey-filled REMOVABLE) paint
+              their colours INLINE and re-write them on hover and press, so the
+              frames' neutral caption-weight outline can only be pinned from
+              outside. That is all `.chip-source` is, stated across every one of
+              those states. Logged as the `customColor` ask, for parity with
+              `CanaryTag.customColor`.
+              `label` is typed `string`, so the count is interpolated rather than
+              passed as children. */}
           {isAI && !!sourceCount && (
-            <button
+            <CanaryChip
+              chipType={ChipType.SELECTABLE}
+              label={`${sourceCount} Sources`}
               onClick={() => openAiExplanation(message.id)}
-              className={`${CAPTION_CLASS} flex items-center gap-1 rounded-full cursor-pointer transition-colors hover:bg-[rgba(0,0,0,0.04)]`}
-              style={{
-                color: colors.colorBlack3,
-                border: `1px solid ${colors.colorBlack6}`,
-                height: 20,
-                paddingLeft: 8,
-                paddingRight: 6,
-              }}
-            >
-              {sourceCount} Sources
-              <Icon path={mdiChevronDown} size={0.55} color={colors.colorBlack3} />
-            </button>
+              trailingIcon={
+                <Icon path={mdiChevronDown} size={0.55} color={colors.colorBlack3} />
+              }
+              className={`${CAPTION_CLASS} chip-source`}
+            />
           )}
 
           {showFeedback && (
@@ -386,11 +455,13 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
               <FeedbackIcon
                 path={mdiInformationOutline}
                 label="About this answer"
+                id={`fb-about-${message.id}`}
                 onClick={() => openAiExplanation(message.id)}
               />
               <FeedbackIcon
                 path={mdiThumbUp}
                 label="Helpful"
+                id={`fb-up-${message.id}`}
                 active={isHelpful}
                 onClick={() => {
                   setIsHelpful((v) => !v);
@@ -404,6 +475,7 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
               <FeedbackIcon
                 path={mdiThumbDown}
                 label="Not helpful"
+                id={`fb-down-${message.id}`}
                 active={isNotHelpful}
                 onClick={() => {
                   const next = !isNotHelpful;

@@ -56,7 +56,15 @@
 'use client';
 
 import React, { useEffect, useRef, useState, KeyboardEvent } from 'react';
-import { colors } from '@canary-ui/components';
+import {
+  ButtonSize,
+  ButtonType,
+  CanaryButton,
+  CanaryCard,
+  CanaryTextArea,
+  CardPadding,
+  colors,
+} from '@canary-ui/components';
 import Icon from '@mdi/react';
 import {
   mdiEmoticonOutline,
@@ -99,20 +107,55 @@ interface MessageComposerProps {
   onInjectionConsumed?: () => void;
 }
 
-/** Bare toolbar icon — no box, no padding; gray → blue on hover. */
-function ToolIcon({ path, label }: { path: string; label: string }) {
+/**
+ * Bare toolbar icon — no box, no padding; gray → blue on hover.
+ *
+ * `CanaryButton` ICON_SECONDARY at TINY, shrunk from the ramp's 24px floor to
+ * 18px by `.icon-btn-18` (which also releases the library's fixed 20px glyph
+ * box so an 18px button doesn't carry a 20px child). `.icon-btn-bare` deletes
+ * the `.button-bg` wash layer outright: this register has no box at rest, on
+ * hover or on press, because its entire state ladder is the GLYPH's colour.
+ *
+ * That colour stays on a local hover flag rather than on `currentColor`,
+ * deliberately — it keeps the exact rest/hover tints (`colorBlack3` →
+ * `colorBlueDark1`) that the message feedback icons also use, with no dependence
+ * on what the button happens to be painting its content.
+ *
+ * ⚠ THE WRAPPING SPAN EXISTS ONLY TO CARRY THE MOUSE HANDLERS. `CanaryButton`
+ * declares no DOM event props beyond `onClick` and spreads no rest props, so
+ * there is nowhere else to hang `onMouseEnter`/`onMouseLeave`. Logged as a
+ * foundation ask.
+ *
+ * ⚠ The native `title` attribute is gone — `CanaryButton` has no `title` prop
+ * either. Its OS tooltip is replaced by the mdi `Icon`'s `<title>` ELEMENT,
+ * which browsers also surface on hover over the glyph, and which is what gives
+ * the button its accessible name in the first place (see the stable-`id` note
+ * on the thread header's IconAction). These controls remain inert in this
+ * branch: there is no `onClick`, exactly as before.
+ */
+function ToolIcon({ path, label, id }: { path: string; label: string; id: string }) {
   const [isHovered, setIsHovered] = useState(false);
   return (
-    <button
-      aria-label={label}
-      title={label}
+    <span
+      className="inline-flex"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="flex items-center justify-center cursor-pointer"
-      style={{ padding: 0, width: 18, height: 18 }}
     >
-      <Icon path={path} size={0.75} color={isHovered ? colors.colorBlueDark1 : colors.colorBlack3} />
-    </button>
+      <CanaryButton
+        type={ButtonType.ICON_SECONDARY}
+        size={ButtonSize.TINY}
+        className="icon-btn-bare icon-btn-18"
+        icon={
+          <Icon
+            path={path}
+            size={0.75}
+            color={isHovered ? colors.colorBlueDark1 : colors.colorBlack3}
+            title={label}
+            id={id}
+          />
+        }
+      />
+    </span>
   );
 }
 
@@ -173,8 +216,23 @@ export function MessageComposer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [injection?.nonce]);
 
-  // Autosize: collapse to one row, then grow to content (capped so the composer
-  // can't swallow the feed).
+  /**
+   * Autosize: collapse to one row, then grow to content, capped so the composer
+   * can't swallow the feed.
+   *
+   * ⚠ THIS IS THE ONE THING THE BASE COULD NOT TAKE OVER. `CanaryTextArea` does
+   * ship an `autoExpand` that does exactly this shape — and it is not usable
+   * here, because it FLOORS the height at a hardcoded 40px (`Math.max(
+   * scrollHeight, AUTO_EXPAND_MIN_HEIGHT[size])`, 40 at NORMAL and 32 at
+   * COMPACT) with no prop to lower it. This composer's resting input is a
+   * SINGLE 22px line — the frames draw a one-line field under a toolbar, not a
+   * box — so the base's floor would make the card 18px taller at rest and
+   * change the composer's whole proportion.
+   *
+   * Everything else about the field is the base's; only the measuring is ours.
+   * Logged as the foundation ask: an overridable `autoExpand` minimum, ideally
+   * alongside the chromeless variant that would retire `.field-chromeless`.
+   */
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -200,12 +258,15 @@ export function MessageComposer({
 
   const canSend = !disabled && !!message.trim();
 
+  // `id` is the mdi `<title>` element's DOM id. It must be explicit and stable:
+  // left to itself @mdi/react numbers it off a module-level counter, which
+  // differs between the server and the client render and trips hydration.
   const toolIcons = [
-    { path: mdiEmoticonOutline, label: 'Emoji' },
-    { path: mdiPaperclip, label: 'Attach file' },
-    { path: mdiTranslate, label: 'Translate' },
-    { path: mdiFormatListBulleted, label: 'Templates' },
-    { path: mdiRoomServiceOutline, label: 'Service ticket' },
+    { path: mdiEmoticonOutline, label: 'Emoji', id: 'composer-tool-emoji' },
+    { path: mdiPaperclip, label: 'Attach file', id: 'composer-tool-attach' },
+    { path: mdiTranslate, label: 'Translate', id: 'composer-tool-translate' },
+    { path: mdiFormatListBulleted, label: 'Templates', id: 'composer-tool-templates' },
+    { path: mdiRoomServiceOutline, label: 'Service ticket', id: 'composer-tool-ticket' },
   ];
 
   return (
@@ -215,17 +276,36 @@ export function MessageComposer({
           frames draw one column, not a card with things floating near it. */}
       {topSlot && <div style={{ marginBottom: 12 }}>{topSlot}</div>}
 
-      <div
-        className="rounded-[12px] transition-colors"
-        style={{
-          backgroundColor: colors.colorWhite,
-          border: `1px solid ${isFocused ? colors.colorBlueDark1 : colors.colorBlack6}`,
-          padding: 12,
-        }}
+      {/* The input card. `CanaryCard` at COMPACT padding is exactly this card's
+          12px inset, and it already draws white / 1px / `colorBlack6`; the 12px
+          radius and the blue focus-within border are the only two deltas. The
+          base sets its border colour INLINE, so the focus swap has to be an
+          `!important` utility — nothing else outranks an inline style. */}
+      <CanaryCard
+        cardPadding={CardPadding.COMPACT}
+        hasBorder
+        className={`transition-colors !rounded-[12px] ${isFocused ? '!border-[#2858C4]' : ''}`}
       >
-        {/* Input */}
-        <textarea
+        {/* Input.
+            `CanaryTextArea`, forwarding its ref, so the injection effect above
+            still reaches the real element to focus it and place the caret and
+            the autosize effect can measure it.
+
+            `.field-chromeless` strips every visual the base contributes — its
+            border, its 12px padding, its white fill, its 2px focus outline —
+            because the CARD owns all of that. `.textarea-composer` restores this
+            composer's own metrics: a 22px floor over the base's `min-h-[80px]`,
+            a 140px cap, and `overflow-y: auto` so a long draft SCROLLS past the
+            cap rather than being clipped.
+
+            ⚠ NO `autoExpand`. The base's autosize is the right shape but it
+            floors the height at a hardcoded 40px, and this field rests at one
+            22px line — see the effect above for the whole story. `rows={1}` and
+            `resize="none"` are what `autoExpand` would otherwise have set. */}
+        <CanaryTextArea
           ref={textareaRef}
+          rows={1}
+          resize="none"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -237,9 +317,8 @@ export function MessageComposer({
           placeholder={placeholder}
           disabled={disabled}
           maxLength={1600}
-          rows={1}
-          className="w-full resize-none border-0 outline-none font-['Roboto',sans-serif] text-[14px] leading-[22px] placeholder:text-[#666666] scrollbar-invisible"
-          style={{ color: colors.colorBlack1, minHeight: 22 }}
+          className="field-chromeless textarea-composer scrollbar-invisible !text-[14px] !leading-[22px] placeholder:!text-[#666666]"
+          style={{ color: colors.colorBlack1 }}
         />
 
         {/* Toolbar */}
@@ -247,7 +326,7 @@ export function MessageComposer({
           {/* Left: bare tool icons */}
           <div className="flex items-center" style={{ gap: 12 }}>
             {toolIcons.map((tool) => (
-              <ToolIcon key={tool.label} path={tool.path} label={tool.label} />
+              <ToolIcon key={tool.label} path={tool.path} label={tool.label} id={tool.id} />
             ))}
           </div>
 
@@ -277,28 +356,40 @@ export function MessageComposer({
               </span>
             </button>
 
-            <button
+            {/* Send. `CanaryButton` ICON_PRIMARY already IS a solid
+                `colorBlueDark1` square with a white glyph and no shadow (the
+                drop shadow is PRIMARY-only), so only geometry and one state are
+                ours: 28px instead of the ramp's 32px, an 8px radius instead of
+                4px, and `.icon-btn-nodim`.
+
+                That last class is the whole point of this control's odd state:
+                it stays FULL-STRENGTH blue while disabled, where the library
+                fades every disabled button to 50%. The frame draws it that way
+                in the idle state, and it is the composer's only anchor on the
+                right. It is still natively `disabled`, so an empty Enter or
+                click is a no-op; only the cursor gives that away.
+
+                The accessible name rides the mdi `Icon`'s `title` + a stable
+                `id`, as everywhere else — `CanaryButton` has no `aria-label`. */}
+            <CanaryButton
+              type={ButtonType.ICON_PRIMARY}
+              size={ButtonSize.COMPACT}
               onClick={handleSend}
-              disabled={!canSend}
-              aria-label="Send message"
-              /* Stays full-strength blue when empty — the frame draws it that
-                 way in the idle state, and it is the composer's only anchor on
-                 the right. It is still `disabled`, so an empty Enter/click is
-                 a no-op; only the cursor gives that away. */
-              className="flex items-center justify-center rounded-[8px]"
-              style={{
-                width: 28,
-                height: 28,
-                padding: 0,
-                backgroundColor: colors.colorBlueDark1,
-                cursor: canSend ? 'pointer' : 'default',
-              }}
-            >
-              <Icon path={mdiSend} size={0.7} color={colors.colorWhite} />
-            </button>
+              isDisabled={!canSend}
+              className="icon-btn-28 icon-btn-r8 icon-btn-nodim"
+              icon={
+                <Icon
+                  path={mdiSend}
+                  size={0.7}
+                  color={colors.colorWhite}
+                  title="Send message"
+                  id="composer-send"
+                />
+              }
+            />
           </div>
         </div>
-      </div>
+      </CanaryCard>
     </div>
   );
 }
