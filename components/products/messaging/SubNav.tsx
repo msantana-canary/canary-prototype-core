@@ -15,6 +15,7 @@ import {
   InputSize,
   ButtonSize,
   ButtonType,
+  TabType,
 } from '@canary-ui/components';
 
 type CategoryFilter = 'inbox' | 'archived' | 'blocked';
@@ -52,7 +53,7 @@ export function SubNav({ onNewMessage, currentView = 'inbox', onViewChange, sear
       {/* Pill Tabs */}
       <CanaryTabs
         tabs={tabs}
-        variant="rounded"
+        tabType={TabType.ROUND}
         defaultTab={currentView}
         onChange={(tabId) => onViewChange?.(tabId as CategoryFilter)}
         className="mb-0"

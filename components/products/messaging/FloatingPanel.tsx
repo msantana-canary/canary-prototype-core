@@ -26,6 +26,28 @@
  *    so any CanaryModal opened from inside the panel stacks above it.
  *
  * No animation libraries.
+ *
+ * ── BASE-COMPONENT EXCEPTION (batch 5) ────────────────────────────────────
+ * NEAREST BASE: `CanarySideSheet`. It cannot express this shell, and the gaps
+ * are structural rather than cosmetic — five of them, verified against v0.6.0:
+ *
+ *   1. It returns `null` the instant `isOpen` flips false, so there is no exit
+ *      transition to hang the slide-out on. The two-phase mount above exists
+ *      precisely to keep the panel in the DOM through that.
+ *   2. It always renders its own header row and close ×. This is a BARE shell —
+ *      its children own every piece of chrome inside it.
+ *   3. Its scrim is a fixed `inset-0` div with no className hook, so it cannot
+ *      be inset below the 52px top bar the way this one is.
+ *   4. Scrim and panel z-indexes are pinned at `zIndex.modal` and `modal + 1`
+ *      with no prop. This panel MUST sit below modal (39/40) so a CanaryModal
+ *      opened from inside it stacks above — the base inverts that with no way
+ *      back.
+ *   5. Width is an enum (small/medium/large), not the 600/480px registers.
+ *
+ * `className` could patch the radius and the insets; it cannot touch 1–4. So
+ * this stays hand-rolled, and the FOUNDATION ASK is that `CanarySideSheet`
+ * grows: exit-transition support, a chromeless mode, scrim and z-index hooks,
+ * and a pixel width. Logged on REDESIGN_NOTES' promotion list.
  */
 
 'use client';
