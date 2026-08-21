@@ -1008,10 +1008,10 @@ values are NOT finalized — when they finalize, promote into `@canary-ui/compon
 7. **Split button** anatomy: side-only 6px radii, 1px seam.
 7b. **Compact date control** — a 32px rounded-6 row (calendar icon + formatted date, 1px `colorBlack6` border) with a transparent native date input laid over it. Hand-rolled in `BroadcastGuestList` to replace `CanaryInputDate`, whose full-height bordered box dominated the 212px recipients column. Designer asked for it and accepted it as an in-branch override. The library still has no compact/inline date variant.
 7c. **Floating panel shell** — `components/products/messaging/FloatingPanel.tsx`. Fixed inset card + scrim + two-phase mount + 240ms slide/fade + reduced-motion, z 40/39 under `zIndex.modal` (50). Used by Conversation Details, the broadcast delivery panel and the scheduled-broadcast panel. Promote once a second product needs a right-side panel.
-7d. **Overflow (kebab) menu** — hand-rolled in `BroadcastScheduledPanel` and `BroadcastGroupList`. Production has `CanaryOverflowMenu` (with an `OverflowMenuItemColor.DANGER` item variant); `@canary-ui` exports no equivalent, so every kebab in this branch is bespoke. Best single candidate for promotion.
+7d. **Overflow (kebab) menu** — ⚠ **SUPERSEDED 2026-08-21, the premise was stale.** `@canary-ui` v0.6.0 DOES export `CanaryOverflowMenu` — custom `trigger`, `placement`, `isDanger`, `isDivider`, click-outside included — so "exports no equivalent" was wrong. Every kebab that could ride it now does (`components/core/ActionMenu`, the thread header's Block/Unblock menu, the status pill's menu). What remains is a narrower, sharper ask: **per-item colour and a per-item DISABLED state with a hint**. `item.label` is typed `string`, every non-divider item is unconditionally clickable and closes the menu on click, and item colour is `colorBlack2`-or-danger set inline with no hook. That is what keeps the panel's `Kebab` — whose whole point is that a disabled item still SHOWS, with the reason underneath — hand-rolled. The broadcast kebabs are pre-cutoff canon and were not re-scoped in the 2026-08-21 pass.
 7e. **Scheduled pill** — the composer's rounded-24 "Scheduled for …" chip with a clear affordance. No library chip carries icon + label + dismiss.
 7g. **Ledger tokens / roster reason-groups** — variant C's 24px funnel chips and the lock-glyph row treatment. No library chip or list-group covers them.
-7f. **Filter chips** — the loyalty quick-select chips and the dismissible value chips (Rate Code / Group Code / Room Number). Hand-rolled in BOTH filter-modal variants; the library has no selectable-chip or removable-chip component.
+7f. **Filter chips** — the loyalty quick-select chips and the dismissible value chips (Rate Code / Group Code / Room Number). Hand-rolled in BOTH filter-modal variants. ⚠ **Premise partly stale as of 2026-08-21:** v0.6.0 exports `CanaryChip` with SELECTABLE and REMOVABLE types, and the AI feedback form's reason chips now ride it. The real gap is `customColor` — the chip's registers are colour-locked to blue (selectable) and grey-fill (removable) via inline styles, so any third register needs an `!important` block (see `.chip-source`). The broadcast filter chips are pre-cutoff canon and were not re-scoped in that pass.
 8. **Status pill** (online/away/offline) — dot + tonal bg + caret. Note the Figma has a 6-outer/8-inner radius mismatch on this control; we used 6 throughout.
 9. Figma mock nits to fix in the file when convenient: Chain-of-thoughts says Room 504 vs Emily's 153; dates say 2024; "TODAY" divider is 5 literal spaces + text; "AI actitivity" layer typo; Filters row hard-coded at 434 bleeding its card padding; Canary chatlog detached at fixed 862.
 
@@ -1297,9 +1297,20 @@ Add to the design-system TODO list above:
     me" control.
 15. **Two-select card header** — a title-slot select paired with a right-aligned
     scope select. Any list card with two scoping axes wants this.
-16. **Bare-icon toolbar / `IconAction`** — zero-padding icon buttons with a
-    neutral wash, no box at rest. Now used in the thread header and the
-    composer; the library only has padded/boxed icon buttons.
+16. **Bare-icon toolbar / `IconAction`** — ⚠ **REFRAMED 2026-08-21, the premise
+    was stale.** "The library only has padded/boxed icon buttons" was wrong
+    against v0.6.0: `ButtonType.ICON_SECONDARY` is already a transparent,
+    zero-padding icon button with a wash that only appears on hover, and every
+    icon control on this surface now renders through it. Two real gaps remain,
+    and they are what the ask should have said all along:
+    **(a) the wash is BLUE.** It is 8% of the resolved `ButtonColor`, which is
+    `colorBlueDark1` for every non-status colour — `HEADING_TEXT`, `FONT` and
+    `FONT_SECONDARY` are unimplemented in the compiled switch and fall through
+    to it. There is no grey ButtonColor and no neutral register, so every icon
+    button here carries `.icon-btn-neutral` to repaint the wash layer black.
+    **(b) the size ramp stops at 24px.** TINY is the floor; the frames draw 30,
+    28, 20 and 18. A smaller step, plus an `isPressed` latch and an `aria-label`
+    passthrough, would retire the whole `.icon-btn-*` block.
 17. **Caption-link register** — 10px uppercase underlined links in the footer
     slot (blue informational / red failure). Replaces the bespoke failed-message
     row.
@@ -2209,11 +2220,15 @@ per-thread drafts (kept, not cleared) remain a separate feature.
 
 ### ⚠ Library asks — additions
 
-31a. **`CanaryButton` has no small/compact size.** NORMAL is h-10 / rounded-4,
-     neither exposed as a prop. The band buttons are drawn 32px / rounded-8, and
-     a 40px button turns a 52px band into a 56px one and takes the whole slot's
-     rhythm with it — so `BandButton` is hand-rolled. A `ButtonSize.COMPACT`
-     would retire it.
+31a. ~~**`CanaryButton` has no small/compact size.**~~ ⚠ **WRONG, and retired
+     2026-08-21.** v0.6.0 has the full ramp — TABLET / LARGE / NORMAL /
+     `ButtonSize.COMPACT` (h-8, i.e. exactly the 32px the bands draw) / TINY
+     (h-6). `BandButton` was hand-rolled against a size that already existed.
+     It is `CanaryButton` COMPACT now; only the radius, the 13px label, the
+     14px padding and the fill-based hover are overrides. The lesson is
+     procedural, so it is kept rather than deleted: **re-read the installed
+     `.d.ts` before writing "the library has no…" into a justification.** Three
+     of this document's asks (7d, 7f, 31a) were stale the day they were written.
 31b. **`CanaryModal` draws no header or footer rules.** Every frame in this
      batch rules both. Each modal here bleeds a border back out through the
      library's `px-6 py-4` padding by hand. A `dividers` prop (or just drawing
@@ -2233,3 +2248,225 @@ Everything in the AI loop now does something. What remains inert, and why:
 - **👍** — latches locally; there is no pipeline behind a compliment yet.
 - **Carrier error codes** — underlined as links, no destination (the vendor's
   docs are external).
+
+---
+
+## Batch 5 — Base-component compliance (2026-08-21)
+
+**Miguel's rule, verbatim:** *"use our base components at the minimum … The
+component is the base … we follow the Figma for any new visual niggles but need
+to be sure we're using the already base components in our design system
+foundation."*
+
+This batch is that rule applied to every control on the surface. It changes no
+design. It swaps skeletons: each control now renders THROUGH its
+`@canary-ui/components` base, the Figma deltas ride overrides layered on top,
+and every delta is logged below so the library can eventually absorb it.
+
+### The rule that comes out of it
+
+**Hand-rolled is a promotion-list decision from now on, not a default.** A
+control may only be hand-rolled when a named base has been checked and CANNOT
+express the design — and when that happens the file says which base, why, and
+what would unlock it. Three of this document's own library asks (7d, 7f, 31a)
+were stale the day they were written, because "the library has no…" was written
+from memory rather than from the installed `.d.ts`. **Re-read the `.d.ts`
+before you write that sentence.**
+
+### What was rebuilt — 34 controls across four families
+
+**Core chrome (4).** MainNav's Conversations/Broadcast tabs → `CanaryTabs` text
+(the hand-rolled markup was a pixel-level duplicate, down to the `px-4 py-2`
+box and the `w-full h-1` underline). The online-status pill → `CanaryTag` +
+`CanaryOverflowMenu`. `components/core/ActionMenu` → `CanaryOverflowMenu`.
+`components/core/Toast` → `CanaryToast` (kept as a thin wrapper only because
+the base doesn't portal — see below).
+
+**The Conversation Details panel (8).** `PanelFooterAction` →
+`CanaryButton` SHADED/PRIMARY. `RowList` → `CanaryList hasOuterBorder`. Four
+tab rows + `ReservationResultRow` → `CanaryListItem`. Every icon button →
+`CanaryButton` ICON_SECONDARY. The reservations accordion → `CanaryExpand`. The
+inert Arrival Date → `CanaryInput isReadonly`. The playback transport →
+`CanaryButton` at three sizes.
+
+**The AI loop (6).** `BandButton` → `CanaryButton` COMPACT. `ReasonChip` →
+`CanaryChip` SELECTABLE. Both textareas → `CanaryTextArea`. The dismiss ×
+(written twice) → one `BandDismiss` on `CanaryButton` TINY. "Go to Knowledge
+Base" → `CanaryButton` TEXT.
+
+**Thread / list / composer (15).** `IconAction`, the compose ×, the tool icons
+and the feedback icons → `CanaryButton` ICON_SECONDARY; the send button →
+ICON_PRIMARY. The kebab → `CanaryOverflowMenu`. Search → `CanaryInputSearch`.
+The thread row → `CanaryListItem`. All four card shells → `CanaryCard`. The
+Sources chip → `CanaryChip`. `CaptionLink` and `StepsToggle` → `CanaryButton`
+TEXT. The composer field and the "To:" input → `CanaryTextArea` / `CanaryInput`.
+
+Three hand-rolled click-outside effects and four hand-rolled popovers are gone
+with them.
+
+### The exception set — seven, all documented in their own files
+
+These were checked against a named base and left hand-rolled. Each carries a
+header block naming the base, the structural blocker, and the ask.
+
+| Component | Nearest base | Why it can't |
+|---|---|---|
+| `Kebab` (panel) | `CanaryOverflowMenu` | `item.label` is `string`; every item is clickable and closes on click. The disabled-item-with-its-reason row — the whole point of this menu — has no expression. |
+| `AssignSelect` | `CanarySelect` | Native `<select>`: no card trigger, no section overlines, no check row. Second consumer of the ScopeSelect gap. |
+| `ScopeSelect` | `CanarySelect` | Same gap; documented since batch 2.1, re-verified unchanged. |
+| `ExpanderPill` | `CanaryChip` / `CanaryButton` | No base draws a neutral-outline pill. Chip is colour-locked blue in every state; OUTLINED's border comes from `ButtonColor`, which has no neutral. |
+| `PanelShell` | `CanarySideSheet` | Edge-hinged, unanimated, brings its own header, mounts above `zIndex.modal`. |
+| `FloatingPanel` | `CanarySideSheet` | Same five blockers. |
+| `Avatar` | `CanaryProfileImage` | Circle-only, initials colours hardcoded inline, no icon fallback, no image transform. |
+
+The verified **legit-new** set is unchanged and stays hand-rolled: `AiOrb`,
+`ContextBand` and its four compositions, `AiStepsCard`'s trace rows, the
+composer AI pill, `ControlCard`, `DetailRows`, `CarrierErrorLine`, the audio
+scrubber, the GJ timeline, `DateSeparator`, and the typography furniture.
+
+### The override layer
+
+Everything the frames add on top of a base lives in ONE documented block in
+`app/globals.css` — the pattern `.panel-commit-button` established, generalised.
+The load-bearing one is the **icon-button ramp**: five hand-rolled registers
+(30 / 28 / 24 / 20 / 18px, three different neutral hover washes) collapse onto
+`.icon-btn-neutral` + orthogonal size and radius modifiers over `CanaryButton`
+ICON_SECONDARY. The three washes become the library's one 8% / 16% ladder — a
+deliberate consolidation, not a miss.
+
+⚠ **Two cascade facts, both learned the hard way, both recorded in the CSS.**
+(1) These classes are UNLAYERED and Tailwind's `!` utilities live in
+`@layer utilities`; for IMPORTANT declarations layer order REVERSES, so a `!`
+utility at a call site always beats the same property in a shared class. That is
+the right precedence — but it silently killed `.textarea-boxed:focus`'s blue
+border against a rest-state `!border-[#E5E5E5]`, so a class rule on a
+pseudo-class must be re-asserted as a utility. (2) `.field-chromeless`
+deliberately does NOT set height: an `!important` height outranks the inline
+height a textarea's autosize writes.
+
+### ⚠ Library asks — the batch's output
+
+Sorted by how much they would remove.
+
+32. **`CanaryButton` ARIA + ref passthrough.** No `aria-label`, no
+    `aria-pressed`, no `aria-expanded`, no `title`, no ref, no rest-prop spread,
+    and icon types render no children. Costs on this surface: `aria-pressed` on
+    the thread-header info toggle, both message feedback latches and the eight
+    reason chips; `aria-expanded` on the steps toggle and the panel kebab
+    trigger. Accessible names survive only via a workaround — the mdi `Icon`'s
+    `title` plus an explicit stable `id`, because `@mdi/react` otherwise derives
+    the `<title>` id from a module-level counter and trips hydration. Two icon
+    registers also need a wrapper `<span>` purely to carry `onMouseEnter`.
+33. **`CanaryListItem` keyboard activation.** It renders `<li role="button"
+    tabIndex={0}>` with `onClick` on an inner div and NO key handler: the row
+    takes focus, announces itself as a button, and ignores Enter and Space. Every
+    clickable row here carries `useRowKeyActivation`
+    (`lib/products/messaging/`) as a stopgap — **delete that hook when this
+    lands.** Also: `role="button"` is duplicated on the `<li>` and its inner div,
+    `isSelected` maps to no `aria-pressed`/`aria-selected`, and the padding ramp
+    offers only compact (8px) and normal (16px) where this surface draws 12.
+34. **`CanaryInput` `pl-10` / `pr-10` are missing from `dist/styles.css`** — a
+    BUG, not a gap. The component adds those classes when `leftAddon`/
+    `rightAddon` is set, the library ships neither, and a consuming app's
+    Tailwind never generates them because no app source emits them. The addon
+    inset is dead in every consumer today; here the calendar glyph painted on
+    top of the placeholder until `!pl-10` was added. Also wire `label` →
+    `htmlFor`/`id`.
+35. **Neutral ButtonColor.** `NORMAL`, `HEADING_TEXT`, `FONT` and
+    `FONT_SECONDARY` all resolve to `colorBlueDark1` — the last three are
+    unimplemented in the compiled switch. There is no grey button, which is why
+    every neutral icon button here repaints `.button-bg` black.
+36. **Sub-24px icon sizes** (plus 28 and 30 rungs) and an `isPressed` latch.
+    TINY is the floor; the frames draw 30, 28, 20 and 18.
+37. **A chromeless / embedded field variant** of `CanaryTextArea` and
+    `CanaryInput`, for composite fields where the parent card owns the border,
+    the radius and the focus ring. Related: `autoExpand`'s minimum is a
+    hardcoded 40px (32 at COMPACT) with no prop, which is why the composer keeps
+    its own autosize; and `min-h-[80px]` should be overridable by prop.
+38. **`customColor` on `CanaryChip`**, for parity with `CanaryTag.customColor`.
+    Both chip registers are colour-locked (selectable blue, removable grey fill)
+    via inline, state-driven styles, so any third register — the Sources chip's
+    neutral caption outline, the ExpanderPill — needs an `!important` block.
+    Also: no `aria-pressed`, `minWidth: 72` is not disable-able, and it is the
+    one base that does not set `font-['Roboto']`.
+39. **Per-item colour on `CanaryOverflowMenu`**, plus item-level `disabled` +
+    `hint` + ReactNode `label` + stay-open-on-disabled-click. The first would
+    retire two accepted colour deltas; the rest would retire the panel `Kebab`.
+40. **`CanaryTooltip`: portal it, allow wrapping, flip on collision, and
+    `aria-hidden` the bubble when it is not visible.** It renders `absolute` and
+    `whitespace-nowrap`, so it dies inside any `overflow-hidden` ancestor; and
+    because the bubble is always in the DOM at `opacity: 0`, an element that
+    also carries its own `aria-label` gets read out twice.
+41. **`CanaryList`: an opt-out for the per-child mount animation** (every row
+    fades and slides 8px over 350ms with no stagger and no prop), and a keying
+    strategy that doesn't ghost trailing rows when the list shrinks.
+42. **`CanaryExpand`: `aria-expanded` on the header, class hooks, a borderless
+    variant.** Its header is a `div[role="button"]` that sets no
+    `aria-expanded`; every visual delta rides `.panel-accordion`'s descendant
+    selectors, which are fragile by construction.
+43. **`CanaryCard` needs a `style` passthrough** (it takes `className` only),
+    and note that it nests children in a second div — any flex/`min-h-0` height
+    chain has to be re-established on that child.
+44. **A solid toast register**, and portal the toast. `CanaryToast` is tinted
+    (pale ground, coloured border and text) with a mandatory close ×; this
+    product's receipt is a solid bar that dismisses itself. And it positions
+    `fixed` without portalling, so inside a transform-animated panel it anchors
+    to the panel.
+45. **`CanaryLink` / an inline text variant.** No link primitive exists, so
+    three text affordances here neutralise four `CanaryButton` TEXT traits to
+    fake one.
+46. **`CanaryProfileImage`: `shape` (square + radius), `tone`/custom colours on
+    the initials tile, an icon fallback, and an image transform hook.** Four
+    axes `Avatar` needs and the base has none of.
+47. **12px list-row padding, 6px input radius, and a `colorBlack5` quiet border
+    variant** — the three metric deltas this surface asks for most often.
+48. **Library CSS bug:** `dist/styles.css` hand-writes `.-translate-x-1\/2` as
+    `transform: translateX(-50%)` while Tailwind v4 emits the same class as
+    `translate: -50%`. Both apply, so a centred element shifts a full
+    half-width. It happens to be invisible where we hit it; it is not intent.
+
+### Visual deltas this batch accepted
+
+None of these were designed; each is a base contract asserting itself, and each
+is a one-line revert if Miguel disagrees.
+
+- **Icon-button hover washes**: `#F0F0F0` (≈5.9% black) and `rgba(0,0,0,.06)`
+  → the library's `rgba(0,0,0,.08)`, plus a 16% press state none of them had.
+- **Overflow-menu items**: non-danger rows `colorBlueDark1` / `colorBlack1` →
+  `colorBlack2`; hover `gray-50` → `colorBlack7`; the popover hangs flush under
+  its trigger instead of 4px below (restored to 4px on the thread kebab only).
+- **`CanaryList` mount animation** on every panel list — rows fade and slide
+  8px into place on tab switch, panel open and drill-in.
+- **New hover/press states** on the commit bar, the playback transport, the
+  reason chips and the picker rows, which previously had none.
+- **The band buttons' primary is 2px narrower** — the hand-roll drew a 1px
+  border in the same blue as its fill; `ButtonType.PRIMARY` draws none.
+- **Arrival Date's border** `colorBlack5` → `colorBlack3`, which now MATCHES the
+  real input beside it. The hand-drawn div disagreed with its own sibling.
+- **The two AI textareas answer focus for the first time.** Their hand-rolled
+  focus rule was an unimportant class losing to an inline `border` shorthand, so
+  it had never painted.
+- **Search is a `searchbox`, not a `textbox`**, and line-height 22 → 21.
+
+### Files touched (batch 5)
+
+- `app/globals.css` — the base-component override block.
+- `components/core/` — `ActionMenu.tsx`, `Toast.tsx`.
+- `components/products/messaging/` — `MainNav.tsx`, `SubNav.tsx`,
+  `FloatingPanel.tsx`, `ThreadView.tsx`, `ThreadList.tsx`, `ThreadListItem.tsx`,
+  `MessageBubble.tsx`, `MessageComposer.tsx`, `ComposeHeader.tsx`,
+  `ConversationControls.tsx`, `Avatar.tsx`, `AiStepsCard.tsx`.
+- `components/products/messaging/ai/` — `band-ui.tsx`, `AiDraftCard.tsx`,
+  `AiExplanationPanel.tsx`, `AiFeedbackForm.tsx`, `AddInformationModal.tsx`.
+- `components/products/messaging/panel/` — `panel-ui.tsx`, `PanelTabs.tsx`,
+  `ReservationsPage.tsx`, `ReservationResultRow.tsx`, `LinkReservationPage.tsx`,
+  `SetPrimaryGuestPage.tsx`, `CallDetailsPage.tsx`, `ConversationDetailsPanel.tsx`,
+  `AssignSelect.tsx`, `PanelShell.tsx`.
+- `lib/products/messaging/useRowKeyActivation.ts` — new, and temporary.
+
+### Not touched, on purpose
+
+`components/products/messaging/broadcast/` is pre-cutoff canon and was out of
+scope. Its hand-rolled kebabs, filter chips and compact date control are the
+reason asks 7b, 7d, 7e, 7f and 7g still read the way they do; a full sweep of
+that directory is a separate, explicitly re-scoped pass.
