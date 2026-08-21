@@ -21,6 +21,7 @@ import React, { useEffect, useState } from 'react';
 import {
   CanaryModal,
   CanaryButton,
+  CanaryTextArea,
   ButtonType,
   ButtonSize,
   colors,
@@ -70,6 +71,14 @@ export function AddInformationModal({
         </div>
       }
     >
+      {/* ⚠ THE LABEL STAYS OURS, ON PURPOSE. `CanaryTextArea` has a `label`
+          prop, and it is the wrong tool twice over: its `<label>` is pinned at
+          12px/18px black with a 4px gap and is unreachable from `className`
+          (which lands on the `<textarea>`) — the frame draws 14px/22px
+          `colorBlack2` with an 8px gap — and it carries NO `htmlFor` while the
+          base generates no id for the field, so the prop would also cost this
+          label its association with the box it names. Logged as a library ask:
+          wire label↔field, and let the label be styled or passed as a node. */}
       <label
         className="block font-['Roboto',sans-serif] text-[14px] leading-[22px]"
         style={{ color: colors.colorBlack2, marginBottom: 8 }}
@@ -77,20 +86,34 @@ export function AddInformationModal({
       >
         AI knowledge update
       </label>
-      <textarea
+      {/* `.textarea-boxed` is the 8px radius and the focus-answers-on-the-BORDER
+          register — the base draws a 4px radius and a 2px focus OUTLINE, and
+          every other field on this surface answers focus on the border. The
+          rest are this field's own metrics: a `colorBlack5` hairline where the
+          base's is #666, 140px of floor, 14px of padding, and a 15px/24px type
+          size for a box you are meant to write a sentence into.
+
+          `rows={2}` restores the HTML default the hand-rolled textarea had. The
+          base defaults to `rows={4}`; it makes no difference at this floor, but
+          it is what keeps the height MIN-HEIGHT-driven rather than a race
+          between two numbers.
+
+          ⚠ `focus:!border-[#2858C4]` IS NOT REDUNDANT with `.textarea-boxed`.
+          `.textarea-boxed:focus` names that same colour, but it lives UNLAYERED
+          in globals.css while `!border-[#CCCCCC]` is a Tailwind utility inside
+          `@layer utilities` — and for `!important` declarations the cascade's
+          layer order REVERSES: layered important beats unlayered important, no
+          matter the specificity. Without this the resting border colour wins
+          the focus state and the box never turns blue. Same layer, extra
+          `:focus`, honest win. */}
+      <CanaryTextArea
         id="ai-knowledge-update"
         value={text}
         onChange={(e) => setText(e.target.value)}
         autoFocus
-        className="w-full font-['Roboto',sans-serif] text-[15px] leading-[24px] outline-none focus:border-[#2858C4] transition-colors scrollbar-invisible"
-        style={{
-          minHeight: 140,
-          resize: 'vertical',
-          border: `1px solid ${colors.colorBlack5}`,
-          borderRadius: 8,
-          padding: 14,
-          color: colors.colorBlack1,
-        }}
+        rows={2}
+        resize="vertical"
+        className="textarea-boxed scrollbar-invisible !border-[#CCCCCC] focus:!border-[#2858C4] !min-h-[140px] !p-[14px] !text-[15px] !leading-[24px] !text-black"
       />
     </CanaryModal>
   );

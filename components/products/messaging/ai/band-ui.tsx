@@ -28,8 +28,8 @@
 
 'use client';
 
-import React, { useState } from 'react';
-import { colors } from '@canary-ui/components';
+import React from 'react';
+import { ButtonSize, ButtonType, CanaryButton, colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiClose } from '@mdi/js';
 
@@ -88,26 +88,93 @@ export function ContextBand({
       {icon && <span className="shrink-0 flex items-center">{icon}</span>}
       <div className="flex-1 min-w-0">{children}</div>
       {actions && <div className="flex items-center shrink-0" style={{ gap: 8 }}>{actions}</div>}
-      {onDismiss && (
-        <button
-          onClick={onDismiss}
-          aria-label={dismissLabel}
-          className="shrink-0 flex items-center justify-center rounded-[4px] transition-colors hover:bg-[rgba(0,0,0,0.06)] cursor-pointer"
-          style={{ width: 24, height: 24, padding: 0 }}
-        >
-          <Icon path={mdiClose} size={0.7} color={colors.colorBlack4} />
-        </button>
-      )}
+      {onDismiss && <BandDismiss label={dismissLabel} onClick={onDismiss} />}
     </div>
   );
 }
 
 /**
- * The band's two buttons. Hand-rolled rather than `CanaryButton` for one
- * reason: the frames draw them at 32px with an 8px radius, and `CanaryButton`'s
- * NORMAL is 40px/rounded-4 with neither exposed as a prop. A 40px button turns a
- * 52px band into a 56px one and the whole slot's rhythm goes with it.
- * (Logged with the other library asks in REDESIGN_NOTES.)
+ * The band's dismiss ×, once. It was written twice — here and on the draft card —
+ * and the two copies were the same call, so they are now the same component.
+ *
+ * `CanaryButton` ICON_SECONDARY at TINY is an exact geometry match: h-6 w-6 is
+ * the 24px box the frames draw and `rounded-[4px]` is the radius, both from the
+ * base with nothing overridden. `.icon-btn-neutral` repaints the wash layer
+ * black, because the library keys its hover to `ButtonColor` and every
+ * non-status colour resolves to blue — and this × is the lowest-emphasis exit on
+ * the row, not a blue affordance.
+ *
+ * ⚠ ONE DELTA, DELIBERATE: the wash moves from the hand-rolled rgba(0,0,0,0.06)
+ * to the library's 8% / 16% opacity ladder. Every neutral icon button on this
+ * surface now rides that one ladder rather than three hand-tuned values nobody
+ * could tell apart.
+ *
+ * ── THE ACCESSIBLE NAME RIDES THE GLYPH ───────────────────────────────────
+ * `CanaryButton` has no `aria-label`, spreads no rest props, and renders no
+ * children for icon types, so the name goes on the mdi `Icon`'s `title` — which
+ * `@mdi/react` exposes as an `aria-labelledby` on the `<svg>`. The explicit `id`
+ * is not optional: without it the library derives the `<title>` element's id
+ * from a MODULE-LEVEL COUNTER, which differs between the server and client
+ * renders and trips hydration (the same failure documented in `ThreadListItem`).
+ * The id is slugged from the label, so it is stable across renders — which also
+ * means two dismisses on screen at once must carry DIFFERENT labels. They do:
+ * "Skip this suggestion" on the fact band, "Dismiss draft" on the draft card.
+ */
+export function BandDismiss({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <CanaryButton
+      type={ButtonType.ICON_SECONDARY}
+      size={ButtonSize.TINY}
+      onClick={onClick}
+      className="icon-btn-neutral"
+      icon={
+        <Icon
+          path={mdiClose}
+          size={0.7}
+          color={colors.colorBlack4}
+          title={label}
+          id={`band-dismiss-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+        />
+      }
+    />
+  );
+}
+
+/**
+ * The band's two buttons — Edit / Add to AI on the fact band, Dismiss / Review
+ * on the ticket band, Edit / Send on the draft card.
+ *
+ * `CanaryButton` carries this. `ButtonSize.COMPACT` is h-8 — exactly the 32px
+ * the frames draw — and OUTLINED and PRIMARY are already the frames' two
+ * registers: a `colorBlueDark1` hairline with a blue label, and a solid
+ * `colorBlueDark1` fill with a white one. What is left is dress, and it all
+ * lives in `.band-button` (8px radius, 13px label, 14px side padding, no
+ * shadow) plus the two register classes.
+ *
+ * ── THREE DELTAS WORTH NAMING ─────────────────────────────────────────────
+ *   HOVER IS A FILL, NOT AN OPACITY. The library expresses hover as an opacity
+ *   move — 8% of the button colour washed over OUTLINED, and a fade of the
+ *   LABEL on PRIMARY — where the frames tint the FILL and leave the label
+ *   alone. `.band-button-outline` / `.band-button-primary` restore
+ *   colorBlueDark5 and colorBlueDark2 respectively, so the hover state is
+ *   unchanged from what Miguel signed off. That is why there is no `isHovered`
+ *   state here any more: the hover is CSS.
+ *
+ *   `!bg-white` IS LOAD-BEARING. The base's OUTLINED is TRANSPARENT at rest —
+ *   its wash layer sits at opacity 0 — and these buttons sit on coloured
+ *   grounds: the AI band's pink-lavender whisper and the ticket band's
+ *   `colorBlueDark5`. Without an opaque white ground the outline button would
+ *   read as a hollow ring cut out of the band. The frames draw a white pill.
+ *
+ *   PRIMARY IS 2px NARROWER. The hand-roll drew a 1px border on the primary in
+ *   the SAME blue as its fill — invisible ink that nonetheless bought 2px of
+ *   width. `ButtonType.PRIMARY` renders `border: none`. Restoring the border
+ *   would put a visible ring around the button the moment the hover tint lands
+ *   on the fill and not on the border, so the 2px is given up instead: the
+ *   painted geometry is identical, the outer box is 2px tighter.
+ *
+ * `leading-[20px]` and `whitespace-nowrap` are the hand-roll's, kept: the base
+ * sets neither, and a band button that wraps is a band that changes height.
  */
 export function BandButton({
   label,
@@ -118,33 +185,21 @@ export function BandButton({
   variant: 'outline' | 'primary';
   onClick: () => void;
 }) {
-  const [isHovered, setIsHovered] = useState(false);
   const isPrimary = variant === 'primary';
 
   return (
-    <button
+    <CanaryButton
+      type={isPrimary ? ButtonType.PRIMARY : ButtonType.OUTLINED}
+      size={ButtonSize.COMPACT}
       onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="rounded-[8px] font-['Roboto',sans-serif] font-medium text-[13px] leading-[20px] whitespace-nowrap transition-colors cursor-pointer"
-      style={{
-        height: 32,
-        paddingLeft: 14,
-        paddingRight: 14,
-        border: `1px solid ${colors.colorBlueDark1}`,
-        backgroundColor: isPrimary
-          ? isHovered
-            ? colors.colorBlueDark2
-            : colors.colorBlueDark1
-          : isHovered
-            ? colors.colorBlueDark5
-            : colors.colorWhite,
-        borderColor: isPrimary && isHovered ? colors.colorBlueDark2 : colors.colorBlueDark1,
-        color: isPrimary ? colors.colorWhite : colors.colorBlueDark1,
-      }}
+      className={[
+        'band-button',
+        isPrimary ? 'band-button-primary' : 'band-button-outline !bg-white',
+        'leading-[20px] whitespace-nowrap',
+      ].join(' ')}
     >
       {label}
-    </button>
+    </CanaryButton>
   );
 }
 

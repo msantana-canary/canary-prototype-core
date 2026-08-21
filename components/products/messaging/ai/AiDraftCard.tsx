@@ -34,10 +34,8 @@
 
 import React from 'react';
 import { colors } from '@canary-ui/components';
-import Icon from '@mdi/react';
-import { mdiClose } from '@mdi/js';
 import { AiDraft } from '@/lib/products/messaging/types';
-import { BandButton, BandOverline } from './band-ui';
+import { BandButton, BandDismiss, BandOverline } from './band-ui';
 
 export function AiDraftCard({
   draft,
@@ -72,14 +70,10 @@ export function AiDraftCard({
         <BandButton label="Edit" variant="outline" onClick={onEdit} />
         <BandButton label="Send" variant="primary" onClick={onSend} />
       </div>
-      <button
-        onClick={onDismiss}
-        aria-label="Dismiss draft"
-        className="shrink-0 flex items-center justify-center rounded-[4px] transition-colors hover:bg-[rgba(0,0,0,0.06)] cursor-pointer"
-        style={{ width: 24, height: 24, padding: 0 }}
-      >
-        <Icon path={mdiClose} size={0.7} color={colors.colorBlack4} />
-      </button>
+      {/* The same × the bands carry, and now literally the same component — see
+          `BandDismiss`. The card is not a `ContextBand` (it is taller and it
+          wraps), but its exit is the band's exit and always was. */}
+      <BandDismiss label="Dismiss draft" onClick={onDismiss} />
     </div>
   );
 }

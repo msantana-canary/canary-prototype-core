@@ -40,7 +40,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { colors } from '@canary-ui/components';
+import { ButtonType, CanaryButton, colors } from '@canary-ui/components';
 import { PanelShell, PANEL_ANIM_MS } from '../panel/PanelShell';
 import { PanelHeader, PanelFooterAction, PANEL_PAD } from '../panel/panel-ui';
 import { AiRecapBand } from './AiRecapBand';
@@ -245,14 +245,26 @@ export function AiExplanationPanel() {
                     </h4>
                     {/* STUB. The Knowledge Base is a whole other product surface
                         and this prototype does not carry it; a fake destination
-                        would be worse than an honest dead link. */}
-                    <button
+                        would be worse than an honest dead link. The empty
+                        handler is the point — do not wire it.
+
+                        The library has no link primitive, so `ButtonType.TEXT`
+                        is the ancestor, and it pays for itself: TEXT resolves
+                        its content colour to `colorBlueDark1` and NORMAL is
+                        `text-[14px]`, both exactly the frame's. Only the BUTTON
+                        CHROME has to come off — the size ramp's height, the
+                        16px side padding, the medium weight and the hover wash —
+                        which is what `.text-btn-inline` is. The underline is
+                        ours; a link is the one thing the base cannot draw.
+                        Logged as the sharpest ask in the batch: a real
+                        `CanaryLink`. */}
+                    <CanaryButton
+                      type={ButtonType.TEXT}
                       onClick={() => {}}
-                      className="shrink-0 font-['Roboto',sans-serif] text-[14px] leading-[22px] underline cursor-pointer"
-                      style={{ color: colors.colorBlueDark1, textUnderlineOffset: 2 }}
+                      className="text-btn-inline underline [text-underline-offset:2px] leading-[22px]"
                     >
                       Go to Knowledge Base
-                    </button>
+                    </CanaryButton>
                   </div>
                   <div style={{ marginTop: 2 }}>
                     {explanation.sources.map((source, i) => (
