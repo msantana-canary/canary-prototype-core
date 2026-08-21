@@ -145,13 +145,424 @@ body {
    hover/press states a hand-rolled button was missing. Its NORMAL size is
    h-10 / rounded-4; the panel's commit bar is 44px / rounded-8. `!important`
    because `h-10` and `rounded-[4px]` are library utilities of identical
-   specificity to anything we could pass through `className`. */
+   specificity to anything we could pass through `className`.
+
+   `box-shadow: none` is for the PRIMARY register (the AI feedback page's
+   "Submit Feedback"): ButtonType.PRIMARY is the one type the library gives a
+   drop shadow, and this branch draws no shadows anywhere. SHADED has none
+   either way, so the rule is harmless on the tonal variant. */
 .panel-commit-button {
   height: 44px !important;
   border-radius: 8px !important;
+  box-shadow: none !important;
 }
 .panel-commit-button .button-bg {
   border-radius: 8px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BASE-COMPONENT OVERRIDES — the Figma deltas, layered on the library
+   ═══════════════════════════════════════════════════════════════════════════
+
+   THE RULE (Miguel, 2026-08-21): "use our base components at the minimum … The
+   component is the base … we follow the Figma for any new visual niggles but
+   need to be sure we're using the already base components in our design system
+   foundation." Every control on this surface renders THROUGH its `@canary-ui`
+   base. Where the frames disagree with the base, the delta is an OVERRIDE
+   LAYERED ON TOP — never a re-implementation — and every delta is logged on
+   REDESIGN_NOTES' promotion list so the library can eventually absorb it.
+
+   WHY CLASSES AND NOT `style={{}}`: the library paints most of its state with
+   INLINE styles (`.button-bg`'s colour, the chip's whole colour ladder, the
+   list item's fill, the toast's palette). An inline style outranks any class,
+   so the only thing that can reach past it is `!important` in a stylesheet.
+   That is the pattern `.panel-commit-button` set on 2026-08-20; everything
+   below follows it — one named class per REGISTER, the deltas inside it, and a
+   comment saying what the base draws and why we differ. One-off deltas that
+   need no pseudo-class and no internal selector stay inline as Tailwind `!`
+   utilities (which also compile to `!important`); a class earns its name by
+   being shared or by having to reach an internal element.
+
+   ⚠ RE-CHECK ALL OF THIS ON A LIBRARY BUMP. Every rule is keyed to v0.6.0's
+   internal markup — `.button-bg`, `.button-content`, `.canary-list-item`, and
+   CanaryExpand's header-div/panel-div anatomy. When the library grows the prop
+   an override is standing in for, DELETE the block; do not keep both.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ---- Neutral icon buttons — CanaryButton ICON_SECONDARY ------------------
+   ONE ramp for every bare icon control on the surface: the thread header's
+   archive / info / kebab, the panel's back / close / kebab / refresh / open-in-
+   new, the panel's copy affordance, the composer's tool row, the message
+   feedback icons, and the AI bands' dismiss ×.
+
+   What the base already gives: a transparent, zero-padding icon button whose
+   `.button-bg` layer washes to 8% (hover) / 16% (press) of the button colour,
+   with the glyph passed in as a ReactNode so its colour stays ours.
+
+   TWO DELTAS, the same two everywhere:
+
+   1. THE WASH IS BLUE. `ButtonColor` resolves to `colorBlueDark1` for every
+      non-status colour (HEADING_TEXT and FONT_SECONDARY are unimplemented in
+      the compiled colour switch and fall through to blue), and the value is set
+      INLINE on `.button-bg`. This surface's icon buttons wash NEUTRAL — the
+      product already spends blue on selection and on links. `.icon-btn-neutral`
+      repaints that one layer black and lets the library's own opacity ladder do
+      the rest.
+
+      ⚠ ONE WASH, NOT FOUR. The hand-rolled buttons this replaces carried three
+      different neutral values — rgba(0,0,0,.06) on the copy icon and the band
+      dismiss, #F0F0F0 (≈5.9%) in the panel, rgba(0,0,0,.08) in the thread
+      header. They now all ride the library's 8% / 16% ladder. That is a
+      deliberate consolidation, not a miss: a system with one hover wash is
+      worth more than three hand-tuned ones nobody can tell apart.
+
+   2. THE SIZE RAMP STOPS AT 24px (TINY). The frames draw 30, 28, 20 and 18, so
+      size and radius are the only geometry modifiers below. `.icon-btn-bare` is
+      the register with NO box at all — the composer's tool icons and the
+      message feedback icons answer the pointer by TINTING THE GLYPH, never by
+      growing a chip under it.
+
+   ACCESSIBLE NAMES: `CanaryButton` has no `aria-label` and spreads no rest
+   props, so the name rides the mdi `Icon`'s `title`. Always pass a stable `id`
+   alongside it — `@mdi/react` otherwise derives the `<title>` element's id from
+   a module-level counter, which is the hydration mismatch documented in
+   `ThreadListItem`. With an explicit `id` the counter is never touched.
+
+   Library asks logged for all of this: neutral wash for ICON_SECONDARY,
+   sub-24px sizes, an `isPressed` latch, and `aria-label` passthrough. */
+.icon-btn-neutral .button-bg {
+  background-color: #000000 !important;
+}
+/* The panel's disabled icon action fades to 40%, not the library's 50%. */
+.icon-btn-neutral:disabled {
+  opacity: 0.4 !important;
+}
+/* The pressed LATCH (thread header info button while its panel is open). The
+   library has no pressed prop — its 16% is a transient `:active` only. */
+.icon-btn-latched .button-bg {
+  opacity: 0.08 !important;
+}
+/* No box, ever — the wash layer is removed outright rather than made
+   transparent, so nothing can re-tint it on hover or press. */
+.icon-btn-bare .button-bg {
+  display: none !important;
+}
+.icon-btn-30 {
+  width: 30px !important;
+  height: 30px !important;
+}
+.icon-btn-28 {
+  width: 28px !important;
+  height: 28px !important;
+}
+.icon-btn-20 {
+  width: 20px !important;
+  height: 20px !important;
+}
+.icon-btn-18 {
+  width: 18px !important;
+  height: 18px !important;
+}
+/* Radius is orthogonal to size: the send button is 28/8, the thread header is
+   28/6. `isRounded` on the component covers the panel's round register. */
+.icon-btn-r6,
+.icon-btn-r6 .button-bg {
+  border-radius: 6px !important;
+}
+.icon-btn-r8,
+.icon-btn-r8 .button-bg {
+  border-radius: 8px !important;
+}
+/* Below TINY the library still reserves a 20px (w-5 h-5) box for the glyph.
+   Let it hug so an 18px button doesn't carry a 20px child. */
+.icon-btn-20 .button-content > div,
+.icon-btn-18 .button-content > div {
+  width: auto !important;
+  height: auto !important;
+}
+/* The composer's send button keeps FULL-STRENGTH blue while disabled — the
+   frame draws it that way in the idle state and it is the composer's only
+   anchor on the right. The library dims every disabled button to 50%. */
+.icon-btn-nodim:disabled {
+  opacity: 1 !important;
+  cursor: default !important;
+}
+
+/* ---- Band buttons — CanaryButton COMPACT --------------------------------
+   The context band's Edit / Add to AI / Review / Send pair. `ButtonSize.COMPACT`
+   is h-8 = exactly the 32px the frames draw (REDESIGN_NOTES ask 31a, which
+   claimed the library had no compact size, was stale against v0.6.0). What is
+   left is dress: 8px radius, a 13px label, 14px side padding, no shadow.
+
+   The two hover rules keep the frames' FILL-based hover. The library expresses
+   hover as opacity — 8% of the button colour on OUTLINED, and a fade of the
+   LABEL on PRIMARY — where the frames darken/tint the fill and leave the label
+   alone. Restoring the fill is four lines and keeps the register identical to
+   what Miguel signed off in batch 4; logged as the "tonal hover" library ask. */
+.band-button {
+  border-radius: 8px !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  font-size: 13px !important;
+  box-shadow: none !important;
+}
+.band-button .button-bg {
+  border-radius: 8px !important;
+}
+.band-button-outline:hover .button-bg {
+  opacity: 1 !important;
+  background-color: #eaeef9 !important; /* colorBlueDark5 */
+}
+.band-button-primary:hover .button-bg {
+  background-color: #5e82d3 !important; /* colorBlueDark2 */
+}
+.band-button-primary:hover .button-content {
+  opacity: 1 !important;
+}
+
+/* ---- Inline text links — CanaryButton TEXT ------------------------------
+   The library has no link primitive, so `ButtonType.TEXT` is the ancestor for
+   the three text affordances on this surface: the message footer's caption
+   links ("Message failed to send" / "AI chose not to respond"), the steps
+   toggle in the sender row, and "Go to Knowledge Base" in the explanation
+   sidebar. TEXT already resolves the content colour from `ButtonColor` —
+   NORMAL → colorBlueDark1 and DANGER → #E40046 are both exactly the frames'
+   values — so the paint is free and only the BUTTON CHROME has to come off:
+   the size ramp's height, the 16px side padding, the medium weight, and the
+   hover wash. A link inside a line of text may not carry a box.
+
+   `.text-btn-quiet` is the steps toggle's own ladder: grey at rest, black on
+   hover, and nothing else moves. The library keys content colour to
+   `ButtonColor` with no grey option (HEADING_TEXT and FONT_SECONDARY are
+   unimplemented and fall through to blue), and paints it INLINE on
+   `.button-content` — hence both rules. Pass the chevron with no `color` so it
+   inherits `currentColor` and follows the label.
+
+   Logged as the sharpest ask in this group: a real `CanaryLink` / inline text
+   variant, plus a grey ButtonColor. */
+.text-btn-inline {
+  height: auto !important;
+  padding: 0 !important;
+  font-weight: 400 !important;
+}
+.text-btn-inline .button-bg {
+  display: none !important;
+}
+.text-btn-quiet .button-content {
+  color: #666666 !important; /* colorBlack3 */
+}
+.text-btn-quiet:hover .button-content {
+  color: #000000 !important;
+  opacity: 1 !important;
+}
+
+/* ---- Sources chip — CanaryChip ------------------------------------------
+   The AI message's "N Sources ⌄". CanaryChip is the right interactive-pill
+   primitive — role=button, keyboard handling, a trailing-icon slot — but both
+   of its registers are colour-locked: SELECTABLE is blue in every state,
+   REMOVABLE is a grey FILL. The frames draw a neutral OUTLINE at caption
+   weight, which is a third register the component does not have.
+
+   All of the chip's colours are inline AND state-driven (it tracks hover and
+   press in React and re-writes the style object), so a single un-scoped
+   `!important` block is what pins the register across every state — which is
+   also why the hover rule has to be stated explicitly rather than inherited.
+   Logged as the `customColor` ask, for parity with `CanaryTag.customColor`. */
+.chip-source {
+  height: 20px !important;
+  font-size: 10px !important;
+  line-height: 16px !important;
+  padding-left: 8px !important;
+  padding-right: 6px !important;
+  min-width: 0 !important;
+  gap: 4px !important;
+  color: #666666 !important; /* colorBlack3 */
+  border-color: #e5e5e5 !important; /* colorBlack6 */
+  background-color: transparent !important;
+  font-weight: 400 !important;
+}
+.chip-source:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* ---- Reason chips — CanaryChip SELECTABLE -------------------------------
+   The eight feedback reasons. The base's selectable register IS the frames':
+   blue outline + blue label unselected, solid `colorBlueDark1` + white label
+   selected, rounded-full, multi-selectable, keyboard-handled. Only the metrics
+   differ — the chip ramp is 32/12px (compact) or 40/14px (normal) and the
+   frames draw 34/13 — and they are inline styles, hence `!important`.
+
+   `min-width` is the base's own 72px floor, released because a chip here is
+   never shorter than its label. Two things the base costs us, both logged:
+   `aria-pressed` (it renders `role="button"` only) and the fact that it adds a
+   hover/press tint the hand-rolled chip did not have. */
+.chip-reason {
+  height: 34px !important;
+  font-size: 13px !important;
+  line-height: 20px !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  min-width: 0 !important;
+}
+
+/* ---- Boxed text areas — CanaryTextArea ----------------------------------
+   The AI-knowledge textarea and the feedback note. The base's chrome is a 4px
+   radius and a 2px focus OUTLINE; the frames draw an 8px radius and answer
+   focus by swapping the BORDER colour, which is the register every other field
+   on this surface uses. Per-instance metrics (border colour, min-height,
+   padding, type size) stay inline — they differ per field and need no
+   internal selector. */
+.textarea-boxed {
+  border-radius: 8px !important;
+}
+.textarea-boxed:focus {
+  outline: none !important;
+  border-color: #2858c4 !important;
+}
+
+/* ---- Chromeless fields — CanaryTextArea / CanaryInput -------------------
+   The composer's input and the compose header's "To:" field. Both are EMBEDDED
+   fields: the parent card owns the border, the radius and the focus ring, so
+   the base must contribute its behaviour (autosize, refs, native props) and
+   none of its chrome. Everything the base paints is switched off here.
+
+   The max-height is the composer's own cap — the base's `autoExpand` grows to
+   content without one, and `overflow-hidden` would clip rather than scroll past
+   it. Logged as the "chromeless / embedded field variant" library ask. */
+.field-chromeless {
+  border: 0 !important;
+  padding: 0 !important;
+  height: auto !important;
+  background: transparent !important;
+}
+.field-chromeless:focus {
+  outline: none !important;
+}
+.textarea-composer {
+  min-height: 22px !important;
+  max-height: 140px !important;
+  overflow-y: auto !important;
+}
+
+/* ---- Quiet search field — CanaryInputSearch -----------------------------
+   The conversation list's search. WRAPPER class, not a `className`: the
+   component's own `className` lands on the `<input>`, and two of the four
+   deltas live on the sibling icon the base draws for us.
+
+   Deltas: 6px radius (the branch's input radius) over the library's 4px;
+   a `colorBlack5` quiet border over the library's `#666`; and the search glyph
+   at 20px `colorBlack3` rather than 24px black, which also moves the text
+   inset from 40px to 36px. The cancel button is WebKit's own, and appears only
+   because the base renders `type="search"`. */
+.input-search-quiet input {
+  border-radius: 6px !important;
+  border-color: #cccccc !important;
+  padding-left: 36px !important;
+  padding-right: 16px !important;
+}
+.input-search-quiet input::placeholder {
+  color: #666666 !important;
+  opacity: 1;
+}
+.input-search-quiet input::-webkit-search-cancel-button {
+  display: none;
+}
+.input-search-quiet svg {
+  width: 20px !important;
+  height: 20px !important;
+}
+.input-search-quiet svg path {
+  fill: #666666 !important;
+}
+
+/* ---- Solid toast — CanaryToast ------------------------------------------
+   The library's toast is a TINTED register: pale ground, coloured border,
+   coloured text, plus a close ×. This product's receipt is SOLID — one filled
+   bar with white text and no dismiss, because it disappears on its own and a
+   receipt you have to close is a dialog.
+
+   The palette is inline on the component, so every colour here is `!important`.
+   The animation is swapped too: the library slides DOWN from above (its toast
+   is top-right by default), and a bottom-centre receipt has to rise.
+
+   `.toast-solid` is the register; the three modifiers are the variants the
+   product uses. Logged as the "solid toast register" library ask. */
+.toast-solid {
+  border-radius: 8px !important;
+  /* `border: 0`, not a transparent border colour: the box is auto-width under
+     `box-sizing: border-box`, so a 1px transparent border would still add 2px
+     to the bar in both axes. */
+  border: 0 !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+  bottom: 24px !important;
+  max-width: none !important;
+  color: #ffffff !important;
+  animation: toast-in 300ms ease-out forwards !important;
+}
+/* The base always renders a close button; this register has none. */
+.toast-solid > button {
+  display: none !important;
+}
+.toast-solid-success {
+  background-color: #008040 !important; /* colorLightGreen1 */
+}
+.toast-solid-error {
+  background-color: #f16682 !important; /* colorPink1 */
+}
+.toast-solid-info {
+  background-color: #333333 !important; /* colorBlack2 */
+}
+
+/* ---- Overflow menus — CanaryOverflowMenu --------------------------------
+   `:nth-child(2)` and not `:last-child` on purpose: the popover is only in the
+   DOM while the menu is open, so `:last-child` would hit the TRIGGER whenever
+   it is closed.
+
+   `.overflow-menu-flat` removes the library's inline `shadows.lg`. This branch
+   draws no shadows — every floating surface is a 1px `colorBlack6` hairline —
+   and the menu is the one library component that brings its own.
+
+   `.overflow-menu-w` re-widths the popover past the base's hardcoded
+   `min-w-[180px]`. The width is a prop on our wrapper, so it arrives as a
+   custom property on a `display: contents` parent rather than a class per
+   value. */
+.overflow-menu-flat > div:nth-child(2) {
+  box-shadow: none !important;
+}
+.overflow-menu-w > div:nth-child(2) {
+  min-width: var(--overflow-menu-w, 180px) !important;
+}
+
+/* ---- Panel accordion — CanaryExpand -------------------------------------
+   The Reservations page's per-stay expander. CanaryExpand's shape is right —
+   a header slot with a body that mounts beneath it — but it dresses that shape
+   for a settings list: `py-3 px-2` on both halves, an inline hairline UNDER the
+   header, and its own 16px `colorBlack3` chevron. The panel draws a 6px/4px
+   header with a hover wash, no rule, an 8px-gapped record card, and a 19px
+   `colorBlack1` chevron that belongs to the header row's own rhythm.
+
+   ALL of it is contained in this one class, deliberately — when the library
+   grows class hooks or a borderless variant, this block is the whole thing to
+   delete. Two structural notes for that day: the header is a `div[role=button]`
+   so `aria-expanded` cannot be set from outside (logged), and the library's
+   chevron is hidden rather than restyled because its stroked 16px glyph is a
+   different drawing from the frame's filled mdi one, not just a smaller size. */
+.panel-accordion > div:first-child {
+  border-bottom: none !important;
+  padding: 6px 4px !important;
+  border-radius: 8px;
+  transition: background-color 150ms ease-out;
+}
+.panel-accordion > div:first-child:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+.panel-accordion > div:first-child > svg {
+  display: none !important;
+}
+/* Second child = the expanded body, and it exists only when expanded. */
+.panel-accordion > div:nth-child(2) {
+  padding: 8px 0 0 !important;
 }
 
 /* ---- Orb avatar tile ----------------------------------------------------- */
