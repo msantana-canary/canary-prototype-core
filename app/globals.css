@@ -199,13 +199,21 @@ body {
    register, and it is exactly what these classes are designed around: the class
    carries the register, the call site carries the instance. But it bites in one
    shape — a class rule on a PSEUDO-CLASS (`:focus`, `:hover`) competing with a
-   REST-state utility for the same property. `.textarea-boxed:focus`'s blue
-   border lost to `!border-[#E5E5E5]` and the field never turned blue on focus,
-   while the same class's `outline: none` (which nothing competed with) worked
-   fine — so the class looked alive. When you pair one of these classes with a
-   `!` utility on the same property, re-assert the state as a utility too
-   (`focus:!border-[#2858C4]`), where the extra pseudo-class wins honestly.
-   ─────────────────────────────────────────────────────────────────────────── */
+   REST-state utility for the same property. The exemplar was the now-deleted
+   `.textarea-boxed:focus`, whose blue border lost to `!border-[#E5E5E5]` so the
+   field never turned blue on focus, while the same class's `outline: none`
+   (which nothing competed with) worked fine — so the class looked alive. When
+   you pair one of these classes with a `!` utility on the same property,
+   re-assert the state as a utility too, where the extra pseudo-class wins
+   honestly. (Both textareas went back to STOCK on 2026-08-21 and the fight is
+   gone with the dress — see the note where `.textarea-boxed` used to live.)
+
+   ⚠⚠ AND THE OTHER TRAP, found 2026-08-24: a class the LIBRARY names may not
+   exist at all. Tailwind v4 emits utilities only for the sources it scans, and
+   `node_modules` is not one — so every arbitrary-value class inside a base
+   component (`focus:outline-[#2858c4]`, `outline-offset-[-1px]`, …) silently
+   compiles to nothing. Symptom: a state that computes to a transparent or
+   default value while its siblings work. See `.field-focus-blue` below. */
 
 /* ---- Neutral icon buttons — CanaryButton ICON_SECONDARY ------------------
    ONE ramp for every bare icon control on the surface: the thread header's
