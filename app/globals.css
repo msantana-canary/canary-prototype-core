@@ -85,30 +85,98 @@ body {
    pill. One magenta→violet ramp is shared by every AI-authored surface so the
    agent reads as one voice: the "Canary" sender name, the "AI On" pill label,
    and (as a border/fill) the orb tile.
+
+   ═══════════════════════════════════════════════════════════════════════════
+   THE RAMP HAS TWO TIERS (Miguel's ruling, 2026-08-24)
+   ═══════════════════════════════════════════════════════════════════════════
+   Off frame 2090:37167: the drawn steps rail is much PALER than a full-strength
+   bar, and Miguel called it — *"not too heavy"*. That is a real distinction and
+   it is worth a rule rather than a one-off value, because the ramp appears in
+   two structurally different jobs:
+
+     FULL (`--ai-ramp-strength: 100%`) — BRAND MARKS. Things that ARE the agent:
+       the orb, the "AI On" pill, the "Canary" sender name, the proposing band's
+       border. These are identity, they are small, and they should be saturated.
+
+     QUIET (`--ai-ramp-strength: 40%`) — STRUCTURAL RAILS. Things that merely
+       BELONG to the agent: the 2px rail marking the steps trace. A rail is
+       furniture running the height of a block of secondary reading; at full
+       strength it out-shouts the name it hangs off and competes with the answer
+       it explains.
+
+   ⚠ IT IS ONE RAMP, NOT TWO. The quiet tier is a STRENGTH modifier over the
+   same three stops — `color-mix` toward the page ground — never a private copy
+   of the gradient with hand-picked pale values. Forking a second ramp for one
+   surface is how "the AI gradient" stops meaning anything, which is exactly the
+   trap batch 6 flagged and declined to walk into. Change a stop below and every
+   AI mark on the surface, both tiers, follows.
+
+   The quiet tier reads the ramp from its PURPLE end down to its MAGENTA end
+   rather than carrying all three stops: at 40% the indigo end lands on a pale
+   periwinkle the frame plainly does not draw, and dropping it is a slice of the
+   same ramp rather than a new colour. Resulting rail: #e0b5e8 → #efafd9, against
+   the frame's measured #e0b5e7 → #f0aeb9 — the top stop is exact and the bottom
+   is a few points cooler than the frame's rose. Logged as an eyeball item; it is
+   a stop-order question, not a new gradient.
    ─────────────────────────────────────────────────────────────────────────── */
 
-/* The single AI gradient. Change it here and every AI label follows. */
+/* THE RAMP. Three stops, one strength knob, one ground. Everything below reads
+   these; nothing below hardcodes a stop. */
+:root {
+  --ai-ramp-magenta: #d6379f;
+  --ai-ramp-purple: #b345c6;
+  --ai-ramp-indigo: #5758ea;
+  /* Mixed toward this when strength < 100%. The surface's ground is white
+     everywhere the ramp is currently used. */
+  --ai-ramp-ground: #ffffff;
+  --ai-ramp-strength: 100%;
+}
+
+/* The single AI gradient, as text. Change the stops above and every AI label
+   follows. */
 .ai-gradient-text {
   display: inline-block;
-  background-image: linear-gradient(90deg, #d6379f 0%, #b345c6 45%, #5758ea 100%);
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ai-ramp-magenta) var(--ai-ramp-strength), var(--ai-ramp-ground)) 0%,
+    color-mix(in srgb, var(--ai-ramp-purple) var(--ai-ramp-strength), var(--ai-ramp-ground)) 45%,
+    color-mix(in srgb, var(--ai-ramp-indigo) var(--ai-ramp-strength), var(--ai-ramp-ground)) 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-/* The same ramp as a 2px LEFT BAR. Used by the AI steps trace when it sits in a
-   column that already speaks in speaker bars (the call transcript in the
-   Conversation Details panel) — there a bordered box would read as a foreign
-   object, so the trace takes the column's idiom and marks itself with the
-   gradient instead. */
-/* Painted as a BACKGROUND strip rather than a gradient `border-image`: the
+/* The same ramp as a 2px LEFT BAR — the AI steps trace's only dress, in the
+   message feed and in the call transcript alike (the box died on 2026-08-21).
+
+   Painted as a BACKGROUND strip rather than a gradient `border-image`: the
    border-image route needs every side's border-width declared to slice
    reliably, and a one-sided gradient border silently renders as nothing. */
 .ai-gradient-bar {
-  background-image: linear-gradient(180deg, #d6379f 0%, #b345c6 45%, #5758ea 100%);
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ai-ramp-magenta) var(--ai-ramp-strength), var(--ai-ramp-ground)) 0%,
+    color-mix(in srgb, var(--ai-ramp-purple) var(--ai-ramp-strength), var(--ai-ramp-ground)) 45%,
+    color-mix(in srgb, var(--ai-ramp-indigo) var(--ai-ramp-strength), var(--ai-ramp-ground)) 100%
+  );
   background-repeat: no-repeat;
   background-size: 2px 100%;
   background-position: left top;
+}
+
+/* THE QUIET TIER. A modifier, not a component: it sets the strength and slices
+   the ramp purple → magenta. Anything structural that wants the AI's colour
+   without its volume takes this class alongside its own. */
+.ai-gradient-quiet {
+  --ai-ramp-strength: 40%;
+}
+.ai-gradient-bar.ai-gradient-quiet {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ai-ramp-purple) var(--ai-ramp-strength), var(--ai-ramp-ground)) 0%,
+    color-mix(in srgb, var(--ai-ramp-magenta) var(--ai-ramp-strength), var(--ai-ramp-ground)) 100%
+  );
 }
 
 /* ---- CanaryTag radius: 2 → 4 ---------------------------------------------
@@ -705,11 +773,29 @@ body {
    The fill is a whisper of the same sweep. It sits under 14px body text without
    tinting it — the border does the identifying; the fill only stops the band
    reading as one more white card in a column of white cards. */
+/* ⚠ FOUR stops, not three: `#e2456d` is a warm lead-in this register alone
+   carries, because a 750px-wide border needs somewhere to start before the
+   ramp's magenta. The other three read the ramp tokens, so a change to the
+   system still reaches this band. The FILL is the same sweep at ~4% — it is a
+   whisper by construction rather than by a second set of hand-picked pale hexes,
+   and it is written out rather than riding `--ai-ramp-strength` because the two
+   layers here need DIFFERENT strengths in one declaration. */
 .ai-gradient-band {
   border: 1px solid transparent;
   border-radius: 8px;
-  background-image: linear-gradient(100deg, #fdf5f8 0%, #fcf8fd 45%, #f8f9fe 100%),
-    linear-gradient(100deg, #e2456d 0%, #d6379f 30%, #b345c6 62%, #5758ea 100%);
+  background-image: linear-gradient(
+      100deg,
+      color-mix(in srgb, #e2456d 4%, var(--ai-ramp-ground)) 0%,
+      color-mix(in srgb, var(--ai-ramp-purple) 4%, var(--ai-ramp-ground)) 45%,
+      color-mix(in srgb, var(--ai-ramp-indigo) 4%, var(--ai-ramp-ground)) 100%
+    ),
+    linear-gradient(
+      100deg,
+      #e2456d 0%,
+      var(--ai-ramp-magenta) 30%,
+      var(--ai-ramp-purple) 62%,
+      var(--ai-ramp-indigo) 100%
+    );
   background-origin: border-box;
   background-clip: padding-box, border-box;
 }

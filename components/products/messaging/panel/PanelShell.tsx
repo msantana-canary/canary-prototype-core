@@ -62,6 +62,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { colors } from '@canary-ui/components';
+import { useReducedMotion } from '../motion';
 
 /** The one number that defines the standard: the viewport gap on all three sides. */
 export const PANEL_INSET = 12;
@@ -86,21 +87,12 @@ interface PanelShellProps {
 }
 
 /**
- * `prefers-reduced-motion: reduce`, live. Every animated surface in the panel
- * reads it from here rather than re-implementing the listener: the shell's
- * slide, and the details band's expand, must agree about whether motion is on.
+ * `prefers-reduced-motion: reduce` — RE-EXPORTED, not owned (2026-08-24). It
+ * lives in `../motion` now, beside the expand register that reads it, because
+ * the message feed's steps trace needs the same answer and must not import the
+ * panel to get it. Existing call sites are unchanged.
  */
-export function useReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const sync = () => setReduced(mq.matches);
-    sync();
-    mq.addEventListener('change', sync);
-    return () => mq.removeEventListener('change', sync);
-  }, []);
-  return reduced;
-}
+export { useReducedMotion } from '../motion';
 
 export function PanelShell({ isOpen, onClose, children, label = 'Conversation Details' }: PanelShellProps) {
   const reduced = useReducedMotion();

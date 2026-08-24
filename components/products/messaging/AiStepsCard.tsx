@@ -60,9 +60,24 @@ export function AiStepsCard({ steps, className = '', style }: AiStepsCardProps) 
     /* No base under this one: it is a gradient strip and a column of text, and
        the strip is painted as a BACKGROUND rather than a `border-image` because
        a one-sided gradient border needs every side's width declared to slice
-       and silently renders as nothing otherwise. See `.ai-gradient-bar`. */
+       and silently renders as nothing otherwise. See `.ai-gradient-bar`.
+
+       ── THE RAIL IS QUIET (Miguel, 2026-08-24: the lighter rail wins) ──────
+       `.ai-gradient-quiet` is the sanctioned second TIER of the one AI ramp —
+       the same three stops at 40% strength — not a private copy of the
+       gradient. The two-tier rule lives in `globals.css` beside the tokens:
+       full strength is for BRAND MARKS (the orb, the pill, the "Canary" name),
+       quiet is for STRUCTURAL RAILS. This is a rail: it runs the height of a
+       block of secondary reading, and at full strength it out-shouted the name
+       it hangs off and competed with the answer it explains.
+
+       ⚠ BOTH CALLERS TAKE IT. The class is applied here rather than passed in
+       by the message feed, because the call transcript's trace is the same
+       object doing the same job — the argument for quieting one is the argument
+       for quieting the other, and a rail that is pale in the feed and saturated
+       in the transcript would say the AI's work matters more on the phone. */
     <div
-      className={`ai-gradient-bar ${className}`}
+      className={`ai-gradient-bar ai-gradient-quiet ${className}`}
       style={{ paddingLeft: 12, paddingRight: 10, paddingTop: 4, paddingBottom: 4, ...style }}
     >
       {steps.map((step, i) => (

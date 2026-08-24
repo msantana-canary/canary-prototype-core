@@ -104,6 +104,7 @@ import {
 import { Avatar } from './Avatar';
 import { AiOrbTile } from './AiOrb';
 import { AiStepsCard } from './AiStepsCard';
+import { ExpandRegion, useMountedThrough } from './motion';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 
 const STAFF_NAME = 'Theresa Webb';
@@ -286,6 +287,8 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
   // Steps stay CLOSED on mount — every AI message has them, so defaulting open
   // would bury the conversation under its own audit trail.
   const [isStepsOpen, setIsStepsOpen] = useState(false);
+  // …and stay in the DOM through their own close animation. See the trace below.
+  const isStepsMounted = useMountedThrough(isStepsOpen);
   const [isHovered, setIsHovered] = useState(false);
   const [isHelpful, setIsHelpful] = useState(false);
   const [isNotHelpful, setIsNotHelpful] = useState(false);
@@ -391,17 +394,42 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
                 edge, i.e. exactly under the "C" of Canary, so it reads as the
                 name bleeding downward rather than as a second margin.
               • paddingLeft 10 — the check glyphs start ~8px clear of the rail.
-              • NO vertical padding — the rail's extent is the ROWS' extent,
-                top and bottom, which is what keeps it looking like a bracket on
-                the trace instead of a bar beside it.
-              • no top margin, 8px below — the trace starts on the name row's
-                bottom edge and clears the answer by one 8px step. */}
-        {isAI && isStepsOpen && (
-          <AiStepsCard
-            steps={steps}
-            className="mb-2"
-            style={{ paddingLeft: 10, paddingRight: 0, paddingTop: 0, paddingBottom: 0 }}
-          />
+              • NO vertical padding ON THE RAIL — its extent is still the ROWS'
+                extent, top and bottom, which is what keeps it looking like a
+                bracket on the trace instead of a bar beside it.
+
+            ── IT ANIMATES NOW (2026-08-24) ────────────────────────────────
+            It used to appear and vanish on the frame. Everything else on this
+            surface that opens in place — the reservation-details band, Linked
+            Reservations — grows, and a trace that SNAPS shoves the answer down
+            the screen with no motion to follow, which reads as the feed
+            re-laying-out rather than as one block opening.
+
+            `ExpandRegion` is the surface's one expand register, moved down to
+            `motion.tsx` so the thread can use it without importing the panel's
+            vocabulary. `animateOnMount` because the trace is rendered under a
+            `&&` here, so its body arrives already open and would otherwise snap;
+            `useMountedThrough` holds it in the DOM for the 160ms it is still
+            closing, since there is nothing to animate out of an unmounted node.
+            220ms open / 160ms close, instant under `prefers-reduced-motion` —
+            all of it the register's, none of it restated.
+
+            ── AND IT BREATHES (Miguel, 2026-08-24: "a little tight") ──────
+            The margins are the trace's clearances, and they sit OUTSIDE the
+            rail on purpose: 10px above (between the name row and the first
+            step) and 10px below (between the last step and the answer), where
+            the batch-6 build had 0 and 8. Putting the air in `AiStepsCard`'s
+            own padding instead would have stretched the rail past its rows and
+            turned the bracket back into a bar. */}
+        {isAI && isStepsMounted && (
+          <ExpandRegion isOpen={isStepsOpen} animateOnMount>
+            <div style={{ marginTop: 10, marginBottom: 10 }}>
+              <AiStepsCard
+                steps={steps}
+                style={{ paddingLeft: 10, paddingRight: 0, paddingTop: 0, paddingBottom: 0 }}
+              />
+            </div>
+          </ExpandRegion>
         )}
 
         {/* Body */}
