@@ -2470,3 +2470,286 @@ is a one-line revert if Miguel disagrees.
 scope. Its hand-rolled kebabs, filter chips and compact date control are the
 reason asks 7b, 7d, 7e, 7f and 7g still read the way they do; a full sweep of
 that directory is a separate, explicitly re-scoped pass.
+
+---
+
+## Batch 6 — Design-review alignment (2026-08-24)
+
+Six changes off Miguel's design review of **Friday 2026-08-21**. Landed frames:
+`2112:26219` (list-card header), `2075:36678` (Linked Reservations),
+`2090:37167` (the steps open-state). Nothing in this batch is new surface — it
+is the review re-deciding four things that were already drawn and two that were
+wearing the wrong clothes.
+
+### 1. The list-card header, third arrangement
+
+`ThreadScopeMenu.tsx` · `ThreadList.tsx` · `app/(dashboard)/messages/page.tsx`
+
+The two selects **swapped sides and registers**. The history now runs:
+
+| | Left (card-title slot) | Right |
+|---|---|---|
+| 1st (batch 1) | one consolidated menu naming BOTH axes — "Inbox · Housekeeping" | — |
+| 2nd (batch 2, `2038:57666`) | **Assignment** · "All Conversations" 16px black | **Folder** · "Inbox" 14px blue |
+| 3rd (**this**, `2112:26219`) | **Folder** · "Inbox" 16px black | **Assignment** · live scope, 14px blue |
+
+**Why.** The title slot is the card's NAME, and a name should be the stabler of
+the two axes. A folder is a place you are IN — "Inbox" holds still for a whole
+shift. An assignment is a filter you throw at that place and take off again, so
+titling the card "All Conversations" and then quietly renaming it "Housekeeping"
+on every pick meant the card had no fixed identity to read past. Now the card is
+called what it IS, and the filter sits on the right in the blue that already
+means "this is a control", with its trigger always reporting the live selection
+("Housekeeping", "Theresa Webb") so the scope is legible without opening
+anything.
+
+**What did NOT move**, and this is the point: the menus, the STATUSES /
+DEPARTMENTS / STAFF sections, the hairline dividers, the right-aligned check,
+production's exclusivity rule, and the whole `ScopeSelect` CanarySelect-contract
+argument from batch 2. This was trigger placement and register only. The file's
+production-audit block carries the three-arrangement history so the next move is
+argued against the record rather than against the last screenshot.
+
+One deliberate visual delta: the **⇅ glyph takes its trigger's colour** instead
+of a fixed `colorBlueDark1`. With a black title on the left, a blue chevron made
+the card's name look half-linked.
+
+**Search + New message drop to COMPACT.** They were on the ramp's NORMAL step —
+a 40px field and a 40px button, which is page-level sizing — inside a 350px card,
+under two 32px select triggers. COMPACT lands both at 32px so the card's three
+fixed zones share one rhythm, and it is the library's own ramp rather than a set
+of metric overrides. Side effect: `.input-search-quiet`'s 36px text inset is no
+longer a delta (COMPACT's own size class already reads `pl-[36px]`); it is kept
+and re-commented because the 20px glyph is measured against it.
+
+### 2. Linked Reservations expands in the row
+
+`PanelTabs.tsx` · `panel-ui.tsx` · `ConversationDetailsPanel.tsx` ·
+`ReservationRecord.tsx` · `globals.css`
+
+A companion's reservation record had nowhere to go. The row printed a name, a
+phone and a room; the dates, the email, the confirmation number, the check-in
+status and — most importantly — whether that guest's scheduled messages actually
+sent were all simply absent from the product.
+
+The obvious fix was a drill-in page per companion. **The review rejected it**: a
+companion is a fact ABOUT the conversation you are standing in, and sending a
+hotelier to a separate page to read one costs them the thread. So: progressive
+disclosure, in place.
+
+**Collapsed**, the row answers "who else is on this conversation, and where are
+they" in two lines — name + lifecycle tag, then the phone plus ONE locator.
+Which locator is derived from the stay: a guest who is IN THE BUILDING gets a
+room number (that is how you reach them), a guest who is not gets a date range
+(that is when they matter). Printing a room for a stay three weeks out states a
+fact about a key nobody has cut.
+
+**Open**, it is the full `ReservationRecord` — the same eight rows the primary
+guest's stays get, "Guest Scheduled Messages" included. That row is the whole
+reason this was worth doing: a failed send on a COMPANION's stay was previously
+unattributable and unreachable, and it now opens that stay's own guest-journey
+timeline through the SAME `ScheduledMessagesPage` the Reservations drill-in
+opens. One timeline surface, two doors.
+
+Three rules from the review, all structural rather than enforced by hand:
+**one at a time** (`expandedId` is a single value — two open records in a 600px
+panel means neither is readable), **closed by default** (most threads have
+companions nobody asks about), and **no second accordion**.
+
+That last one earned some plumbing. The row rides the same `CanaryExpand` +
+`.panel-accordion` route as the Reservations drill-in; `.panel-accordion-row` is
+a MODIFIER on that class, restating only what a list row disagrees with — the
+12px/16px row inset (the same numbers `CanaryListItem` gets from `[&>*]:!py-3
+[&>*]:!pr-3`), square corners, and `colorBlack8` as the wash. And the height
+animation moved out of `ConversationDetailsPanel`'s reservation-details band into
+a shared **`ExpandRegion`** in `panel-ui.tsx` (grid `0fr → 1fr`, the band's own
+220/160ms pair, `prefers-reduced-motion` safe, `inert` while shut). The summary
+line and the record are two `ExpandRegion`s with inverted flags, so they trade
+places instead of one of them jumping.
+
+`useMountedThrough` is the one piece of machinery worth naming: `CanaryExpand`
+renders its body under `isExpanded &&`, so a closing body vanishes on the first
+frame and there is nothing left to animate out. The hook holds `isExpanded` true
+for the 160ms the body is still on screen — which keeps the prop's meaning
+honest rather than lying to it.
+
+⚠ **Deviation from the brief, on purpose.** The written spec said the collapsed
+row's trailing affordance is a **chevron RIGHT**; the frame draws **down/up**,
+and down/up is what shipped. A right chevron is this surface's promise of a PAGE
+(Call History rows, the reservation control cards), and the entire decision this
+change implements is "no internal page". It also matches the Reservations
+accordion, which is the pattern the brief told us not to fork. One-line revert if
+Miguel meant it literally.
+
+⚠ The frame's Linked Reservations list shows two **"Emily Smith"** rows inside
+Emily's own panel. Not replicated — self is excluded from companions (the
+standing rule from batch 3), and those rows are a stale iteration. The exemplar
+thread's real cast — Nathan Reyes (in-house, room), James Brady and Claire
+Whitfield (reserved, date ranges) — exercises both locator variants as drawn.
+
+### 3. The composer has an upsells tool
+
+`MessageComposer.tsx`
+
+Production grew one, so the prototype does. Sixth in the bare-icon row, after
+the service ticket, because those two are the toolbar's only "do a thing to this
+stay" affordances and production orders them that way. Same decorative `ToolIcon`
+treatment as its five siblings — no flow behind it in this branch.
+
+**`mdiCashMultiple`**, verified against the reference at 10×: the front note is
+identical, glyph for glyph (thick border, white interior, filled centre circle).
+The reference stacks its second note down-RIGHT and mdi stacks down-LEFT, but
+mdi's whole "Multiple" family stacks left (`mdiCreditCardMultipleOutline` does
+the same), so that is the SET's convention rather than a wrong pick — the glyph
+is used unflipped rather than CSS-mirroring a design-system icon. The outline
+rule is waived because `mdiCashMultipleOutline` does not exist and this is
+already the glyph the library's own vocabulary spends on money
+(`sidebarTabs.digitalTips`). Explicitly NOT `sidebarTabs.upsells`'s
+`mdiTagOutline` — that mark is the Upsells PRODUCT's nav identity, and reusing it
+here would read as "go to Upsells" rather than "attach an upsell".
+
+### 4. Feedback for a silence
+
+`AiFeedbackForm.tsx` · `AiExplanationPanel.tsx` · `AiFeedbackModal.tsx`
+
+The feedback form had one subject and two doors. Entered from **"AI CHOSE NOT TO
+RESPOND"**, though, there is no answer on screen, and the eight critique chips
+are unanswerable — "Wrong Tone/Wording" about nothing, "Incomplete Information"
+about silence. The form was asking a hotelier to fault an artefact that does not
+exist.
+
+So `AiFeedbackForm` takes a **`context: 'response' | 'non-response'`**, and three
+things move:
+
+| | response | non-response |
+|---|---|---|
+| Heading | "Why was this response wrong?" | **"Why should AI have responded?"** |
+| Chips | the eight critiques | **Had the Information · Question Was Clear · Safe to Answer · Didn't Need a Human · Guest Left Waiting** |
+| Note label | "How do you typically respond…" | **"How would you have responded? (optional)"** |
+
+The non-response chips are **preconditions, not faults**. A hotelier who thinks
+the AI should have answered is asserting the bar was cleared, and each chip names
+one bar — in the decision's own order (could it answer → was it allowed to →
+what did the silence cost). "Guest Left Waiting" is last because it is the
+consequence rather than the reason, and it is the only chip about the GUEST.
+
+Everything else is shared and stays shared: multi-select, the ≥1 gate, the
+optional note and its placeholder, Submit, the toast. That is why this is a
+variant and not a second component — the taxonomy is the artefact, and the
+machinery around it drifting would be the real cost. The recap band needed no
+change; it already prints the question alone when there is no answer.
+
+The 👎 modal now derives its context and its recap the same way the panel does.
+Today only an AI message can open it, so it is always `'response'` — but the day
+a non-response grows a quick-action door, the modal arrives correct instead of
+quoting the guest back at herself under the AI's orb.
+
+### 5. The two AI textareas go back to stock — and the r8 delta was DRIFT
+
+`AiFeedbackForm.tsx` · `AddInformationModal.tsx` · `globals.css`
+
+Miguel, at the review, on the feedback note: *"that's not our component."*
+
+It always **was** `CanaryTextArea`. What it was wearing wasn't. `.textarea-boxed`
+gave it an 8px radius and a focus-answers-on-the-BORDER register, and the two
+call sites added pale `#E5E5E5` / `#CCCCCC` hairlines over the library's
+`#666666`. Between them, a base component rendered at a radius, a border colour
+and a focus treatment that no other Canary textarea has — which is worse than a
+hand-rolled control, because it looks sanctioned.
+
+**All of it is deleted.** `.textarea-boxed` is gone from `globals.css` rather
+than left orphaned, and so are both `!border-[…]` overrides and both
+`focus:!border-[#2858C4]` utilities, which existed only to win the cascade fight
+the borders started. Both fields now draw the library's own 4px radius, `#666666`
+hairline and 2px inset blue focus outline. Per-field METRICS stay — min-height,
+padding, type size, `rows`, `resize` — because those are geometry, not costume.
+
+> ⚠ **FOR MIGUEL'S FIGMA PASS.** The 8px radius and the pale border are **frame
+> drift, not a sanctioned design-system change.** They were reproduced faithfully
+> because the frames drew them, and that is exactly how a private costume becomes
+> a convention. The FRAMES should be redrawn against the stock `CanaryTextArea`
+> — 4px radius, `#666666` hairline, focus on a 2px inset outline — so that file
+> and build agree. If the 8px box is actually wanted, it is a design-system
+> change to `CanaryTextArea` and belongs on the promotion list with the
+> `canary-tag-r4` radius change, not in this branch's override layer.
+
+**One thing had to be added back, and it is not a delta.** With the dress off,
+the base's own focus turned out never to have painted in this app: `CanaryTextArea`
+names its focus state in Tailwind ARBITRARY-value classes
+(`focus:outline-[#2858c4]`, `focus:outline-offset-[-1px]`), Tailwind v4 emits
+utilities only for the sources it scans, and `node_modules` is not one — so the
+field computed `outline: rgba(0,0,0,0) solid 2px`, a two-pixel TRANSPARENT ring.
+`.field-focus-blue` restates the library's own two values verbatim. It is a
+**build gap**, logged as such: point the build at
+`@canary-ui/components/dist` so every base component's arbitrary-value classes
+compile, and delete the class. Worth checking what else on this surface has been
+silently missing its library-declared state.
+
+### 6. The steps trace loses its box
+
+`AiStepsCard.tsx` · `MessageBubble.tsx` · `CallDetailsPage.tsx`
+
+The review's resolution of the open **"white box"** question, and it went against
+the box — everywhere.
+
+A message in this feed has no container of its own: the name, the body and the
+delivery caption all sit directly on the thread's ground. Dropping a rounded-8
+`colorBlack6` card into the middle of that stack made the AUDIT TRAIL the most
+enclosed thing in the conversation, which is backwards — the trace is secondary
+reading and the box gave it a frame the answer it explains never gets. It also
+fenced the AI's work off from the AI's own name.
+
+Open steps are now bare `✓ tool · narrative` rows on the message ground,
+indented under "Canary", marked by the **2px AI-gradient rail** — the gradient
+bleeding DOWN from the name, which ties the block to the speaker instead of to a
+border. Measured off `2090:37167`: the rail sits **flush with the content
+column's left edge** (exactly under the "C" of Canary), the glyphs clear it by
+~8px, and its extent is the ROWS' extent top and bottom — no vertical padding, no
+top margin, one 8px step down to the answer.
+
+That treatment was already in the codebase as the call transcript's `accent`
+dress. With the box gone there is nothing left for the prop to distinguish, so
+**`accent` and the `CanaryCard` variant are both deleted** and the rail is the
+component's only dress; the transcript keeps its own 12px/4px inset through
+`style` and is otherwise untouched. Closed state ("Canary · Completed N Steps ⌄")
+and the toggle's hover are unchanged.
+
+⚠ **Eyeball:** the frame draws the rail noticeably PALER than ours, and running
+the other way — a soft purple at the top fading to pink at the bottom, where our
+one AI ramp runs magenta → purple → indigo top to bottom. Un-blended it is
+roughly `#b345c6 → #d6379f → a red-pink` at ~40% strength, which is not the
+system ramp reordered, it is a different gradient. Kept as `.ai-gradient-bar` on
+purpose: the branch has ONE AI gradient declared in ONE place and every AI mark
+follows it, and forking a second ramp for one surface is how "the AI gradient"
+stops meaning anything. If Miguel wants the frame's softness it is a modifier
+class and a five-minute change — but it should be a change to the ramp's rules,
+not a private copy.
+
+### Files touched (batch 6)
+
+- `app/globals.css` — `.panel-accordion-row` added; `.textarea-boxed` deleted;
+  `.field-focus-blue` added; `.input-search-quiet` re-commented.
+- `app/(dashboard)/messages/page.tsx` — header select order.
+- `components/products/messaging/` — `ThreadScopeMenu.tsx`, `ThreadList.tsx`,
+  `ConversationControls.tsx`, `MessageComposer.tsx`, `MessageBubble.tsx`,
+  `AiStepsCard.tsx`.
+- `components/products/messaging/ai/` — `AiFeedbackForm.tsx`,
+  `AiFeedbackModal.tsx`, `AiExplanationPanel.tsx`, `AddInformationModal.tsx`.
+- `components/products/messaging/panel/` — `PanelTabs.tsx`, `panel-ui.tsx`,
+  `ConversationDetailsPanel.tsx`, `ReservationRecord.tsx`, `CallDetailsPage.tsx`.
+
+### ⚠ Library / build asks — additions
+
+49. **Tailwind must scan `@canary-ui/components/dist`.** Base components declare
+    state with arbitrary-value classes that consuming apps never compile, so
+    those states silently do nothing. Found on `CanaryTextArea`'s focus outline;
+    almost certainly not the only one. Either scan the package or ship the
+    library's own compiled CSS for its own classes.
+50. **`aria-expanded` on `CanaryExpand`** — restated from batch 5, because this
+    batch doubled the number of accordions on the surface. Its header is a
+    `div[role="button"]` and nothing outside can say whether it is open.
+51. **An `ExpandRegion`-shaped primitive.** Two surfaces now hand-roll the
+    `grid 0fr→1fr` height animation, and `CanaryExpand`'s mount/unmount body is
+    what forces it (there is no exit to animate). A base expander with a
+    transition — or just a `keepMounted` — would retire both `ExpandRegion` and
+    `useMountedThrough`.
