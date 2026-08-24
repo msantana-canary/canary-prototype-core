@@ -15,8 +15,17 @@
  * It now lives INSIDE the Conversations card, between the two scope selects and
  * the rows: header selects → search band → rows. Every control that narrows the
  * list is inside the thing it narrows, in top-to-bottom order of coarseness
- * (which folder → which assignment → which words). The component itself is
- * unchanged apart from the doc — the parent supplies the padding.
+ * (which folder → which assignment → which words). The parent supplies the
+ * padding.
+ *
+ * ⚠ BOTH CONTROLS ARE **COMPACT** (Miguel, design review 2026-08-21). They were
+ * on the ramp's NORMAL step — a 40px field and a 40px button — which is the size
+ * a page-level control takes. These are card furniture inside a 350px column,
+ * sitting under two 32px select triggers; at 40px they out-weighed the rows they
+ * exist to narrow and pushed the first thread row further down the fold than the
+ * header did. COMPACT lands both at 32px, the same height as the triggers above,
+ * so the card's three fixed zones share one rhythm. Nothing else changed: this
+ * is the library's own size ramp, not a set of metric overrides.
  */
 
 'use client';
@@ -59,13 +68,13 @@ export function ConversationControls({
           ×, which exists only because the base renders `type="search"`. */}
       <div className="flex-1 min-w-0 input-search-quiet">
         <CanaryInputSearch
-          size={InputSize.NORMAL}
+          size={InputSize.COMPACT}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search"
         />
       </div>
-      <CanaryButton type={ButtonType.PRIMARY} size={ButtonSize.NORMAL} onClick={onNewMessage}>
+      <CanaryButton type={ButtonType.PRIMARY} size={ButtonSize.COMPACT} onClick={onNewMessage}>
         New message
       </CanaryButton>
     </div>

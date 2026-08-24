@@ -5,11 +5,29 @@
  *
  *  - Production splits this across TWO controls: a `CanaryTabs` pill row for the
  *    folder (Inbox / Archived / Blocked) and a separate flat `CanarySelect` for
- *    assignment. An earlier redesign pass consolidated them into ONE menu; the
- *    landed frame (2038:57666) splits them again — two SELECTS in the list
- *    card's header, assignment on the left (where the card title used to sit)
- *    and folder on the right. The SEMANTICS below are production's, unchanged
- *    through both moves.
+ *    assignment. An earlier redesign pass consolidated them into ONE menu; frame
+ *    2038:57666 split them again — two SELECTS in the list card's header,
+ *    assignment on the left (where the card title used to sit) and folder on the
+ *    right. The design review of **2026-08-21** SWAPPED THEM: the arrangement
+ *    below is the THIRD, and it is frame `2112:26219`.
+ *
+ *      1st  one consolidated menu, trigger naming both axes ("Inbox · Housekeeping")
+ *      2nd  assignment LEFT in the title slot (16px black) · folder RIGHT (14px blue)
+ *      3rd  folder LEFT in the title slot (16px black) · assignment RIGHT (14px blue)
+ *
+ *    WHY THE SWAP. The title slot is the card's NAME, and a name should be the
+ *    stabler of the two axes: the folder is a place you are IN (Inbox, and it
+ *    stays Inbox for whole shifts), while the assignment is a filter you throw
+ *    at that place and take off again. Titling the card "All Conversations" and
+ *    then quietly changing it to "Housekeeping" renamed the card every time you
+ *    narrowed it. Now the card is called what it IS — "Inbox" — and the filter
+ *    sits on the right in the blue that already means "this is a control", with
+ *    its label always reporting the live selection so the scope is legible
+ *    without opening anything.
+ *
+ *    The SEMANTICS below are production's, unchanged through all three moves.
+ *    Nothing about the menus, the sections or the `ScopeSelect` contract moved
+ *    with the triggers — this was placement and register only.
  *
  *  - ASSIGNMENT IS EXCLUSIVE. Production keeps three refs
  *    (assignedToDepartmentFilter / assignedToUserFilter / assignedFilter) and
@@ -24,7 +42,7 @@
  *  - FOLDER AND ASSIGNMENT STACK (AND). Changing folder does not clear the
  *    assignment filter, so "Archived + Housekeeping" is reachable. Splitting the
  *    menu in two makes that stacking legible: each trigger names its own axis
- *    ("Housekeeping" · "Archived") instead of one trigger naming both.
+ *    ("Archived" · "Housekeeping") instead of one trigger naming both.
  *
  *  - DEPARTMENT MATCHING IS TRANSITIVE: a department matches threads assigned
  *    directly to it OR assigned to a user who belongs to it. User matching is
@@ -36,7 +54,10 @@
  *  - Copy is production's verbatim: "Inbox" / "Archived" (not "Archive") /
  *    "Blocked", and "All conversations" / "Assigned" / "Unassigned". The
  *    assignment TRIGGER is the one exception — the frame title-cases it to "All
- *    Conversations" because it occupies the card-title slot.
+ *    Conversations". It kept that casing through the 8/21 swap: the string is
+ *    the frame's, and it is the only trigger label that is a PHRASE rather than
+ *    a proper noun, so title case is what stops it reading as a sentence
+ *    fragment beside "Housekeeping" and "Theresa Webb".
  *
  *  CHANNELS: none. An earlier pass built a channel axis from the mock; the
  *  audit found production has no channel filter on the conversation list at all
@@ -186,9 +207,11 @@ export function assignmentLabel(scope: AssignmentScope): string {
 }
 
 /**
- * The trigger sits in the card-title slot, so the default reads as a title:
- * "All Conversations" title-cased (the menu row stays production's sentence
- * case). Every other value is the same string in both places.
+ * What the assignment TRIGGER reads. It always reports the live selection —
+ * "Housekeeping", "Theresa Webb", "Unassigned" — so the scope is legible without
+ * opening the menu; only the default is title-cased to "All Conversations" (the
+ * menu row stays production's sentence case). Every other value is the same
+ * string in both places, because a department is a proper noun in both.
  */
 export function assignmentTriggerLabel(scope: AssignmentScope): string {
   return scope.kind === 'all' ? 'All Conversations' : assignmentLabel(scope);
@@ -429,7 +452,11 @@ function ScopeSelect({
         >
           {triggerLabel}
         </span>
-        <Icon path={mdiUnfoldMoreHorizontal} size={0.7} color={colors.colorBlueDark1} />
+        {/* The ⇅ takes the TRIGGER's colour rather than a fixed blue: after the
+            8/21 swap the two triggers are a black title and a blue control, and
+            a blue glyph on the black one made the title look half-linked. One
+            colour per trigger, glyph included. */}
+        <Icon path={mdiUnfoldMoreHorizontal} size={0.7} color={triggerColor} />
       </button>
 
       {isOpen && (
@@ -516,10 +543,16 @@ function firstEnabled(options: ScopeSelectOption[], start: number, step: 1 | -1)
    ───────────────────────────────────────────────────────────────────────── */
 
 /**
- * LEFT select — the assignment axis, sitting in the card-title slot. Sections
- * are STATUSES / DEPARTMENTS / STAFF; the whole thing is ONE single-select
- * option list, so choosing a department clears "Assigned" and choosing a person
- * clears the department (production's exclusivity, now structural).
+ * RIGHT select (since 8/21) — the assignment axis, in the blue control register.
+ * Sections are STATUSES / DEPARTMENTS / STAFF; the whole thing is ONE
+ * single-select option list, so choosing a department clears "Assigned" and
+ * choosing a person clears the department (production's exclusivity, now
+ * structural).
+ *
+ * The trigger reads the LIVE selection, so "Housekeeping" or "Theresa Webb"
+ * stands where "All Conversations" was. That is the whole point of moving it out
+ * of the title slot: the label may change on every pick, and a card whose NAME
+ * changes on every pick is a card you have to re-read.
  */
 export function AssignmentSelect({
   assignment,
@@ -555,16 +588,23 @@ export function AssignmentSelect({
       value={scopeToValue(assignment)}
       onChange={(v) => onAssignmentChange(valueToScope(v))}
       triggerLabel={assignmentTriggerLabel(assignment)}
-      triggerColor={colors.colorBlack1}
-      triggerTextSize={16}
+      triggerColor={colors.colorBlueDark1}
+      triggerTextSize={14}
       menuWidth={264}
-      align="left"
+      align="right"
       ariaLabel="Filter conversations by assignment"
     />
   );
 }
 
-/** RIGHT select — the folder axis. Inbox / Archived / Blocked, check on active. */
+/**
+ * LEFT select (since 8/21) — the folder axis, in the card-title slot. Inbox /
+ * Archived / Blocked, check on the active row.
+ *
+ * It gets the title register because it is the stabler axis: a folder is a place
+ * you are in for a whole shift, and "Inbox" is what this card IS. Three values,
+ * all proper nouns, so the slot never has to hold a phrase.
+ */
 export function FolderSelect({
   folder,
   onFolderChange,
@@ -585,10 +625,10 @@ export function FolderSelect({
       value={folder}
       onChange={(v) => onFolderChange(v as ThreadFilter)}
       triggerLabel={label}
-      triggerColor={colors.colorBlueDark1}
-      triggerTextSize={14}
+      triggerColor={colors.colorBlack1}
+      triggerTextSize={16}
       menuWidth={176}
-      align="right"
+      align="left"
       ariaLabel="Filter conversations by folder"
     />
   );

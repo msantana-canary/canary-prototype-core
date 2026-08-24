@@ -6,13 +6,16 @@
  *
  * The card stacks THREE zones (node `searchbar-node`):
  *
- *   1. `header`  — the two scope selects (assignment left, folder right), see
- *                  ThreadScopeMenu. Hairline under it.
- *   2. `search`  — the search input + "New message" button. Moved in here from
- *                  the full-width band `AppLayout` used to draw above both
- *                  columns; see ConversationControls for why. NO hairline under
- *                  it — the band and the rows are one list surface, and a second
- *                  divider would cut a 350px card into three boxes.
+ *   1. `header`  — the two scope selects. Since the 8/21 design review (frame
+ *                  2112:26219) that is FOLDER left, in the card-title register,
+ *                  and ASSIGNMENT right, in blue; see ThreadScopeMenu for why
+ *                  they swapped. Hairline under it.
+ *   2. `search`  — the search input + "New message" button, both at COMPACT.
+ *                  Moved in here from the full-width band `AppLayout` used to
+ *                  draw above both columns; see ConversationControls for why.
+ *                  NO hairline under it — the band and the rows are one list
+ *                  surface, and a second divider would cut a 350px card into
+ *                  three boxes.
  *   3. rows      — the only scrolling zone. Both zones above are `shrink-0`
  *                  siblings of the scroll container, so they hold position
  *                  while the rows scroll under them; no position:sticky needed.
@@ -36,9 +39,9 @@ interface ThreadListProps {
   onSelectThread: (threadId: string) => void;
   typingThreadId?: string | null;
   /**
-   * The card's own header zone — the two scope selects. A shrink-0 sibling of
-   * the scroll container, so it holds position while the rows scroll under it;
-   * no position:sticky needed.
+   * The card's own header zone — the two scope selects (folder left, assignment
+   * right). A shrink-0 sibling of the scroll container, so it holds position
+   * while the rows scroll under it; no position:sticky needed.
    */
   header?: React.ReactNode;
   /** The search + "New message" band, directly under the header. Same deal. */

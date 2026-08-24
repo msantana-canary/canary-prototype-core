@@ -20,8 +20,8 @@ import { Toast } from '@/components/core/Toast';
 import { ComposeHeader } from '@/components/products/messaging/ComposeHeader';
 import { ConversationControls } from '@/components/products/messaging/ConversationControls';
 import {
-  AssignmentSelect,
   FolderSelect,
+  AssignmentSelect,
   AssignmentScope,
 } from '@/components/products/messaging/ThreadScopeMenu';
 import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
@@ -224,16 +224,19 @@ export default function MessagesPage() {
                 onSelectThread={selectThread}
                 typingThreadId={typingThreadId}
                 header={
-                  /* TWO selects, one per axis (frame 2038:57666). The assignment
-                     select occupies the slot the "Conversations" card title used
-                     to hold — the list IS the conversations, so naming the scope
-                     there says more than repeating the noun. */
+                  /* TWO selects, one per axis (frame 2112:26219, the 8/21 design
+                     review's swap of 2038:57666). FOLDER takes the slot the
+                     "Conversations" card title used to hold — the card is called
+                     what it IS, and "Inbox" holds still for a whole shift —
+                     while ASSIGNMENT sits right in the blue control register,
+                     its label always reporting the live scope. See the
+                     arrangement history in ThreadScopeMenu. */
                   <div className="flex items-center justify-between gap-2">
+                    <FolderSelect folder={currentView} onFolderChange={setCurrentView} />
                     <AssignmentSelect
                       assignment={assignmentScope}
                       onAssignmentChange={setAssignmentScope}
                     />
-                    <FolderSelect folder={currentView} onFolderChange={setCurrentView} />
                   </div>
                 }
                 search={

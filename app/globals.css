@@ -477,9 +477,15 @@ body {
 
    Deltas: 6px radius (the branch's input radius) over the library's 4px;
    a `colorBlack5` quiet border over the library's `#666`; and the search glyph
-   at 20px `colorBlack3` rather than 24px black, which also moves the text
-   inset from 40px to 36px. The cancel button is WebKit's own, and appears only
-   because the base renders `type="search"`. */
+   at 20px `colorBlack3` rather than 24px black. The cancel button is WebKit's
+   own, and appears only because the base renders `type="search"`.
+
+   ⚠ THE 36px TEXT INSET IS NO LONGER A DELTA. It was one against `InputSize.
+   NORMAL`, whose own inset is 40px. The field moved to COMPACT on 2026-08-21
+   (see ConversationControls) and COMPACT's own size class already reads
+   `pl-[36px]` — so this rule now restates the base rather than overriding it.
+   Kept because the 20px glyph above is what the inset is measured against and
+   the two must not drift apart; delete both together or neither. */
 .input-search-quiet input {
   border-radius: 6px !important;
   border-color: #cccccc !important;
