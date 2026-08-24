@@ -97,10 +97,11 @@ export function AddInformationModal({
 
           `focus:!border-[#2858C4]` went with them. In its place, `.field-focus-
           blue` restates the base's OWN focus values: the library names them in
-          Tailwind arbitrary-value classes that this app's build never compiles
+          Tailwind arbitrary-value classes this app's build never compiled
           (node_modules is not a scanned source), so `focus:outline-2` was
-          landing as a 2px TRANSPARENT ring. That is a build gap, not a delta —
-          see the block in globals.css.
+          landing as a 2px TRANSPARENT ring. The build now scans the library's
+          bundle (`@source` in globals.css), so the base's own focus reaches the
+          page and the `.field-focus-blue` patch is gone.
 
           WHAT STAYS is metric: 140px of floor, 14px of padding, and a 15px/24px
           type size for a box you are meant to write a sentence into. `rows={2}`
@@ -113,7 +114,7 @@ export function AddInformationModal({
         autoFocus
         rows={2}
         resize="vertical"
-        className="field-focus-blue scrollbar-invisible !min-h-[140px] !p-[14px] !text-[15px] !leading-[24px] !text-black"
+        className="scrollbar-invisible !min-h-[140px] !p-[14px] !text-[15px] !leading-[24px] !text-black"
       />
     </CanaryModal>
   );

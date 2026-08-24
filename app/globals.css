@@ -1,5 +1,41 @@
 @import "tailwindcss";
 
+/* ───────────────────────────────────────────────────────────────────────────
+   SCAN THE LIBRARY'S OWN BUNDLE (foundation ask #49, fixed 2026-08-24)
+
+   ⚠ THIS IS A BUILD FIX, NOT A STYLE. It changes no design; it makes the
+   LIBRARY's own declarations reach the page.
+
+   Base components name their states in Tailwind ARBITRARY-VALUE classes —
+   `focus:outline-[#2858c4]`, `focus:outline-offset-[-1px]`,
+   `hover:bg-[#f0f0f0]`, and others. Tailwind v4 emits a utility only for the
+   sources it SCANS, and its automatic content detection deliberately skips
+   `node_modules`. So every arbitrary-value class inside `@canary-ui/components`
+   compiled to nothing in this app, and the state it named silently did not
+   paint. The symptom is a state that computes to a transparent or default
+   value while its siblings work: `CanaryTextArea` focus resolved to
+   `outline: rgba(0,0,0,0) solid 2px` — a two-pixel INVISIBLE ring — which is
+   what `.field-focus-blue` was added to paper over on 2026-08-21.
+
+   `@source` names the bundle explicitly, which overrides the node_modules
+   exclusion. It points at `index.mjs` (the ESM build this app actually imports)
+   rather than the whole `dist/` directory: `index.js`, `index.d.ts` and the two
+   `.map` files contain the same class strings again, and the maps additionally
+   carry the library's raw TS source, which is a lot of text to re-scan on every
+   rebuild for zero extra utilities.
+
+   The class strings live in string literals inside compiled `clsx()` calls,
+   which is exactly what Tailwind's extractor reads.
+
+   ⚠ IT IS NOT THE WHOLE OF ASK #49. Compiling the classes turned out to be
+   necessary and not sufficient: the library's own stylesheet ALSO ships a
+   hand-written `.outline-none` shorthand that then blocks its own focus ring.
+   That is a separate library bug with its own workaround — see "The library's
+   own focus ring, un-blocked" below. `.field-focus-blue` and its two call sites
+   are gone either way: the fix now lives once, on the library's own class
+   names, instead of once per field. */
+@source "../node_modules/@canary-ui/components/dist/index.mjs";
+
 /* The library stylesheet is imported from app/layout.tsx, BEFORE this file —
    not with @import here. Tailwind 4 relocates @import rules and CLAUDE.md rule
    7 forbids the pattern outright. */
@@ -276,12 +312,19 @@ body {
    honestly. (Both textareas went back to STOCK on 2026-08-21 and the fight is
    gone with the dress — see the note where `.textarea-boxed` used to live.)
 
-   ⚠⚠ AND THE OTHER TRAP, found 2026-08-24: a class the LIBRARY names may not
-   exist at all. Tailwind v4 emits utilities only for the sources it scans, and
-   `node_modules` is not one — so every arbitrary-value class inside a base
-   component (`focus:outline-[#2858c4]`, `outline-offset-[-1px]`, …) silently
-   compiles to nothing. Symptom: a state that computes to a transparent or
-   default value while its siblings work. See `.field-focus-blue` below. */
+   ⚠⚠ AND THE OTHER TRAP — found 2026-08-24, and FIXED the same day. A class the
+   LIBRARY names could fail to exist at all: Tailwind v4 emits utilities only for
+   the sources it scans, `node_modules` was not one, so every arbitrary-value
+   class inside a base component (`focus:outline-[#2858c4]`,
+   `outline-offset-[-1px]`, `placeholder:text-gray-500`, …) silently compiled to
+   nothing. Symptom: a state that computes to a transparent or default value
+   while its siblings work.
+
+   The `@source` at the top of this file closes it, and it is worth knowing that
+   the fix's whole point is that it DELETES override code rather than adding any
+   — `.field-focus-blue` went with it. If you ever find yourself restating a
+   library value verbatim in this block, check whether the library's own class
+   compiles before you write the rule. */
 
 /* ---- Neutral icon buttons — CanaryButton ICON_SECONDARY ------------------
    ONE ramp for every bare icon control on the surface: the thread header's
@@ -515,28 +558,50 @@ body {
    structural exception (the parent card owns the chrome), not a costume.
    ─────────────────────────────────────────────────────────────────────────── */
 
-/* ---- The base's OWN focus outline, compiled ------------------------------
-   ⚠ THIS IS A BUILD GAP, NOT A DESIGN DELTA. Nothing here disagrees with the
-   library; it makes the library's own declaration reach the page.
+/* ---- The library's own focus ring, un-blocked ---------------------------
+   ⚠ THIS IS A LIBRARY CSS BUG WORKAROUND, NOT A DESIGN DELTA. Every value here
+   is the library's own, restated at the register where it can win.
 
-   `CanaryTextArea` names its focus state with Tailwind ARBITRARY-value classes
-   — `focus:outline-2 focus:outline-[#2858c4] focus:outline-offset-[-1px]`.
-   Tailwind v4 generates utilities only for the sources it scans, and
-   `node_modules` is not one of them, so `outline-[#2858c4]` and
-   `outline-offset-[-1px]` are never emitted. Measured in the browser: on focus
-   the field computes `outline: rgba(0,0,0,0) solid 2px` — a two-pixel
-   TRANSPARENT ring, i.e. no visible focus at all.
+   `.field-focus-blue` (2026-08-21) used to do this per call site, on the theory
+   that the only problem was the unscanned bundle. The `@source` at the top of
+   this file fixed THAT — `.focus\:outline-\[\#2858c4\]:focus` now compiles —
+   and the focus ring still did not paint. The second cause, measured:
 
-   That was invisible while the boxed dress was overriding focus on the border
-   anyway. Taking the dress off exposed it, so the stock values are restated
-   here, verbatim. Unlayered and un-`!important` on purpose: it has to beat
-   Tailwind's `@layer base` reset and nothing else, and if the library ever gets
-   scanned this rule is simply redundant rather than in the way.
+     `@canary-ui/components/dist/styles.css` ships its own hand-written
+     `.outline-none { outline: 2px solid transparent; outline-offset: 2px; }`
+     — the Tailwind v3 SHORTHAND, which sets outline-COLOR (transparent) and
+     outline-OFFSET, where v4's `outline-none` sets only `outline-style: none`.
+     `CanaryTextArea`, `CanaryInput` and `CanarySelect` all carry `outline-none`
+     at REST beside their `focus:outline-*` classes, so the shorthand's
+     transparent colour and +2px offset apply at every state.
 
-   Logged as the build ask: point Tailwind at `@canary-ui/components/dist` so
-   every base component's arbitrary-value classes compile, and delete this. */
-.field-focus-blue:focus {
+   And it wins, despite lower specificity, because THE LIBRARY'S STYLESHEET IS
+   UNLAYERED while Tailwind's generated utilities live in `@layer utilities` —
+   and for non-important declarations an unlayered rule beats a layered one
+   whatever the selectors say. Same cascade trap the block above documents,
+   third variant: here the two rules are in different STYLESHEETS.
+
+   So these three restate the library's own arbitrary-value declarations
+   UNLAYERED, in a file that loads after the library's. Same specificity fight,
+   same layer, later in source order — they win honestly. Keyed on the
+   LIBRARY'S OWN class names rather than a class of ours, which is why this is
+   the last time any call site has to know: every base field on every surface
+   gets its declared focus ring back, including the error register and the
+   `focus-within` one the date inputs use.
+
+   ⚠ LIBRARY ASK: drop the hand-written `.outline-none` from `dist/styles.css`
+   (Tailwind v4 emits a correct one), or ship the whole of it inside a
+   `@layer`. Delete this block the day either lands. */
+.focus\:outline-\[\#2858c4\]:focus,
+.focus-within\:outline-\[\#2858c4\]:focus-within {
   outline-color: #2858c4;
+}
+.focus\:outline-\[\#E40046\]:focus,
+.focus-within\:outline-\[\#E40046\]:focus-within {
+  outline-color: #e40046;
+}
+.focus\:outline-offset-\[-1px\]:focus,
+.focus-within\:outline-offset-\[-1px\]:focus-within {
   outline-offset: -1px;
 }
 

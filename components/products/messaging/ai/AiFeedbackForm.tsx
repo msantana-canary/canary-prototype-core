@@ -248,13 +248,14 @@ export function AiFeedbackForm({
           OUTLINE. That delta is logged in REDESIGN_NOTES as frame drift, and the
           frames want redrawing against the stock control.
 
-          THE FOCUS STILL PAINTS, but not for free: with the dress off, the base
-          turns out to name its focus colour in a Tailwind ARBITRARY-value class
-          that this app's build never compiles (node_modules is not a scanned
-          source), so `focus:outline-2` was landing as a 2px TRANSPARENT ring.
-          `.field-focus-blue` restates the library's own two values so the stock
-          register actually reaches the page — a build gap, not a delta. See the
-          block in globals.css.
+          THE FOCUS IS ENTIRELY THE BASE'S NOW. With the dress off, the base
+          turned out to name its focus colour in Tailwind ARBITRARY-value classes
+          this app's build never compiled (node_modules is not a scanned source),
+          so `focus:outline-2` was landing as a 2px TRANSPARENT ring, and
+          `.field-focus-blue` restated the two values by hand. The build now
+          scans the library's bundle (`@source` in globals.css), the library's
+          own declaration reaches the page, and the patch class is DELETED.
+          Nothing here names a focus state any more, which is the point.
 
           WHAT STAYS, because it is metric and not costume:
           `!min-h-[72px]` — the base floors an un-autoexpanding textarea at 80px
@@ -269,7 +270,7 @@ export function AiFeedbackForm({
         placeholder="E.g. Extra pillows, blankets, and toiletries are available upon request. We can have them ready at the front desk or delivered to your room."
         rows={2}
         resize="vertical"
-        className="field-focus-blue scrollbar-invisible !min-h-[72px] !leading-[22px] !text-black"
+        className="scrollbar-invisible !min-h-[72px] !leading-[22px] !text-black"
       />
     </div>
   );

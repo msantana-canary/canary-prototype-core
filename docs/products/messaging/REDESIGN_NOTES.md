@@ -2753,3 +2753,482 @@ not a private copy.
     what forces it (there is no exit to animate). A base expander with a
     transition — or just a `keepMounted` — would retire both `ExpandRegion` and
     `useMountedThrough`.
+
+---
+
+## Batch 7 — Composer flows + broadcast deltas (2026-08-24)
+
+The last two drawn sections plus three fixes. Landed frames: `tpl-open` /
+`tpl-select` (templates modal), `translate-1` / `translate-2` (translate row),
+`group-1` / `group-2` (New group), `msgdetails` (Message details),
+`steps-final-2090-37167` (the steps rail's lighter gradient).
+
+### 1. The templates modal, and THE VERB SPLIT
+
+`MessageTemplatesModal.tsx` (**new**) · `lib/products/messaging/message-templates.ts`
+(**new**) · `MessageComposer.tsx`
+
+The composer's templates tool is the first of its six icons to do anything. What
+it opens is a two-tab picker, and the tabs **commit to different actions**:
+
+| | Button | What happens |
+|---|---|---|
+| **Preset Messages** | **Use** | the body lands in the composer input, replacing it; the modal closes; the agent edits and sends when she is ready |
+| **Apple Message Templates** | **Send** | the message goes immediately, and the composer's own draft is left alone |
+
+**Why the split is the point.** A preset is a first draft the hotel wrote — it
+is expected to be edited, and an "insert" that then auto-sent would take the
+edit away. An Apple template is an Apple-hosted PAYLOAD; there is no text to
+edit, so routing it through the composer would be two clicks that change
+nothing. The frames only draw the Apple tab; both are built, because a picker
+where every row does the same thing does not need two tabs.
+
+Selection is **per-tab and resets on switch** — a preset selection carried into
+the Apple tab would leave a "Send" button armed with a row nobody can see.
+
+**Mock templates are production-flavoured, with merge tags rendered LITERALLY.**
+The drawn three (Welcome / DND - Housekeeping Service / Extend Your Stay
+Promotion) are verbatim; three more are written in the same register against
+production's own tag set — `{{ guest_first_name }}`, `{{ hotel_name }}`,
+`{{ arrival_date }}`, `{{ guest_url }}`, `{{ confirmation_id }}`. Nothing here
+invents a tag: an invented tag in a demo is a promise the real product cannot
+keep. The extra three cover the three shapes a front desk actually reuses — a
+pre-arrival nudge, a paid upsell offer, and a factual answer to a daily question.
+
+The Apple list is deliberately the SAME three bodies as the top of the preset
+list. Production seeds both from the same hotel copy, and the thing a hotelier is
+being asked to understand is the VERB, not the wording.
+
+**Base components, and four call-site overrides.** `CanaryModal` (title, ×,
+overlay, Escape) · `CanaryTabs` TEXT (the control MainNav and SubNav already
+take) · `CanaryList` + `CanaryListItem` for the rows · `CanaryButton` TEXT /
+PRIMARY in the footer. `CanaryList` draws its own hairlines between children, so
+there is no divider element. The overrides are descendant variants on the base's
+OWN structure rather than new global classes: `!p-0` on the modal body (the frame
+runs rows full-bleed so a selected row's tint reaches both edges, and each row
+pays its 24px inset back), header and footer border rules the base does not
+draw, `!max-w-[800px]` over `size="large"`'s 896.
+
+### 2. The translate row is a ROW
+
+`MessageComposer.tsx` · `lib/products/messaging/translate.ts` (**new**)
+
+Not a drawer, not a popover: a band INSIDE the composer card, between the input
+and the toolbar. That placement is the argument — translation is a property of
+the message being typed, and anything detached would separate the setting from
+the sentence it applies to.
+
+Anatomy per the frames: a **preview chip** above the selects once there is a
+draft (the ORIGINAL is already on screen — it is the textarea — so the row adds
+only the translated line, in a small `colorBlack7` chip; a chip rather than a
+plain line because this text is not the message, it is a rendering of it), then
+**From → arrow → To**. Both are plain `CanarySelect` at COMPACT: flat
+single-selects with no sections and no check rows, which is what the base is
+for. This is **NOT** the `ScopeSelect` / `AssignSelect` gap and must not be
+confused with it.
+
+**One sanctioned delta: the From select is GRAY-FILLED** (`#E5E5E5` fill and
+border) where the base draws white on a `#666666` hairline. The frame draws it
+and the reason holds: From reports a DETECTED fact, To is the choice being made,
+and the two must not look like a matched pair of decisions. It stays ENABLED —
+an agent writing in Spanish to a Japanese guest is real, and `isDisabled` would
+dim the label to unreadable — so the fill does the work `isReadonly` would do if
+the field were inert.
+
+The translate tool icon **latches blue while its row is open**. It is the only
+toolbar affordance that leaves something on screen behind it; the other five
+keep the plain hover-tint ladder.
+
+⚠ **SEND IS UNCHANGED, AND THAT IS ENUMERATED RATHER THAN FAKED.** Production
+sends the TRANSLATED body — the guest reads their own language, the thread keeps
+the original for staff. Wiring that here would print Japanese under Theresa
+Webb's name in the feed with no way to see what she typed, because a per-message
+original/translation pair is a `Message` model change this branch has not been
+asked for. The row previews; Send sends the box. The work, if it is wanted, is a
+`translatedBody` field plus a caption in `MessageBubble`.
+
+The canned language model (`translate.ts`) is deterministic: a phrasebook for
+the handful of phrases a demo types, plus an INTENT-BUCKETED fallback (thanks /
+apology / question / default) so unknown text gets a plausible sentence in the
+target language rather than a spinner, the English back, or the same string for
+two different inputs. Five targets.
+
+### 3. Compose is gated on a committed number
+
+`ComposeHeader.tsx` · `app/(dashboard)/messages/page.tsx` · `store.ts` (unchanged)
+
+Miguel: *"no composer would appear until a number gets put in."*
+
+The pane has two states and the seam between them is a COMMIT, not a keystroke.
+Before: "To: [ ]" and one line of instruction, no composer — there is nothing to
+send TO, and a live message box over an empty address field invites a hotelier
+to type a message she cannot send. After: the same header with the number in it
+and the full `MessageComposer` underneath.
+
+**COMMIT is Enter OR BLUR**, at production's own ≥10-digit bar (restated in the
+component so the gate and `createThreadFromPhone` cannot disagree). Blur counts
+because a hotelier who types a number and reaches for the message box has
+finished addressing; making her press Enter first would be a rule she has to
+learn from a dead composer. Typing back below ten digits retracts the composer.
+
+⚠ **THE THREAD IS NO LONGER CREATED AT COMMIT.** It used to be: Enter called
+`createThreadFromPhone` immediately, dropped compose mode, and handed the user a
+normal ThreadView — which made the composer's appearance a side effect of
+LEAVING this pane, so the gate could not be expressed here at all. It also left
+an empty conversation in the inbox for every number anyone typed and thought
+better of. The SEND now creates the thread and posts the message into it in one
+step (`handleSendFirstMessage` on the page). The AI pill is real and local, and
+its value is dropped on send; the new thread takes the store's per-thread default.
+
+### 4. New group — a rebuild, not an edit
+
+`broadcast/CreateGroupModal.tsx` · `broadcast-types.ts` · `broadcast-store.ts`
+
+The old modal drew the frame's furniture and none of its behaviour. Its own
+comment called the contact row "(decorative)": "Add" added nothing, there was no
+table to add it to, and the only field that reached the store was the group's
+name. A hotelier could run the one flow in Broadcast that builds an audience and
+come out the other side with an empty group.
+
+**What the modal is FOR.** The three built-in folders are the PMS's answer to
+"who is here". A CUSTOM group is the list the PMS has no opinion about — the
+wedding party, the conference block, the ownership group — which is why the
+contact row asks for a NAME and a NUMBER rather than offering a guest picker.
+
+**The data model says so too.** `BroadcastGroupContact { id, name?, phone,
+channel }` on a new `contacts` field, deliberately NOT `memberGuestIds`: nothing
+typed here is expected to resolve to a reservation, and keeping the two apart
+means nothing downstream has to guess whether a member id will find a guest.
+`memberCount` is derived from `contacts.length` — a stored count that can
+disagree with the list it counts is a bug waiting for its first edit.
+
+**Channel is SMS or WhatsApp.** Production has no third option; the old modal's
+"Apple Messages" was invented (Apple Messages is negotiated per-device off the
+same number, not picked by staff).
+
+**The entry row appends and CLEARS ITSELF** — it is a repeating action, and a
+form that keeps the last contact in it invites a double-Add.
+
+**`CanaryTable` is a near-exact match for the drawn table** and that is not
+luck: the base renders column labels OUTSIDE the border, an 8px spacer row, then
+a bordered rounded-8 body whose first and last rows carry the radius — which is
+the frame, element for element. Two overrides: the header's type register (base
+14px semibold `colorBlack2` → the frame's 10px uppercase overline) and the row
+height. ⚠ The row-padding override must be scoped
+`[&_tbody_tr:not(:first-child)_td]` — the base's first tbody row is the 8px
+SPACER, and a blanket `td` padding inflates the gap under the overlines to 48px.
+
+**Save creates the group and LANDS THE USER IN IT.** Creating a group and then
+having to go and find it is the flow admitting it did nothing.
+
+⚠ **Deliberate deviations.** (a) Field borders stay stock `#666666` against the
+frames' pale hairline — the batch-6 ruling applied, since Miguel called the same
+pale border on the same base components *frame drift, not a sanctioned
+design-system change*. (b) Save is gated on ≥1 contact **and** a name; the brief's
+rule is the contact, and the name is added because `createGroup` refuses a
+nameless group and a Save that is enabled and then silently does nothing is worse
+than one that is honestly disabled. (c) No Cancel button — the frame's footer
+holds "Upload Contacts ⓘ" and "Save", and the × is the cancel.
+
+⚠ **The frame's three identical "Miguel Santana" rows are MOCK FILLER and are
+not seeded.** The table is populated by real Add-contact entries. A demo that
+ships with three copies of one person teaches that the flow does not work.
+
+⚠ **No edit-group flow existed and none was added.** `CreateGroupModal` was and
+is create-only; the GROUPS kebab holds "View archived" and nothing else.
+
+⚠ **A hand-entered contact is not a messageable recipient yet.** The broadcast
+send pipeline addresses `guestId`s through `canMessageGuest`, so a group built
+entirely from typed contacts reports "no one to send to" in the To-strip. That
+is pre-existing behaviour for any empty custom group rather than a regression,
+and closing it is a clearly-shaped follow-up: teach `getGuestEntriesForGroup`,
+`canMessageGuest` and `buildRecipientDeliveries` about contacts.
+
+### 5. Message details — the status becomes a CHIP
+
+`broadcast/BroadcastDeliveryPanel.tsx`
+
+Title "Broadcast message" → **"Message details"** (the panel is opened FROM a
+broadcast block, so naming it after the broadcast restated where you already
+were), a header hairline, and the status moves from right-aligned text to a
+`CanaryTag` OUTLINE chip **beside the name**.
+
+**Moving it is what changes the colour model**, because a chip cannot be
+"untinted" — a neutral outline is still a chip, and the only question is which
+colour. So production's two-tint rule becomes four registers answering ONE
+question, did it reach the guest:
+
+| | Statuses |
+|---|---|
+| **GREEN** (SUCCESS) | delivered · read |
+| **AMBER** (WARNING) | pending-rtc |
+| **RED** (ERROR) | failed |
+| **GREY** (DEFAULT) | sending · sent · resent · not-sent · blocked-high-rate-country |
+
+The frame draws green and amber. **Red is built though it is undrawn**: a panel
+whose whole job is surfacing damage cannot ship without its damage state, and
+the anatomy is one enum value apart.
+
+⚠ **`blocked-high-rate-country` STAYS GREY**, reading "Failed to send" beside a
+red chip reading the same words. Production's class check is `=== FAILED`, so a
+blocked recipient has never been tinted; an earlier pass diverged on exactly this
+and was reverted. Grey is what "untinted" becomes once the text is a chip.
+
+Labels stay production's verbatim (FAILED and BLOCKED_HIGH_RATE_COUNTRY share
+"Failed to send"); `CanaryTag` uppercases them, which is what the frame draws.
+The full 7-state logic is intact. The chip register is the library's stock
+OUTLINE palette, so the ERROR chip is the pink-family red the library ships, not
+`colorRed1`.
+
+Rows also gain a **per-recipient jump icon**, and it is INERT in this branch:
+production opens that recipient's own 1:1 conversation, which crosses from the
+broadcast store into the messaging store AND has to flip the page's
+Conversations/Broadcast tab, which is local state above both. A store action that
+owns the active tab is the shape of the fix.
+
+⚠ **The dedupe was already done.** The frame's three identical "Fatima
+Al-Hassan" rows are its mock; the prototype's recipient lists have always been
+distinct guests per message, so no data changed. The exemplar broadcast
+(`bm-ih-2`) exercises six different people across five different statuses.
+
+⚠ **The frame draws NO meta rows** — it goes header → hairline → list — and the
+body / timestamp / sender / audience block is KEPT. It is the only place the
+broadcast's own text is readable once the panel is open, and the restyle brief
+named the title, the chips, the subtitle and the jump icon and did not name it.
+A clean delete if Miguel meant the frame literally.
+
+### 6. ONE panel standard, and `FloatingPanel` is deleted
+
+`panel/PanelShell.tsx` · the three broadcast panels · `FloatingPanel.tsx`
+(**deleted**)
+
+`PanelShell` used to carry a note explaining why the broadcast panels kept their
+own shell: 480px, tucked under the top bar, shadowed, *"genuinely different
+jobs"*. **They do not have different jobs.** All four panels are the same object
+— a right-hand card holding one list you opened from the surface behind it — and
+the differences were the accidents of having been written months apart.
+
+Two shells cost two widths, two z-index pairs, two insets, two mount mechanics
+kept "in step deliberately" by hand, and a shadow on one branch of a surface
+whose standing rule is that nothing casts one.
+
+What changed for the three, all of it the standard asserting itself: **480 →
+600px**, under-the-top-bar → **over everything**, 16px insets → **12px**,
+rounded-12 → **16**, z 40/39 → **45/44**, and **the shadow is gone**. Contents
+and behaviour are untouched — this was a shell swap. `FloatingPanel` had no other
+consumer and is deleted rather than left orphaned; its `CanarySideSheet`
+exception block is now redundant with `PanelShell`'s, which says the same five
+things.
+
+The delivery panel's close × also moved onto `CanaryButton` ICON_SECONDARY while
+that header was open — one of the broadcast directory's remaining hand-rolled
+controls, retired in passing rather than as a sweep.
+
+### 7. The dead hover in `BroadcastGroupList`
+
+Same bug the thread row had, and the same fix. The audience row carried
+`hover:bg-[#f9fafb]` as a CLASS and `backgroundColor: 'transparent'` as an INLINE
+STYLE. An inline style outranks any class, `:hover` included, so the wash had
+never rendered in the life of the component — and it read as "the hover is too
+subtle" rather than "there is no hover", which is exactly why it survived.
+
+Fixed by stating the background where it can win (a hover flag driving the
+inline value), and taking the branch's ONE neutral wash while we were there:
+`rgba(0,0,0,0.08)`, the library's own hover step, where `#f9fafb` was a ~2% grey
+that would have been invisible even if it had painted. A SELECTED row does not
+answer hover at all — it is already carrying the blue tint and its border.
+
+### 8. The steps trace grows, breathes, and goes quiet
+
+`MessageBubble.tsx` · `AiStepsCard.tsx` · `motion.tsx` (**new**) ·
+`panel/panel-ui.tsx` · `panel/PanelShell.tsx` · `globals.css`
+
+**IT ANIMATES.** The trace used to appear and vanish on the frame while
+everything else that opens in place on this surface — the reservation-details
+band, Linked Reservations — grows. A trace that SNAPS shoves the answer down the
+screen with no motion to follow, which reads as the feed re-laying-out rather
+than as one block opening.
+
+`ExpandRegion`, `useMountedThrough` and the 220/160 pair moved DOWN out of
+`panel/panel-ui.tsx` into `components/products/messaging/motion.tsx`, with
+`useReducedMotion` from `PanelShell` beside them. Importing `panel-ui` into
+`MessageBubble` to get one animation would have dragged the whole panel
+vocabulary — PanelHeader, PanelTag, DetailRows, RowList, the copy affordance —
+into the thread, and **the thread does not belong to the panel**. Both files
+re-export what they used to own, so every existing call site is unchanged and
+there is still exactly one implementation. This is also the answer to ask 51's
+first half: the mechanism is now in one place for three consumers.
+
+**AND IT BREATHES** (Miguel, 8/24: *"a little tight"*). **10px above** the first
+step and **10px below** the last, where the batch-6 build had 0 and 8. The air is
+a MARGIN outside the rail rather than padding inside it — padding would stretch
+the rail past its rows and turn the bracket back into a bar, which is the one
+thing the measured note in `MessageBubble` says not to do. The closed state's
+rhythm is untouched.
+
+### 9. ⚠ THE AI RAMP NOW HAS TWO TIERS — a ramp rule, not a colour
+
+`globals.css` · `AiStepsCard.tsx`
+
+Batch 6 flagged that the frame's steps rail is much paler than ours and declined
+to fork a second gradient for one surface. Miguel ruled for the lighter rail
+(*"not too heavy"*), so this is the other answer: **a strength modifier over the
+same ramp.**
+
+**THE RULE, and it is the point of this entry:**
+
+> **FULL** (`--ai-ramp-strength: 100%`) is for **BRAND MARKS** — things that ARE
+> the agent: the orb, the "AI On" pill, the "Canary" sender name, the proposing
+> band's border. Identity, small, saturated.
+>
+> **QUIET** (`--ai-ramp-strength: 40%`) is for **STRUCTURAL RAILS** — things
+> that merely BELONG to the agent: the 2px rail marking the steps trace. A rail
+> is furniture running the height of a block of secondary reading; at full
+> strength it out-shouts the name it hangs off and competes with the answer it
+> explains.
+
+The three stops are now `:root` tokens (`--ai-ramp-magenta` / `-purple` /
+`-indigo`) plus a ground, and every AI surface — `.ai-gradient-text`,
+`.ai-gradient-bar`, `.ai-gradient-band` — reads them. `.ai-gradient-quiet` sets
+the strength and nothing else. Change a stop and BOTH tiers follow, which is the
+whole reason this is a modifier and not a second gradient.
+
+The quiet tier slices the ramp **purple → magenta** rather than carrying all
+three stops: at 40% the indigo end lands on a pale periwinkle the frame plainly
+does not draw, and dropping a stop is a slice of the same ramp rather than a new
+colour. Measured result `#e0b5e8 → #efafd9` against the frame's
+`#e0b5e7 → #f0aeb9` — the top stop is exact, the bottom a few points cooler than
+the frame's rose. ⚠ Eyeball item; it is a stop-order question, not a new gradient.
+
+**Both steps-trace callers take it** — the feed and the call transcript. The
+argument for quieting one is the argument for quieting the other, and a rail that
+is pale in the feed and saturated in the transcript would say the AI's work
+matters more on the phone.
+
+`.ai-gradient-band` keeps a fourth stop (`#e2456d`, a warm lead-in only that
+register carries) and writes its 4% fill out longhand, because its two layers
+need different strengths in one declaration.
+
+### 10. ⚠ FOUNDATION ASK #49 — root-caused, and it was TWO bugs
+
+`app/globals.css` · `AiFeedbackForm.tsx` · `AddInformationModal.tsx`
+
+**Bug one, fixed: Tailwind never scanned the library.** Base components name
+their states in ARBITRARY-VALUE classes (`focus:outline-[#2858c4]`,
+`focus-within:outline-offset-[-1px]`, `placeholder:text-gray-500`,
+`bg-[rgba(40,88,196,0.05)]`, …). Tailwind v4 emits a utility only for the
+sources it scans and its automatic detection skips `node_modules`, so every one
+of them compiled to nothing.
+
+```css
+@source "../node_modules/@canary-ui/components/dist/index.mjs";
+```
+
+Pointed at `index.mjs` (the ESM build the app imports) rather than the whole
+`dist/`: `index.js`, `index.d.ts` and the two `.map` files repeat the same class
+strings, and the maps additionally carry the library's raw TS source — a lot of
+text to re-scan on every rebuild for zero extra utilities. **43 rules appeared;
+nothing was removed; `pnpm build` is clean.** Full inventory below.
+
+**Bug two, found because the first fix did not work: the library BLOCKS ITS OWN
+focus ring.** `dist/styles.css` hand-writes
+
+```css
+.outline-none { outline: 2px solid transparent; outline-offset: 2px; }
+```
+
+— the Tailwind **v3 SHORTHAND**, which sets outline-COLOR (transparent) and
+outline-OFFSET, where v4's `outline-none` sets only `outline-style: none`.
+`CanaryTextArea`, `CanaryInput` and `CanarySelect` all carry `outline-none` at
+REST beside their `focus:outline-*` classes, so the transparent colour and the
++2px offset apply in every state. And it WINS despite lower specificity, because
+**the library's stylesheet is unlayered while Tailwind's utilities live in
+`@layer utilities`** — for non-important declarations an unlayered rule beats a
+layered one whatever the selectors say.
+
+That is the cascade trap this document already carries, in a third variant: the
+two rules are in different STYLESHEETS. The fix is three unlayered rules in
+`globals.css` (which loads after the library's) restating the library's own
+declarations, keyed on **the library's own class names** — so every base field on
+every surface gets its declared focus ring back, including the error register and
+the `focus-within` one the date inputs use.
+
+**`.field-focus-blue` is deleted**, along with both call sites. It did this per
+field on the theory that the scan was the only problem; the fix now lives once,
+at the register, and neither textarea names a focus state any more.
+
+Measured before/after on the real `CanaryTextArea`:
+`rgba(0,0,0,0) solid 2px / offset 2px` → `rgb(40,88,196) solid 2px / offset -1px`.
+
+#### ⚠ NEWLY-PAINTING STATES — the inventory Miguel asked for
+
+43 rules now compile. These are the ones that touch a component this surface
+actually uses. Nothing was designed; each is the library behaving as it declares.
+
+| Where | What now paints |
+|---|---|
+| **`CanaryTextArea` / `CanaryInput` / `CanarySelect` / `CanaryInputPhone`** | the **blue focus ring** — `#2858c4`, 2px, inset −1px. Visible on the AI feedback note, the Add-Information box, the New group fields and the translate selects. Chromeless fields are unaffected (`.field-chromeless:focus`'s `outline: none !important` still wins). |
+| same, error state | the **red focus ring** `#E40046` and red helper text. No call site sets `error` today, so nothing renders yet. |
+| **`CanaryListItem` with `isSelected`** | **`hover:opacity-90`** — a SELECTED row now dims to 90% on hover. `ThreadListItem` and the templates modal neutralise it (`[&>*]:hover:!opacity-100`, a deliberate design call); **`ReservationResultRow` does not**, so the Set-primary and Link-reservation pickers gained a hover-dim on their selected row. Left as the base's behaviour; one class to opt out if Miguel disagrees. |
+| **`CanaryInput`** | `placeholder:text-gray-500` + `placeholder:opacity-100` — placeholders move off the browser default to `#6a7282` at full opacity. Visible in the New group modal. Call sites that already override (`.input-search-quiet`, the To: field) are unchanged. |
+| **`CanarySelect`** | `appearance-none` — the native dropdown arrow is now suppressed by class as well as by the component's inline `WebkitAppearance`. No change in Chrome; a real fix in Firefox. |
+| **`CanaryChip`** | `duration-150` — the reason chips now transition their colours over 150ms instead of switching instantly. |
+| **`CanaryCard`** | `hover:shadow-lg` + `transition-shadow` — **only when `onClick` is set**, and no card on this surface passes one. No shadow appeared. Worth knowing before anyone makes a card clickable on a no-shadow surface. |
+| **`CanaryListItem`** | `flex-row` (no-op, it is the default direction) and `text-xs` on the `description` slot — no consumer here uses that slot. |
+| **`CanaryCheckbox` / `CanaryRadio`** | `pl-1` on the label. The broadcast guest list already zeroes label padding globally, so nothing moved. |
+| **`CanaryOverflowMenu`** | `my-1` — divider items only, and no menu here has one. |
+
+Everything else in the 43 belongs to components this surface does not render
+(`CanarySteps`, `CanaryCalendar`, `CanaryDialog`, `CanaryProgressBar`,
+`CanaryAutocomplete`, `CanarySettingsCard`, `CanaryTooltip`'s left/right
+placements, and the whole `*Underline` family).
+
+⚠ **One dev-only artefact, not a bug.** The first page reload after a CSS
+rebuild can show a `useId` hydration warning (stale SSR HTML against a fresh
+client bundle). It clears on the next reload and does not occur in the
+production build.
+
+### Files touched (batch 7)
+
+- **New:** `components/products/messaging/MessageTemplatesModal.tsx`,
+  `components/products/messaging/motion.tsx`,
+  `lib/products/messaging/message-templates.ts`,
+  `lib/products/messaging/translate.ts`.
+- **Deleted:** `components/products/messaging/FloatingPanel.tsx`.
+- `app/globals.css` — `@source`; the AI ramp tokens + quiet tier;
+  `.field-focus-blue` deleted; the library-focus-ring block added.
+- `app/(dashboard)/messages/page.tsx` — `handleSendFirstMessage`.
+- `components/products/messaging/` — `MessageComposer.tsx`, `ComposeHeader.tsx`,
+  `MessageBubble.tsx`, `AiStepsCard.tsx`.
+- `components/products/messaging/ai/` — `AiFeedbackForm.tsx`,
+  `AddInformationModal.tsx` (patch class removed).
+- `components/products/messaging/panel/` — `PanelShell.tsx`, `panel-ui.tsx`.
+- `components/products/messaging/broadcast/` — `CreateGroupModal.tsx`,
+  `BroadcastDeliveryPanel.tsx`, `BroadcastFilterPanel.tsx`,
+  `BroadcastScheduledPanel.tsx`, `BroadcastGroupList.tsx`.
+- `lib/products/messaging/` — `broadcast-types.ts`, `broadcast-store.ts`.
+
+### ⚠ Library / build asks — additions
+
+49. **RESOLVED in this app** — Tailwind now scans the library bundle. The ask
+    stands for the LIBRARY: ship compiled CSS for your own arbitrary-value
+    classes, or document `@source` as a required install step. Every consuming
+    app has this bug today.
+52. **⚠ `dist/styles.css` hand-writes a Tailwind v3 `.outline-none`**
+    (`outline: 2px solid transparent; outline-offset: 2px`) which blocks the
+    library's own `focus:outline-*` classes in every consumer, because the
+    stylesheet is unlayered and Tailwind's utilities are not. Drop it (v4 emits a
+    correct one) or ship the stylesheet inside a `@layer`. This is the single
+    highest-value fix on the list: it is currently impossible for any consumer to
+    see a Canary field's focus ring without a workaround.
+53. **`CanaryTable` needs a row-padding prop and a header type register.** Its
+    row is `py-1` and its header is 14px semibold; every real table wants
+    different numbers, and both are reachable only through descendant selectors.
+    Also: the 8px spacer row it renders as the first `<tr>` is invisible in the
+    API and silently absorbs any `td` padding override.
+54. **`CanarySelect`: a `readonly`/reported visual register.** The translate
+    row's From field reports a detected value; `isDisabled` dims the label,
+    `isReadonly` paints `#FAFAFA`, and neither is the frame's grey-filled field.
+55. **`CanaryTabs` is uncontrolled with no `activeTab`.** Three consumers now
+    mirror `onChange` into local state purely so something outside can read which
+    tab is live — the templates modal needs it to name the footer's verb.
