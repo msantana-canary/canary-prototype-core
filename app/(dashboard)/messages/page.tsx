@@ -190,6 +190,21 @@ export default function MessagesPage() {
     }
   };
 
+  /**
+   * The compose pane's send. The thread is created HERE rather than on the
+   * "To:" field's commit, so a number typed and abandoned never leaves an empty
+   * conversation in the inbox — see the gate note in `ComposeHeader`.
+   *
+   * `createThreadFromPhone` already selects the new thread and drops compose
+   * mode, so by the time `sendMessage` runs the user is looking at the thread
+   * the message lands in.
+   */
+  const handleSendFirstMessage = (phone: string, content: string) => {
+    const newThreadId = createThreadFromPhone(phone);
+    if (!newThreadId) return;
+    void sendMessage(newThreadId, content, 'staff');
+  };
+
   // Auto-select first thread on mount (conversations only).
   // Skip while composing — startNewConversation nulls selectedThreadId, and without
   // this guard the effect would instantly re-select thread #1 (spurious mark-as-read +
@@ -263,7 +278,7 @@ export default function MessagesPage() {
                 <ComposeHeader
                   composingPhoneNumber={composingPhoneNumber}
                   onComposingPhoneChange={updateComposingPhone}
-                  onCreateThread={createThreadFromPhone}
+                  onSendFirstMessage={handleSendFirstMessage}
                   onCancelComposing={cancelComposing}
                 />
               </div>

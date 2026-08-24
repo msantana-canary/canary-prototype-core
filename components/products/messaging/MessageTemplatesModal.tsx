@@ -1,0 +1,280 @@
+/**
+ * MessageTemplatesModal — the composer's template picker (frames `tpl-open`,
+ * `tpl-select`).
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * THE VERB SPLIT — the design rule this component exists to express
+ * ═══════════════════════════════════════════════════════════════════════════
+ * The two tabs commit to two DIFFERENT actions, and the footer button says so:
+ *
+ *   PRESET MESSAGES  → "Use".  The body is inserted into the composer input,
+ *                      REPLACING whatever is there, and the modal closes. The
+ *                      agent edits it and sends when she is ready. A preset is
+ *                      a first draft the hotel wrote for her, not a decision.
+ *   APPLE MESSAGE    → "Send". The message goes immediately as a staff message.
+ *   TEMPLATES          An Apple template is an Apple-hosted payload; there is
+ *                      no text to edit, so an "insert then send" step would be
+ *                      two clicks that change nothing.
+ *
+ * The frames only draw the Apple tab. Both are built, because the split is the
+ * point — a picker where every row does the same thing does not need two tabs.
+ *
+ * ⚠ SELECTION IS PER-TAB AND RESETS ON SWITCH. Carrying a preset selection into
+ * the Apple tab would leave a "Send" button armed with a row nobody can see.
+ *
+ * ── BASE COMPONENTS ───────────────────────────────────────────────────────
+ * `CanaryModal` (title + ×, its own overlay/Escape) · `CanaryTabs` TEXT (the
+ * same control MainNav and SubNav use) · `CanaryList` + `CanaryListItem` for
+ * the rows (the list draws its own hairlines between children, so there is no
+ * divider element here) · `CanaryButton` TEXT for "Manage templates" and
+ * PRIMARY for the commit.
+ *
+ * Four call-site overrides, all descendant variants on the modal's own
+ * structure rather than new global classes:
+ *   • `[&>div:nth-child(2)]:!p-0` — the modal body is `px-6 py-4`; the frame
+ *     runs the rows FULL-BLEED so a selected row's tint reaches both edges.
+ *     Each row then pays its own 24px inset back.
+ *   • `[&>div:first-child]:border-b` / `[&>div:last-child]:border-t` — the
+ *     frame rules the header and the footer off from the list. `CanaryModal`
+ *     draws neither.
+ *   • `!max-w-[800px]` — the frame's modal is 800px; `size="large"` is
+ *     `max-w-4xl` (896px).
+ */
+
+'use client';
+
+import React, { useState } from 'react';
+import {
+  ButtonType,
+  CanaryButton,
+  CanaryList,
+  CanaryListItem,
+  CanaryModal,
+  CanaryTabs,
+  colors,
+  TabType,
+} from '@canary-ui/components';
+import {
+  APPLE_TEMPLATES,
+  MessageTemplate,
+  PRESET_TEMPLATES,
+} from '@/lib/products/messaging/message-templates';
+import { useRowKeyActivation } from '@/lib/products/messaging/useRowKeyActivation';
+
+type TemplateTab = 'preset' | 'apple';
+
+interface MessageTemplatesModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  /** Preset tab: put this body in the composer input, replacing its contents. */
+  onUse: (body: string) => void;
+  /** Apple tab: send this body now, as a staff message. */
+  onSendNow: (body: string) => void;
+}
+
+/**
+ * One template row: bold title over the body, on `CanaryListItem`.
+ *
+ * `children` rather than `title`/`subtitle` because the body is a MULTI-LINE
+ * block that has to wrap and keep its authored line breaks (the Extend Your
+ * Stay copy is three lines in the frame), and the base's subtitle slot is a
+ * single truncating line.
+ *
+ * Selection is the blue tint the frame draws — `selectedBackgroundColor` on the
+ * base, full-bleed, no border and no check. This picker is single-select and
+ * the row is 100px tall; the tint is unmissable at that size, which is why it
+ * does not carry the reservation picker's belt-and-braces tint+check.
+ *
+ * ⚠ `useRowKeyActivation` — `CanaryListItem` renders `<li role="button"
+ * tabIndex={0}>` and handles no keys. Same stopgap every clickable row on this
+ * surface carries; delete it with the others when the library lands its own.
+ */
+function TemplateRow({
+  template,
+  isSelected,
+  onSelect,
+}: {
+  template: MessageTemplate;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const rowRef = useRowKeyActivation(onSelect);
+
+  return (
+    <CanaryListItem
+      ref={rowRef}
+      onClick={onSelect}
+      isSelected={isSelected}
+      selectedBackgroundColor={colors.colorBlueDark5}
+      hoverColor="rgba(0,0,0,0.04)"
+      alignment="start"
+      allowTextWrap
+      /* 24px horizontal / 16px vertical — the frame's row inset, paid by the
+         row because the modal body is flush. `[&>*]:` reaches the base's inner
+         div, which is where the library puts its own padding. */
+      className="[&>*]:!px-6 [&>*]:!py-4 [&>*]:hover:!opacity-100"
+    >
+      <div className="flex-1 min-w-0 flex flex-col" style={{ gap: 2 }}>
+        <span
+          className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px]"
+          style={{ color: colors.colorBlack1 }}
+        >
+          {template.title}
+        </span>
+        <span
+          className="font-['Roboto',sans-serif] text-[14px] leading-[22px] whitespace-pre-wrap"
+          style={{ color: colors.colorBlack1 }}
+        >
+          {template.body}
+        </span>
+      </div>
+    </CanaryListItem>
+  );
+}
+
+function TemplateList({
+  templates,
+  selectedId,
+  onSelect,
+}: {
+  templates: MessageTemplate[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    /* No `hasOuterBorder`: the frame's list is full-bleed inside the modal, so
+       the only rules it draws are the ones BETWEEN rows — which `CanaryList`
+       supplies to every child on its own. Children are mapped straight in,
+       keyed: the base reads `children` as an array and a wrapping fragment
+       would count as one child and take every divider with it. */
+    <CanaryList>
+      {templates.map((t) => (
+        <TemplateRow
+          key={t.id}
+          template={t}
+          isSelected={selectedId === t.id}
+          onSelect={() => onSelect(t.id)}
+        />
+      ))}
+    </CanaryList>
+  );
+}
+
+export function MessageTemplatesModal({
+  isOpen,
+  onClose,
+  onUse,
+  onSendNow,
+}: MessageTemplatesModalProps) {
+  /**
+   * `CanaryTabs` is UNCONTROLLED (`defaultTab` + `onChange`, no `activeTab`
+   * prop) — the same contract MainNav and SubNav take it on. The base owns
+   * which tab LOOKS active; this mirror exists only so the footer can name the
+   * right verb, and it can never disagree because `onChange` is the only writer.
+   */
+  const [activeTab, setActiveTab] = useState<TemplateTab>('preset');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const templates = activeTab === 'preset' ? PRESET_TEMPLATES : APPLE_TEMPLATES;
+  const selected = templates.find((t) => t.id === selectedId) ?? null;
+
+  const reset = () => {
+    setSelectedId(null);
+    setActiveTab('preset');
+  };
+
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const handleCommit = () => {
+    if (!selected) return;
+    if (activeTab === 'preset') {
+      onUse(selected.body);
+    } else {
+      onSendNow(selected.body);
+    }
+    reset();
+    onClose();
+  };
+
+  return (
+    <CanaryModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Message templates"
+      size="large"
+      className="!max-w-[800px] [&>div:nth-child(2)]:!p-0 [&>div:first-child]:border-b [&>div:first-child]:border-[#E5E5E5] [&>div:last-child]:border-t [&>div:last-child]:border-[#E5E5E5]"
+      footer={
+        <div className="flex items-center justify-between">
+          {/* "Manage templates" — a route into Settings that this branch does
+              not own. `CanaryButton` TEXT stripped of its button metrics, the
+              same way every other inline text affordance on this surface fakes
+              the link primitive the library has no component for (ask 45). */}
+          <CanaryButton
+            type={ButtonType.TEXT}
+            className="text-btn-inline font-['Roboto',sans-serif] !text-[14px] !font-medium"
+          >
+            Manage templates
+          </CanaryButton>
+
+          {/* THE VERB. Disabled until a row is picked — the frame's idle state
+              draws it faded, which is `CanaryButton`'s own 50% disabled dim. */}
+          <CanaryButton
+            type={ButtonType.PRIMARY}
+            onClick={handleCommit}
+            isDisabled={!selected}
+          >
+            {activeTab === 'preset' ? 'Use' : 'Send'}
+          </CanaryButton>
+        </div>
+      }
+    >
+      {/* The tab strip pays the body's inset back for itself; the LISTS stay
+          flush. `content` carries each list because that is `CanaryTabs`'
+          contract — the base switches the body, so there is no second source of
+          truth for which list is on screen. */}
+      <CanaryTabs
+        tabType={TabType.TEXT}
+        defaultTab="preset"
+        onChange={(tabId) => {
+          setActiveTab(tabId as TemplateTab);
+          // A selection from the other tab would arm the commit with a row
+          // nobody can see.
+          setSelectedId(null);
+        }}
+        /* 24px inset back onto the strip only, plus the frame's hairline under
+           it. `CanaryTabs` TEXT draws the active tab's 4px blue underline
+           `w-full` at the strip's bottom edge and nothing across the rest of
+           the row, so the rule goes on the strip and the blue bar lands on top
+           of it — which is how MainNav's tabs meet their own bar. */
+        className="[&>div:first-child]:!px-6 [&>div:first-child]:border-b [&>div:first-child]:border-[#E5E5E5]"
+        tabs={[
+          {
+            id: 'preset',
+            label: 'Preset Messages',
+            content: (
+              <TemplateList
+                templates={PRESET_TEMPLATES}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+              />
+            ),
+          },
+          {
+            id: 'apple',
+            label: 'Apple Message Templates',
+            content: (
+              <TemplateList
+                templates={APPLE_TEMPLATES}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+              />
+            ),
+          },
+        ]}
+      />
+    </CanaryModal>
+  );
+}

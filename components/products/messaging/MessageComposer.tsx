@@ -9,9 +9,18 @@
  *
  * Toolbar (left): emoji / attachment / translate / templates / service-ticket /
  * upsells as BARE 16px icons — zero padding, no background boxes, gray at rest,
- * blue on hover. They are still decorative in this branch (no flows behind
- * them), and the smaller/tighter treatment is what keeps six inert affordances
- * from out-weighing the two live controls on the right.
+ * blue on hover. The smaller/tighter treatment is what keeps a row of quiet
+ * affordances from out-weighing the two live controls on the right.
+ *
+ * ── TWO OF THEM ARE LIVE NOW (2026-08-24) ─────────────────────────────────
+ * TEMPLATES opens `<MessageTemplatesModal>`; TRANSLATE opens the in-composer
+ * translate row below. Both keep the same bare `ToolIcon` dress as their four
+ * inert siblings — a tool that does something and a tool that does not should
+ * not look like two different kinds of control, because which is which is a
+ * fact about this BRANCH, not about the product. The translate icon does gain
+ * one state the others have no use for: it stays BLUE while its row is open,
+ * because that row is the only toolbar affordance that leaves something on
+ * screen behind it.
  *
  * Right cluster: the AI pill, then a single square blue send button.
  *
@@ -61,8 +70,10 @@ import {
   ButtonType,
   CanaryButton,
   CanaryCard,
+  CanarySelect,
   CanaryTextArea,
   CardPadding,
+  InputSize,
   colors,
 } from '@canary-ui/components';
 import Icon from '@mdi/react';
@@ -74,8 +85,17 @@ import {
   mdiRoomServiceOutline,
   mdiCashMultiple,
   mdiSend,
+  mdiArrowRight,
 } from '@mdi/js';
 import { AiOrb } from './AiOrb';
+import { MessageTemplatesModal } from './MessageTemplatesModal';
+import {
+  DEFAULT_TARGET,
+  SOURCE_LANGUAGES,
+  TRANSLATE_LANGUAGES,
+  TranslateLanguage,
+  translatePreview,
+} from '@/lib/products/messaging/translate';
 
 /** Ignition window. Must match `ai-orb-wake` / `ai-pill-spark` in globals.css. */
 const AI_IGNITE_MS = 650;
@@ -131,10 +151,26 @@ interface MessageComposerProps {
  * either. Its OS tooltip is replaced by the mdi `Icon`'s `<title>` ELEMENT,
  * which browsers also surface on hover over the glyph, and which is what gives
  * the button its accessible name in the first place (see the stable-`id` note
- * on the thread header's IconAction). These controls remain inert in this
- * branch: there is no `onClick`, exactly as before.
+ * on the thread header's IconAction).
+ *
+ * `onClick` is OPTIONAL: four of the six tools are still inert in this branch,
+ * and an inert one passes nothing rather than passing a no-op — a button with a
+ * handler that does nothing is indistinguishable from a broken one.
+ * `isActive` pins the hover tint on for a tool whose surface is open.
  */
-function ToolIcon({ path, label, id }: { path: string; label: string; id: string }) {
+function ToolIcon({
+  path,
+  label,
+  id,
+  onClick,
+  isActive = false,
+}: {
+  path: string;
+  label: string;
+  id: string;
+  onClick?: () => void;
+  isActive?: boolean;
+}) {
   const [isHovered, setIsHovered] = useState(false);
   return (
     <span
@@ -145,18 +181,109 @@ function ToolIcon({ path, label, id }: { path: string; label: string; id: string
       <CanaryButton
         type={ButtonType.ICON_SECONDARY}
         size={ButtonSize.TINY}
+        onClick={onClick}
         className="icon-btn-bare icon-btn-18"
         icon={
           <Icon
             path={path}
             size={0.75}
-            color={isHovered ? colors.colorBlueDark1 : colors.colorBlack3}
+            color={isHovered || isActive ? colors.colorBlueDark1 : colors.colorBlack3}
             title={label}
             id={id}
           />
         }
       />
     </span>
+  );
+}
+
+/**
+ * THE TRANSLATE ROW — a band INSIDE the composer card, not a drawer.
+ *
+ * Frames `translate-1` (empty) / `translate-2` (with a draft). It sits between
+ * the input and the toolbar, which is the whole argument for it being a row:
+ * translation is a property of the message being typed, and a panel or a popover
+ * would have separated the setting from the sentence it applies to. It is a
+ * COMPOSE AID — nothing about it changes what Send does (see the note on
+ * `handleSend`).
+ *
+ * ── ANATOMY ───────────────────────────────────────────────────────────────
+ * • The PREVIEW, above the selects and only once there is a draft: the original
+ *   text is already on screen (it is the textarea), so the row adds only the
+ *   translated line, in a small `colorBlack7` chip. A chip rather than a plain
+ *   line because this text is NOT the message — it is a rendering of it — and
+ *   an unboxed second sentence under the first would read as two paragraphs of
+ *   one draft.
+ * • FROM → TO, two plain `CanarySelect`s at COMPACT with an arrow between them.
+ *   Flat single-selects with no sections and no check rows, which is exactly
+ *   what the base is for; this is NOT the `ScopeSelect` / `AssignSelect` gap.
+ *
+ * ⚠ ONE SANCTIONED DELTA: the FROM select is GRAY-FILLED (`#E5E5E5` fill and
+ * border) where the base draws white with a `#666666` hairline. The frame draws
+ * it that way and the reason holds up — From reports a DETECTED fact and To is
+ * the choice being made, so the two must not look like a matched pair of
+ * decisions. It stays enabled (an agent writing in Spanish to a Japanese guest
+ * is a real case, and `isDisabled` would also dim the label to unreadable), so
+ * the fill is doing the work `isReadonly` would do if the field were inert.
+ */
+function TranslateRow({
+  draft,
+  source,
+  onSourceChange,
+  target,
+  onTargetChange,
+}: {
+  draft: string;
+  source: string;
+  onSourceChange: (value: string) => void;
+  target: TranslateLanguage;
+  onTargetChange: (value: TranslateLanguage) => void;
+}) {
+  const preview = translatePreview(draft, target);
+
+  return (
+    <div className="flex flex-col" style={{ marginTop: 8, gap: 8 }}>
+      {preview && (
+        <span
+          className="self-start font-['Roboto',sans-serif] text-[14px] leading-[22px] rounded-[4px]"
+          style={{
+            backgroundColor: colors.colorBlack7,
+            color: colors.colorBlack1,
+            paddingLeft: 6,
+            paddingRight: 6,
+            paddingTop: 2,
+            paddingBottom: 2,
+          }}
+        >
+          {preview}
+        </span>
+      )}
+
+      <div className="flex items-center" style={{ gap: 12 }}>
+        <div style={{ width: 200 }}>
+          <CanarySelect
+            aria-label="Translate from"
+            size={InputSize.COMPACT}
+            value={source}
+            onChange={(e) => onSourceChange(e.target.value)}
+            options={SOURCE_LANGUAGES}
+            className="!bg-[#E5E5E5] !border-[#E5E5E5]"
+          />
+        </div>
+
+        <Icon path={mdiArrowRight} size={0.75} color={colors.colorBlack1} />
+
+        <div style={{ width: 200 }}>
+          <CanarySelect
+            aria-label="Translate to"
+            size={InputSize.COMPACT}
+            value={target}
+            onChange={(e) => onTargetChange(e.target.value as TranslateLanguage)}
+            options={TRANSLATE_LANGUAGES}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -174,6 +301,10 @@ export function MessageComposer({
   const [message, setMessage] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [isIgniting, setIsIgniting] = useState(false);
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [isTranslateOpen, setIsTranslateOpen] = useState(false);
+  const [translateSource, setTranslateSource] = useState('en');
+  const [translateTarget, setTranslateTarget] = useState<TranslateLanguage>(DEFAULT_TARGET);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const igniteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -241,12 +372,53 @@ export function MessageComposer({
     el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
   }, [message]);
 
+  /**
+   * ⚠ SEND IS UNCHANGED BY THE TRANSLATE ROW, deliberately.
+   *
+   * The row is a compose aid: it shows the agent what the guest is about to
+   * read. What actually goes down the wire is a PRODUCTION question, and
+   * production sends the TRANSLATED body (the guest reads their own language;
+   * the thread keeps the original for staff). Wiring that here would mean the
+   * prototype's feed printed Japanese under "Theresa Webb" with no way to see
+   * what she typed — a per-message original/translation pair is a data-model
+   * change this branch has not been asked for.
+   *
+   * So: the row previews, Send sends what is in the box, and the gap is
+   * enumerated rather than faked. If the demo needs the translated send, the
+   * work is a `translatedBody` on `Message` plus a caption in `MessageBubble`,
+   * not a change here.
+   */
   const handleSend = () => {
     const trimmed = message.trim();
     if (trimmed && !disabled) {
       onSend(trimmed);
       setMessage('');
     }
+  };
+
+  /**
+   * A PRESET template. Same contract as the draft card's hand-over: it REPLACES
+   * the box rather than appending — the modal is gone by the time this runs, so
+   * appending would fuse a half-typed sentence onto the hotel's copy with no
+   * way back to either. Focus lands at the end so the first keystroke edits.
+   */
+  const handleUseTemplate = (body: string) => {
+    setMessage(body);
+    const el = textareaRef.current;
+    if (el) {
+      el.focus();
+      window.requestAnimationFrame(() => el.setSelectionRange(body.length, body.length));
+    }
+  };
+
+  /**
+   * An APPLE template. It goes as-is, and it does NOT touch the box: an agent
+   * with a half-written message who fires an Apple template has sent one thing
+   * and is still writing another, and clearing her draft would be the picker
+   * eating work it never owned.
+   */
+  const handleSendTemplate = (body: string) => {
+    if (!disabled) onSend(body);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -262,11 +434,28 @@ export function MessageComposer({
   // `id` is the mdi `<title>` element's DOM id. It must be explicit and stable:
   // left to itself @mdi/react numbers it off a module-level counter, which
   // differs between the server and the client render and trips hydration.
-  const toolIcons = [
+  const toolIcons: {
+    path: string;
+    label: string;
+    id: string;
+    onClick?: () => void;
+    isActive?: boolean;
+  }[] = [
     { path: mdiEmoticonOutline, label: 'Emoji', id: 'composer-tool-emoji' },
     { path: mdiPaperclip, label: 'Attach file', id: 'composer-tool-attach' },
-    { path: mdiTranslate, label: 'Translate', id: 'composer-tool-translate' },
-    { path: mdiFormatListBulleted, label: 'Templates', id: 'composer-tool-templates' },
+    {
+      path: mdiTranslate,
+      label: 'Translate',
+      id: 'composer-tool-translate',
+      onClick: () => setIsTranslateOpen((v) => !v),
+      isActive: isTranslateOpen,
+    },
+    {
+      path: mdiFormatListBulleted,
+      label: 'Templates',
+      id: 'composer-tool-templates',
+      onClick: () => setIsTemplatesOpen(true),
+    },
     { path: mdiRoomServiceOutline, label: 'Service ticket', id: 'composer-tool-ticket' },
     /**
      * UPSELLS — production grew this one, so the prototype does too (design
@@ -341,12 +530,32 @@ export function MessageComposer({
           style={{ color: colors.colorBlack1 }}
         />
 
+        {/* The translate band — between the input and the toolbar, because the
+            setting belongs to the sentence above it and is operated from the
+            tool below it. */}
+        {isTranslateOpen && (
+          <TranslateRow
+            draft={message}
+            source={translateSource}
+            onSourceChange={setTranslateSource}
+            target={translateTarget}
+            onTargetChange={setTranslateTarget}
+          />
+        )}
+
         {/* Toolbar */}
         <div className="flex items-center justify-between" style={{ marginTop: 12 }}>
           {/* Left: bare tool icons */}
           <div className="flex items-center" style={{ gap: 12 }}>
             {toolIcons.map((tool) => (
-              <ToolIcon key={tool.label} path={tool.path} label={tool.label} id={tool.id} />
+              <ToolIcon
+                key={tool.label}
+                path={tool.path}
+                label={tool.label}
+                id={tool.id}
+                onClick={tool.onClick}
+                isActive={tool.isActive}
+              />
             ))}
           </div>
 
@@ -410,6 +619,19 @@ export function MessageComposer({
           </div>
         </div>
       </CanaryCard>
+
+      {/* The templates picker. Mounted by the COMPOSER rather than by the page
+          because every one of its exits writes to this component's own state or
+          calls this component's own `onSend` — the modal has no business the
+          composer is not already holding. (The AI loop's four surfaces mount at
+          the page for the opposite reason: they outlive the message block that
+          opened them.) */}
+      <MessageTemplatesModal
+        isOpen={isTemplatesOpen}
+        onClose={() => setIsTemplatesOpen(false)}
+        onUse={handleUseTemplate}
+        onSendNow={handleSendTemplate}
+      />
     </div>
   );
 }
