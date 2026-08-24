@@ -17,6 +17,7 @@
 import { create } from 'zustand';
 import {
   BroadcastGroup,
+  BroadcastGroupContact,
   BroadcastMessage,
   BroadcastGuestEntry,
   BroadcastFilterCriteria,
@@ -156,7 +157,7 @@ interface BroadcastState {
   sendBroadcast: (content: string) => void;
   openCreateGroupModal: () => void;
   closeCreateGroupModal: () => void;
-  createGroup: (name: string) => void;
+  createGroup: (name: string, contacts?: BroadcastGroupContact[]) => void;
 
   // Filter actions
   openFilterModal: () => void;
@@ -467,7 +468,17 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
     set({ isCreateGroupModalOpen: false });
   },
 
-  createGroup: (name: string) => {
+  /**
+   * A new custom group, with whatever contacts the modal collected.
+   *
+   * `memberCount` is DERIVED from the contact list rather than passed —
+   * every number on the broadcast surface is a `.length`, and a stored count
+   * that can disagree with the list it counts is a bug waiting for its first
+   * edit. `memberGuestIds` stays empty: hand-entered contacts are not canonical
+   * guests (see `BroadcastGroupContact`), so the audience card correctly shows
+   * a group with no PMS-known guests in it.
+   */
+  createGroup: (name: string, contacts: BroadcastGroupContact[] = []) => {
     if (!name.trim()) return;
 
     const newGroup: BroadcastGroup = {
@@ -475,13 +486,28 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
       name: name.trim(),
       type: 'custom',
       memberGuestIds: [],
+      contacts,
       isArchived: false,
-      memberCount: 0,
+      memberCount: contacts.length,
     };
 
     set(state => ({
       allGroups: [...state.allGroups, newGroup],
       isCreateGroupModalOpen: false,
+      /**
+       * Land the user IN the group they just made — creating a group and then
+       * having to go and find it is the flow admitting it did nothing.
+       *
+       * The three fields under it are `selectGroup`'s own resets, restated
+       * because that action reads `allGroups` from `get()` and the new group is
+       * not in it until this `set` lands. A new group holds no canonical
+       * guests, so the selection is empty by construction rather than by
+       * calling `getSelectableGuestIds` on a list it cannot see yet.
+       */
+      selectedGroupId: newGroup.id,
+      selectedGuestIds: [],
+      activeFilters: { ...emptyFilterCriteria },
+      loadedSegmentId: null,
     }));
   },
 

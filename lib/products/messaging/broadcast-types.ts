@@ -45,12 +45,45 @@ export interface BroadcastMessageFilterSnapshot {
   attributeCount: number;
 }
 
+/**
+ * The channels a hand-entered contact can be reached on.
+ *
+ * ⚠ NO EMAIL, and that is production's rule rather than a simplification: a
+ * broadcast group is a list of PHONE numbers, and the channel picker chooses
+ * which carrier rides that number. The prototype's old modal offered "Apple
+ * Messages" as a third option, which was wrong twice over — Apple Messages is
+ * negotiated per-device off the same number rather than picked by staff, and it
+ * is not in production's list.
+ */
+export type BroadcastContactChannel = 'sms' | 'whatsapp';
+
+/**
+ * A contact typed straight into the New group modal.
+ *
+ * DELIBERATELY NOT A GUEST. `memberGuestIds` points at the canonical guest data
+ * — people the PMS knows, with reservations, rooms and loyalty tiers. These are
+ * a name and a number somebody typed, which is the whole point of a custom
+ * group: it is the list you build for the wedding party, the conference block or
+ * the ownership group, none of whom the PMS has a record for. Keeping them in a
+ * separate field means nothing downstream ever has to guess whether a member id
+ * will resolve to a guest.
+ */
+export interface BroadcastGroupContact {
+  id: string;
+  /** Optional in the form, so optional here. Falls back to the number. */
+  name?: string;
+  phone: string;
+  channel: BroadcastContactChannel;
+}
+
 export interface BroadcastGroup {
   id: string;
   name: string;
   type: 'built-in' | 'custom';
   builtInType?: BuiltInGroupType;
   memberGuestIds?: string[];    // For custom groups - direct guest references
+  /** Hand-entered contacts (New group modal). See BroadcastGroupContact. */
+  contacts?: BroadcastGroupContact[];
   isArchived: boolean;
   lastBroadcastPreview?: string;
   memberCount?: number;         // Display count for custom groups
