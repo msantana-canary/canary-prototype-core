@@ -45,20 +45,35 @@ export function AiFeedbackModal() {
     if (messageId) setFeedback(EMPTY_FEEDBACK);
   }, [messageId]);
 
+  /**
+   * The subject, resolved EXACTLY the way the explanation panel resolves it —
+   * including the non-response case, where the subject IS the guest's message
+   * and is therefore its own question with no answer to quote.
+   *
+   * Today only 👎 on an AI message opens this modal, so `isAnswer` is always
+   * true. It is derived rather than assumed because the day a non-response
+   * grows a quick-action door, the modal has to arrive correct rather than
+   * quoting the guest back at herself under the AI's orb.
+   */
   const subject = useMemo(() => {
     if (!messageId) return null;
     for (const list of Object.values(messages)) {
       const index = list.findIndex((m) => m.id === messageId);
       if (index === -1) continue;
       const message = list[index];
-      const question = list
-        .slice(0, index)
-        .reverse()
-        .find((m) => m.sender === 'guest')?.content;
+      const question =
+        message.sender === 'guest'
+          ? message.content
+          : list
+              .slice(0, index)
+              .reverse()
+              .find((m) => m.sender === 'guest')?.content;
       return { message, question };
     }
     return null;
   }, [messageId, messages]);
+
+  const isAnswer = subject?.message.sender === 'ai';
 
   const guest = useMemo(() => {
     if (!subject) return null;
@@ -117,9 +132,17 @@ export function AiFeedbackModal() {
           borderTop: `1px solid ${colors.colorBlack6}`,
         }}
       >
-        <AiRecapBand question={subject?.question} answer={subject?.message.content} guest={guest} />
+        <AiRecapBand
+          question={subject?.question}
+          answer={isAnswer ? subject?.message.content : undefined}
+          guest={guest}
+        />
       </div>
-      <AiFeedbackForm value={feedback} onChange={setFeedback} />
+      <AiFeedbackForm
+        value={feedback}
+        onChange={setFeedback}
+        context={isAnswer ? 'response' : 'non-response'}
+      />
     </CanaryModal>
   );
 }

@@ -11,8 +11,14 @@
  *                 that would be a detour.
  *
  * Two surfaces, one form. Not because sharing is tidy, but because the TAXONOMY
- * is the artefact — the eight reasons are what the AI actually learns from, and
- * two copies of a taxonomy is one taxonomy plus a future disagreement.
+ * is the artefact — the reasons are what the AI actually learns from, and two
+ * copies of a taxonomy is one taxonomy plus a future disagreement.
+ *
+ * ── AND TWO SUBJECTS (design review 2026-08-21) ───────────────────────────
+ * `context` switches the form between critiquing an ANSWER and arguing with a
+ * SILENCE. It is one form with three substitutions, not two forms: see
+ * `FeedbackContext` for why the chips cannot be shared and why everything else
+ * must be.
  *
  * ── STATE LIVES OUTSIDE ───────────────────────────────────────────────────
  * The form is controlled. Each host owns the value, because each host owns the
@@ -33,6 +39,23 @@ import React from 'react';
 import { CanaryChip, CanaryTextArea, ChipType, colors } from '@canary-ui/components';
 
 /**
+ * WHICH FEEDBACK THIS IS. The form has two subjects, and they are not the same
+ * question asked twice:
+ *
+ *   'response'      the AI SPOKE and you disagree with what it said. Every chip
+ *                   is a fault in an artefact that exists on screen.
+ *   'non-response'  the AI STAYED SILENT and you think it shouldn't have. There
+ *                   is no artefact; the eight critique chips are unanswerable
+ *                   ("Wrong Tone/Wording" about nothing), and the useful signal
+ *                   is the opposite shape — the CONDITIONS that were met.
+ *
+ * One form, because the surrounding machinery (multi-select, the ≥1 gate, the
+ * optional note, Submit, the toast) is identical and two copies of it would
+ * drift. Only the three things that are genuinely about the subject move.
+ */
+export type FeedbackContext = 'response' | 'non-response';
+
+/**
  * The eight reasons, in the frames' order and casing. Reading order matters:
  * the first four are about the ANSWER, the next three about the READING of the
  * guest, and the last is about whether the AI should have spoken at all.
@@ -46,6 +69,25 @@ export const FEEDBACK_REASONS = [
   'Misunderstood Guest',
   'Should Have Escalated',
   'Do not respond',
+] as const;
+
+/**
+ * The non-response taxonomy (design review 2026-08-21). Five, and they are
+ * PRECONDITIONS rather than faults: a hotelier who thinks the AI should have
+ * answered is asserting that the bar was cleared, and each chip names one bar.
+ *
+ * The order is the decision's own order — could it answer (did it have the
+ * information, was the question clear), was it allowed to (safe, no human
+ * needed), and then the cost of not having (the guest sat there). The last one
+ * is the only chip that is about the GUEST rather than the agent, and it is
+ * last because it is the consequence, not the reason.
+ */
+export const NON_RESPONSE_REASONS = [
+  'Had the Information',
+  'Question Was Clear',
+  'Safe to Answer',
+  "Didn't Need a Human",
+  'Guest Left Waiting',
 ] as const;
 
 export interface FeedbackValue {
@@ -116,10 +158,15 @@ function ReasonChip({
 export function AiFeedbackForm({
   value,
   onChange,
+  context = 'response',
 }: {
   value: FeedbackValue;
   onChange: (next: FeedbackValue) => void;
+  /** Which subject this form is about. See `FeedbackContext`. */
+  context?: FeedbackContext;
 }) {
+  const isNonResponse = context === 'non-response';
+
   const toggle = (reason: string) => {
     const reasons = value.reasons.includes(reason)
       ? value.reasons.filter((r) => r !== reason)
@@ -127,21 +174,40 @@ export function AiFeedbackForm({
     onChange({ ...value, reasons });
   };
 
+  /**
+   * THE THREE THINGS THAT MOVE. Everything else on this form — the multi-select,
+   * the ≥1 gate, the optional note, the commit its host owns — is identical in
+   * both contexts, which is why this is a variant and not a second component.
+   *
+   * The heading flips from a VERDICT ("this was wrong") to an ARGUMENT ("it
+   * should have spoken"), and the note's label follows it: critiquing a reply
+   * asks how you usually phrase this kind of answer, while arguing with a
+   * silence asks for the reply that is missing. Same placeholder either way —
+   * an example of a real hotel answer is what both are fishing for.
+   */
+  const heading = isNonResponse ? 'Why should AI have responded?' : 'Why was this response wrong?';
+  const noteLabel = isNonResponse
+    ? 'How would you have responded? (optional)'
+    : 'How do you typically respond to messages like this to improve AI replies? (optional)';
+  const reasons: readonly string[] = isNonResponse ? NON_RESPONSE_REASONS : FEEDBACK_REASONS;
+
   return (
     <div>
       <span
         className="block font-['Roboto',sans-serif] text-[13px] leading-[20px]"
         style={{ color: colors.colorBlack3, marginBottom: 10 }}
       >
-        Why was this response wrong?
+        {heading}
       </span>
 
       {/* MULTI-select. A reply is rarely wrong in exactly one way — "Wrong
           Information" and "Should Have Escalated" are routinely both true, and
           forcing a single pick makes the hotelier throw away the half of the
-          signal that doesn't fit. */}
+          signal that doesn't fit. The non-response chips stack even harder: the
+          preconditions are cumulative by nature, and "Had the Information" plus
+          "Safe to Answer" is the commonest complaint there is. */}
       <div className="flex flex-wrap" style={{ gap: 10 }}>
-        {FEEDBACK_REASONS.map((reason) => (
+        {reasons.map((reason) => (
           <ReasonChip
             key={reason}
             label={reason}
@@ -164,7 +230,7 @@ export function AiFeedbackForm({
         style={{ color: colors.colorBlack1, marginTop: 24, marginBottom: 6 }}
         htmlFor="ai-feedback-note"
       >
-        How do you typically respond to messages like this to improve AI replies? (optional)
+        {noteLabel}
       </label>
       {/* `.textarea-boxed` is the 8px radius and the focus-answers-on-the-BORDER
           register; the rest are this field's own metrics. Two are load-bearing:

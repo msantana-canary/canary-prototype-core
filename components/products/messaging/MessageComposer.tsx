@@ -7,11 +7,11 @@
  * share one field, so the composer reads as a single place to type rather than
  * a form with a footer.
  *
- * Toolbar (left): emoji / attachment / translate / templates / service-ticket
- * as BARE 16px icons — zero padding, no background boxes, gray at rest, blue on
- * hover. They are still decorative in this branch (no flows behind them), and
- * the smaller/tighter treatment is what keeps five inert affordances from
- * out-weighing the two live controls on the right.
+ * Toolbar (left): emoji / attachment / translate / templates / service-ticket /
+ * upsells as BARE 16px icons — zero padding, no background boxes, gray at rest,
+ * blue on hover. They are still decorative in this branch (no flows behind
+ * them), and the smaller/tighter treatment is what keeps six inert affordances
+ * from out-weighing the two live controls on the right.
  *
  * Right cluster: the AI pill, then a single square blue send button.
  *
@@ -72,6 +72,7 @@ import {
   mdiTranslate,
   mdiFormatListBulleted,
   mdiRoomServiceOutline,
+  mdiCashMultiple,
   mdiSend,
 } from '@mdi/js';
 import { AiOrb } from './AiOrb';
@@ -267,6 +268,25 @@ export function MessageComposer({
     { path: mdiTranslate, label: 'Translate', id: 'composer-tool-translate' },
     { path: mdiFormatListBulleted, label: 'Templates', id: 'composer-tool-templates' },
     { path: mdiRoomServiceOutline, label: 'Service ticket', id: 'composer-tool-ticket' },
+    /**
+     * UPSELLS — production grew this one, so the prototype does too (design
+     * review 2026-08-21). It sits AFTER the service ticket because the two are
+     * the toolbar's only "do a thing to this stay" affordances and production
+     * orders them that way.
+     *
+     * ⚠ `mdiCashMultiple`, and the outline rule does not apply: there is no
+     * `mdiCashMultipleOutline` in @mdi/js, and this is the glyph the library's
+     * own vocabulary already spends on money (`sidebarTabs.digitalTips`).
+     * Verified against the reference at 10× — the front note (thick border,
+     * white interior, filled centre circle) is identical. The reference stacks
+     * its second note down-RIGHT and mdi stacks down-LEFT; mdi's whole
+     * "Multiple" family stacks left (`mdiCreditCardMultipleOutline` too), so
+     * that is the set's convention rather than a wrong pick, and the glyph is
+     * used unflipped. NOT `sidebarTabs.upsells`'s `mdiTagOutline` — that mark
+     * is the PRODUCT's nav identity, and reusing it as a composer tool would
+     * read as "go to Upsells" rather than "attach an upsell here".
+     */
+    { path: mdiCashMultiple, label: 'Upsells', id: 'composer-tool-upsells' },
   ];
 
   return (

@@ -300,7 +300,16 @@ export function AiExplanationPanel() {
               guest={guest}
             />
             <div style={{ padding: PANEL_PAD }}>
-              <AiFeedbackForm value={feedback} onChange={setFeedback} />
+              {/* The form follows the DOOR you came in by. Arriving from "AI
+                  CHOSE NOT TO RESPOND" there is no answer on screen to
+                  critique, so the form asks the other question — see
+                  `FeedbackContext`. The recap band above already tells the same
+                  story by carrying only the guest's message. */}
+              <AiFeedbackForm
+                value={feedback}
+                onChange={setFeedback}
+                context={isAnswer ? 'response' : 'non-response'}
+              />
             </div>
           </div>
 
