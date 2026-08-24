@@ -153,7 +153,7 @@ function CaptionLink({
       size={ButtonSize.TINY}
       color={color}
       onClick={onClick}
-      className={`${CAPTION_CLASS} text-btn-inline underline [text-underline-offset:2px]`}
+      className={`${CAPTION_CLASS} text-btn-inline [&_span]:underline [text-underline-offset:2px]`}
     >
       {label}
     </CanaryButton>
