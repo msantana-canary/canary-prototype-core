@@ -423,19 +423,45 @@ body {
   min-width: 0 !important;
 }
 
-/* ---- Boxed text areas — CanaryTextArea ----------------------------------
-   The AI-knowledge textarea and the feedback note. The base's chrome is a 4px
-   radius and a 2px focus OUTLINE; the frames draw an 8px radius and answer
-   focus by swapping the BORDER colour, which is the register every other field
-   on this surface uses. Per-instance metrics (border colour, min-height,
-   padding, type size) stay inline — they differ per field and need no
-   internal selector. */
-.textarea-boxed {
-  border-radius: 8px !important;
-}
-.textarea-boxed:focus {
-  outline: none !important;
-  border-color: #2858c4 !important;
+/* ---- Boxed text areas — DELETED 2026-08-21 -------------------------------
+   `.textarea-boxed` was an 8px radius plus a focus-answers-on-the-BORDER
+   register, worn by the AI-knowledge textarea and the feedback note. Miguel, at
+   the design review, on the feedback note: *"that's not our component."* It was
+   — it had just been dressed until it stopped looking like one.
+
+   The class is gone rather than orphaned, and so are the two `!border-[…]`
+   overrides and the two `focus:!border-[#2858C4]` utilities that existed only to
+   win the cascade fight the borders started. Both fields render the base's own
+   4px radius, `#666666` hairline and 2px inset blue focus outline. The 8px/pale
+   look was FRAME DRIFT, not a sanctioned design-system change — logged in
+   REDESIGN_NOTES with the ask that the frames be redrawn against the stock
+   control. `.field-chromeless` below is untouched: that one is a real
+   structural exception (the parent card owns the chrome), not a costume.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ---- The base's OWN focus outline, compiled ------------------------------
+   ⚠ THIS IS A BUILD GAP, NOT A DESIGN DELTA. Nothing here disagrees with the
+   library; it makes the library's own declaration reach the page.
+
+   `CanaryTextArea` names its focus state with Tailwind ARBITRARY-value classes
+   — `focus:outline-2 focus:outline-[#2858c4] focus:outline-offset-[-1px]`.
+   Tailwind v4 generates utilities only for the sources it scans, and
+   `node_modules` is not one of them, so `outline-[#2858c4]` and
+   `outline-offset-[-1px]` are never emitted. Measured in the browser: on focus
+   the field computes `outline: rgba(0,0,0,0) solid 2px` — a two-pixel
+   TRANSPARENT ring, i.e. no visible focus at all.
+
+   That was invisible while the boxed dress was overriding focus on the border
+   anyway. Taking the dress off exposed it, so the stock values are restated
+   here, verbatim. Unlayered and un-`!important` on purpose: it has to beat
+   Tailwind's `@layer base` reset and nothing else, and if the library ever gets
+   scanned this rule is simply redundant rather than in the way.
+
+   Logged as the build ask: point Tailwind at `@canary-ui/components/dist` so
+   every base component's arbitrary-value classes compile, and delete this. */
+.field-focus-blue:focus {
+  outline-color: #2858c4;
+  outline-offset: -1px;
 }
 
 /* ---- Chromeless fields — CanaryTextArea / CanaryInput -------------------

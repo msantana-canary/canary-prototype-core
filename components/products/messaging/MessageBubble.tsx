@@ -225,7 +225,8 @@ function FeedbackIcon({
 }
 
 /**
- * The "Completed N Steps ⌄" caption — the steps card's toggle.
+ * The "Completed N Steps ⌄" caption — the steps trace's toggle. Unchanged by the
+ * 8/21 review: only the OPEN state lost its box.
  *
  * It sits INSIDE the title row, inline with the sender name, so a hover
  * background would draw a chip in the middle of a line of text. The hover
@@ -378,13 +379,30 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
           </span>
         </div>
 
-        {/* Steps card — sits ABOVE the answer, because it is what produced it.
-            The card itself is now the shared <AiStepsCard>; the call-details
-            transcript in the Conversation Details panel renders the same one. */}
-        {/* Margins as CLASSES, not a `style` prop: the boxed variant of
-            `AiStepsCard` is a `CanaryCard` now, and that component takes a
-            `className` but exposes no `style`. */}
-        {isAI && isStepsOpen && <AiStepsCard steps={steps} className="mt-1 mb-2" />}
+        {/* Steps trace — sits ABOVE the answer, because it is what produced it.
+            Shared with the call-details transcript.
+
+            ⚠ NO BOX (design review 2026-08-21, frame 2090:37167). The rows sit
+            directly on the message ground under a 2px AI-gradient rail; see
+            AiStepsCard for why the bordered card lost. The inset here is the
+            frame's, measured off it:
+
+              • FLUSH LEFT — the rail lands on the content column's own left
+                edge, i.e. exactly under the "C" of Canary, so it reads as the
+                name bleeding downward rather than as a second margin.
+              • paddingLeft 10 — the check glyphs start ~8px clear of the rail.
+              • NO vertical padding — the rail's extent is the ROWS' extent,
+                top and bottom, which is what keeps it looking like a bracket on
+                the trace instead of a bar beside it.
+              • no top margin, 8px below — the trace starts on the name row's
+                bottom edge and clears the answer by one 8px step. */}
+        {isAI && isStepsOpen && (
+          <AiStepsCard
+            steps={steps}
+            className="mb-2"
+            style={{ paddingLeft: 10, paddingRight: 0, paddingTop: 0, paddingBottom: 0 }}
+          />
+        )}
 
         {/* Body */}
         <p

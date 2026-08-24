@@ -86,26 +86,26 @@ export function AddInformationModal({
       >
         AI knowledge update
       </label>
-      {/* `.textarea-boxed` is the 8px radius and the focus-answers-on-the-BORDER
-          register — the base draws a 4px radius and a 2px focus OUTLINE, and
-          every other field on this surface answers focus on the border. The
-          rest are this field's own metrics: a `colorBlack5` hairline where the
-          base's is #666, 140px of floor, 14px of padding, and a 15px/24px type
-          size for a box you are meant to write a sentence into.
+      {/* ⚠ STOCK `CanaryTextArea` — de-dressed 2026-08-21, the same pass that
+          undressed the feedback note. The 8px radius, the pale `colorBlack5`
+          hairline and the focus-answers-on-the-BORDER register were frame drift
+          rather than a sanctioned design-system change: they made a base
+          component render at a radius, a border and a focus treatment no other
+          Canary textarea has. It now draws the library's 4px radius, `#666666`
+          hairline and 2px inset blue focus OUTLINE, and the frames are flagged
+          for a redraw against the stock control (REDESIGN_NOTES).
 
-          `rows={2}` restores the HTML default the hand-rolled textarea had. The
-          base defaults to `rows={4}`; it makes no difference at this floor, but
-          it is what keeps the height MIN-HEIGHT-driven rather than a race
-          between two numbers.
+          `focus:!border-[#2858C4]` went with them. In its place, `.field-focus-
+          blue` restates the base's OWN focus values: the library names them in
+          Tailwind arbitrary-value classes that this app's build never compiles
+          (node_modules is not a scanned source), so `focus:outline-2` was
+          landing as a 2px TRANSPARENT ring. That is a build gap, not a delta —
+          see the block in globals.css.
 
-          ⚠ `focus:!border-[#2858C4]` IS NOT REDUNDANT with `.textarea-boxed`.
-          `.textarea-boxed:focus` names that same colour, but it lives UNLAYERED
-          in globals.css while `!border-[#CCCCCC]` is a Tailwind utility inside
-          `@layer utilities` — and for `!important` declarations the cascade's
-          layer order REVERSES: layered important beats unlayered important, no
-          matter the specificity. Without this the resting border colour wins
-          the focus state and the box never turns blue. Same layer, extra
-          `:focus`, honest win. */}
+          WHAT STAYS is metric: 140px of floor, 14px of padding, and a 15px/24px
+          type size for a box you are meant to write a sentence into. `rows={2}`
+          over the base's 4 keeps the height MIN-HEIGHT-driven rather than a race
+          between two numbers. */}
       <CanaryTextArea
         id="ai-knowledge-update"
         value={text}
@@ -113,7 +113,7 @@ export function AddInformationModal({
         autoFocus
         rows={2}
         resize="vertical"
-        className="textarea-boxed scrollbar-invisible !border-[#CCCCCC] focus:!border-[#2858C4] !min-h-[140px] !p-[14px] !text-[15px] !leading-[24px] !text-black"
+        className="field-focus-blue scrollbar-invisible !min-h-[140px] !p-[14px] !text-[15px] !leading-[24px] !text-black"
       />
     </CanaryModal>
   );

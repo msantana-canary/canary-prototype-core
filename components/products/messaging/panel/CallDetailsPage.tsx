@@ -330,10 +330,15 @@ function Transcript({ call }: { call: CallRecord }) {
               </p>
             </div>
 
-            {/* The trace that this utterance produced — the SAME card the chat
-                feed renders, in its transcript dress. */}
+            {/* The trace that this utterance produced — the SAME component the
+                chat feed renders. `accent` is gone as a prop: the gradient rail
+                this transcript asked for is now the trace's ONLY dress, because
+                the 8/21 review took the feed's bordered box away too. This
+                caller keeps its own 12px/4px inset (the column already speaks in
+                speaker bars and the trace pays the column's padding); the feed's
+                copy sits flush under the name. Nothing about this row moved. */}
             {turn.steps && turn.steps.length > 0 && (
-              <AiStepsCard steps={turn.steps} accent style={{ marginTop: 8 }} />
+              <AiStepsCard steps={turn.steps} style={{ marginTop: 8 }} />
             )}
           </div>
         ))}

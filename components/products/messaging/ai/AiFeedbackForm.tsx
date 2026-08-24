@@ -232,36 +232,36 @@ export function AiFeedbackForm({
       >
         {noteLabel}
       </label>
-      {/* `.textarea-boxed` is the 8px radius and the focus-answers-on-the-BORDER
-          register; the rest are this field's own metrics. Two are load-bearing:
+      {/* ⚠ STOCK `CanaryTextArea` — de-dressed 2026-08-21.
+          Miguel, at the review: *"that's not our component."* It always WAS the
+          base; what it was wearing wasn't. The frames draw an 8px radius and a
+          pale `colorBlack6` hairline that answers focus on the BORDER, and the
+          build reproduced all three — so the field rendered at a radius, a
+          border colour and a focus register that no other Canary textarea has.
+          A base component wearing a private costume is worse than a hand-rolled
+          one: it looks sanctioned.
 
-          `!min-h-[72px]` is MANDATORY, not dress — the base floors an
-          un-autoexpanding textarea at `min-h-[80px]` and the frames draw 72.
+          Gone, therefore: `.textarea-boxed` (the 8px radius + border-focus),
+          `!border-[#E5E5E5]` and the `focus:!border-[#2858C4]` that existed only
+          to win the cascade fight the first two started. The field now draws the
+          library's own 4px radius, `#666666` hairline and 2px inset blue focus
+          OUTLINE. That delta is logged in REDESIGN_NOTES as frame drift, and the
+          frames want redrawing against the stock control.
 
-          `rows={2}` is mandatory for the same reason from the other side. The
-          base defaults to `rows={4}`, and four lines at 22px plus 24px of
-          padding is 114px of INTRINSIC height, which no min-height can pull
-          back down. The hand-rolled textarea had no `rows` at all, i.e. the
-          HTML default of 2 — which is what this restores.
+          THE FOCUS STILL PAINTS, but not for free: with the dress off, the base
+          turns out to name its focus colour in a Tailwind ARBITRARY-value class
+          that this app's build never compiles (node_modules is not a scanned
+          source), so `focus:outline-2` was landing as a 2px TRANSPARENT ring.
+          `.field-focus-blue` restates the library's own two values so the stock
+          register actually reaches the page — a build gap, not a delta. See the
+          block in globals.css.
 
-          Padding is NOT overridden: the base's `px-3 py-3` is already the
-          frames' 12.
-
-          ⚠ `focus:!border-[#2858C4]` IS NOT REDUNDANT with `.textarea-boxed`.
-          `.textarea-boxed:focus` names that same colour, but it lives UNLAYERED
-          in globals.css while `!border-[#E5E5E5]` is a Tailwind utility inside
-          `@layer utilities` — and for `!important` declarations the cascade's
-          layer order REVERSES: layered important beats unlayered important, no
-          matter the specificity. So the resting border colour was winning the
-          focus state and the box never turned blue (measured in the browser:
-          on focus the outline was suppressed by `.textarea-boxed` while the
-          border stayed #E5E5E5). Re-asserting the focus colour as a utility
-          puts it in the same layer, where its extra `:focus` wins honestly.
-
-          The hand-rolled textarea this replaces had the same bug from the other
-          direction — an inline `border` shorthand outranks a non-important
-          `focus:border-[#2858C4]` class — so the focus register has in fact
-          never painted on this field until now. */}
+          WHAT STAYS, because it is metric and not costume:
+          `!min-h-[72px]` — the base floors an un-autoexpanding textarea at 80px
+          and the frames draw 72. `rows={2}` — the base defaults to `rows={4}`,
+          and four lines at 22px plus padding is 114px of INTRINSIC height that
+          no min-height can pull back down. `resize="vertical"`, the note's own
+          line-height, and the black ink. */}
       <CanaryTextArea
         id="ai-feedback-note"
         value={value.note}
@@ -269,7 +269,7 @@ export function AiFeedbackForm({
         placeholder="E.g. Extra pillows, blankets, and toiletries are available upon request. We can have them ready at the front desk or delivered to your room."
         rows={2}
         resize="vertical"
-        className="textarea-boxed scrollbar-invisible !border-[#E5E5E5] focus:!border-[#2858C4] !min-h-[72px] !leading-[22px] !text-black"
+        className="field-focus-blue scrollbar-invisible !min-h-[72px] !leading-[22px] !text-black"
       />
     </div>
   );
