@@ -607,6 +607,12 @@ export function ConversationDetailsPanel({
                   companions={companions}
                   contactNumber={thread.contactNumber}
                   onLink={() => push({ kind: 'link' })}
+                  /* The SAME timeline page the Reservations drill-in opens, for
+                     the companion's own stay. One guest-journey surface, two
+                     doors — the panel never grows a second timeline. */
+                  onOpenScheduledMessages={(reservationId) =>
+                    push({ kind: 'scheduled', reservationId })
+                  }
                   onUnlink={(lr: LinkedReservation) =>
                     setUnlinkTarget({
                       scope: 'reservation',

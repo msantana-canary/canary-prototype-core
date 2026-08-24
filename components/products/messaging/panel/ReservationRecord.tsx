@@ -1,18 +1,20 @@
 /**
  * ReservationRecord — production's COMPLETE reservation-details block.
  *
- * One anatomy, two homes: the root's "Current Reservation" band (behind the
- * Show/Hide expander) and each expanded row of the Reservations drill-in. They
- * are the same seven facts about the same object, so they are the same
- * component — the panel is a verification aid, and a verification aid whose
- * fields move between screens makes you check twice.
+ * One anatomy, THREE homes: the root's "Current Reservation" band (behind the
+ * Show/Hide expander), each expanded row of the Reservations drill-in, and —
+ * since the 2026-08-21 review — each expanded companion row in Linked
+ * Reservations. They are the same seven facts about the same object, so they are
+ * the same component; the panel is a verification aid, and a verification aid
+ * whose fields move between screens makes you check twice.
  *
- * `onOpenScheduledMessages` adds the drill-in's eighth row, "Guest Scheduled
- * Messages", which the root band does not carry: at root there is exactly one
- * reservation in view and its journey lives one level down; in the drill-in the
- * row is per-stay and is the ONLY place a failed send is attributable to a
- * particular stay. That row goes RED — it is the panel's loudest state, because
- * "something didn't reach the guest" is the #1 triage signal.
+ * `onOpenScheduledMessages` adds the eighth row, "Guest Scheduled Messages",
+ * which the root band does not carry: at root there is exactly one reservation
+ * in view and its journey lives one level down, while everywhere the record is
+ * PER-STAY the row is the only place a failed send is attributable to a
+ * particular stay — a companion's included, which is new. That row goes RED —
+ * the panel's loudest state, because "something didn't reach the guest" is the
+ * #1 triage signal.
  */
 
 'use client';

@@ -36,6 +36,7 @@ import {
   mdiDotsHorizontal,
 } from '@mdi/js';
 import { Reservation } from '@/lib/core/types/reservation';
+import { useReducedMotion } from './PanelShell';
 
 export const PANEL_PAD = 24;
 
@@ -535,6 +536,130 @@ export function EmptyState({ label }: { label: string }) {
       </span>
     </div>
   );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Expanding regions
+   ───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Opening is the slower of the two: it is the motion that has to be READ (a
+ * block of record appearing under your click). Closing is a dismissal, and a
+ * dismissal that lingers reads sticky. Same pair of numbers the root's
+ * reservation-details band uses — one expand register on this surface.
+ */
+export const REGION_OPEN_MS = 220;
+export const REGION_CLOSE_MS = 160;
+
+/**
+ * A block that grows and shrinks to the height of its OWN content.
+ *
+ * ⚠ EXTRACTED from the root panel's reservation-details band (batch 3.1), where
+ * the same mechanic was written inline. It is here because Linked Reservations
+ * now expands too, and two hand-written copies of a height animation is how two
+ * accordions on one surface end up easing differently.
+ *
+ * WHY `grid-template-rows`. Height cannot be transitioned from `auto`, and a
+ * measured max-height has to guess a number that a two-line summary and a
+ * nine-row reservation record do not share. `0fr → 1fr` on a one-row grid
+ * animates to the content's own height, whatever it is, with `overflow: hidden`
+ * on the track so nothing flashes a scrollbar on the way.
+ *
+ * `animateOnMount` is for a region whose PARENT decides when it exists —
+ * `CanaryExpand` mounts its body only while expanded, so that body arrives
+ * already open and would otherwise snap. With the flag it paints closed for one
+ * frame and then grows. A region that is permanently mounted (the companion
+ * row's summary line, which merely inverts) leaves it off and mounts in its
+ * current state.
+ *
+ * `inert` while closed keeps the copy button and the Guest Scheduled Messages
+ * row out of the tab order behind a shut region.
+ */
+export function ExpandRegion({
+  isOpen,
+  animateOnMount = false,
+  children,
+}: {
+  isOpen: boolean;
+  animateOnMount?: boolean;
+  children: React.ReactNode;
+}) {
+  const reduced = useReducedMotion();
+  const [isRevealed, setIsRevealed] = useState(animateOnMount ? false : isOpen);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsRevealed(false);
+      return;
+    }
+    if (reduced) {
+      setIsRevealed(true);
+      return;
+    }
+    // One frame at 0fr, so the browser has a height to transition FROM.
+    const frame = window.requestAnimationFrame(() => setIsRevealed(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [isOpen, reduced]);
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateRows: isRevealed ? '1fr' : '0fr',
+        transition: reduced
+          ? 'none'
+          : isRevealed
+            ? `grid-template-rows ${REGION_OPEN_MS}ms cubic-bezier(0.16, 1, 0.3, 1)`
+            : `grid-template-rows ${REGION_CLOSE_MS}ms cubic-bezier(0.4, 0, 1, 1)`,
+      }}
+    >
+      <div
+        style={{
+          minHeight: 0,
+          overflow: 'hidden',
+          opacity: isRevealed ? 1 : 0,
+          transition: reduced
+            ? 'none'
+            : isRevealed
+              ? 'opacity 170ms ease-out 60ms'
+              : 'opacity 110ms ease-in',
+        }}
+      >
+        <div inert={!isRevealed}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Keeps content mounted through its own CLOSE animation.
+ *
+ * `CanaryExpand` renders its body under `isExpanded &&`, so a closing body
+ * vanishes on the first frame and there is nothing left to animate out. Feeding
+ * it this value instead of the raw open flag means `isExpanded` keeps its honest
+ * meaning — "the body is on screen" — for the extra 160ms it still is.
+ *
+ * Under `prefers-reduced-motion` there is no animation to wait for, so the body
+ * goes immediately.
+ */
+export function useMountedThrough(isOpen: boolean, closeMs = REGION_CLOSE_MS): boolean {
+  const reduced = useReducedMotion();
+  const [isMounted, setIsMounted] = useState(isOpen);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsMounted(true);
+      return;
+    }
+    if (reduced) {
+      setIsMounted(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setIsMounted(false), closeMs);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, reduced, closeMs]);
+
+  return isMounted;
 }
 
 /**

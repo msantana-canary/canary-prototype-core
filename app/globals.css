@@ -597,6 +597,36 @@ body {
   padding: 8px 0 0 !important;
 }
 
+/* ---- …the same accordion, sitting INSIDE a row list ----------------------
+   Linked Reservations expands in place (design review 2026-08-21), so the same
+   `CanaryExpand` now also has to behave as a `CanaryList` row rather than as a
+   free-standing card. `.panel-accordion-row` is a MODIFIER on the class above,
+   not a second accordion: it inherits the killed hairline and the hidden
+   library chevron, and restates only what a list row disagrees about.
+
+   1. GEOMETRY IS THE ROW'S. `12px 12px 12px 16px` is the panel's list-row inset
+      — the same numbers `CanaryListItem` gets from `[&>*]:!py-3 [&>*]:!pr-3`,
+      so a companion row lines up with the service-task and upsell rows it sits
+      beside in the tab strip.
+   2. SQUARE CORNERS. The 8px radius above is a card's; inside a list the
+      rounding belongs to the CONTAINER, and a rounded hover wash on an
+      interior row reads as a chip floating inside the list.
+   3. THE ROW'S OWN WASH. `colorBlack8` (#FAFAFA), which is `CanaryListItem`'s
+      default hover — the one wash every row on this surface answers with.
+   4. THE BODY PAYS NO PADDING. Its inset lives INSIDE the animated region (see
+      `ExpandRegion`), because padding out here does not collapse with the
+      content and would leave a band of empty row behind a closing accordion. */
+.panel-accordion-row > div:first-child {
+  padding: 12px 12px 12px 16px !important;
+  border-radius: 0;
+}
+.panel-accordion-row > div:first-child:hover {
+  background-color: #fafafa;
+}
+.panel-accordion-row > div:nth-child(2) {
+  padding: 0 !important;
+}
+
 /* ---- Orb avatar tile ----------------------------------------------------- */
 /* PORTED from the email-channel-ai worktree (components/products/email/
    AiDraftCard.tsx + its globals.css). There the orb is an 18px blob inside a

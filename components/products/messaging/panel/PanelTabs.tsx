@@ -22,6 +22,7 @@ import {
   ButtonSize,
   ButtonType,
   CanaryButton,
+  CanaryExpand,
   CanaryListItem,
   CanaryTabs,
   colors,
@@ -32,7 +33,10 @@ import {
 import Icon from '@mdi/react';
 import {
   mdiBedOutline,
+  mdiCalendarBlankOutline,
+  mdiChevronDown,
   mdiChevronRight,
+  mdiChevronUp,
   mdiOpenInNew,
   mdiPhoneOutline,
   mdiPlus,
@@ -40,6 +44,7 @@ import {
 } from '@mdi/js';
 import {
   EmptyState,
+  ExpandRegion,
   glyphTitleId,
   IconAction,
   Kebab,
@@ -49,7 +54,11 @@ import {
   PANEL_PAD,
   RowList,
   SectionHeading,
+  useMountedThrough,
 } from './panel-ui';
+import { formatStayRangeCompact } from './panel-format';
+import { ReservationRecord } from './ReservationRecord';
+import { deriveStayState } from '@/lib/products/messaging/panel-selectors';
 import { LinkedReservation, CallRecord, ServiceTask, Upsell } from '@/lib/products/messaging/types';
 import { useRowKeyActivation } from '@/lib/products/messaging/useRowKeyActivation';
 
@@ -139,12 +148,17 @@ export function PanelTabBar({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   THE ROW REGISTER — CanaryListItem, four times
+   THE ROW REGISTER — CanaryListItem, three times (and one accordion)
 
-   Every row in these four tabs is a `CanaryListItem` inside the shared
-   `<RowList>` (`CanaryList hasOuterBorder`). The list draws its own hairline
-   between children, so there is no divider component any more; rows map
-   straight in, keyed.
+   Every row in these four tabs sits inside the shared `<RowList>` (`CanaryList
+   hasOuterBorder`). The list draws its own hairline between children, so there
+   is no divider component any more; rows map straight in, keyed.
+
+   Three of them are `CanaryListItem`. Linked Reservations is the exception
+   since 2026-08-21: its rows EXPAND, so they are `CanaryExpand` wearing
+   `.panel-accordion-row`, which restates this same 12px/16px inset and this
+   same hover wash on the accordion's header half. The two registers are meant
+   to be indistinguishable at rest — see the CompanionRow note below.
 
    The rows keep their exact drawn anatomy through the `children` escape hatch
    — `title`/`subtitle`/`rightContent` are ignored when `children` is passed —
@@ -178,18 +192,48 @@ export function PanelTabBar({
  * thread who ISN'T the primary. The guest herself is excluded: a person listed
  * as her own companion is a tautology, and the frame that shows Emily inside
  * Emily's own linked list is a stale iteration.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * THE ROWS EXPAND IN PLACE (design review 2026-08-21, frame 2075:36678)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * A companion's reservation record used to have nowhere to go: the row printed
+ * a phone and a room, and everything else about that stay — dates, email,
+ * confirmation number, check-in status, whether their scheduled messages
+ * actually sent — was simply absent. The obvious fix was a drill-in page per
+ * companion, and the review rejected it: a companion is a fact ABOUT this
+ * conversation, and sending a hotelier to a separate page to read one costs the
+ * thread they are standing in.
+ *
+ * So it is PROGRESSIVE DISCLOSURE, in the row, on the same `CanaryExpand` the
+ * Reservations drill-in already uses. Three rules came out of the review:
+ *
+ *   ONE AT A TIME. `expandedId` is a single value, so opening a companion closes
+ *   the other. Two open records in a 600px panel means neither is readable
+ *   without scrolling, and the whole point of the row is comparison.
+ *
+ *   CLOSED BY DEFAULT. Most threads have companions the hotelier never asks
+ *   about. Opening the first one for them would push the other rows off the
+ *   fold to answer a question nobody asked.
+ *
+ *   NO SECOND ACCORDION. Same base, same `.panel-accordion` route, same expand
+ *   timings — `.panel-accordion-row` only restates what a list row disagrees
+ *   with. The panel has one expand register and this is it.
  */
 export function LinkedReservationsTab({
   companions,
   contactNumber,
   onLink,
   onUnlink,
+  onOpenScheduledMessages,
 }: {
   companions: LinkedReservation[];
   contactNumber: string;
   onLink: () => void;
   onUnlink: (lr: LinkedReservation) => void;
+  onOpenScheduledMessages: (reservationId: string) => void;
 }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
   return (
     <>
       <SectionHeading
@@ -210,7 +254,12 @@ export function LinkedReservationsTab({
               key={lr.reservation.id}
               lr={lr}
               contactNumber={contactNumber}
+              isExpanded={expandedId === lr.reservation.id}
+              onToggle={() =>
+                setExpandedId((id) => (id === lr.reservation.id ? null : lr.reservation.id))
+              }
               onUnlink={() => onUnlink(lr)}
+              onOpenScheduledMessages={() => onOpenScheduledMessages(lr.reservation.id)}
             />
           ))}
         </RowList>
@@ -219,14 +268,37 @@ export function LinkedReservationsTab({
   );
 }
 
+/**
+ * One companion, collapsed or open.
+ *
+ * COLLAPSED the row answers "who else is on this conversation, and where are
+ * they" in two lines: the name with its lifecycle tag, then the phone plus ONE
+ * locator. Which locator depends on the stay — a guest who is IN THE BUILDING is
+ * a room number (that is how you reach them), and a guest who is not is a date
+ * range (that is when they matter). Printing the room for a reservation three
+ * weeks out states a fact that is true of a key nobody has cut yet.
+ *
+ * OPEN it is the full `ReservationRecord` — the same eight rows the primary
+ * guest's stays get in the Reservations drill-in, "Guest Scheduled Messages"
+ * included, so a failed send on a COMPANION's stay is finally attributable. The
+ * summary line folds away as the record opens: every fact on it reappears in the
+ * record two lines below, and repeating them would make the open row read as
+ * having said the same thing twice.
+ */
 function CompanionRow({
   lr,
   contactNumber,
+  isExpanded,
+  onToggle,
   onUnlink,
+  onOpenScheduledMessages,
 }: {
   lr: LinkedReservation;
   contactNumber: string;
+  isExpanded: boolean;
+  onToggle: () => void;
   onUnlink: () => void;
+  onOpenScheduledMessages: () => void;
 }) {
   /**
    * A PHONE-MATCHED link is a FACT, not an assertion — production hard-blocks
@@ -244,45 +316,104 @@ function CompanionRow({
       ]
     : [{ label: 'Unlink reservation', onClick: onUnlink, danger: true }];
 
+  const isInHouse = deriveStayState(lr.reservation) === 'in-house';
+
+  // `CanaryExpand` renders its body under `isExpanded &&`, so the raw flag would
+  // delete the record on the first frame of the close and leave nothing to
+  // animate out. See `useMountedThrough`.
+  const isBodyMounted = useMountedThrough(isExpanded);
+
   return (
-    <CanaryListItem isClickable={false} className="[&>*]:!py-3 [&>*]:!pr-3 [&>*]:!gap-2">
-      <div className="flex-1 min-w-0">
+    <CanaryExpand
+      className="panel-accordion panel-accordion-row"
+      isExpanded={isBodyMounted}
+      onToggle={onToggle}
+      header={
         <div className="flex items-center gap-2">
-          <span
-            className="truncate font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px]"
-            style={{ color: colors.colorBlack1 }}
-          >
-            {lr.guest.name}
-          </span>
-          <LifecycleTag status={lr.reservation.status} />
-        </div>
-        <div className="flex items-center gap-4" style={{ marginTop: 2 }}>
-          {lr.guest.phone && (
-            <span className="flex items-center gap-1.5 min-w-0">
-              <Icon path={mdiPhoneOutline} size={0.6} color={colors.colorBlack3} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
               <span
-                className="truncate font-['Roboto',sans-serif] text-[13px] leading-[20px]"
-                style={{ color: colors.colorBlack3 }}
+                className="truncate font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px]"
+                style={{ color: colors.colorBlack1 }}
               >
-                {lr.guest.phone}
+                {lr.guest.name}
               </span>
-            </span>
-          )}
-          {lr.reservation.room && (
-            <span className="flex items-center gap-1.5">
-              <Icon path={mdiBedOutline} size={0.6} color={colors.colorBlack3} />
-              <span
-                className="font-['Roboto',sans-serif] text-[13px] leading-[20px]"
-                style={{ color: colors.colorBlack3 }}
-              >
-                {lr.reservation.room}
-              </span>
-            </span>
-          )}
+              <LifecycleTag status={lr.reservation.status} />
+            </div>
+
+            {/* The summary line INVERTS the record: it is open exactly when the
+                record is shut, on the same region component, so the two trade
+                places instead of one of them jumping. */}
+            <ExpandRegion isOpen={!isExpanded}>
+              <div className="flex items-center gap-4" style={{ paddingTop: 2 }}>
+                {lr.guest.phone && (
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <Icon path={mdiPhoneOutline} size={0.6} color={colors.colorBlack3} />
+                    <span
+                      className="truncate font-['Roboto',sans-serif] text-[13px] leading-[20px]"
+                      style={{ color: colors.colorBlack3 }}
+                    >
+                      {lr.guest.phone}
+                    </span>
+                  </span>
+                )}
+                {isInHouse ? (
+                  lr.reservation.room && (
+                    <span className="flex items-center gap-1.5">
+                      <Icon path={mdiBedOutline} size={0.6} color={colors.colorBlack3} />
+                      <span
+                        className="font-['Roboto',sans-serif] text-[13px] leading-[20px]"
+                        style={{ color: colors.colorBlack3 }}
+                      >
+                        {lr.reservation.room}
+                      </span>
+                    </span>
+                  )
+                ) : (
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <Icon path={mdiCalendarBlankOutline} size={0.6} color={colors.colorBlack3} />
+                    <span
+                      className="truncate font-['Roboto',sans-serif] text-[13px] leading-[20px]"
+                      style={{ color: colors.colorBlack3 }}
+                    >
+                      {formatStayRangeCompact(
+                        lr.reservation.checkInDate,
+                        lr.reservation.checkOutDate
+                      )}
+                    </span>
+                  </span>
+                )}
+              </div>
+            </ExpandRegion>
+          </div>
+
+          <Kebab items={items} label={`Actions for ${lr.guest.name}`} width={272} />
+          {/* Our own chevron: `.panel-accordion` hides the library's, whose
+              stroked 16px glyph is a different drawing from the filled mdi one.
+              It points DOWN/UP, not right — the row expands in place, and a
+              right chevron is this surface's promise of a page (Call History,
+              the reservation cards). */}
+          <Icon
+            path={isExpanded ? mdiChevronUp : mdiChevronDown}
+            size={0.8}
+            color={colors.colorBlack1}
+          />
         </div>
-      </div>
-      <Kebab items={items} label={`Actions for ${lr.guest.name}`} width={272} />
-    </CanaryListItem>
+      }
+    >
+      {/* The inset lives INSIDE the region, not on the body: padding out there
+          does not collapse with the content and would leave a band of empty row
+          behind a closing accordion. */}
+      <ExpandRegion isOpen={isExpanded} animateOnMount>
+        <div style={{ paddingLeft: 16, paddingRight: 16, paddingBottom: 12 }}>
+          <ReservationRecord
+            reservation={lr.reservation}
+            guest={lr.guest}
+            onOpenScheduledMessages={onOpenScheduledMessages}
+          />
+        </div>
+      </ExpandRegion>
+    </CanaryExpand>
   );
 }
 
