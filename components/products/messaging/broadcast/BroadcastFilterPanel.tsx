@@ -33,7 +33,7 @@ import {
   ButtonType,
   InputSize,
 } from '@canary-ui/components';
-import { FloatingPanel } from '../FloatingPanel';
+import { PanelShell } from '../panel/PanelShell';
 import { Avatar } from '../Avatar';
 import {
   FilterSectionLabel,
@@ -270,7 +270,7 @@ export function BroadcastFilterPanel({
 
   return (
     <>
-      <FloatingPanel isOpen={isOpen} onClose={onClose} width={480}>
+      <PanelShell isOpen={isOpen} onClose={onClose} label={`${audienceName} guests`}>
         <div className="h-full flex flex-col">
           {/* Header */}
           <div
@@ -540,7 +540,7 @@ export function BroadcastFilterPanel({
             )}
           </div>
         </div>
-      </FloatingPanel>
+      </PanelShell>
 
       {/* Save as Guest Segment */}
       <CanaryModal

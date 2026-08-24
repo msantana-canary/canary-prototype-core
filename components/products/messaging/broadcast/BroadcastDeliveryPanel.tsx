@@ -2,7 +2,9 @@
  * BroadcastDeliveryPanel — per-recipient delivery for one sent broadcast.
  *
  * Production renders this as a 420px right-edge slide-over
- * (BroadcastMessageDetailsModal.vue). Here it rides OUR floating-panel mechanic.
+ * (BroadcastMessageDetailsModal.vue). Here it rides the surface's one panel
+ * standard, `<PanelShell>` (2026-08-24 — it was on the deleted `FloatingPanel`
+ * before).
  *
  * Anatomy follows production (BroadcastMessageDetails.vue):
  *   title "Message details" + close ×
@@ -68,7 +70,7 @@ import {
   TagSize,
   TagVariant,
 } from '@canary-ui/components';
-import { FloatingPanel } from '../FloatingPanel';
+import { PanelShell } from '../panel/PanelShell';
 import { Avatar } from '../Avatar';
 import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
 import {
@@ -257,7 +259,7 @@ export function BroadcastDeliveryPanel() {
   const recipients = message?.recipients ?? [];
 
   return (
-    <FloatingPanel isOpen={!!deliveryPanelMessageId} onClose={closeDeliveryPanel} width={480}>
+    <PanelShell isOpen={!!deliveryPanelMessageId} onClose={closeDeliveryPanel} label="Message details">
       {message && (
         <div className="h-full flex flex-col">
           {/* Header — title + close, ruled off from the list below it as the
@@ -368,6 +370,6 @@ export function BroadcastDeliveryPanel() {
           </div>
         </div>
       )}
-    </FloatingPanel>
+    </PanelShell>
   );
 }

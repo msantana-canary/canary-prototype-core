@@ -63,20 +63,48 @@ function AudienceRow({
   /** Inline "N scheduled" line on groups holding a queued send. */
   scheduledCount?: number;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
   const isRich = memberCount !== undefined || !!preview || !!scheduledCount;
 
   return (
+    /**
+     * ⚠ THE DEAD HOVER, fixed 2026-08-24 — and it is the SAME BUG the thread row
+     * had. This row carried `hover:bg-[#f9fafb]` as a class AND
+     * `backgroundColor: 'transparent'` as an inline style. An inline style
+     * outranks any class, including a `:hover` one, so the wash had never
+     * painted in the life of this component. It read as "the hover is too
+     * subtle" rather than "there is no hover", which is exactly why it survived
+     * a year of looking at it.
+     *
+     * The fix is the thread row's: state the background where it can win, and
+     * take the branch's ONE neutral wash while we are here.
+     * `rgba(0,0,0,0.08)` is the library's own hover step — the same value
+     * `.icon-btn-neutral` rides and the same one `ThreadListItem` passes as
+     * `hoverColor` — where `#f9fafb` was a ~2% Tailwind grey that would have
+     * been invisible even if it had rendered. A surface with one hover wash is
+     * worth more than three hand-tuned ones nobody can tell apart.
+     *
+     * A SELECTED row does not answer hover at all: it is already carrying the
+     * blue tint and its border, and washing it further would read as a third
+     * state that means nothing.
+     */
     <button
       onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className={`w-full flex gap-3 rounded-[6px] transition-colors cursor-pointer text-left ${
         isRich ? 'items-start' : 'items-center'
-      } ${isSelected ? '' : 'hover:bg-[#f9fafb]'}`}
+      }`}
       style={{
         paddingLeft: 12,
         paddingRight: 12,
         paddingTop: 8,
         paddingBottom: 8,
-        backgroundColor: isSelected ? colors.colorBlueDark5 : 'transparent',
+        backgroundColor: isSelected
+          ? colors.colorBlueDark5
+          : isHovered
+            ? 'rgba(0,0,0,0.08)'
+            : 'transparent',
         border: `1px solid ${isSelected ? colors.colorBlueDark3 : 'transparent'}`,
       }}
     >

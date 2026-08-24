@@ -1,8 +1,8 @@
 /**
- * PanelShell — the Conversation Details panel's floating card.
+ * PanelShell — the surface's ONE floating panel.
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * THE PANEL STANDARD (Miguel's ruling, 2026-08-20)
+ * THE PANEL STANDARD (Miguel's ruling, 2026-08-20; extended 2026-08-24)
  * ═══════════════════════════════════════════════════════════════════════════
  *   • FIXED 600px wide. Not a percentage, not a range: the panel's contents are
  *     a two-column control row, a label/value band and a four-tab strip, all of
@@ -18,12 +18,23 @@
  *   • rounded-16, 1px colorBlack6 border, NO shadow — the branch-wide rule. The
  *     border and the scrim do the separating.
  *
- * ⚠ This is deliberately NOT `<FloatingPanel>`. That shell is still the right
- * one for the BROADCAST panels (480px, tucked under the top bar, shadowed) and
- * they are untouched. The two panels have genuinely different jobs; forcing one
- * component to be both would mean five props that each mean "be the other one".
- * The MECHANIC below — two-phase mount, reduced-motion downgrade, scrim — is
- * the same idea, kept in step deliberately.
+ * ── `FloatingPanel` IS GONE (2026-08-24) ──────────────────────────────────
+ * This file used to carry a note explaining why the broadcast panels kept their
+ * own shell: 480px, tucked under the top bar, shadowed, "genuinely different
+ * jobs". They do not have different jobs. All four are the same object — a
+ * right-hand card that holds one list you opened from the surface behind it —
+ * and the differences were the accidents of having been written months apart.
+ *
+ * Two shells meant two widths, two z-index pairs, two insets, two mount
+ * mechanics kept "in step deliberately" by hand, and a shadow on one branch of
+ * a surface whose standing rule is that nothing casts one. So the three
+ * broadcast panels (filter/recipients, Message details, scheduled detail) are
+ * on THIS shell now and `FloatingPanel` is deleted rather than left orphaned.
+ *
+ * What changed for them, and all of it is the standard asserting itself:
+ * 480 → 600px, under-the-top-bar → over everything, 16px insets → 12px,
+ * rounded-12 → 16, z 40/39 → 45/44, and the shadow is gone. Their CONTENTS and
+ * behaviour are untouched — this was a shell swap, not a redesign.
  *
  * ⚠ AND IT IS NOT `<CanarySideSheet>` EITHER — a STRUCTURAL EXCEPTION, not a
  * preference. The library's side sheet is EDGE-HINGED (`right-0 top-0
@@ -66,7 +77,11 @@ interface PanelShellProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
-  /** The dialog's accessible name. Two panels now use this shell. */
+  /**
+   * The dialog's accessible name. FIVE panels use this shell now — Conversation
+   * Details, the call-details drill-in, and the three broadcast ones — so the
+   * default is only a fallback, never a description.
+   */
   label?: string;
 }
 

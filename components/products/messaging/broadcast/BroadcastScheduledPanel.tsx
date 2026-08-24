@@ -2,8 +2,9 @@
  * BroadcastScheduledPanel — the detail view for a queued broadcast.
  *
  * Production's ScheduledGroupBroadcastSidebarModal.vue is a 420px right-side
- * slide-in; here it rides our shared <FloatingPanel>. Anatomy and action
- * placement mirror production exactly:
+ * slide-in; here it rides the surface's one panel standard, `<PanelShell>`
+ * (2026-08-24 — it was on the deleted `FloatingPanel` before). Anatomy and
+ * action placement mirror production exactly:
  *
  *   actions row — close (arrow-right) on the LEFT, then on the right three bare
  *                 icon buttons (edit text · edit time · send now) and a kebab
@@ -39,7 +40,7 @@ import {
   ButtonType,
   ButtonColor,
 } from '@canary-ui/components';
-import { FloatingPanel } from '../FloatingPanel';
+import { PanelShell } from '../panel/PanelShell';
 import { Avatar } from '../Avatar';
 import { ScheduleSendTimeModal } from './ScheduleSendTimeModal';
 import {
@@ -175,7 +176,7 @@ export function BroadcastScheduledPanel() {
 
   return (
     <>
-      <FloatingPanel isOpen={!!scheduledPanelId} onClose={closeScheduledPanel} width={480}>
+      <PanelShell isOpen={!!scheduledPanelId} onClose={closeScheduledPanel} label="Scheduled Broadcast">
         {scheduled && (
           <div className="h-full flex flex-col">
             {/* Actions row — close left, actions right (production's split) */}
@@ -302,7 +303,7 @@ export function BroadcastScheduledPanel() {
             </div>
           </div>
         )}
-      </FloatingPanel>
+      </PanelShell>
 
       {/* Reschedule — same modal, reschedule mode */}
       <ScheduleSendTimeModal
