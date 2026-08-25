@@ -83,6 +83,7 @@ import {
   BroadcastContactChannel,
   BroadcastGroupContact,
 } from '@/lib/products/messaging/broadcast-types';
+import { ModalFocusScope } from '@/components/products/messaging/ModalFocusScope';
 
 interface CreateGroupModalProps {
   isOpen: boolean;
@@ -158,187 +159,189 @@ export function CreateGroupModal({ isOpen, onClose, onCreate }: CreateGroupModal
   };
 
   return (
-    <CanaryModal
-      isOpen={isOpen}
-      onClose={handleClose}
-      title="New group"
-      size="large"
-      /* 800px is the frame's modal (`size="large"` is `max-w-4xl` = 896). The
-         two border rules are the frame's header and footer hairlines, which
-         `CanaryModal` does not draw; `min-h` holds the empty state open so the
-         modal does not collapse to a strip before the first contact lands. */
-      className="!max-w-[800px] [&>div:first-child]:border-b [&>div:first-child]:border-[#E5E5E5] [&>div:last-child]:border-t [&>div:last-child]:border-[#E5E5E5] [&>div:nth-child(2)]:min-h-[360px]"
-      footer={
-        <div className="flex items-center justify-between">
-          {/* Upload Contacts — a stub. `CanaryButton` TEXT stripped to an inline
-              label, the surface's standing workaround for the link primitive the
-              library has no component for (ask 45). The ⓘ sits outside it so the
-              button's accessible name stays the words. */}
-          <div className="flex items-center" style={{ gap: 6 }}>
+    <ModalFocusScope isOpen={isOpen}>
+      <CanaryModal
+        isOpen={isOpen}
+        onClose={handleClose}
+        title="New group"
+        size="large"
+        /* 800px is the frame's modal (`size="large"` is `max-w-4xl` = 896). The
+           two border rules are the frame's header and footer hairlines, which
+           `CanaryModal` does not draw; `min-h` holds the empty state open so the
+           modal does not collapse to a strip before the first contact lands. */
+        className="!max-w-[800px] [&>div:first-child]:border-b [&>div:first-child]:border-[#E5E5E5] [&>div:last-child]:border-t [&>div:last-child]:border-[#E5E5E5] [&>div:nth-child(2)]:min-h-[360px]"
+        footer={
+          <div className="flex items-center justify-between">
+            {/* Upload Contacts — a stub. `CanaryButton` TEXT stripped to an inline
+                label, the surface's standing workaround for the link primitive the
+                library has no component for (ask 45). The ⓘ sits outside it so the
+                button's accessible name stays the words. */}
+            <div className="flex items-center" style={{ gap: 6 }}>
+              <CanaryButton
+                type={ButtonType.TEXT}
+                className="text-btn-inline font-['Roboto',sans-serif] !text-[14px] !font-medium"
+              >
+                Upload Contacts
+              </CanaryButton>
+              <Icon
+                path={mdiInformationOutline}
+                size={0.67}
+                color={colors.colorBlack4}
+                title="Upload a CSV of names, phone numbers and channels"
+                id="group-upload-info"
+              />
+            </div>
+
             <CanaryButton
-              type={ButtonType.TEXT}
-              className="text-btn-inline font-['Roboto',sans-serif] !text-[14px] !font-medium"
+              type={ButtonType.PRIMARY}
+              onClick={handleSave}
+              isDisabled={!contacts.length || !name.trim()}
             >
-              Upload Contacts
+              Save
             </CanaryButton>
-            <Icon
-              path={mdiInformationOutline}
-              size={0.67}
-              color={colors.colorBlack4}
-              title="Upload a CSV of names, phone numbers and channels"
-              id="group-upload-info"
-            />
           </div>
-
-          <CanaryButton
-            type={ButtonType.PRIMARY}
-            onClick={handleSave}
-            isDisabled={!contacts.length || !name.trim()}
-          >
-            Save
-          </CanaryButton>
-        </div>
-      }
-    >
-      <div className="flex flex-col" style={{ gap: 16 }}>
-        {/* Group name */}
-        <CanaryInput
-          label="Group name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Text"
-          size={InputSize.NORMAL}
-        />
-
-        {/* The entry row. `items-start` rather than `items-end`: none of the
-            three fields carries a label, so their tops align and there is no
-            baseline to hang them from. */}
-        <div className="flex items-start" style={{ gap: 8 }}>
-          <div className="flex-1 min-w-0">
-            <CanaryInput
-              placeholder="Full name (optional)"
-              value={entryName}
-              onChange={(e) => setEntryName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') addContact();
-              }}
-              size={InputSize.NORMAL}
-            />
-          </div>
-
-          {/* The phone field with the frame's flag + ⇅ country affordance.
-              `CanaryInputPhone` is `intl-tel-input` under the hood, so the flag
-              button, the divider and the dial-code formatting are the base's —
-              this is exactly the control the frame draws, not an approximation
-              of it. Its `onChange` hands back a STRING (not an event), which is
-              the one place this form's handlers differ from the others. */}
-          <div style={{ width: 210 }}>
-            <CanaryInputPhone
-              placeholder="+1 201-555-0123"
-              value={entryPhone}
-              onChange={setEntryPhone}
-              size={InputSize.NORMAL}
-            />
-          </div>
-
-          <div style={{ width: 210 }}>
-            <CanarySelect
-              aria-label="Select channel"
-              placeholder="Select channel"
-              value={entryChannel}
-              onChange={(e) => setEntryChannel(e.target.value as BroadcastContactChannel)}
-              options={CHANNEL_OPTIONS}
-              size={InputSize.NORMAL}
-            />
-          </div>
-
-          {/* Tonal, not solid. `ButtonType.SHADED` is the library's tonal
-              register and the frame draws exactly it — pale blue ground, blue
-              label. It has to stay quieter than Save: Add is a step, Save is
-              the commit. */}
-          <CanaryButton
-            type={ButtonType.SHADED}
-            size={ButtonSize.NORMAL}
-            onClick={addContact}
-            isDisabled={!canAddContact}
-          >
-            Add contact
-          </CanaryButton>
-        </div>
-
-        {/* The contacts table. Nothing renders until there is something in it —
-            `CanaryTable`'s own empty state is a centred sentence, and the frame
-            draws bare space, which is the more honest empty: the row above is
-            already the instruction. */}
-        {contacts.length > 0 && (
-          <CanaryTable
-            data={contacts}
-            /* Header → the frame's 10px uppercase overline (base: 14px
-               semibold). Rows → 20px vertical, which lands the drawn 64px row
-               around a 24px delete button (base: `py-1`). Both reach the base's
-               own cells; there is no prop for either.
-               ⚠ `tr:not(:first-child)` is load-bearing: `CanaryTable`'s first
-               tbody row is an 8px SPACER `<td class="h-2">` that sets the gap
-               between the overlines and the box, and a blanket `td` padding
-               inflates it to 48px. */
-            className="[&_th]:!text-[10px] [&_th]:!leading-[16px] [&_th]:!font-medium [&_th]:!text-[#666666] [&_th]:!tracking-[0.4px] [&_tbody_tr:not(:first-child)_td]:!py-5"
-            columns={[
-              {
-                key: 'name',
-                label: 'NAME',
-                render: (_value, row: BroadcastGroupContact) => (
-                  <span style={{ color: colors.colorBlack1 }}>{row.name || '—'}</span>
-                ),
-              },
-              {
-                key: 'phone',
-                label: 'PHONE NUMBER',
-                render: (_value, row: BroadcastGroupContact) => (
-                  <span style={{ color: colors.colorBlack1 }}>{row.phone}</span>
-                ),
-              },
-              {
-                key: 'channel',
-                /* "SUMMARY" is the frame's word and production's. It reads odd
-                   for a single channel name, and it is kept anyway: this column
-                   is where production prints whatever it knows about how the
-                   contact will be reached, and renaming it "CHANNEL" here would
-                   put the prototype and the product in disagreement over a
-                   column heading a hotelier already recognises. */
-                label: 'SUMMARY',
-                render: (_value, row: BroadcastGroupContact) => (
-                  <span style={{ color: colors.colorBlack1 }}>
-                    {CHANNEL_LABEL[row.channel]}
-                  </span>
-                ),
-              },
-              {
-                key: 'actions',
-                label: '',
-                align: 'right',
-                width: '56px',
-                render: (_value, row: BroadcastGroupContact) => (
-                  <CanaryButton
-                    type={ButtonType.ICON_SECONDARY}
-                    size={ButtonSize.COMPACT}
-                    onClick={() => removeContact(row.id)}
-                    className="icon-btn-neutral icon-btn-28 icon-btn-r6"
-                    icon={
-                      <Icon
-                        path={mdiTrashCanOutline}
-                        size={0.83}
-                        color={colors.colorBlueDark1}
-                        title={`Remove ${row.name || row.phone}`}
-                        id={`group-contact-remove-${row.id}`}
-                      />
-                    }
-                  />
-                ),
-              },
-            ]}
+        }
+      >
+        <div className="flex flex-col" style={{ gap: 16 }}>
+          {/* Group name */}
+          <CanaryInput
+            label="Group name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Text"
+            size={InputSize.NORMAL}
           />
-        )}
-      </div>
-    </CanaryModal>
+
+          {/* The entry row. `items-start` rather than `items-end`: none of the
+              three fields carries a label, so their tops align and there is no
+              baseline to hang them from. */}
+          <div className="flex items-start" style={{ gap: 8 }}>
+            <div className="flex-1 min-w-0">
+              <CanaryInput
+                placeholder="Full name (optional)"
+                value={entryName}
+                onChange={(e) => setEntryName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') addContact();
+                }}
+                size={InputSize.NORMAL}
+              />
+            </div>
+
+            {/* The phone field with the frame's flag + ⇅ country affordance.
+                `CanaryInputPhone` is `intl-tel-input` under the hood, so the flag
+                button, the divider and the dial-code formatting are the base's —
+                this is exactly the control the frame draws, not an approximation
+                of it. Its `onChange` hands back a STRING (not an event), which is
+                the one place this form's handlers differ from the others. */}
+            <div style={{ width: 210 }}>
+              <CanaryInputPhone
+                placeholder="+1 201-555-0123"
+                value={entryPhone}
+                onChange={setEntryPhone}
+                size={InputSize.NORMAL}
+              />
+            </div>
+
+            <div style={{ width: 210 }}>
+              <CanarySelect
+                aria-label="Select channel"
+                placeholder="Select channel"
+                value={entryChannel}
+                onChange={(e) => setEntryChannel(e.target.value as BroadcastContactChannel)}
+                options={CHANNEL_OPTIONS}
+                size={InputSize.NORMAL}
+              />
+            </div>
+
+            {/* Tonal, not solid. `ButtonType.SHADED` is the library's tonal
+                register and the frame draws exactly it — pale blue ground, blue
+                label. It has to stay quieter than Save: Add is a step, Save is
+                the commit. */}
+            <CanaryButton
+              type={ButtonType.SHADED}
+              size={ButtonSize.NORMAL}
+              onClick={addContact}
+              isDisabled={!canAddContact}
+            >
+              Add contact
+            </CanaryButton>
+          </div>
+
+          {/* The contacts table. Nothing renders until there is something in it —
+              `CanaryTable`'s own empty state is a centred sentence, and the frame
+              draws bare space, which is the more honest empty: the row above is
+              already the instruction. */}
+          {contacts.length > 0 && (
+            <CanaryTable
+              data={contacts}
+              /* Header → the frame's 10px uppercase overline (base: 14px
+                 semibold). Rows → 20px vertical, which lands the drawn 64px row
+                 around a 24px delete button (base: `py-1`). Both reach the base's
+                 own cells; there is no prop for either.
+                 ⚠ `tr:not(:first-child)` is load-bearing: `CanaryTable`'s first
+                 tbody row is an 8px SPACER `<td class="h-2">` that sets the gap
+                 between the overlines and the box, and a blanket `td` padding
+                 inflates it to 48px. */
+              className="[&_th]:!text-[10px] [&_th]:!leading-[16px] [&_th]:!font-medium [&_th]:!text-[#666666] [&_th]:!tracking-[0.4px] [&_tbody_tr:not(:first-child)_td]:!py-5"
+              columns={[
+                {
+                  key: 'name',
+                  label: 'NAME',
+                  render: (_value, row: BroadcastGroupContact) => (
+                    <span style={{ color: colors.colorBlack1 }}>{row.name || '—'}</span>
+                  ),
+                },
+                {
+                  key: 'phone',
+                  label: 'PHONE NUMBER',
+                  render: (_value, row: BroadcastGroupContact) => (
+                    <span style={{ color: colors.colorBlack1 }}>{row.phone}</span>
+                  ),
+                },
+                {
+                  key: 'channel',
+                  /* "SUMMARY" is the frame's word and production's. It reads odd
+                     for a single channel name, and it is kept anyway: this column
+                     is where production prints whatever it knows about how the
+                     contact will be reached, and renaming it "CHANNEL" here would
+                     put the prototype and the product in disagreement over a
+                     column heading a hotelier already recognises. */
+                  label: 'SUMMARY',
+                  render: (_value, row: BroadcastGroupContact) => (
+                    <span style={{ color: colors.colorBlack1 }}>
+                      {CHANNEL_LABEL[row.channel]}
+                    </span>
+                  ),
+                },
+                {
+                  key: 'actions',
+                  label: '',
+                  align: 'right',
+                  width: '56px',
+                  render: (_value, row: BroadcastGroupContact) => (
+                    <CanaryButton
+                      type={ButtonType.ICON_SECONDARY}
+                      size={ButtonSize.COMPACT}
+                      onClick={() => removeContact(row.id)}
+                      className="icon-btn-neutral icon-btn-28 icon-btn-r6"
+                      icon={
+                        <Icon
+                          path={mdiTrashCanOutline}
+                          size={0.83}
+                          color={colors.colorBlueDark1}
+                          title={`Remove ${row.name || row.phone}`}
+                          id={`group-contact-remove-${row.id}`}
+                        />
+                      }
+                    />
+                  ),
+                },
+              ]}
+            />
+          )}
+        </div>
+      </CanaryModal>
+    </ModalFocusScope>
   );
 }

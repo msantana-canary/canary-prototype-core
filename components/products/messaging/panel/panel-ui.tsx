@@ -36,6 +36,7 @@ import {
   mdiDotsHorizontal,
 } from '@mdi/js';
 import { Reservation } from '@/lib/core/types/reservation';
+import { useEscapeLayer } from '@/lib/products/messaging/escape-stack';
 
 export const PANEL_PAD = 24;
 
@@ -665,8 +666,76 @@ export function Kebab({ items, label = 'More actions', width = 248 }: { items: K
     return () => document.removeEventListener('mousedown', onDocMouseDown);
   }, [isOpen]);
 
+  /**
+   * ESCAPE CLOSES, AND FOCUS GOES BACK TO THE TRIGGER (QA-2, 2026-08-25).
+   *
+   * This popover listened for an outside MOUSEDOWN and nothing else, so a
+   * keyboard user could open it and then had no way to put it away —
+   * "Change primary guest" stayed on screen through Escape. It goes through the
+   * shared layer stack rather than a document listener of its own, because this
+   * menu lives INSIDE `PanelShell`, which now also answers Escape: the stack is
+   * what makes the popover close first and the panel stay put.
+   *
+   * ⚠ `CanaryButton` forwards no ref, so the trigger is found by position: it
+   * is the FIRST `<button>` inside the root, and the popover (whose items are
+   * also buttons) always renders after it.
+   */
+  const triggerButton = () => rootRef.current?.querySelector('button') ?? null;
+
+  useEscapeLayer(isOpen, () => {
+    setIsOpen(false);
+    triggerButton()?.focus();
+  });
+
+  /**
+   * Arrow navigation over the ENABLED rows. Disabled items render as `<div>`s
+   * (they carry a reason and must not be activable), so `button` is exactly the
+   * set that should take focus — the arrows skip the reasons rather than
+   * parking on something Enter cannot fire.
+   */
+  const onKeyDown = (event: React.KeyboardEvent) => {
+    if (!isOpen) {
+      if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+      event.preventDefault();
+      setIsOpen(true);
+      // The rows do not exist until the next commit, so land on one then.
+      requestAnimationFrame(() => {
+        const rows = Array.from(
+          rootRef.current?.querySelectorAll<HTMLButtonElement>('button') ?? []
+        ).slice(1);
+        (event.key === 'ArrowUp' ? rows[rows.length - 1] : rows[0])?.focus();
+      });
+      return;
+    }
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End', 'Tab'].includes(event.key)) return;
+
+    if (event.key === 'Tab') {
+      setIsOpen(false);
+      return;
+    }
+
+    const rows = Array.from(
+      rootRef.current?.querySelectorAll<HTMLButtonElement>('button') ?? []
+    ).slice(1); // index 0 is the trigger
+    if (rows.length === 0) return;
+
+    event.preventDefault();
+    const at = rows.indexOf(document.activeElement as HTMLButtonElement);
+    const next =
+      event.key === 'Home'
+        ? 0
+        : event.key === 'End'
+          ? rows.length - 1
+          : event.key === 'ArrowDown'
+            ? Math.min(at + 1, rows.length - 1)
+            : at <= 0
+              ? 0
+              : at - 1;
+    rows[next]?.focus();
+  };
+
   return (
-    <div className="relative shrink-0" ref={rootRef}>
+    <div className="relative shrink-0" ref={rootRef} onKeyDown={onKeyDown}>
       <CanaryButton
         type={ButtonType.ICON_SECONDARY}
         size={ButtonSize.COMPACT}

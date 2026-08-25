@@ -60,6 +60,7 @@ import {
   PRESET_TEMPLATES,
 } from '@/lib/products/messaging/message-templates';
 import { useRowKeyActivation } from '@/lib/products/messaging/useRowKeyActivation';
+import { ModalFocusScope } from './ModalFocusScope';
 
 type TemplateTab = 'preset' | 'apple';
 
@@ -231,91 +232,93 @@ export function MessageTemplatesModal({
   };
 
   return (
-    <CanaryModal
-      isOpen={isOpen}
-      onClose={handleClose}
-      title="Message templates"
-      size="large"
-      className="!max-w-[800px] [&>div:nth-child(2)]:!p-0 [&>div:first-child]:border-b [&>div:first-child]:border-[#E5E5E5] [&>div:last-child]:border-t [&>div:last-child]:border-[#E5E5E5]"
-      footer={
-        <div className="flex items-center justify-between">
-          {/* "Manage templates" — a route into Settings that this branch does
-              not own. `CanaryButton` TEXT stripped of its button metrics, the
-              same way every other inline text affordance on this surface fakes
-              the link primitive the library has no component for (ask 45). */}
-          <CanaryButton
-            type={ButtonType.TEXT}
-            className="text-btn-inline font-['Roboto',sans-serif] !text-[14px] !font-medium"
-          >
-            Manage templates
-          </CanaryButton>
+    <ModalFocusScope isOpen={isOpen}>
+      <CanaryModal
+        isOpen={isOpen}
+        onClose={handleClose}
+        title="Message templates"
+        size="large"
+        className="!max-w-[800px] [&>div:nth-child(2)]:!p-0 [&>div:first-child]:border-b [&>div:first-child]:border-[#E5E5E5] [&>div:last-child]:border-t [&>div:last-child]:border-[#E5E5E5]"
+        footer={
+          <div className="flex items-center justify-between">
+            {/* "Manage templates" — a route into Settings that this branch does
+                not own. `CanaryButton` TEXT stripped of its button metrics, the
+                same way every other inline text affordance on this surface fakes
+                the link primitive the library has no component for (ask 45). */}
+            <CanaryButton
+              type={ButtonType.TEXT}
+              className="text-btn-inline font-['Roboto',sans-serif] !text-[14px] !font-medium"
+            >
+              Manage templates
+            </CanaryButton>
 
-          {/* THE VERB. Disabled until a row is picked — the frame's idle state
-              draws it faded, which is `CanaryButton`'s own 50% disabled dim. */}
-          <CanaryButton
-            type={ButtonType.PRIMARY}
-            onClick={handleCommit}
-            isDisabled={!selected}
-          >
-            {tab === 'preset' ? 'Use' : 'Send'}
-          </CanaryButton>
-        </div>
-      }
-    >
-      {/* The tab strip pays the body's inset back for itself; the LISTS stay
-          flush. `content` carries each list because that is `CanaryTabs`'
-          contract — the base switches the body, so there is no second source of
-          truth for which list is on screen. */}
-      <CanaryTabs
-        tabType={TabType.TEXT}
-        defaultTab="preset"
-        onChange={(tabId) => {
-          setActiveTab(tabId as TemplateTab);
-          // A selection from the other tab would arm the commit with a row
-          // nobody can see.
-          setSelectedId(null);
-        }}
-        /* 24px inset back onto the strip only, plus the frame's hairline under
-           it. `CanaryTabs` TEXT draws the active tab's 4px blue underline
-           `w-full` at the strip's bottom edge and nothing across the rest of
-           the row, so the rule goes on the strip and the blue bar lands on top
-           of it — which is how MainNav's tabs meet their own bar. */
-        className="[&>div:first-child]:!px-6 [&>div:first-child]:border-b [&>div:first-child]:border-[#E5E5E5]"
-        /* The Apple tab is CONDITIONAL, on the thread's own channel — see
-           `isAppleBusiness`. With no AMB session there is nothing to send an
-           Apple-hosted payload into, so the tab is not rendered at all rather
-           than rendered-and-disabled: a disabled tab is a promise that
-           something is coming, and on an SMS thread nothing is. The strip stays
-           (it labels the list, and it is the same control MainNav uses). */
-        tabs={[
-          {
-            id: 'preset',
-            label: 'Preset Messages',
-            content: (
-              <TemplateList
-                templates={PRESET_TEMPLATES}
-                selectedId={selectedId}
-                onSelect={setSelectedId}
-              />
-            ),
-          },
-          ...(isAppleBusiness
-            ? [
-                {
-                  id: 'apple',
-                  label: 'Apple Message Templates',
-                  content: (
-                    <TemplateList
-                      templates={APPLE_TEMPLATES}
-                      selectedId={selectedId}
-                      onSelect={setSelectedId}
-                    />
-                  ),
-                },
-              ]
-            : []),
-        ]}
-      />
-    </CanaryModal>
+            {/* THE VERB. Disabled until a row is picked — the frame's idle state
+                draws it faded, which is `CanaryButton`'s own 50% disabled dim. */}
+            <CanaryButton
+              type={ButtonType.PRIMARY}
+              onClick={handleCommit}
+              isDisabled={!selected}
+            >
+              {tab === 'preset' ? 'Use' : 'Send'}
+            </CanaryButton>
+          </div>
+        }
+      >
+        {/* The tab strip pays the body's inset back for itself; the LISTS stay
+            flush. `content` carries each list because that is `CanaryTabs`'
+            contract — the base switches the body, so there is no second source of
+            truth for which list is on screen. */}
+        <CanaryTabs
+          tabType={TabType.TEXT}
+          defaultTab="preset"
+          onChange={(tabId) => {
+            setActiveTab(tabId as TemplateTab);
+            // A selection from the other tab would arm the commit with a row
+            // nobody can see.
+            setSelectedId(null);
+          }}
+          /* 24px inset back onto the strip only, plus the frame's hairline under
+             it. `CanaryTabs` TEXT draws the active tab's 4px blue underline
+             `w-full` at the strip's bottom edge and nothing across the rest of
+             the row, so the rule goes on the strip and the blue bar lands on top
+             of it — which is how MainNav's tabs meet their own bar. */
+          className="[&>div:first-child]:!px-6 [&>div:first-child]:border-b [&>div:first-child]:border-[#E5E5E5]"
+          /* The Apple tab is CONDITIONAL, on the thread's own channel — see
+             `isAppleBusiness`. With no AMB session there is nothing to send an
+             Apple-hosted payload into, so the tab is not rendered at all rather
+             than rendered-and-disabled: a disabled tab is a promise that
+             something is coming, and on an SMS thread nothing is. The strip stays
+             (it labels the list, and it is the same control MainNav uses). */
+          tabs={[
+            {
+              id: 'preset',
+              label: 'Preset Messages',
+              content: (
+                <TemplateList
+                  templates={PRESET_TEMPLATES}
+                  selectedId={selectedId}
+                  onSelect={setSelectedId}
+                />
+              ),
+            },
+            ...(isAppleBusiness
+              ? [
+                  {
+                    id: 'apple',
+                    label: 'Apple Message Templates',
+                    content: (
+                      <TemplateList
+                        templates={APPLE_TEMPLATES}
+                        selectedId={selectedId}
+                        onSelect={setSelectedId}
+                      />
+                    ),
+                  },
+                ]
+              : []),
+          ]}
+        />
+      </CanaryModal>
+    </ModalFocusScope>
   );
 }

@@ -33,6 +33,7 @@ import { CanaryModal, colors } from '@canary-ui/components';
 import { CarrierErrorLine } from '../panel/panel-ui';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { CarrierError } from '@/lib/products/messaging/types';
+import { ModalFocusScope } from '@/components/products/messaging/ModalFocusScope';
 
 function ErrorRow({ error, isFirst }: { error: CarrierError; isFirst: boolean }) {
   return (
@@ -57,39 +58,41 @@ export function CarrierErrorModal() {
   }, [messageId, findMessage]);
 
   return (
-    <CanaryModal isOpen={!!messageId} onClose={close} title="Message Not Delivered" size="large">
-      {/* The frame rules the header; CanaryModal does not. Bleed out through
-          its `px-6 py-4` body padding and ink the line ourselves. */}
-      <div
-        style={{
-          marginLeft: -24,
-          marginRight: -24,
-          marginTop: -16,
-          paddingLeft: 24,
-          paddingRight: 24,
-          paddingTop: 20,
-          paddingBottom: 8,
-          borderTop: `1px solid ${colors.colorBlack6}`,
-        }}
-      >
-        <p
-          className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
-          style={{ color: colors.colorBlack2 }}
-        >
-          This message couldn&apos;t be delivered due to a send error. See the error code(s) below
-          for more details. Some issues may require action, such as updating recipient info or
-          retrying the message.
-        </p>
-
+    <ModalFocusScope isOpen={!!messageId}>
+      <CanaryModal isOpen={!!messageId} onClose={close} title="Message Not Delivered" size="large">
+        {/* The frame rules the header; CanaryModal does not. Bleed out through
+            its `px-6 py-4` body padding and ink the line ourselves. */}
         <div
-          className="rounded-[8px] overflow-hidden"
-          style={{ border: `1px solid ${colors.colorBlack6}`, marginTop: 16 }}
+          style={{
+            marginLeft: -24,
+            marginRight: -24,
+            marginTop: -16,
+            paddingLeft: 24,
+            paddingRight: 24,
+            paddingTop: 20,
+            paddingBottom: 8,
+            borderTop: `1px solid ${colors.colorBlack6}`,
+          }}
         >
-          {errors.map((error, i) => (
-            <ErrorRow key={error.channel} error={error} isFirst={i === 0} />
-          ))}
+          <p
+            className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
+            style={{ color: colors.colorBlack2 }}
+          >
+            This message couldn&apos;t be delivered due to a send error. See the error code(s) below
+            for more details. Some issues may require action, such as updating recipient info or
+            retrying the message.
+          </p>
+
+          <div
+            className="rounded-[8px] overflow-hidden"
+            style={{ border: `1px solid ${colors.colorBlack6}`, marginTop: 16 }}
+          >
+            {errors.map((error, i) => (
+              <ErrorRow key={error.channel} error={error} isFirst={i === 0} />
+            ))}
+          </div>
         </div>
-      </div>
-    </CanaryModal>
+      </CanaryModal>
+    </ModalFocusScope>
   );
 }

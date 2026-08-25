@@ -46,6 +46,7 @@ import { mdiCheck, mdiUnfoldMoreHorizontal } from '@mdi/js';
 import { ControlCard } from './panel-ui';
 import { DEPARTMENTS, STAFF } from '../ThreadScopeMenu';
 import { ThreadAssignment } from '@/lib/products/messaging/types';
+import { useEscapeLayer } from '@/lib/products/messaging/escape-stack';
 
 interface AssignOption {
   value: string;
@@ -95,21 +96,80 @@ export function AssignSelect({
     const onDocMouseDown = (e: MouseEvent) => {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setIsOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false);
-    };
-    if (isOpen) {
-      document.addEventListener('mousedown', onDocMouseDown);
-      document.addEventListener('keydown', onKey);
-    }
-    return () => {
-      document.removeEventListener('mousedown', onDocMouseDown);
-      document.removeEventListener('keydown', onKey);
-    };
+    if (isOpen) document.addEventListener('mousedown', onDocMouseDown);
+    return () => document.removeEventListener('mousedown', onDocMouseDown);
   }, [isOpen]);
 
+  /**
+   * ═══════════════════════════════════════════════════════════════════════
+   * THE KEYBOARD CONTRACT, BROUGHT UP TO `ScopeSelect`'s (QA-2, 2026-08-25)
+   * ═══════════════════════════════════════════════════════════════════════
+   * This control already closed on Escape — the one part of the QA filing that
+   * was wrong — but it closed via its OWN document listener and left focus on
+   * `<body>`, so a keyboard user dismissing the listbox lost their place
+   * mid-panel. And ArrowDown did nothing at all: options were reachable only by
+   * Tab, one surface away from `ThreadScopeMenu`, which gets the whole contract
+   * right (arrows, Home/End, Escape-returns-to-trigger).
+   *
+   * Two changes. The Escape listener moves onto the shared layer stack, because
+   * this popover lives inside `PanelShell` — which now also answers Escape —
+   * and only the stack guarantees the listbox closes without taking the panel
+   * with it. And Escape now returns focus to the trigger, which is the
+   * `ControlCard` `<button>`: the FIRST button inside the root, since the
+   * option rows are buttons too and always render after it.
+   *
+   * Arrow movement is real focus, not `aria-activedescendant`. `ScopeSelect`'s
+   * options are `<div role="option">` and need the virtual cursor; these are
+   * real `<button>`s, so moving focus IS the selection cursor, and Enter/Space
+   * already activate natively.
+   */
+  const triggerButton = () => rootRef.current?.querySelector('button') ?? null;
+
+  useEscapeLayer(isOpen, () => {
+    setIsOpen(false);
+    triggerButton()?.focus();
+  });
+
+  const optionButtons = () =>
+    Array.from(rootRef.current?.querySelectorAll<HTMLButtonElement>('button') ?? []).slice(1);
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (!isOpen) {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      e.preventDefault();
+      setIsOpen(true);
+      requestAnimationFrame(() => {
+        const opts = optionButtons();
+        (e.key === 'ArrowUp' ? opts[opts.length - 1] : opts[0])?.focus();
+      });
+      return;
+    }
+
+    if (e.key === 'Tab') {
+      setIsOpen(false);
+      return;
+    }
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
+
+    const opts = optionButtons();
+    if (opts.length === 0) return;
+    e.preventDefault();
+    const at = opts.indexOf(document.activeElement as HTMLButtonElement);
+    const next =
+      e.key === 'Home'
+        ? 0
+        : e.key === 'End'
+          ? opts.length - 1
+          : e.key === 'ArrowDown'
+            ? Math.min(at + 1, opts.length - 1)
+            : at <= 0
+              ? 0
+              : at - 1;
+    opts[next]?.focus();
+  };
+
   return (
-    <div className="relative flex-1 min-w-0" ref={rootRef}>
+    <div className="relative flex-1 min-w-0" ref={rootRef} onKeyDown={onKeyDown}>
       <ControlCard
         label="Assigned to"
         value={assignment?.name ?? 'None'}

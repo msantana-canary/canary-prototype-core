@@ -63,6 +63,7 @@
 import React, { useEffect, useState } from 'react';
 import { colors } from '@canary-ui/components';
 import { useReducedMotion } from '../motion';
+import { useEscapeLayer } from '@/lib/products/messaging/escape-stack';
 
 /** The one number that defines the standard: the viewport gap on all three sides. */
 export const PANEL_INSET = 12;
@@ -96,6 +97,26 @@ export { useReducedMotion } from '../motion';
 
 export function PanelShell({ isOpen, onClose, children, label = 'Conversation Details' }: PanelShellProps) {
   const reduced = useReducedMotion();
+
+  /**
+   * ESCAPE = SCRIM CLICK (QA-2, 2026-08-25).
+   *
+   * This shell used to register no key handler at all, so all five panels
+   * ignored Escape while every `CanaryModal` on the same surface honoured it —
+   * two dismissal grammars on one screen, and the one that ignored the key was
+   * the one presenting itself as `role="dialog"` behind a full-viewport scrim.
+   *
+   * ⚠ IT MUST NOT BE A BARE DOCUMENT LISTENER, and that is the whole reason
+   * `escape-stack` exists. Three things stack over this shell — the unlink
+   * confirm `CanaryModal` at z 50, the panel's own kebab popovers and the
+   * assign listbox — and a listener of our own here would have closed the panel
+   * UNDERNEATH each of them on the same keypress. The stack hands Escape to the
+   * topmost layer only, so the popover goes, then the panel.
+   *
+   * Gated on `isOpen` rather than `mounted`: a panel already playing its exit
+   * transition is not a layer anybody is looking at.
+   */
+  useEscapeLayer(isOpen, onClose);
 
   // Two-phase mount: `mounted` keeps the panel in the DOM through its exit
   // transition; `entered` drives the open/closed styles and flips on the second

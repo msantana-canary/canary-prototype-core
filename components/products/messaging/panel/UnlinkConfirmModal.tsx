@@ -21,6 +21,7 @@
 
 import React from 'react';
 import { CanaryModal, CanaryButton, ButtonType, ButtonColor, ButtonSize, colors } from '@canary-ui/components';
+import { ModalFocusScope } from '@/components/products/messaging/ModalFocusScope';
 
 export interface UnlinkTarget {
   scope: 'reservation' | 'guest';
@@ -43,37 +44,39 @@ export function UnlinkConfirmModal({
   const count = target?.reservationIds.length ?? 0;
 
   return (
-    <CanaryModal
-      isOpen={!!target}
-      onClose={onCancel}
-      title={isGuest ? 'Unlink guest' : 'Unlink reservation'}
-      size="small"
-      footer={
-        <div className="flex justify-end gap-2">
-          <CanaryButton type={ButtonType.OUTLINED} size={ButtonSize.NORMAL} onClick={onCancel}>
-            Cancel
-          </CanaryButton>
-          <CanaryButton
-            type={ButtonType.PRIMARY}
-            color={ButtonColor.DANGER}
-            size={ButtonSize.NORMAL}
-            onClick={onConfirm}
-          >
-            Unlink
-          </CanaryButton>
-        </div>
-      }
-    >
-      <p
-        className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
-        style={{ color: colors.colorBlack1 }}
+    <ModalFocusScope isOpen={!!target}>
+      <CanaryModal
+        isOpen={!!target}
+        onClose={onCancel}
+        title={isGuest ? 'Unlink guest' : 'Unlink reservation'}
+        size="small"
+        footer={
+          <div className="flex justify-end gap-2">
+            <CanaryButton type={ButtonType.OUTLINED} size={ButtonSize.NORMAL} onClick={onCancel}>
+              Cancel
+            </CanaryButton>
+            <CanaryButton
+              type={ButtonType.PRIMARY}
+              color={ButtonColor.DANGER}
+              size={ButtonSize.NORMAL}
+              onClick={onConfirm}
+            >
+              Unlink
+            </CanaryButton>
+          </div>
+        }
       >
-        {isGuest
-          ? `Unlink ${target?.guestName} from this conversation? ${
-              count > 1 ? `All ${count} of their reservations` : 'Their reservation'
-            } will stop appearing here. Messages will continue going to ${contactNumber}.`
-          : `Unlink ${target?.guestName}'s reservation from this conversation? This reservation's details will no longer appear here. Messages will continue going to ${contactNumber}.`}
-      </p>
-    </CanaryModal>
+        <p
+          className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
+          style={{ color: colors.colorBlack1 }}
+        >
+          {isGuest
+            ? `Unlink ${target?.guestName} from this conversation? ${
+                count > 1 ? `All ${count} of their reservations` : 'Their reservation'
+              } will stop appearing here. Messages will continue going to ${contactNumber}.`
+            : `Unlink ${target?.guestName}'s reservation from this conversation? This reservation's details will no longer appear here. Messages will continue going to ${contactNumber}.`}
+        </p>
+      </CanaryModal>
+    </ModalFocusScope>
   );
 }

@@ -22,6 +22,7 @@ import { Avatar } from './Avatar';
 import { MessageFeed } from './MessageFeed';
 import { MessageComposer } from './MessageComposer';
 import { ThreadAiSlot } from './ai/ThreadAiSlot';
+import { OverflowMenuKeys } from './OverflowMenuKeys';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { Thread, Message } from '@/lib/products/messaging/types';
 import { DEMO_PROPERTY_NAME } from '@/lib/products/messaging/message-templates';
@@ -316,7 +317,14 @@ export function ThreadView({
               the popover is the root's second child and exists only while open.
               That is the same 8% wash `.icon-btn-latched` paints, applied from a
               state we cannot otherwise see. */}
-          <div className="flex" style={{ ['--overflow-menu-w' as string]: '192px' } as React.CSSProperties}>
+          {/* ⚠ AND `OverflowMenuKeys` GIVES IT A KEYBOARD (QA-2). The base
+              renders items as plain `<div onClick>` and dismisses only on an
+              outside CLICK, so Enter opened a menu whose items Tab skipped and
+              whose Escape did nothing — open, unusable, undismissable. The
+              wrapper is the same element the CSS var already rode, so this
+              costs no extra node; see `OverflowMenuKeys.tsx` for what it
+              restores and for the library ask. */}
+          <OverflowMenuKeys className="flex" style={{ ['--overflow-menu-w' as string]: '192px' } as React.CSSProperties}>
             <CanaryOverflowMenu
               items={menuItems}
               placement="bottom-end"
@@ -325,7 +333,7 @@ export function ThreadView({
                 <IconAction label="More actions" id="thread-more" path={mdiDotsHorizontal} />
               }
             />
-          </div>
+          </OverflowMenuKeys>
         </div>
       </div>
 

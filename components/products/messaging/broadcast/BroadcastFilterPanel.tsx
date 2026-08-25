@@ -69,6 +69,7 @@ import { guests } from '@/lib/core/data/guests';
 import { reservations } from '@/lib/core/data/reservations';
 import { Segment } from '@/lib/products/guest-journey/types';
 import { useGuestJourneyStore } from '@/lib/products/guest-journey/store';
+import { ModalFocusScope } from '@/components/products/messaging/ModalFocusScope';
 
 function roomOf(entry: BroadcastGuestEntry): string {
   const r = reservations[entry.reservationId];
@@ -543,37 +544,39 @@ export function BroadcastFilterPanel({
       </PanelShell>
 
       {/* Save as Guest Segment */}
-      <CanaryModal
-        isOpen={isSaveOpen}
-        onClose={() => setIsSaveOpen(false)}
-        title="Save as Guest Segment"
-        size="small"
-        footer={
-          <div className="flex justify-end gap-2">
-            <CanaryButton type={ButtonType.OUTLINED} onClick={() => setIsSaveOpen(false)}>
-              Cancel
-            </CanaryButton>
-            <CanaryButton
-              type={ButtonType.PRIMARY}
-              onClick={handleSaveSegment}
-              isDisabled={!segmentName.trim()}
-            >
-              Save
-            </CanaryButton>
-          </div>
-        }
-      >
-        <CanaryInput
-          label="Guest Segment Name"
-          value={segmentName}
-          onChange={(e) => setSegmentName(e.target.value)}
-          placeholder="Enter segment name"
-          size={InputSize.NORMAL}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSaveSegment();
-          }}
-        />
-      </CanaryModal>
+      <ModalFocusScope isOpen={isSaveOpen}>
+        <CanaryModal
+          isOpen={isSaveOpen}
+          onClose={() => setIsSaveOpen(false)}
+          title="Save as Guest Segment"
+          size="small"
+          footer={
+            <div className="flex justify-end gap-2">
+              <CanaryButton type={ButtonType.OUTLINED} onClick={() => setIsSaveOpen(false)}>
+                Cancel
+              </CanaryButton>
+              <CanaryButton
+                type={ButtonType.PRIMARY}
+                onClick={handleSaveSegment}
+                isDisabled={!segmentName.trim()}
+              >
+                Save
+              </CanaryButton>
+            </div>
+          }
+        >
+          <CanaryInput
+            label="Guest Segment Name"
+            value={segmentName}
+            onChange={(e) => setSegmentName(e.target.value)}
+            placeholder="Enter segment name"
+            size={InputSize.NORMAL}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSaveSegment();
+            }}
+          />
+        </CanaryModal>
+      </ModalFocusScope>
     </>
   );
 }

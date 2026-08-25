@@ -36,6 +36,7 @@ import {
   toDateInputValue,
   withExactOption,
 } from '@/lib/products/messaging/broadcast-schedule';
+import { ModalFocusScope } from '@/components/products/messaging/ModalFocusScope';
 
 interface ScheduleSendTimeModalProps {
   isOpen: boolean;
@@ -100,46 +101,48 @@ export function ScheduleSendTimeModal({
   };
 
   return (
-    <CanaryModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={reschedule ? 'Reschedule send time' : 'Schedule send time'}
-      size="small"
-      footer={
-        <div className="flex justify-end gap-2">
-          <CanaryButton type={ButtonType.OUTLINED} onClick={onClose}>
-            Cancel
-          </CanaryButton>
-          <CanaryButton type={ButtonType.PRIMARY} onClick={handleConfirm} isDisabled={!complete}>
-            Schedule send time
-          </CanaryButton>
-        </div>
-      }
-    >
-      <div className="flex flex-col gap-4">
-        <p className="font-['Roboto',sans-serif] text-[14px] leading-[22px]">
-          {reschedule
-            ? 'Reschedule this message to be sent at a later time.'
-            : 'You can schedule a message to be sent at a later time.'}
-        </p>
+    <ModalFocusScope isOpen={isOpen}>
+      <CanaryModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={reschedule ? 'Reschedule send time' : 'Schedule send time'}
+        size="small"
+        footer={
+          <div className="flex justify-end gap-2">
+            <CanaryButton type={ButtonType.OUTLINED} onClick={onClose}>
+              Cancel
+            </CanaryButton>
+            <CanaryButton type={ButtonType.PRIMARY} onClick={handleConfirm} isDisabled={!complete}>
+              Schedule send time
+            </CanaryButton>
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <p className="font-['Roboto',sans-serif] text-[14px] leading-[22px]">
+            {reschedule
+              ? 'Reschedule this message to be sent at a later time.'
+              : 'You can schedule a message to be sent at a later time.'}
+          </p>
 
-        {/* Date + time, 50/50 — production's `.inputs { display:flex; gap:16px }` */}
-        <div className="flex gap-4">
-          <div className="flex-1 min-w-0">
-            <CanaryInputDate value={scheduledDate} onChange={handleDateChange} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <CanarySelect
-              options={timeOptions}
-              value={scheduledTime}
-              onChange={(e) => setScheduledTime(e.target.value)}
-              placeholder="Select time"
-              size={InputSize.NORMAL}
-              isDisabled={!scheduledDate}
-            />
+          {/* Date + time, 50/50 — production's `.inputs { display:flex; gap:16px }` */}
+          <div className="flex gap-4">
+            <div className="flex-1 min-w-0">
+              <CanaryInputDate value={scheduledDate} onChange={handleDateChange} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <CanarySelect
+                options={timeOptions}
+                value={scheduledTime}
+                onChange={(e) => setScheduledTime(e.target.value)}
+                placeholder="Select time"
+                size={InputSize.NORMAL}
+                isDisabled={!scheduledDate}
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </CanaryModal>
+      </CanaryModal>
+    </ModalFocusScope>
   );
 }

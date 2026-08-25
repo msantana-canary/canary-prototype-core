@@ -25,6 +25,7 @@ import { AiRecapBand } from './AiRecapBand';
 import { AiFeedbackForm, EMPTY_FEEDBACK, FeedbackValue, canSubmitFeedback } from './AiFeedbackForm';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { panelIdentity } from '@/lib/products/messaging/panel-selectors';
+import { ModalFocusScope } from '@/components/products/messaging/ModalFocusScope';
 
 /** `CanaryModal`'s own body/header/footer padding — `px-6 py-4`. Bleeding a
  *  full-width element out of it means giving these back, exactly. */
@@ -89,60 +90,62 @@ export function AiFeedbackModal() {
   };
 
   return (
-    <CanaryModal
-      isOpen={!!messageId}
-      onClose={closeFeedbackModal}
-      title="Help us improve future responses"
-      size="large"
-      footer={
-        /* CanaryModal draws no rules of its own. The frames rule BOTH the
-           header and the footer, so the two dividers are hand-bled back out
-           through the library's px-6/py-4 padding here and on the band below. */
+    <ModalFocusScope isOpen={!!messageId}>
+      <CanaryModal
+        isOpen={!!messageId}
+        onClose={closeFeedbackModal}
+        title="Help us improve future responses"
+        size="large"
+        footer={
+          /* CanaryModal draws no rules of its own. The frames rule BOTH the
+             header and the footer, so the two dividers are hand-bled back out
+             through the library's px-6/py-4 padding here and on the band below. */
+          <div
+            className="flex justify-end"
+            style={{
+              marginLeft: -MODAL_PAD_X,
+              marginRight: -MODAL_PAD_X,
+              marginTop: -MODAL_PAD_Y,
+              paddingLeft: MODAL_PAD_X,
+              paddingRight: MODAL_PAD_X,
+              paddingTop: MODAL_PAD_Y,
+              borderTop: `1px solid ${colors.colorBlack6}`,
+            }}
+          >
+            <CanaryButton
+              type={ButtonType.PRIMARY}
+              size={ButtonSize.NORMAL}
+              isDisabled={!canSubmitFeedback(feedback)}
+              onClick={submit}
+            >
+              Submit
+            </CanaryButton>
+          </div>
+        }
+      >
+        {/* The band bleeds to the modal's edges — it is a quotation of the feed,
+            and a quotation inset inside the body's padding reads as a form field. */}
         <div
-          className="flex justify-end"
           style={{
             marginLeft: -MODAL_PAD_X,
             marginRight: -MODAL_PAD_X,
             marginTop: -MODAL_PAD_Y,
-            paddingLeft: MODAL_PAD_X,
-            paddingRight: MODAL_PAD_X,
-            paddingTop: MODAL_PAD_Y,
+            marginBottom: 20,
             borderTop: `1px solid ${colors.colorBlack6}`,
           }}
         >
-          <CanaryButton
-            type={ButtonType.PRIMARY}
-            size={ButtonSize.NORMAL}
-            isDisabled={!canSubmitFeedback(feedback)}
-            onClick={submit}
-          >
-            Submit
-          </CanaryButton>
+          <AiRecapBand
+            question={subject?.question}
+            answer={isAnswer ? subject?.message.content : undefined}
+            guest={guest}
+          />
         </div>
-      }
-    >
-      {/* The band bleeds to the modal's edges — it is a quotation of the feed,
-          and a quotation inset inside the body's padding reads as a form field. */}
-      <div
-        style={{
-          marginLeft: -MODAL_PAD_X,
-          marginRight: -MODAL_PAD_X,
-          marginTop: -MODAL_PAD_Y,
-          marginBottom: 20,
-          borderTop: `1px solid ${colors.colorBlack6}`,
-        }}
-      >
-        <AiRecapBand
-          question={subject?.question}
-          answer={isAnswer ? subject?.message.content : undefined}
-          guest={guest}
+        <AiFeedbackForm
+          value={feedback}
+          onChange={setFeedback}
+          context={isAnswer ? 'response' : 'non-response'}
         />
-      </div>
-      <AiFeedbackForm
-        value={feedback}
-        onChange={setFeedback}
-        context={isAnswer ? 'response' : 'non-response'}
-      />
-    </CanaryModal>
+      </CanaryModal>
+    </ModalFocusScope>
   );
 }

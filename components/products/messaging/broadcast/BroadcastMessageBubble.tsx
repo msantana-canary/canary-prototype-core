@@ -21,6 +21,7 @@ import { mdiVideoInputAntenna, mdiFilterOutline } from '@mdi/js';
 import { CanaryModal, colors } from '@canary-ui/components';
 import { Avatar } from '../Avatar';
 import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
+import { ModalFocusScope } from '@/components/products/messaging/ModalFocusScope';
 
 const LOYALTY_LABELS: Record<LoyaltyTier, string> = {
   'non-member': 'Non-member',
@@ -85,41 +86,43 @@ function FiltersAppliedModal({
   }
 
   return (
-    <CanaryModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={
-        snapshot.type === 'saved' && snapshot.savedFilterName
-          ? `Filters applied — ${snapshot.savedFilterName}`
-          : 'Filters applied'
-      }
-      size="small"
-    >
-      <div className="-my-4 py-6 -mx-6 px-6">
-      <div className="rounded-[8px] overflow-hidden" style={{ border: `1px solid ${colors.colorBlack6}` }}>
-        {rows.map((row, i) => (
-          <div
-            key={i}
-            className="bg-white px-6 py-3"
-            style={i < rows.length - 1 ? { borderBottom: `1px solid ${colors.colorBlack6}` } : undefined}
-          >
-            <p
-              className="font-['Roboto',sans-serif] text-[14px] font-medium leading-[22px]"
-              style={{ color: colors.colorBlack1 }}
+    <ModalFocusScope isOpen={isOpen}>
+      <CanaryModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={
+          snapshot.type === 'saved' && snapshot.savedFilterName
+            ? `Filters applied — ${snapshot.savedFilterName}`
+            : 'Filters applied'
+        }
+        size="small"
+      >
+        <div className="-my-4 py-6 -mx-6 px-6">
+        <div className="rounded-[8px] overflow-hidden" style={{ border: `1px solid ${colors.colorBlack6}` }}>
+          {rows.map((row, i) => (
+            <div
+              key={i}
+              className="bg-white px-6 py-3"
+              style={i < rows.length - 1 ? { borderBottom: `1px solid ${colors.colorBlack6}` } : undefined}
             >
-              {row.label}
-            </p>
-            <p
-              className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
-              style={{ color: colors.colorBlack3 }}
-            >
-              {row.value}
-            </p>
-          </div>
-        ))}
-      </div>
-      </div>
-    </CanaryModal>
+              <p
+                className="font-['Roboto',sans-serif] text-[14px] font-medium leading-[22px]"
+                style={{ color: colors.colorBlack1 }}
+              >
+                {row.label}
+              </p>
+              <p
+                className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
+                style={{ color: colors.colorBlack3 }}
+              >
+                {row.value}
+              </p>
+            </div>
+          ))}
+        </div>
+        </div>
+      </CanaryModal>
+    </ModalFocusScope>
   );
 }
 

@@ -50,6 +50,7 @@ import {
 import { formatScheduledMessageTime } from '@/lib/products/messaging/broadcast-schedule';
 import { guests } from '@/lib/core/data/guests';
 import { reservations } from '@/lib/core/data/reservations';
+import { ModalFocusScope } from '@/components/products/messaging/ModalFocusScope';
 
 function toTitleCase(name: string): string {
   return name
@@ -318,92 +319,98 @@ export function BroadcastScheduledPanel() {
       />
 
       {/* Edit message text */}
-      <CanaryModal
-        isOpen={isTextModalOpen}
-        onClose={() => setIsTextModalOpen(false)}
-        title="Edit message"
-        size="small"
-        footer={
-          <div className="flex justify-end gap-2">
-            <CanaryButton type={ButtonType.OUTLINED} onClick={() => setIsTextModalOpen(false)}>
-              Cancel
-            </CanaryButton>
-            <CanaryButton
-              type={ButtonType.PRIMARY}
-              isDisabled={!draftText.trim()}
-              onClick={() => {
-                if (scheduled) editScheduledBroadcastText(scheduled.id, draftText);
-                setIsTextModalOpen(false);
-              }}
-            >
-              Save
-            </CanaryButton>
-          </div>
-        }
-      >
-        <CanaryTextArea
-          value={draftText}
-          onChange={(e) => setDraftText(e.target.value)}
-          rows={5}
-          maxLength={1600}
-        />
-      </CanaryModal>
+      <ModalFocusScope isOpen={isTextModalOpen}>
+        <CanaryModal
+          isOpen={isTextModalOpen}
+          onClose={() => setIsTextModalOpen(false)}
+          title="Edit message"
+          size="small"
+          footer={
+            <div className="flex justify-end gap-2">
+              <CanaryButton type={ButtonType.OUTLINED} onClick={() => setIsTextModalOpen(false)}>
+                Cancel
+              </CanaryButton>
+              <CanaryButton
+                type={ButtonType.PRIMARY}
+                isDisabled={!draftText.trim()}
+                onClick={() => {
+                  if (scheduled) editScheduledBroadcastText(scheduled.id, draftText);
+                  setIsTextModalOpen(false);
+                }}
+              >
+                Save
+              </CanaryButton>
+            </div>
+          }
+        >
+          <CanaryTextArea
+            value={draftText}
+            onChange={(e) => setDraftText(e.target.value)}
+            rows={5}
+            maxLength={1600}
+          />
+        </CanaryModal>
+      </ModalFocusScope>
 
       {/* Send now / Delete confirmations — production's copy verbatim */}
-      <CanaryModal
-        isOpen={confirm === 'send'}
-        onClose={() => setConfirm(null)}
-        title="Send scheduled message"
-        size="small"
-        footer={
-          <div className="flex justify-end gap-2">
-            <CanaryButton type={ButtonType.OUTLINED} onClick={() => setConfirm(null)}>
-              Cancel
-            </CanaryButton>
-            <CanaryButton
-              type={ButtonType.PRIMARY}
-              onClick={() => {
-                if (scheduled) sendScheduledBroadcastNow(scheduled.id);
-                setConfirm(null);
-              }}
-            >
-              Send
-            </CanaryButton>
-          </div>
-        }
-      >
-        <p className="font-['Roboto',sans-serif] text-[14px] leading-[22px]" style={{ color: colors.colorBlack1 }}>
-          Do you want to send this message now?
-        </p>
-      </CanaryModal>
+      <ModalFocusScope isOpen={confirm === 'send'}>
+        <CanaryModal
+          isOpen={confirm === 'send'}
+          onClose={() => setConfirm(null)}
+          title="Send scheduled message"
+          size="small"
+          footer={
+            <div className="flex justify-end gap-2">
+              <CanaryButton type={ButtonType.OUTLINED} onClick={() => setConfirm(null)}>
+                Cancel
+              </CanaryButton>
+              <CanaryButton
+                type={ButtonType.PRIMARY}
+                onClick={() => {
+                  if (scheduled) sendScheduledBroadcastNow(scheduled.id);
+                  setConfirm(null);
+                }}
+              >
+                Send
+              </CanaryButton>
+            </div>
+          }
+        >
+          <p className="font-['Roboto',sans-serif] text-[14px] leading-[22px]" style={{ color: colors.colorBlack1 }}>
+            Do you want to send this message now?
+          </p>
+        </CanaryModal>
+      </ModalFocusScope>
 
-      <CanaryModal
-        isOpen={confirm === 'delete'}
-        onClose={() => setConfirm(null)}
-        title="Delete scheduled message"
-        size="small"
-        footer={
-          <div className="flex justify-end gap-2">
-            <CanaryButton type={ButtonType.OUTLINED} onClick={() => setConfirm(null)}>
-              Cancel
-            </CanaryButton>
-            <CanaryButton
-              type={ButtonType.PRIMARY}
-              color={ButtonColor.DANGER}
-              onClick={() => {
-                if (scheduled) deleteScheduledBroadcast(scheduled.id);
-                setConfirm(null);
-              }}
-            >
-              Delete
-            </CanaryButton>
-          </div>
-        }
-      >
-        <p className="font-['Roboto',sans-serif] text-[14px] leading-[22px]" style={{ color: colors.colorBlack1 }}>
-          Are you sure you want to delete this message?
-        </p>
-      </CanaryModal>
+      <ModalFocusScope isOpen={confirm === 'delete'}>
+        <CanaryModal
+          isOpen={confirm === 'delete'}
+          onClose={() => setConfirm(null)}
+          title="Delete scheduled message"
+          size="small"
+          footer={
+            <div className="flex justify-end gap-2">
+              <CanaryButton type={ButtonType.OUTLINED} onClick={() => setConfirm(null)}>
+                Cancel
+              </CanaryButton>
+              <CanaryButton
+                type={ButtonType.PRIMARY}
+                color={ButtonColor.DANGER}
+                onClick={() => {
+                  if (scheduled) deleteScheduledBroadcast(scheduled.id);
+                  setConfirm(null);
+                }}
+              >
+                Delete
+              </CanaryButton>
+            </div>
+          }
+        >
+          <p className="font-['Roboto',sans-serif] text-[14px] leading-[22px]" style={{ color: colors.colorBlack1 }}>
+            Are you sure you want to delete this message?
+          </p>
+        </CanaryModal>
+      </ModalFocusScope>
     </>
   );
 }

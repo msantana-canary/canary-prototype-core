@@ -55,8 +55,18 @@ export function ScheduledBroadcastBlock({
        * down to `colorBlack7` (#F0F0F0) on hover, which is what the class had
        * been asking for all along.
        */}
+      {/* ⚠ `role="button"` + `tabIndex` WITHOUT `onKeyDown` was a promise the
+          launcher did not keep (QA-2): it took focus, announced itself as a
+          button, and then ignored Enter and Space — the same shape the thread
+          row's `useRowKeyActivation` exists to fix, minus a base component to
+          blame. Two keys, stated where the role is. */}
       <div
         onClick={onOpen}
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          e.preventDefault();
+          onOpen();
+        }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         role="button"

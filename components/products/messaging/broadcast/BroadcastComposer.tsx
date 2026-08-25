@@ -19,6 +19,7 @@ import { colors, CanaryModal, CanaryButton, ButtonType } from '@canary-ui/compon
 import { ScheduleSendTimeModal } from './ScheduleSendTimeModal';
 import { MessageTemplatesModal } from '../MessageTemplatesModal';
 import { formatScheduledMessageTime } from '@/lib/products/messaging/broadcast-schedule';
+import { ModalFocusScope } from '@/components/products/messaging/ModalFocusScope';
 
 interface BroadcastComposerProps {
   onSend: (content: string) => void;
@@ -264,47 +265,49 @@ export function BroadcastComposer({
       </div>
 
       {/* Send confirmation (production parity) */}
-      <CanaryModal
-        isOpen={isConfirmOpen}
-        onClose={() => setIsConfirmOpen(false)}
-        title={`Send to ${recipientCount} guest${recipientCount !== 1 ? 's' : ''}?`}
-        size="small"
-        footer={
-          <div className="flex justify-end gap-2">
-            <CanaryButton type={ButtonType.OUTLINED} onClick={() => setIsConfirmOpen(false)}>
-              Cancel
-            </CanaryButton>
-            <CanaryButton type={ButtonType.PRIMARY} onClick={confirmSend}>
-              Send
-            </CanaryButton>
-          </div>
-        }
-      >
-        {renderConfirmDetail ? (
-          renderConfirmDetail(message.trim())
-        ) : (
-          <p
-            className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
-            style={{ color: colors.colorBlack1 }}
-          >
-            This message goes out to everyone selected right away. It can&apos;t be unsent.
-          </p>
-        )}
-        {onReviewRecipients && (
-          <button
-            type="button"
-            onClick={() => {
-              // Close the confirm only — `message` is untouched, so the draft survives.
-              setIsConfirmOpen(false);
-              onReviewRecipients();
-            }}
-            className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] cursor-pointer hover:underline"
-            style={{ color: colors.colorBlueDark1, marginTop: 12 }}
-          >
-            Review recipients
-          </button>
-        )}
-      </CanaryModal>
+      <ModalFocusScope isOpen={isConfirmOpen}>
+        <CanaryModal
+          isOpen={isConfirmOpen}
+          onClose={() => setIsConfirmOpen(false)}
+          title={`Send to ${recipientCount} guest${recipientCount !== 1 ? 's' : ''}?`}
+          size="small"
+          footer={
+            <div className="flex justify-end gap-2">
+              <CanaryButton type={ButtonType.OUTLINED} onClick={() => setIsConfirmOpen(false)}>
+                Cancel
+              </CanaryButton>
+              <CanaryButton type={ButtonType.PRIMARY} onClick={confirmSend}>
+                Send
+              </CanaryButton>
+            </div>
+          }
+        >
+          {renderConfirmDetail ? (
+            renderConfirmDetail(message.trim())
+          ) : (
+            <p
+              className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
+              style={{ color: colors.colorBlack1 }}
+            >
+              This message goes out to everyone selected right away. It can&apos;t be unsent.
+            </p>
+          )}
+          {onReviewRecipients && (
+            <button
+              type="button"
+              onClick={() => {
+                // Close the confirm only — `message` is untouched, so the draft survives.
+                setIsConfirmOpen(false);
+                onReviewRecipients();
+              }}
+              className="font-['Roboto',sans-serif] font-medium text-[14px] leading-[22px] cursor-pointer hover:underline"
+              style={{ color: colors.colorBlueDark1, marginTop: 12 }}
+            >
+              Review recipients
+            </button>
+          )}
+        </CanaryModal>
+      </ModalFocusScope>
 
       {/* Templates — preset list only, literal merge tags. See `toolIcons`. */}
       <MessageTemplatesModal

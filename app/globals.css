@@ -605,6 +605,51 @@ body {
   outline-offset: -1px;
 }
 
+/* ---- …and the same ring for BUTTONS, which never had one ----------------
+   ⚠ COMPANION TO THE BLOCK ABOVE, AND TO FOUNDATION ASK #52. Same library bug,
+   same technique, different half of the control set — logged as its own ask
+   because the fix the library needs is different (the fields DECLARE a focus
+   ring and are blocked from painting it; buttons declare none at all).
+
+   Measured on every `CanaryButton` on this surface: `outline: rgba(0,0,0,0)
+   solid 2px` at focus, no box-shadow, no `:focus-visible` rule anywhere. The
+   keyboard path went completely dark the moment it left a field — "New
+   message", the three thread-header icons, all six composer tools, the send
+   button, the panel's Close/back/Guest-actions, every modal's × and commit.
+   Fields, rows and comboboxes were fine, which is what made it read as a
+   surface with a focus ring rather than one without.
+
+   THE CAUSE. `CanaryButton` composes `"cursor-pointer outline-none"` at REST
+   (dist/index.mjs ~723) and names no focus state, and the library's unlayered
+   `.outline-none { outline: 2px solid transparent; outline-offset: 2px }`
+   (dist/styles.css:477) is the v3 SHORTHAND — it sets outline-COLOUR, so a
+   transparent 2px ring applies in every state including focus. The same
+   `focus:outline-none` shorthand (styles.css:334) covers `CanaryTabs`, the
+   overflow-menu trigger and the dialog/side-sheet close buttons.
+
+   THE FIX. Restate ONLY the colour, on `:focus-visible`, keyed on the
+   LIBRARY'S OWN class names — so the geometry stays the library's (2px solid,
+   +2px offset, already in the shorthand) and nothing paints on a mouse click,
+   because `:focus-visible` does not match a pointer-focused button. The demo
+   is mouse-driven and is unchanged to the pixel; the keyboard path gets the
+   #2858c4 2px ring the fields now carry.
+
+   Element-qualified (`button` / `a`) so the field register above keeps its own
+   −1px inset ring: inputs, selects and textareas also wear `.outline-none`,
+   and an unqualified rule here would fight the block above for them.
+
+   ⚠ LIBRARY ASK #52a: give `CanaryButton` (and `CanaryTabs`, and the
+   overflow-menu trigger) a real `:focus-visible` treatment, or stop writing
+   `outline-none` at rest so the UA default survives. Delete this block the day
+   either lands. */
+button.outline-none:focus-visible,
+a.outline-none:focus-visible,
+button.focus\:outline-none:focus-visible,
+a.focus\:outline-none:focus-visible,
+[role='button'].outline-none:focus-visible {
+  outline-color: #2858c4;
+}
+
 /* ---- Chromeless fields — CanaryTextArea / CanaryInput -------------------
    The composer's input and the compose header's "To:" field. Both are EMBEDDED
    fields: the parent card owns the border, the radius and the focus ring, so

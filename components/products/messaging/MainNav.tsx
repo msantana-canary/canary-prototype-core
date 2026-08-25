@@ -46,6 +46,7 @@ import {
 } from '@canary-ui/components';
 import { MainNavTab } from '@/lib/products/messaging/broadcast-types';
 import { useMessagingStore, WorkspaceStatus } from '@/lib/products/messaging/store';
+import { OverflowMenuKeys } from './OverflowMenuKeys';
 
 type OnlineStatus = WorkspaceStatus;
 
@@ -95,6 +96,12 @@ export function MainNav({ activeTab, onTabChange }: { activeTab: MainNavTab; onT
           Online hours: 8:00 AM – 11:00 PM EST
         </span>
 
+        {/* ⚠ KEYBOARD (QA-2). `CanaryTag` is a `<span>`, so this menu had no
+            tab stop at all — the pill could not be reached, let alone opened.
+            `OverflowMenuKeys` makes the base's own trigger wrapper the control
+            when the trigger slot is not one, and gives the items arrow/Enter/
+            Escape. Nothing about the pointer behaviour changes. */}
+        <OverflowMenuKeys className="flex">
         <CanaryOverflowMenu
           placement="bottom-end"
           trigger={
@@ -119,6 +126,7 @@ export function MainNav({ activeTab, onTabChange }: { activeTab: MainNavTab; onT
             onClick: () => setOnlineStatus(key),
           }))}
         />
+        </OverflowMenuKeys>
       </div>
     </div>
   );
