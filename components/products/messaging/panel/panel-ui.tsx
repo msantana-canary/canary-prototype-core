@@ -770,7 +770,7 @@ export function Kebab({ items, label = 'More actions', width = 248 }: { items: K
      * the Kebab rather than at the three call sites means every future nesting
      * inherits the fix.
      *
-     * ⚠ LIBRARY ASK #61: `CanaryExpand`'s header should ignore key events whose
+     * ⚠ LIBRARY ASK #63: `CanaryExpand`'s header should ignore key events whose
      * target is not the header itself. A disclosure header that eats the
      * keyboard of everything it contains cannot hold a control.
      */

@@ -2896,11 +2896,13 @@ wedding party, the conference block, the ownership group — which is why the
 contact row asks for a NAME and a NUMBER rather than offering a guest picker.
 
 **The data model says so too.** `BroadcastGroupContact { id, name?, phone,
-channel }` on a new `contacts` field, deliberately NOT `memberGuestIds`: nothing
-typed here is expected to resolve to a reservation, and keeping the two apart
-means nothing downstream has to guess whether a member id will find a guest.
-`memberCount` is derived from `contacts.length` — a stored count that can
-disagree with the list it counts is a bug waiting for its first edit.
+channel }` on a new `contacts` field: nothing typed here is expected to resolve
+to a reservation, and keeping that fact explicit means nothing downstream has to
+guess whether a member id will find a PMS guest. `memberCount` is derived from
+`contacts.length` — a stored count that can disagree with the list it counts is a
+bug waiting for its first edit. ⚠ QA-3 amended the second half of this: the
+contacts ALSO become `memberGuestIds` under synthetic ids, because "not a PMS
+guest" is a claim about provenance and was being read as "cannot be texted".
 
 **Channel is SMS or WhatsApp.** Production has no third option; the old modal's
 "Apple Messages" was invented (Apple Messages is negotiated per-device off the
@@ -2937,12 +2939,14 @@ ships with three copies of one person teaches that the flow does not work.
 ⚠ **No edit-group flow existed and none was added.** `CreateGroupModal` was and
 is create-only; the GROUPS kebab holds "View archived" and nothing else.
 
-⚠ **A hand-entered contact is not a messageable recipient yet.** The broadcast
-send pipeline addresses `guestId`s through `canMessageGuest`, so a group built
-entirely from typed contacts reports "no one to send to" in the To-strip. That
-is pre-existing behaviour for any empty custom group rather than a regression,
-and closing it is a clearly-shaped follow-up: teach `getGuestEntriesForGroup`,
-`canMessageGuest` and `buildRecipientDeliveries` about contacts.
+~~⚠ **A hand-entered contact is not a messageable recipient yet.**~~
+**RETIRED — fixed in QA-3 (2026-08-25).** The note called this pre-existing
+behaviour for any empty custom group rather than a regression; QA verification
+showed the group is never empty, because the modal refuses to save without a
+contact. So EVERY group this flow could produce arrived saying "1 guest" on its
+rail row and "no one to send to" in its To strip at the same time, with Send
+permanently disabled — the dead end was the flow's only possible outcome, not an
+edge case. Hand-entered contacts are recipients now; see the QA-3 record.
 
 ### 5. Message details — the status becomes a CHIP
 
@@ -3743,3 +3747,96 @@ Worth knowing because the failure mode is silent and looks exactly like a broken
 selector: the rule is in the file, the page is freshly loaded, and the computed
 style has not moved. Check the served chunk before debugging the CSS. A fresh
 `pnpm dev` or a production build never sees this.
+
+---
+
+## QA-3 — the fix seams (2026-08-25)
+
+Twelve confirmed findings, and what they have in common is where they live:
+every one of them is an EDGE of a QA-1 or QA-2 fix rather than a place those
+batches never reached. One-number-one-thread compared raw digits while the
+formatter beside it already knew a `+1` was optional, so the most ordinary way a
+US hotelier types a number forked the duplicate row the rule exists to prevent.
+The-list-follows-the-thread was wired into unblock and archived-send but not
+into compose, so composing from Archived opened a conversation on the right and
+left the list showing a folder that did not contain it. Read-is-human was
+honoured by every landing except the page's own auto-select, which spent the
+fixture's seeded unread dot before the demo began and ate a hand-set "Mark as
+Unread" on compose-cancel. Escape-closes-panels shipped without the focus
+restore that makes closing survivable, and the one popover that never registered
+a layer dismissed the panel underneath it along with itself. `CanaryExpand`'s
+header swallowed Enter on behalf of everything nested inside it, which made
+three kebabs keyboard-dead and silently toggled the record instead. The focus
+ring was keyed on the library's class names rather than on what a control IS, so
+adopted and hand-rolled controls kept the UA default and the surface painted two
+rings; the one it did paint faded in over 200ms because `transition-all`
+animated it. The Guest Journey timeline split sent from scheduled on a
+per-reservation clock and ended up claiming a Mar 17 message had been sent, two
+clicks from a thread whose separator says Mar 16. "New group" refuses to save
+without a contact and then stored those contacts where the audience pipeline
+never looked, so every group the flow could produce was born unsendable. And a
+module-scope `Date.now()` in the broadcast fixtures, read once on the server and
+once in the browser, put a red dev-overlay badge on the surface about once every
+thirty loads. The through-line: a rule that is stated once and applied
+everywhere is a fix; a rule that is stated twice, or applied at four of its five
+doors, is a bug with better paperwork. So the phone normalizer, the demo clock
+and the guest resolver each now exist exactly once, and the ring is stated by
+role rather than by ancestry.
+
+### The twelve
+
+| # | Finding | Disposition |
+|---|---------|-------------|
+| 1 | 10-digit compose forked a duplicate thread | `phoneIdentity` in `phone.ts` is the ONE normalizer; `store.phoneKey` is now an alias of it |
+| 2 | Compose from Archived stranded the list | `createThreadFromPhone` sets `currentView` to the folder holding the thread |
+| 3 | Cancel-compose (and mount) ate unread dots | page auto-select uses `focusThread`, not `selectThread` |
+| 4 | Folder switch mid-compose left compose over a selected row | `setCurrentView` exits compose |
+| 5 | GJ timeline claimed a Mar 17 send as "Sent" | `reservationNow` capped at `DEMO_TODAY` evening |
+| 6 | Accordion header swallowed Enter/Space from nested kebabs | `Kebab` stops propagation of the keys it owns; library ask #63 |
+| 7 | `OverflowMenuKeys` bypassed the escape stack | registers a layer, open state read off the DOM |
+| 8 | Escape-closing a panel stranded focus on `<body>` | `PanelShell` captures and restores its opener |
+| 9 | Two focus-ring registers on one keyboard path | ring stated by role; rows take a −2px inset |
+| 10 | Ring faded in over 200ms | `transition-property: all, outline-color` with `0s` for the ring |
+| 11 | Created group was permanently unsendable | contacts become recipients; `broadcast-contacts.ts` resolves both kinds |
+| 12 | Dev-overlay badge could appear mid-demo | hour-snapped fixture seeds + `devIndicators: false` |
+
+### Files touched (QA-3)
+
+`lib/products/messaging/phone.ts` · `store.ts` · `guest-journey-link.ts` ·
+`broadcast-store.ts` · `broadcast-mock-data.ts` · `broadcast-audience-split.ts` ·
+`broadcast-audience-facts.ts` · **new** `broadcast-contacts.ts` ·
+`app/(dashboard)/messages/page.tsx` · `app/globals.css` ·
+`components/products/messaging/OverflowMenuKeys.tsx` ·
+`panel/PanelShell.tsx` · `panel/panel-ui.tsx` ·
+`broadcast/BroadcastFilterPanel.tsx` · `BroadcastThread.tsx` ·
+`BroadcastDeliveryPanel.tsx` · `BroadcastScheduledPanel.tsx` · `next.config.ts`
+
+### ⚠ Library ask — addition
+
+63. **`CanaryExpand`'s header eats the keyboard of everything it contains.** The
+    header is a `role="button"` div whose `onKeyDown` runs `preventDefault()` +
+    `onToggle()` on ANY bubbled Enter/Space, with no `event.target` guard. A
+    kebab, a link or any control placed in the `header` slot is therefore
+    keyboard-dead — the cancelled default is the native click that never fires —
+    and pressing Enter on it silently toggles the record instead. Wanted: ignore
+    key events whose target is not the header itself. A disclosure header that
+    cannot hold a control cannot hold the anatomies these rows draw.
+
+### ⚠ Note on `devIndicators: false`
+
+`next.config.ts` changes do not hot-reload; the badge stays reachable until the
+dev server is next started. The hydration root cause is fixed in the fixtures
+regardless, so the badge has nothing to report either way.
+
+### Not in QA-3's scope, and still open
+
+- **The panel takes no initial focus on open.** QA-3 gave `PanelShell` the
+  restore half of the modal pattern and deliberately not the other two —
+  initial focus and a Tab trap. The panel is a companion to the conversation,
+  not a takeover of it, and a `role="dialog"` over a scrim that does not trap
+  Tab is a separate design question rather than a bug to patch in a fix batch.
+- **`dayOffset()` still reads the real calendar day.** Same SSR/client class as
+  the hour-snapped seeds above, at day granularity, so it can only diverge
+  across midnight. Left alone because the broadcast folders are seeded relative
+  to "today" ON PURPOSE and pinning them would change which arrivals the demo
+  shows.
