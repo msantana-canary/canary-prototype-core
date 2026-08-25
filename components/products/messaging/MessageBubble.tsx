@@ -123,6 +123,13 @@ const STATUS_LABELS: Record<MessageStatus, string> = {
 
 const CAPTION_CLASS = "font-['Roboto',sans-serif] text-[10px] leading-[16px] uppercase";
 
+// Miguel 2026-08-25: "we'll resurface it later" — the sources chip is hidden,
+// not removed. The component and its `sourceCount` data stay wired; only the
+// render is gated. The explanation sidebar keeps its other two doors open
+// (the ⓘ feedback icon, and the "AI chose not to respond" caption link), so
+// flip this back to `true` when the chip itself is ready to return.
+const SHOW_SOURCES_CHIP = false;
+
 /**
  * An underlined caption link. The one interaction register for both footer
  * links — only the colour changes (blue for "declined", red for "failed").
@@ -484,7 +491,7 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
               `CanaryTag.customColor`.
               `label` is typed `string`, so the count is interpolated rather than
               passed as children. */}
-          {isAI && !!sourceCount && (
+          {SHOW_SOURCES_CHIP && isAI && !!sourceCount && (
             <CanaryChip
               chipType={ChipType.SELECTABLE}
               label={`${sourceCount} Sources`}

@@ -160,11 +160,15 @@ export function BandDismiss({ label, onClick }: { label: string; onClick: () => 
  *   unchanged from what Miguel signed off. That is why there is no `isHovered`
  *   state here any more: the hover is CSS.
  *
- *   `!bg-white` IS LOAD-BEARING. The base's OUTLINED is TRANSPARENT at rest —
- *   its wash layer sits at opacity 0 — and these buttons sit on coloured
- *   grounds: the AI band's pink-lavender whisper and the ticket band's
- *   `colorBlueDark5`. Without an opaque white ground the outline button would
- *   read as a hollow ring cut out of the band. The frames draw a white pill.
+ *   ⚠ SUPERSEDED 2026-08-25 (QA-3): `!bg-white` used to sit here, deliberately,
+ *   so the outline button read as an opaque white pill instead of a hollow
+ *   ring cut out of the coloured ground. Miguel: the outline button must have
+ *   NO background at rest — transparent, so the band's own ground (the AI
+ *   whisper fill, the ticket band's `colorBlueDark5`, the amber ground) shows
+ *   through the ring — and only gain a background on hover, which is already
+ *   the `.band-button-outline:hover .button-bg` rule below. The base's
+ *   OUTLINED type is transparent at rest on its own, so removing `!bg-white`
+ *   is the whole fix.
  *
  *   PRIMARY IS 2px NARROWER. The hand-roll drew a 1px border on the primary in
  *   the SAME blue as its fill — invisible ink that nonetheless bought 2px of
@@ -194,7 +198,7 @@ export function BandButton({
       onClick={onClick}
       className={[
         'band-button',
-        isPrimary ? 'band-button-primary' : 'band-button-outline !bg-white',
+        isPrimary ? 'band-button-primary' : 'band-button-outline',
         'leading-[20px] whitespace-nowrap',
       ].join(' ')}
     >
@@ -215,14 +219,48 @@ export function BandOverline({ label }: { label: string }) {
   );
 }
 
-/** The band's body line. */
-export function BandText({ children }: { children: React.ReactNode }) {
+/** The band's body line. `compact` drops it to 12px/18px — the amber bands'
+ *  register (QA-3, 2026-08-25): see the note on `AmberBandIcon` below. Default
+ *  stays 14px/22px for the AI and ticket bands, which are proposing something
+ *  and read like a sentence, not a status line. */
+export function BandText({
+  children,
+  compact,
+}: {
+  children: React.ReactNode;
+  compact?: boolean;
+}) {
   return (
     <p
-      className="font-['Roboto',sans-serif] text-[14px] leading-[22px]"
+      className={`font-['Roboto',sans-serif] ${
+        compact ? 'text-[12px] leading-[18px]' : 'text-[14px] leading-[22px]'
+      }`}
       style={{ color: colors.colorBlack1 }}
     >
       {children}
     </p>
+  );
+}
+
+/**
+ * The amber bands' icon container — 16×16, fixed, the glyph scaled to fit
+ * inside it. QA-3 (2026-08-25): the escalation clock and the away/offline
+ * notice are the SAME row anatomy — `ContextBand` + one icon + one `BandText`
+ * caption, no actions — so the fix lives here once rather than twice.
+ *
+ * `size={0.5}` is a 12px glyph (`@mdi/react`'s numeric `size` renders
+ * `1.5 * size` rem), centered by flex inside the 16px box — the same
+ * shrunk-glyph-in-a-box move as the feedback icons' 20px box
+ * (`.icon-btn-20`, size 0.6) and the dismiss ×'s 24px box (size 0.7)
+ * elsewhere on this surface, just at the frame's smaller amber-row scale.
+ */
+export function AmberBandIcon({ path }: { path: string }) {
+  return (
+    <span
+      className="flex items-center justify-center shrink-0"
+      style={{ width: 16, height: 16 }}
+    >
+      <Icon path={path} size={0.5} color={AMBER_ICON} />
+    </span>
   );
 }

@@ -39,7 +39,7 @@ import { mdiClockOutline, mdiForumOutline, mdiRoomServiceOutline } from '@mdi/js
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { AiDraftCard } from './AiDraftCard';
 import { AddInformationModal } from './AddInformationModal';
-import { AMBER_ICON, BandButton, BandOverline, BandText, ContextBand } from './band-ui';
+import { AmberBandIcon, BandButton, BandOverline, BandText, ContextBand } from './band-ui';
 
 /* ─────────────────────────────────────────────────────────────────────────
    The four bands
@@ -146,11 +146,8 @@ function TicketSuggestionBand({
  */
 function EscalationBand({ minutes }: { minutes: number }) {
   return (
-    <ContextBand
-      tone="amber"
-      icon={<Icon path={mdiClockOutline} size={0.85} color={AMBER_ICON} />}
-    >
-      <BandText>Unanswered for {minutes} minutes.</BandText>
+    <ContextBand tone="amber" icon={<AmberBandIcon path={mdiClockOutline} />}>
+      <BandText compact>Unanswered for {minutes} minutes.</BandText>
     </ContextBand>
   );
 }
@@ -197,8 +194,8 @@ const NOT_ANSWERING_COPY: Record<'away' | 'offline', string> = {
 
 function NotAnsweringBand({ reason }: { reason: 'away' | 'offline' }) {
   return (
-    <ContextBand tone="amber" icon={<Icon path={mdiForumOutline} size={0.85} color={AMBER_ICON} />}>
-      <BandText>{NOT_ANSWERING_COPY[reason]}</BandText>
+    <ContextBand tone="amber" icon={<AmberBandIcon path={mdiForumOutline} />}>
+      <BandText compact>{NOT_ANSWERING_COPY[reason]}</BandText>
     </ContextBand>
   );
 }
