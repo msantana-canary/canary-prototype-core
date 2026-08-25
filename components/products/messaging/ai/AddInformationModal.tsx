@@ -24,6 +24,7 @@ import {
   CanaryTextArea,
   ButtonType,
   ButtonSize,
+  InputSize,
   colors,
 } from '@canary-ui/components';
 import { ModalFocusScope } from '@/components/products/messaging/ModalFocusScope';
@@ -51,12 +52,20 @@ export function AddInformationModal({
 
   return (
     <ModalFocusScope isOpen={isOpen}>
+      {/* JOINING THE FAMILY (QA-4, 2026-08-25). This modal was CanaryModal in
+          name only — no ×, no header/footer dividers, and MEDIUM where every
+          sibling dialog on this surface (Message templates, Create group, …)
+          is `size="large"` + `!max-w-[800px]`. Same three deltas, same source:
+          `MessageTemplatesModal.tsx`'s own CanaryModal call, copied verbatim —
+          the header gets a bottom hairline, the footer a top one, both keyed
+          to the base's own header/footer divs by position since neither
+          carries a hook of its own. */}
       <CanaryModal
         isOpen={isOpen}
         onClose={onCancel}
         title="Add Information to AI"
-        size="medium"
-        showCloseButton={false}
+        size="large"
+        className="!max-w-[800px] [&>div:first-child]:border-b [&>div:first-child]:border-[#E5E5E5] [&>div:last-child]:border-t [&>div:last-child]:border-[#E5E5E5]"
         footer={
           <div className="flex justify-end" style={{ gap: 12 }}>
             <CanaryButton type={ButtonType.OUTLINED} size={ButtonSize.NORMAL} onClick={onCancel}>
@@ -108,12 +117,24 @@ export function AddInformationModal({
             WHAT STAYS is metric: 140px of floor, 14px of padding, and a 15px/24px
             type size for a box you are meant to write a sentence into. `rows={2}`
             over the base's 4 keeps the height MIN-HEIGHT-driven rather than a race
-            between two numbers. */}
+            between two numbers.
+
+            ⚠ "IS IT THE DESKTOP PROP?" (Miguel, QA-4) — no. `CanaryTextArea`'s
+            only size lever is `size?: InputSize`, and `InputSize` has four
+            values: TABLET / LARGE / NORMAL / COMPACT. There is no "Desktop"
+            member on that enum or anywhere else in the library's API — nothing
+            named Desktop exists to pass. What was already rendering here IS
+            the stock control at its own default (`size` defaults to `"normal"`
+            inside the base when the prop is omitted, per dist/index.mjs), which
+            is why de-dressing it in batch 5 cost nothing else: this was always
+            `InputSize.NORMAL`, just implicitly. Passed explicitly below so the
+            call site says so instead of relying on the base's default. */}
         <CanaryTextArea
           id="ai-knowledge-update"
           value={text}
           onChange={(e) => setText(e.target.value)}
           autoFocus
+          size={InputSize.NORMAL}
           rows={2}
           resize="vertical"
           className="scrollbar-invisible !min-h-[140px] !p-[14px] !text-[15px] !leading-[24px] !text-black"

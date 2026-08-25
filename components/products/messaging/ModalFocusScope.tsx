@@ -52,6 +52,18 @@
  * ⚠ LIBRARY ASK #58: focus management on `CanaryModal` — `role="dialog"`,
  * `aria-modal`, initial focus, a Tab trap and focus restore. Delete this file
  * and its wrappers the day it lands.
+ *
+ * ── THE WRAPPER NOW CARRIES `role`/`aria-modal`/A CLASS TOO (QA-4, 2026-08-25) ──
+ * `CanaryModal` spreads no rest props and declares no `role`, so there was
+ * nowhere on the LIBRARY's own markup to hang either the semantics or a CSS
+ * hook — `.modal-focus-scope` and the ARIA pair below land on THIS wrapper's
+ * own div instead. `display: contents` removes that div from LAYOUT, not from
+ * the DOM or the accessibility tree: a CSS descendant selector matches on DOM
+ * structure regardless of box generation, and `role`/`aria-modal` are DOM
+ * attributes, not paint — both reach every `CanaryModal` this file wraps.
+ * `[role='dialog']` was the ORIGINAL hook globals.css tried to key its title
+ * rule on, and it matched nothing because nothing ever rendered the role; now
+ * something does, one level up.
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -153,8 +165,21 @@ export function ModalFocusScope({
     };
   }, [isOpen]);
 
+  /* `role`/`aria-modal` are GATED ON `isOpen`, and the class is not. This
+     wrapper mounts unconditionally at every call site (`CanaryModal` itself
+     is the thing that returns `null` while closed) — an unconditional
+     `role="dialog"` would announce a dialog to the accessibility tree with
+     nothing behind it, on every one of the twelve call sites, all the time.
+     The title-size CSS hook stays unconditional: with the modal closed there
+     is no title in the DOM for it to match, so there is nothing to gate. */
   return (
-    <div ref={scopeRef} style={{ display: 'contents' }}>
+    <div
+      ref={scopeRef}
+      className="modal-focus-scope"
+      role={isOpen ? 'dialog' : undefined}
+      aria-modal={isOpen ? 'true' : undefined}
+      style={{ display: 'contents' }}
+    >
       {children}
     </div>
   );

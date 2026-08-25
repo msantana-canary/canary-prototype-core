@@ -231,10 +231,21 @@ body {
    DESIGN-SYSTEM CHANGE (Miguel, 2026-08-25). The library's modal title is
    hardcoded `text-[20px] font-medium`; the surface's heading scale tops out
    at 18px (panel headers), so the stock title out-shouts every sibling
-   header. Scoped to dialogs and keyed on the library's own class pair — the
-   same holding pattern as `.canary-tag-r4`; delete when the library moves.
-   Figma note: frames drawn at 20px get corrected to 18px in Miguel's pass. */
-[role='dialog'] .text-\[20px\].font-medium {
+   header. Keyed on the library's own class pair — the same holding pattern
+   as `.canary-tag-r4`; delete when the library moves. Figma note: frames
+   drawn at 20px get corrected to 18px in Miguel's pass.
+
+   ⚠ RESCOPED (QA-4, 2026-08-25): this used to key on `[role='dialog']`, which
+   never matched — `CanaryModal` renders no role at all (see the audit in
+   `ModalFocusScope.tsx`), so the rule had NEVER painted anywhere. The hook is
+   now `.modal-focus-scope`, the class `ModalFocusScope` carries on its own
+   wrapper div — `display: contents` takes that div out of LAYOUT, not out of
+   the DOM, and a descendant selector matches on DOM structure regardless of
+   box generation, so the class still reaches every title inside. That same
+   wrapper now also renders the real `role="dialog"`, so `[role='dialog']`
+   would match too; the class stays primary since it doesn't depend on a
+   browser's `display: contents` / accessibility-tree behaviour holding up. */
+.modal-focus-scope .text-\[20px\].font-medium {
   font-size: 18px !important;
 }
 
