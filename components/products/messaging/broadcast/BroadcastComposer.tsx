@@ -256,9 +256,25 @@ export function BroadcastComposer({
                 cursor: canSend ? 'pointer' : 'not-allowed',
               }}
             >
-              {showSendCount
-                ? `Send to ${recipientCount} guest${recipientCount !== 1 ? 's' : ''}`
-                : 'Send'}
+              {/* ⚠ THE BUTTON NAMES WHAT IT WILL DO (QA-2). With a time pinned,
+                  `requestSend` routes to `onSchedule` and skips the send
+                  confirmation entirely (production parity, see the note there)
+                  — but the label went on reading "Send to 3 guests", promising
+                  an immediate blast while performing a queue. The routing was
+                  right and only the words were wrong.
+
+                  "Schedule via SMS" is production's, and it is the same shape
+                  as the 1:1 composer's "Send via SMS": the verb changes, the
+                  channel stays. The recipient count drops out of the label
+                  because the pill directly above already states the WHEN, and
+                  a scheduled blast is read as "when does this go" rather than
+                  "how many" — the count is still one glance away on the
+                  audience rail. */}
+              {scheduledAt
+                ? 'Schedule via SMS'
+                : showSendCount
+                  ? `Send to ${recipientCount} guest${recipientCount !== 1 ? 's' : ''}`
+                  : 'Send'}
             </button>
           </div>
         </div>

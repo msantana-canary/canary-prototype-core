@@ -180,11 +180,12 @@ function AwayBand() {
    ───────────────────────────────────────────────────────────────────────── */
 
 export function ThreadAiSlot({ threadId }: { threadId: string }) {
-  const draft = useMessagingStore((s) => s.drafts[threadId]);
+  const rawDraft = useMessagingStore((s) => s.drafts[threadId]);
   const facts = useMessagingStore((s) => s.facts[threadId]);
   const ticket = useMessagingStore((s) => s.ticketSuggestions[threadId]);
   const unansweredMinutes = useMessagingStore((s) => s.unansweredMinutes[threadId]);
   const workspaceStatus = useMessagingStore((s) => s.workspaceStatus);
+  const isThreadAiOn = useMessagingStore((s) => s.threadAiEnabled[threadId] !== false);
 
   const dismissDraft = useMessagingStore((s) => s.dismissDraft);
   const sendDraft = useMessagingStore((s) => s.sendDraft);
@@ -199,6 +200,30 @@ export function ThreadAiSlot({ threadId }: { threadId: string }) {
 
   const fact = facts?.[0];
   const remaining = Math.max(0, (facts?.length ?? 0) - 1);
+
+  /**
+   * ═══════════════════════════════════════════════════════════════════════
+   * THE DRAFT CARD HIDES WHILE THIS CONVERSATION'S AI IS OFF (QA-2)
+   * ═══════════════════════════════════════════════════════════════════════
+   * "Response drafted by AI" used to render beside an "AI Off" pill, fully
+   * actionable, and Send still worked. The behaviour was defensible — the
+   * draft predates the pause, and approving it is a human act — but the SCREEN
+   * said two opposite things at once, and this file's neighbours all carry an
+   * explicit stance where the draft carried none. Taking one:
+   *
+   *   The pill is the hotelier saying "I am handling this conversation." A
+   *   drafted reply is the AI's offer to handle it. While the first is true
+   *   the second should not be on screen asking for an answer.
+   *
+   * ⚠ HIDDEN, NOT DISCARDED. `drafts[threadId]` is untouched — nothing here
+   * calls `dismissDraft` — so toggling the AI back On brings the same draft
+   * back, word for word. That matters: the toggle is a demo control, and a
+   * pause that silently destroys the AI's work would make it a one-way door.
+   * The store's `toggleThreadAi` deliberately does not touch drafts either,
+   * which is what makes hiding sufficient.
+   */
+  const draft = isThreadAiOn ? rawDraft : undefined;
+
   const isAway = workspaceStatus === 'away';
 
   /**

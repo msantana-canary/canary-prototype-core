@@ -7,7 +7,16 @@
  */
 
 import { create } from 'zustand';
-import { AiDraft, Thread, Message, ServiceTask, SuggestedFact, ThreadAssignment, TicketSuggestion } from './types';
+import {
+  AiDraft,
+  Thread,
+  Message,
+  MessageStatus,
+  ServiceTask,
+  SuggestedFact,
+  ThreadAssignment,
+  TicketSuggestion,
+} from './types';
 import { mockThreads, mockMessages } from './mock-data';
 import { serviceTasksByGuest } from './panel-mock';
 import {
@@ -66,6 +75,31 @@ function phoneKey(value: string): string {
  * they will keep drifting apart; this is that sort, and `messages/page.tsx`
  * calls it too.
  */
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * THE DELIVERY LADDER (QA-2, 2026-08-25)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Production's outbound caption walks Sending → Sent → Delivered off real
+ * carrier receipts (`MessageAtomBubble.vue`; `MessageBubble`'s STATUS_LABELS
+ * already carries all four rungs). This prototype used to stamp `'delivered'`
+ * at message-creation time, so the caption read DELIVERED at ~60ms and never
+ * moved — the two lower rungs were unreachable for a live send, and the
+ * instant-delivery claim sat in the same viewport as this thread's seeded
+ * "MESSAGE FAILED TO SEND", which is the story it was undercutting.
+ *
+ * ⚠ THE TIMINGS ARE FICTION, AND HAVE TO READ AS PLAUSIBLE RATHER THAN FAST.
+ * 600ms to Sent and 1200ms more to Delivered is roughly what an SMS gateway
+ * costs on a good day: long enough that a demo audience SEES the ladder move,
+ * short enough that nobody waits on it. Anything under ~300ms reads as a
+ * flicker, which is worse than not animating at all.
+ *
+ * ⚠ SEEDED FAILURES ARE UNTOUCHED. Only messages this session CREATES walk;
+ * the mock's `'failed'` exemplars carry their status from the fixture and no
+ * timer ever reaches them.
+ */
+export const LADDER_SENT_MS = 600;
+export const LADDER_DELIVERED_MS = 1800;
+
 export function sortByRecency<T extends { lastMessageAt: Date }>(list: T[]): T[] {
   return [...list].sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
 }
@@ -208,6 +242,10 @@ interface MessagingState {
   toggleThreadAi: (threadId: string) => void;
   sendMessage: (threadId: string, content: string, sender: 'staff' | 'ai' | 'guest') => Promise<void>;
   addMessage: (threadId: string, message: Message) => void;
+  /** Move ONE message along the delivery ladder. See `LADDER_SENT_MS`. */
+  setMessageStatus: (threadId: string, messageId: string, status: MessageStatus) => void;
+  /** Schedule that message's Sending → Sent → Delivered walk. */
+  walkDeliveryLadder: (threadId: string, messageId: string) => void;
   updateThreadLastMessage: (threadId: string, message: Message) => void;
   markThreadAsRead: (threadId: string) => void;
   startNewConversation: () => void;
@@ -231,6 +269,8 @@ interface MessagingState {
   reopenThread: (threadId: string) => void;
   blockThread: (threadId: string) => void;
   unblockThread: (threadId: string) => void;
+  /** Keep the list and the open pane in agreement after a thread re-enters the inbox. */
+  followThreadToInbox: (threadId: string) => void;
   markThreadAsUnread: (threadId: string) => void;
   setSearchQuery: (query: string) => void;
   linkReservation: (threadId: string, reservationId: string) => void;
@@ -371,6 +411,11 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
       get().unblockThread(threadId);
     }
 
+    // Outbound starts at the BOTTOM of the ladder and climbs (see
+    // `LADDER_SENT_MS`). Inbound has no delivery status of its own — the
+    // feed prints the channel for a guest message — so it is left at the top
+    // rung rather than pretending the property is receipting itself.
+    const isOutbound = sender !== 'guest';
     const newMessage: Message = {
       id: `m${Date.now()}`,
       threadId,
@@ -378,12 +423,13 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
       content,
       timestamp: new Date(),
       channel: 'SMS',
-      status: 'delivered',
+      status: isOutbound ? 'sending' : 'delivered',
     };
 
     // Add the message
     get().addMessage(threadId, newMessage);
     get().updateThreadLastMessage(threadId, newMessage);
+    if (isOutbound) get().walkDeliveryLadder(threadId, newMessage.id);
     // The draft became a message; it is no longer a draft.
     if (sender === 'staff') get().clearComposerDraft(threadId);
   },
@@ -396,6 +442,35 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
         [threadId]: [...(state.messages[threadId] || []), message],
       },
     }));
+  },
+
+  setMessageStatus: (threadId: string, messageId: string, status: MessageStatus) => {
+    set((state) => {
+      const list = state.messages[threadId];
+      if (!list) return {};
+      return {
+        messages: {
+          ...state.messages,
+          [threadId]: list.map((m) => (m.id === messageId ? { ...m, status } : m)),
+        },
+      };
+    });
+  },
+
+  /**
+   * Sending → Sent → Delivered on two timers.
+   *
+   * ⚠ The timers are FIRE-AND-FORGET and that is deliberate. `setMessageStatus`
+   * is a no-op for a message id that is no longer in the log, so a thread
+   * cleared out from under a pending send costs nothing — there is no handle to
+   * leak and nothing to cancel. Anything that wants to interrupt the ladder
+   * (a real carrier rejection) sets `'failed'` and the later timer overwrites
+   * it, which is the one case this would have to grow a guard for; the mock has
+   * no such path, and its seeded failures never enter the ladder at all.
+   */
+  walkDeliveryLadder: (threadId: string, messageId: string) => {
+    setTimeout(() => get().setMessageStatus(threadId, messageId, 'sent'), LADDER_SENT_MS);
+    setTimeout(() => get().setMessageStatus(threadId, messageId, 'delivered'), LADDER_DELIVERED_MS);
   },
 
   // Update thread's last message preview
@@ -581,6 +656,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
           : thread
       ),
     }));
+    get().followThreadToInbox(threadId);
   },
 
   // Block a thread
@@ -608,6 +684,36 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
           : thread
       ),
     }));
+    get().followThreadToInbox(threadId);
+  },
+
+  /**
+   * ═══════════════════════════════════════════════════════════════════════
+   * THE LIST FOLLOWS THE THREAD (Miguel's rule restated, QA-2 2026-08-25)
+   * ═══════════════════════════════════════════════════════════════════════
+   * A thread that leaves the folder you are standing in used to leave the
+   * screen self-contradicting: unblock from inside Blocked and the list
+   * collapsed to "No conversations" while the right pane went on showing the
+   * whole conversation, with no row selected anywhere. Only a manual folder
+   * change recovered. Sending into an archived thread from inside Archived did
+   * the same thing more quietly.
+   *
+   * ⚠ WHY FOLLOW RATHER THAN CLEAR. Both were available and clearing is the
+   * smaller change — drop the selection, show the empty state, folder
+   * untouched. It is also the more surprising one: the hotelier just acted ON
+   * this conversation and is reading it, and taking it off the screen as a
+   * REWARD for unblocking it reads as an error. Following states what actually
+   * happened — "this came back to the Inbox, and here it is" — and it makes
+   * the surface's rule uniform in both directions: `archiveThread` and
+   * `blockThread` already land you on the inbox's top row, so the list ALWAYS
+   * shows the folder that holds your open thread.
+   *
+   * `focusThread`, not `selectThread`: nobody opened anything here, so nothing
+   * gets marked read on the way through.
+   */
+  followThreadToInbox: (threadId: string) => {
+    set({ currentView: 'inbox' });
+    get().focusThread(threadId);
   },
 
   // Mark thread as unread
@@ -776,10 +882,13 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
       content: draft.content,
       timestamp: new Date(),
       channel: 'SMS',
-      status: 'delivered',
+      // An approved draft is an ordinary outbound send, so it walks the same
+      // ladder as anything typed into the composer.
+      status: 'sending',
     };
     get().addMessage(threadId, message);
     get().updateThreadLastMessage(threadId, message);
+    get().walkDeliveryLadder(threadId, message.id);
     get().dismissDraft(threadId);
   },
 
