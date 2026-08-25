@@ -30,7 +30,12 @@ export const mockThreads: Thread[] = [
     // inside the primary card (never-collapse-names rule).
     // James Brady / Ethan Parker / Liam Carter are manually linked (different phones).
     linkedReservationIds: ['res-john-jul', 'res-john-feb-past', 'res-john-sep', 'res-sarah-s-nov', 'res-james-jul', 'res-ethan-jul', 'res-liam-aug'],
-    lastMessage: "Here are some nearby restaurant recommendations: Ithaca Ale House, Komonz Grill, MIX, Red's Place, and Chili's Grill & Bar. The hotel also recommends Il Ristorante Alga, Coltivare, Moosewood Restaurant, and Gola Osteria. Let me know if you need more assistance!",
+    // ⚠ WAS a verbatim copy of thread 1's restaurant answer, stamped 10:04
+    // while the pasted content ran to 6:32 PM — the row previewed one message
+    // and the thread ended with another. Both halves are this thread's own now,
+    // and the 10:04 stamp is the real time of the real last message.
+    lastMessage:
+      "I've noted the request to move James Brady's room onto your folio. The front desk will confirm it when you check in — a billing transfer needs a signature, so it isn't something I can complete over text.",
     lastMessageAt: new Date('2026-03-16T10:04:00'),
     isUnread: true,
     status: 'inbox',
@@ -208,7 +213,14 @@ export const mockThreads: Thread[] = [
     contactNumber: '+15005550045',
     linkedReservationIds: ['res-lucia-nov'],
     lastMessage: "I've been waiting over an hour for the extra blankets and room 226 is freezing. No one has come by — this is really disappointing.",
-    lastMessageAt: new Date('2026-03-16T07:30:00'),
+    // ⚠ WAS 07:30, which made the escalation band's "Unanswered for 24
+    // minutes" contradict the timestamp printed directly above it — every
+    // neighbouring row read 10:04–10:30, so the implied wait was three hours,
+    // not 24 minutes. Moving the CLOCK rather than the number keeps the band's
+    // frame-verbatim 24 and makes her own two messages agree with each other:
+    // she asks at 9:12 and complains at 10:20, which is the "over an hour" she
+    // says it is.
+    lastMessageAt: new Date('2026-03-16T10:20:00'),
     isUnread: true,
     status: 'inbox',
     isEscalated: true,
@@ -337,16 +349,51 @@ export const mockThreads: Thread[] = [
  * incoherence is a known Figma copy nit already logged in REDESIGN_NOTES
  * ("Chain-of-thoughts says Room 504 vs Emily's 153") — it is reproduced on
  * purpose so the exemplar matches the design file. Do not "fix" it here.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ONE TIMELINE: MARCH 16, 2026 (QA-1)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Every timestamp below, every day separator on screen, and every in-house
+ * stay these threads point at live in the same March window. That was not true
+ * before this pass — the two hero threads' stays were frame-facsimile JULY
+ * dates, so the panel read "Jul. 13 – Jul. 15" above a separator reading
+ * "MAR. 16" — and the fix has a rule attached:
+ *
+ *   A STEP NARRATIVE IS A CLAIM ABOUT DATA THAT IS ON SCREEN BESIDE IT.
+ *
+ * When a room, a date, a lifecycle word ("In-House", "Checking In Today") or a
+ * loyalty tier appears in an `aiSteps` note, the panel is usually showing the
+ * same fact two inches away. So these notes are maintained AGAINST
+ * `lib/core/data/reservations.ts`, not written freehand: move a guest's room or
+ * flip a stay's status there and the notes here have to follow, or the trace
+ * starts contradicting the header that launched it. Everything the QA sweep
+ * caught was one of those pairs drifting apart.
  */
 const rawMessages: Record<string, Message[]> = {
-  // Phone-only thread (no reservation linked)
+  /**
+   * John Smith — THE MULTI-RESERVATION / SHARED-PHONE exemplar.
+   *
+   * ⚠ THIS SCRIPT USED TO BE THREAD 1'S, VERBATIM. Four messages, the same
+   * words at the same minutes, and both rows previewing the identical 260-char
+   * restaurant answer two rows apart in the default inbox. To an audience that
+   * reads as copy-pasted mock data, which is the one thing a facsimile cannot
+   * afford — and it dragged a second bug behind it, since the row time (10:04)
+   * was thread 1's `lastMessageAt` while the pasted content ran to 6:32 PM.
+   *
+   * The replacement plays to what this thread is FOR. John's panel carries
+   * seven linked reservations — his own three, Sarah Smith's on the same phone,
+   * and three colleagues manually linked — so his conversation is now about the
+   * group those reservations describe. The row keeps its 10:04 AM stamp because
+   * the last message genuinely lands at 10:04 now; nothing had to move in the
+   * list, and the row and the thread finally agree.
+   */
   '14': [
     {
       id: 'm100',
       threadId: '14',
       sender: 'guest',
-      content: 'I will arrive late today. My flight is delayed.',
-      timestamp: new Date('2026-03-16T17:10:00'),
+      content: "Morning — our group's flight lands around 2. Will all four rooms be ready when we get in?",
+      timestamp: new Date('2026-03-16T09:12:00'),
       channel: 'SMS',
       status: 'delivered',
     },
@@ -354,25 +401,26 @@ const rawMessages: Record<string, Message[]> = {
       id: 'm101',
       threadId: '14',
       sender: 'ai',
-      content: 'Thanks for letting us know!',
-      timestamp: new Date('2026-03-16T17:25:00'),
+      content:
+        "Good morning! All four rooms are blocked and released from 3:00 PM, so a 2 PM landing should line up nicely. I've flagged the group with the front desk so they can start any that are ready early.",
+      timestamp: new Date('2026-03-16T09:14:00'),
       channel: 'SMS',
       status: 'delivered',
       sourceCount: 2,
       aiSteps: [
         { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found John Smith — Room 504, Checking In Today' },
-        { tool: 'Classify_intent', note: 'Late Arrival Notice — Flight Delay' },
-        { tool: 'Search_knowledge_base', note: 'Front Desk Staffed 24 Hours — No Action Required' },
-        { tool: 'Update_reservation_note', note: 'Late Arrival Flagged For The Front Desk' },
-        { tool: 'Decision', note: 'Acknowledge Only — No Follow-Up Needed' },
+        { tool: 'Search_linked_reservations', note: '4 Rooms On This Contact — Mar. 16 Arrival' },
+        { tool: 'Classify_intent', note: 'Group Arrival — Room Readiness' },
+        { tool: 'Search_knowledge_base', note: 'Standard Room Release — 3:00 PM' },
+        { tool: 'Update_reservation_note', note: 'Group Arrival Flagged For The Front Desk' },
       ],
     },
     {
       id: 'm102',
       threadId: '14',
       sender: 'guest',
-      content: 'Give me a list of nearby restaurants',
-      timestamp: new Date('2026-03-16T18:30:00'),
+      content: "One more — can you put James Brady's room on my folio? I'm covering the team's rooms this trip.",
+      timestamp: new Date('2026-03-16T09:58:00'),
       channel: 'SMS',
       status: 'delivered',
     },
@@ -380,19 +428,19 @@ const rawMessages: Record<string, Message[]> = {
       id: 'm103',
       threadId: '14',
       sender: 'ai',
-      content: "Here are some nearby restaurant recommendations: Ithaca Ale House, Komonz Grill, MIX, Red's Place, and Chili's Grill & Bar. The hotel also recommends Il Ristorante Alga, Coltivare, Moosewood Restaurant, and Gola Osteria. Let me know if you need more assistance!",
-      timestamp: new Date('2026-03-16T18:32:00'),
+      content:
+        "I've noted the request to move James Brady's room onto your folio. The front desk will confirm it when you check in — a billing transfer needs a signature, so it isn't something I can complete over text.",
+      timestamp: new Date('2026-03-16T10:04:00'),
       channel: 'SMS',
       status: 'delivered',
       sourceCount: 3,
       aiSteps: [
-        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found John Smith — Room 504, In-House Through Jul. 15' },
-        { tool: 'Classify_intent', note: 'Dining Recommendation Request' },
-        { tool: 'Search_knowledge_base', note: 'Hotel Dining Guide — 4 Partner Restaurants' },
-        { tool: 'Search_local_places', note: '5 Restaurants Within Half A Mile' },
-        { tool: 'Check_guest_preferences', note: 'No Dietary Restrictions On File' },
-        { tool: 'Rank_results', note: 'Partner Venues First, Then Nearest' },
-        { tool: 'Compose_reply', note: '9 Venues Listed, Follow-Up Offered' },
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found John Smith — Room 504, In-House Through Mar. 18' },
+        { tool: 'Search_linked_reservations', note: 'James Brady — Room 204, Linked To This Contact' },
+        { tool: 'Classify_intent', note: 'Billing Request — Folio Transfer' },
+        { tool: 'Search_knowledge_base', note: 'Folio Transfers Require A Signed Authorisation' },
+        { tool: 'Update_reservation_note', note: 'Folio Transfer Requested — Front Desk To Confirm' },
+        { tool: 'Decision', note: 'Acknowledge And Hand Off — Outside AI Authority' },
       ],
     },
   ],
@@ -543,7 +591,7 @@ const rawMessages: Record<string, Message[]> = {
       sourceCount: 3,
       // The frame's hover state names this one "Completed 8 Steps".
       aiSteps: [
-        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Emily Smith — Room 153, In-House Through Jul. 15' },
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Emily Smith — Room 153, In-House Through Mar. 18' },
         { tool: 'Classify_intent', note: 'Dining Recommendation Request' },
         { tool: 'Get_property_profile', note: 'Statler New York — Downtown, Walkable Core' },
         { tool: 'Search_knowledge_base', note: 'Hotel Dining Guide — 4 Partner Restaurants' },
@@ -625,7 +673,7 @@ const rawMessages: Record<string, Message[]> = {
       id: 'm9a',
       threadId: '4',
       sender: 'guest',
-      content: 'Could we get a couple of extra bath towels for room 112 please?',
+      content: "We check in on the 19th — could you have a couple of extra bath towels put in room 112 for us?",
       timestamp: new Date('2026-03-16T09:50:00'),
       channel: 'SMS',
       status: 'delivered',
@@ -661,7 +709,7 @@ const rawMessages: Record<string, Message[]> = {
       status: 'delivered',
       sourceCount: 2,
       aiSteps: [
-        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Kristin Watson — Room 130, In-House' },
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Kristin Watson — Room 222, In-House' },
         { tool: 'Classify_intent', note: 'Amenity Question — Fitness Center' },
         { tool: 'Search_knowledge_base', note: 'Fitness Center — 2nd Floor, Open 24/7, Keycard Access' },
         { tool: 'Compose_reply', note: 'Confirm Location And Hours' },
@@ -817,7 +865,7 @@ const rawMessages: Record<string, Message[]> = {
         { tool: 'Classify_intent', note: 'Late Check-Out Request' },
         { tool: 'Search_upsells', note: 'Late Check-Out Until 2:00 PM — $50, One-Time Charge' },
         { tool: 'Check_room_status', note: 'Room 409 Not Pre-Sold For Mar. 19 — Subject To Arrivals' },
-        { tool: 'Guest Profile', note: 'Club Member — No Complimentary Late Check-Out' },
+        { tool: 'Guest Profile', note: 'No Loyalty Tier On File — No Complimentary Late Check-Out' },
         { tool: 'Decision', note: 'Quote The Fee, Ask Before Booking' },
       ],
     },
@@ -870,7 +918,7 @@ const rawMessages: Record<string, Message[]> = {
       id: 'm65',
       threadId: '19',
       sender: 'staff',
-      content: 'Welcome back, Ms. Al-Hassan! As a Diamond Elite member, we upgraded you to the Presidential Suite. We hope you enjoy your stay!',
+      content: 'Welcome back, Ms. Al-Hassan! As a Diamond Elite member, we upgraded you to a King Suite. We hope you enjoy your stay!',
       timestamp: new Date('2026-03-16T09:42:00'),
       channel: 'SMS',
       status: 'delivered',
@@ -892,7 +940,7 @@ const rawMessages: Record<string, Message[]> = {
       threadId: '20',
       sender: 'guest',
       content: 'Can someone bring extra blankets to room 226? It is quite cold in here.',
-      timestamp: new Date('2026-03-16T06:20:00'),
+      timestamp: new Date('2026-03-16T09:12:00'),
       channel: 'SMS',
       status: 'delivered',
     },
@@ -901,7 +949,7 @@ const rawMessages: Record<string, Message[]> = {
       threadId: '20',
       sender: 'guest',
       content: "I've been waiting over an hour for the extra blankets and room 226 is freezing. No one has come by — this is really disappointing.",
-      timestamp: new Date('2026-03-16T07:30:00'),
+      timestamp: new Date('2026-03-16T10:20:00'),
       channel: 'SMS',
       status: 'delivered',
     },
@@ -927,7 +975,7 @@ const rawMessages: Record<string, Message[]> = {
       status: 'delivered',
       sourceCount: 2,
       aiSteps: [
-        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Hiroshi Nakamura — Room 504, In-House' },
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Hiroshi Nakamura — Room 510, In-House' },
         { tool: 'Classify_intent', note: 'Room Service Hours Question' },
         { tool: 'Search_knowledge_base', note: 'In-Room Dining — 24 Hours, Overnight Menu After 11 PM' },
         { tool: 'Compose_reply', note: 'Confirm 24-Hour Service, Offer The Digital Menu' },
@@ -997,7 +1045,7 @@ const rawMessages: Record<string, Message[]> = {
       status: 'delivered',
       sourceCount: 2,
       aiSteps: [
-        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Rachel Cohen — Room 416, In-House' },
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Rachel Cohen — Room 416, Arriving Tomorrow' },
         { tool: 'Classify_intent', note: 'Outlet Hours Question — Rooftop Bar' },
         { tool: 'Search_knowledge_base', note: 'Rooftop Bar — Daily 4:00 PM–Midnight' },
         { tool: 'Search_upsells', note: 'Happy Hour 4–6 PM, Half-Price Cocktails' },

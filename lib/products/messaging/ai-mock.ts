@@ -88,18 +88,27 @@ export const aiExplanations: Record<string, AiExplanation> = {
 
   /* ── Thread 14 · John Smith ───────────────────────────────────────────── */
 
+  /* ⚠ BOTH REWRITTEN with thread 14's own script (QA-1). This thread used to
+     replay thread 1's arrival/restaurant exchange word for word, so its
+     explanations were thread 1's too. The source counts are load-bearing:
+     `mockMessages` overwrites each AI message's `sourceCount` from
+     `sources.length`, so these arrays ARE the "N SOURCES" chips. */
   m101: {
-    understood: 'The guest is arriving late because of a delayed flight',
+    understood: 'The guest is asking whether the whole group can get into their rooms early',
     sources: [
-      'The front desk is staffed 24 hours; there is no cut-off for late arrivals.',
-      'A late-arrival note on the reservation holds the room past the standard release time',
+      'Standard rooms are released to arriving guests from 3:00 PM.',
+      'A group arrival can be flagged so the front desk starts any rooms that are ready sooner.',
     ],
     result: "AI successfully responded to the guest's message",
   },
 
   m103: {
-    understood: 'The guest asked a question about the hotel',
-    sources: DINING_SOURCES,
+    understood: 'The guest wants another room’s charges moved onto his own folio',
+    sources: [
+      'Moving charges between folios requires a signed authorisation at the front desk.',
+      'A billing request can be noted on the reservation for the front desk to complete at check-in.',
+      'The AI agent cannot authorise a transfer of charges between guests.',
+    ],
     result: "AI successfully responded to the guest's message",
   },
 
@@ -269,7 +278,7 @@ export const draftsByThread: Record<string, AiDraft> = {
       'Yes — the spa is open on Sundays from 9:00 AM to 6:00 PM. Treatments book up quickly on weekends, so I can hold a slot for you if you let me know a time.',
     sourceCount: 2,
     aiSteps: [
-      { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Chloe Dubois — Room 505, Arriving Mar. 15' },
+      { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Chloe Dubois — Room 505, Arriving Today' },
       { tool: 'Classify_intent', note: 'Amenity Hours Question — Spa' },
       { tool: 'Search_knowledge_base', note: 'Spa Hours — 9:00 AM To 6:00 PM, Seven Days' },
       { tool: 'Check_spa_availability', note: 'Sunday Openings At 10:00 AM And 2:30 PM' },
@@ -308,5 +317,11 @@ export const ticketSuggestionsByThread: Record<string, TicketSuggestion> = {
  * the same fact, said twice, in the two places a hotelier looks.
  */
 export const unansweredMinutesByThread: Record<string, number> = {
+  /* 24 is the frame's own number and it STAYS. What moved to make it true is
+     Lucia's clock: her messages used to sit at 6:20 / 7:30 AM in an inbox whose
+     every other row read 10:04–10:30, so the band claimed a 24-minute wait
+     directly above a timestamp three hours old. Her two messages now land at
+     9:12 and 10:20, which also makes her own "I've been waiting over an hour"
+     literally true. See mock-data.ts, thread 20. */
   '20': 24,
 };

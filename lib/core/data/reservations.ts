@@ -7,6 +7,21 @@
 
 import { Reservation } from '../types/reservation';
 
+/**
+ * ⚠ THE INBOX LIVES ON MARCH 16, 2026 — one timeline, one truth (QA-1).
+ *
+ * Every in-house stay a messaging thread points at MUST sit inside the March
+ * window its transcript is dated in. Three stays used to be frame-facsimile
+ * July dates (`res-emily-jul`, `res-john-jul`, `res-nathan-jul`): the panel
+ * said "Jul. 13 – Jul. 15" directly above a day separator reading "MAR. 16",
+ * on both of the hero threads a demo opens first. Their ids still say `jul`
+ * because renaming them would churn five files for no reader's benefit — the
+ * DATES are the fact, the id is a label.
+ *
+ * An `upcoming` stay dated later in 2026 is fine and deliberate (a future
+ * booking IS in the future). Only `checked-in` has to be March, because
+ * "checked in" is a claim about right now.
+ */
 export const reservations: Record<string, Reservation> = {
   'res-emily-jul': {
     id: 'res-emily-jul',
@@ -14,8 +29,10 @@ export const reservations: Record<string, Reservation> = {
     room: '153',
     roomType: 'King Suite',
     roomTypeCode: 'KST',
-    checkInDate: 'Jul. 13, 2026',
-    checkOutDate: 'Jul. 15, 2026',
+    // Arrives on the demo clock's own day: thread 1's Mar 15 messages say
+    // "checking in tomorrow" and its Mar 16 messages say "arrive late today".
+    checkInDate: 'Mar. 16, 2026',
+    checkOutDate: 'Mar. 18, 2026',
     confirmationCode: 'ECzSBOwbMRyyYPY',
     status: 'checked-in',
     checkInStatus: 'Submitted',
@@ -83,7 +100,11 @@ export const reservations: Record<string, Reservation> = {
   'res-kristin-nov': {
     id: 'res-kristin-nov',
     guestId: 'guest-kristin',
-    room: '130',
+    // ⚠ WAS 130 — Brooklyn Simmons is in 130 from Mar 14–18 and Kristin was in
+    // it from Mar 16–19. Two in-house guests in one room, two rows apart in the
+    // default inbox, both with the room printed on the row. A hotelier reads
+    // that list for a living. 222 is a Double Queen free for the whole window.
+    room: '222',
     roomType: 'Double Queen',
     roomTypeCode: 'DBO',
     checkInDate: 'Mar. 16, 2026',
@@ -373,9 +394,13 @@ export const reservations: Record<string, Reservation> = {
     id: 'res-john-jul',
     guestId: 'guest-john-s',
     room: '504',
-    checkInDate: 'Jul. 13, 2026',
-    checkOutDate: 'Jul. 15, 2026',
-    confirmationCode: 'ECzSBOwbMRyyYPY',
+    // March, with Emily's — thread 14's transcript is the same Mar 16 day.
+    checkInDate: 'Mar. 16, 2026',
+    checkOutDate: 'Mar. 18, 2026',
+    // ⚠ WAS a byte-for-byte copy of `res-emily-jul`'s code. Two different
+    // guests in two different rooms cannot hold one confirmation number, and
+    // both are on screen in the panel one thread apart.
+    confirmationCode: 'JS7T4KQRMVX',
     status: 'checked-in',
     checkInStatus: 'Submitted',
     checkOutStatus: 'Submitted',
@@ -1109,7 +1134,11 @@ export const reservations: Record<string, Reservation> = {
     room: '416',
     roomType: 'King',
     roomTypeCode: 'KNG',
-    checkInDate: 'Mar. 15, 2026',
+    // ⚠ WAS Mar. 15 while the stay stayed `upcoming` on a Mar 16 clock — a
+    // guest who had neither arrived nor stopped being due. Check-in's own
+    // `sub-rachel` already puts her arrival on DEMO_TODAY (2026-03-16), so
+    // moving the date makes messaging and check-in agree instead of drift.
+    checkInDate: 'Mar. 16, 2026',
     checkOutDate: 'Mar. 18, 2026',
     confirmationCode: 'RG3T7WXYZ',
     status: 'upcoming',
@@ -1137,7 +1166,9 @@ export const reservations: Record<string, Reservation> = {
     room: '505',
     roomType: 'King Suite',
     roomTypeCode: 'KST',
-    checkInDate: 'Mar. 15, 2026',
+    // Same as Rachel: `sub-chloe` in check-in arrives on DEMO_TODAY, so the
+    // reservation says the same day rather than yesterday.
+    checkInDate: 'Mar. 16, 2026',
     checkOutDate: 'Mar. 17, 2026',
     confirmationCode: 'CB6V5STUV',
     status: 'upcoming',
@@ -1149,14 +1180,21 @@ export const reservations: Record<string, Reservation> = {
   'res-fatima-nov': {
     id: 'res-fatima-nov',
     guestId: 'guest-fatima',
-    room: '602',
+    // ⚠ WAS 602, which Alexander occupies from Mar 17 — a collision this
+    // batch's own fix created by making Fatima in-house. 605 is the same King
+    // Suite line on the same floor and is free across the window. (Alexander
+    // could not move: his confirmation code `APV6602B` has 602 baked into it.)
+    room: '605',
     roomType: 'King Suite',
     roomTypeCode: 'KST',
-    checkInDate: 'Mar. 15, 2026',
+    // ⚠ WAS `upcoming` while thread 19 has her texting "I just arrived and
+    // noticed my suite has been upgraded!" on the demo's own day. A guest who
+    // is talking about the room she is standing in is in-house.
+    checkInDate: 'Mar. 16, 2026',
     checkOutDate: 'Mar. 20, 2026',
     confirmationCode: 'FA4W8MNPQR',
-    status: 'upcoming',
-    checkInStatus: 'Not Started',
+    status: 'checked-in',
+    checkInStatus: 'Completed',
     checkOutStatus: 'Not Started',
     rateCode: 'CORP',
     paymentCard: { brand: 'Visa', last4: '1133', expiryMonth: 7, expiryYear: 2028, cardholderName: 'Fatima Al-Rashid', postalCode: '77002' },
@@ -1235,7 +1273,10 @@ export const reservations: Record<string, Reservation> = {
   'res-hiroshi-nov': {
     id: 'res-hiroshi-nov',
     guestId: 'guest-hiroshi',
-    room: '504',
+    // ⚠ WAS 504, John Smith's room. Both threads are visible in the same
+    // inbox and both carried a bare "504" chip, which the list's own
+    // convention reads as in-house. 510 is free across the window.
+    room: '510',
     roomType: 'King',
     roomTypeCode: 'KNG',
     checkInDate: 'Mar. 15, 2026',
@@ -1816,8 +1857,12 @@ export const reservations: Record<string, Reservation> = {
     room: '155',
     roomType: 'King',
     roomTypeCode: 'KNG',
-    checkInDate: 'Jul. 13, 2026',
-    checkOutDate: 'Jul. 15, 2026',
+    // Emily's companion on her own phone — they travel together, so he moves
+    // with her. Leaving him checked-in in July would only have relocated the
+    // contradiction to the Linked Reservations tab, one click from where it
+    // was just fixed.
+    checkInDate: 'Mar. 16, 2026',
+    checkOutDate: 'Mar. 18, 2026',
     confirmationCode: 'NR6P2XKLMQW',
     status: 'checked-in',
     checkInStatus: 'Submitted',

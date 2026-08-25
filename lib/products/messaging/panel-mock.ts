@@ -44,7 +44,11 @@ export const serviceTasksByGuest: Record<string, ServiceTask[]> = {
     // The "WAITING {n}M" register: production prints the elapsed minutes inside
     // the tag, and the number is the point — 1652 minutes is a task nobody
     // picked up for over a day.
-    { id: 'task-emily-3', title: '101 - Living Room HVAC', status: 'waiting', waitingMinutes: 1652, room: '153' },
+    // ⚠ The title's room prefix is production's register and it has to AGREE
+    // with the row's own room field printed directly beneath it. It said "101"
+    // against a room of 153 — the prefix was lifted from a production frame and
+    // never renumbered when the task was re-pointed at Emily's real room.
+    { id: 'task-emily-3', title: '153 - Living Room HVAC', status: 'waiting', waitingMinutes: 1652, room: '153' },
   ],
 };
 
@@ -67,13 +71,32 @@ export const serviceTasksByGuest: Record<string, ServiceTask[]> = {
 export const callsByThread: Record<string, CallRecord[]> = {
   '1': [
     {
+      /**
+       * ⚠ THE ROW AND ITS DETAIL DESCRIBE ONE CALL, so they now agree on both
+       * fields. The row used to read "May 12th at 10:02 AM / 1 min" and open a
+       * detail reading "Today at 02:45 PM / 15:24" — a different date AND a
+       * different duration for the same record, on the demo thread's showcase
+       * call. (Calls 2 and 3 were always internally consistent; this one simply
+       * escaped the pass that fixed the rest of the file.)
+       *
+       * The date is Emily's PREVIOUS stay's checkout day. `res-emily-mar` runs
+       * Mar. 9–13 in room 153, so a 2:45 PM late-checkout call on Mar 13 is the
+       * only date that makes the summary's "checking out today", its room 153
+       * and its Diamond Elite fee waiver all true at once — and it keeps the
+       * list in descending order above the two February calls. "May 12th" sat
+       * outside the mock's horizon entirely.
+       *
+       * The duration is the transcript's own span (2:45 → 2:49), not the
+       * frame's 15:24, which no four-turn call could have taken. `elapsedClock`
+       * stays under `durationClock` because the scrubber's fill is the ratio.
+       */
       id: 'call-emily-1',
-      startedAtLabel: 'May 12th at 10:02 AM',
-      durationLabel: '1 min',
+      startedAtLabel: 'March 13th at 2:45 PM',
+      durationLabel: '4 min 12 sec',
       guestName: 'Emily Smith',
-      timeOfCall: 'Today at 02:45 PM',
-      durationClock: '15:24',
-      elapsedClock: '07:32',
+      timeOfCall: 'Mar 13th at 02:45 PM',
+      durationClock: '04:12',
+      elapsedClock: '01:40',
       handleStatus: 'Contained',
       externalId: '123e4567-e89b-12d3-a456-426614174000',
       summary: [
