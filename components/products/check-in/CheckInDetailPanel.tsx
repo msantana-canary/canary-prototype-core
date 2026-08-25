@@ -139,6 +139,9 @@ export function CheckInDetailPanel({
   const [editNoteText, setEditNoteText] = useState('');
   const [openNoteMenuId, setOpenNoteMenuId] = useState<string | null>(null);
   const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null);
+  /** Which step strip cell the pointer is over — a done cell paints its own
+   *  wash, because its background is stated inline and a class can't win. */
+  const [hoveredStepKey, setHoveredStepKey] = useState<string | null>(null);
   const [deleteNoteId, setDeleteNoteId] = useState<string | null>(null);
   const [showCopyToast, setShowCopyToast] = useState(false);
   const noteMenuRef = useRef<HTMLDivElement>(null);
@@ -422,13 +425,32 @@ export function CheckInDetailPanel({
               return (
                 <div
                   key={step.key}
+                  /* ⚠ THE DONE STEP'S HOVER, which never painted. The green
+                     fill was stated INLINE and the wash as a `hover:` class, so
+                     on a completed-and-clickable step the inline colour won and
+                     the row read as inert — the same cascade bug as the
+                     messaging surface's four dead hovers.
+                     A done step gets its OWN wash rather than the shared grey
+                     one: washing a green "complete" tile toward grey would read
+                     as the step un-completing under the pointer. One step down
+                     the same green ramp (`colorLightGreen5` → `4`) says
+                     "pressable" without saying anything about state. */
                   className={`flex-1 flex items-center justify-center px-2 py-2 transition-colors
-                    ${isClickable ? 'cursor-pointer hover:bg-gray-50' : 'cursor-default'}
+                    ${isClickable && !step.done ? 'cursor-pointer hover:bg-gray-50' : ''}
+                    ${isClickable ? 'cursor-pointer' : 'cursor-default'}
                     ${state === 'disabled' ? 'opacity-50' : ''}`}
                   style={{
                     borderRight: i < steps.length - 1 ? '1px solid #E5E5E5' : 'none',
-                    backgroundColor: step.done ? colors.colorLightGreen5 : undefined,
+                    backgroundColor: step.done
+                      ? hoveredStepKey === step.key && isClickable
+                        ? colors.colorLightGreen4
+                        : colors.colorLightGreen5
+                      : undefined,
                   }}
+                  onMouseEnter={() => setHoveredStepKey(step.key)}
+                  onMouseLeave={() =>
+                    setHoveredStepKey((k) => (k === step.key ? null : k))
+                  }
                   onClick={isClickable ? () => handleStepClick(step.key) : undefined}
                 >
                   <div className="flex items-center gap-3 shrink-0">

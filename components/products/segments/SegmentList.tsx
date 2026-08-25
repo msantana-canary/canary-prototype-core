@@ -124,8 +124,13 @@ export function SegmentList({ segments, onEdit, onDelete, onCreate }: SegmentLis
                 return (
                   <tr
                     key={segment.id}
-                    className="cursor-pointer transition-colors hover:bg-gray-50"
-                    style={{ height: 52, backgroundColor: '#FFF' }}
+                    /* ⚠ `bg-white` as a CLASS. It was an inline
+                       `backgroundColor: '#FFF'`, which outranks every selector
+                       including `:hover`, so this row's declared wash had never
+                       painted — the same cascade bug as the messaging surface's
+                       four dead hovers and the calls table's two. */
+                    className="cursor-pointer transition-colors bg-white hover:bg-gray-50"
+                    style={{ height: 52 }}
                     onClick={() => { setMenuOpenId(null); onEdit(segment.id); }}
                   >
                     {/* Name */}

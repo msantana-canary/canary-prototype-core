@@ -55,19 +55,64 @@ export function FilterChip({
   isSelected: boolean;
   onClick: () => void;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
+
+  /**
+   * ⚠ THIS CHIP ANSWERS THE POINTER NOW — it never did.
+   *
+   * All ten of these (six loyalty tiers, two length-of-stay, two recurrence)
+   * carried `transition-colors` and `cursor-pointer` over inline colours and no
+   * hover mechanism of any kind: zero computed change on hover, in both states,
+   * on the filter panel's most-touched controls, while every neighbour in the
+   * same dialog — the close button, the guest rows, the band buttons — painted
+   * one. Clicks worked; the cluster just felt dead under the hand.
+   *
+   * ── WHY IT IS STILL HAND-ROLLED ───────────────────────────────────────────
+   * The register being matched is `CanaryChip`'s SELECTABLE: an 8% wash on
+   * hover, 16% on press, solid `colorBlueDark1` and a white label when on. What
+   * the base cannot express is this chip's UNSELECTED state — SELECTABLE
+   * hardwires a blue hairline and a blue label, written INLINE and rewritten on
+   * every pointer event, and these chips draw a neutral `colorBlack5` hairline
+   * with a `colorBlack2` label. Overriding that would mean `!important`-ing
+   * every state the component owns, which is fighting its state model rather
+   * than layering on it — the same conclusion the panel's ExpanderPill reached
+   * for the same reason, logged with the same ask (a NEUTRAL OUTLINE register,
+   * or `customColor` on `CanaryChip` for parity with `CanaryTag`).
+   *
+   * So the base's BEHAVIOUR is reproduced exactly, colour ladder and all, and
+   * the ask stays on the list. The 8%/16% blue is `colorBlueDark1` at those
+   * opacities — the chip warms toward the colour it is about to become. The
+   * SELECTED chip, already solid blue, darkens with a black inset instead: a
+   * blue wash over blue is not a state change anyone can see.
+   */
+  const wash = isPressed ? 0.16 : isHovered ? 0.08 : 0;
+
   return (
     <button
       type="button"
       onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setIsPressed(false);
+      }}
+      onMouseDown={() => setIsPressed(true)}
+      onMouseUp={() => setIsPressed(false)}
       className="rounded-[6px] font-['Roboto',sans-serif] text-[12px] font-medium leading-[18px] transition-colors cursor-pointer"
       style={{
         height: 28,
         paddingLeft: 10,
         paddingRight: 10,
         ...(isSelected
-          ? { backgroundColor: colors.colorBlueDark1, color: colors.colorWhite, border: '1px solid transparent' }
+          ? {
+              backgroundColor: colors.colorBlueDark1,
+              color: colors.colorWhite,
+              border: '1px solid transparent',
+              boxShadow: wash ? `inset 0 0 0 999px rgba(0,0,0,${wash})` : undefined,
+            }
           : {
-              backgroundColor: colors.colorWhite,
+              backgroundColor: wash ? `rgba(40,88,196,${wash})` : colors.colorWhite,
               color: colors.colorBlack2,
               border: `1px solid ${colors.colorBlack5}`,
             }),

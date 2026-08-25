@@ -186,17 +186,40 @@ function ExpanderPill({
   labelClosed: string;
   onToggle: () => void;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
+    /**
+     * ⚠ THE DEAD HOVER, third instance — and the same bug the thread row and
+     * the broadcast group row both had. This pill carried `hover:bg-[#fafafa]`
+     * as a class AND `backgroundColor: colorWhite` as an inline style. An
+     * inline style outranks any class, including a `:hover` one, so the wash
+     * had never painted once in the life of the panel's centrepiece control.
+     *
+     * The fix is theirs: state the background where it can WIN, and take the
+     * branch's one neutral wash while we are here. `rgba(0,0,0,0.08)` is the
+     * library's own hover step — the value `.icon-btn-neutral` rides and the
+     * one `ThreadListItem` passes as `hoverColor` — where the declared
+     * `#fafafa` was a 2% grey ON WHITE that would have been invisible even if
+     * it had rendered. Fixing the cascade without fixing the colour would have
+     * shipped a hover nobody could see and called it done.
+     *
+     * `cursor-pointer` is the other half: Tailwind 4's preflight leaves a bare
+     * `<button>` on the default arrow, so the pill read as static in two
+     * independent ways.
+     */
     <button
       onClick={onToggle}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       aria-expanded={isOpen}
-      className="flex items-center gap-1 rounded-full transition-colors hover:bg-[#fafafa]"
+      className="flex items-center gap-1 rounded-full transition-colors cursor-pointer"
       style={{
         height: PILL_H,
         paddingLeft: 14,
         paddingRight: 10,
         border: `1px solid ${colors.colorBlack6}`,
-        backgroundColor: colors.colorWhite,
+        backgroundColor: isHovered ? 'rgba(0,0,0,0.08)' : colors.colorWhite,
       }}
     >
       <span

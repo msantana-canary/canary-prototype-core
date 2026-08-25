@@ -236,26 +236,28 @@ export function ForwardNumbersTable({ onEdit }: ForwardNumbersTableProps) {
                   >
                     <button
                       onClick={() => handleEdit(rule.id)}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors font-['Roboto',sans-serif]"
+                      /* ⚠ `bg-transparent` as a CLASS, not as an inline style.
+                         Inline wins the cascade over any selector, `:hover`
+                         included, so the declared `hover:bg-gray-50` on these
+                         two rows had never painted. Same bug class as the
+                         messaging surface's four dead hovers; utility-vs-utility
+                         the hover variant wins, which is the point. */
+                      className="w-full text-left px-4 py-2 bg-transparent hover:bg-gray-50 transition-colors cursor-pointer font-['Roboto',sans-serif]"
                       style={{
                         fontSize: '14px',
                         color: colors.colorBlack1,
                         border: 'none',
-                        backgroundColor: 'transparent',
-                        cursor: 'pointer',
                       }}
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(rule.id)}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-50 transition-colors font-['Roboto',sans-serif]"
+                      className="w-full text-left px-4 py-2 bg-transparent hover:bg-gray-50 transition-colors cursor-pointer font-['Roboto',sans-serif]"
                       style={{
                         fontSize: '14px',
                         color: colors.colorRed1,
                         border: 'none',
-                        backgroundColor: 'transparent',
-                        cursor: 'pointer',
                       }}
                     >
                       Delete Number

@@ -13,7 +13,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Icon from '@mdi/react';
 import { mdiClockOutline, mdiAccountMultipleOutline } from '@mdi/js';
 import { colors } from '@canary-ui/components';
@@ -38,16 +38,33 @@ export function ScheduledBroadcastBlock({
   memberCount: number;
   onOpen: () => void;
 }) {
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
     <div style={{ paddingLeft: 16, paddingRight: 16, paddingTop: 4, paddingBottom: 4 }}>
+      {/**
+       * ⚠ THE DEAD HOVER, fourth instance. `hover:bg-[#f0f0f0]` as a class and
+       * `backgroundColor: colorBlack8` inline on the same element: the inline
+       * style wins the cascade outright, so the wash on this launcher had never
+       * painted. Same bug as the thread row, the broadcast group row and the
+       * panel's expander pill — four of one kind is a pattern, and the pattern
+       * is that a background stated inline can never answer a pointer.
+       *
+       * Stated in state instead, so it can. The two colours are the ones the
+       * component already declared: `colorBlack8` (#FAFAFA) at rest, one step
+       * down to `colorBlack7` (#F0F0F0) on hover, which is what the class had
+       * been asking for all along.
+       */}
       <div
         onClick={onOpen}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         role="button"
         tabIndex={0}
         aria-label="View scheduled broadcast"
-        className="flex items-start gap-3 rounded-[8px] cursor-pointer transition-colors hover:bg-[#f0f0f0]"
+        className="flex items-start gap-3 rounded-[8px] cursor-pointer transition-colors"
         style={{
-          backgroundColor: colors.colorBlack8,
+          backgroundColor: isHovered ? colors.colorBlack7 : colors.colorBlack8,
           border: `1px solid ${colors.colorBlack6}`,
           padding: 12,
         }}
