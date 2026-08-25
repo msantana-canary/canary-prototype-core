@@ -34,6 +34,7 @@ import {
   buildTimeOptions,
   isBeforeToday,
   toDateInputValue,
+  withExactOption,
 } from '@/lib/products/messaging/broadcast-schedule';
 
 interface ScheduleSendTimeModalProps {
@@ -68,7 +69,19 @@ export function ScheduleSendTimeModal({
     }
   }, [isOpen, initialSendAt]);
 
-  const timeOptions = useMemo(() => buildTimeOptions(scheduledDate), [scheduledDate]);
+  /**
+   * The quarter-hour slots, PLUS the pending send time itself when that is not
+   * one of them.
+   *
+   * Reschedule opens on a time somebody already picked — often a seeded one
+   * that is not quarter-aligned. Without its own option the native select falls
+   * back to displaying the first slot, so the modal contradicted the panel that
+   * launched it. See `withExactOption` for why this injects rather than snaps.
+   */
+  const timeOptions = useMemo(
+    () => withExactOption(buildTimeOptions(scheduledDate), scheduledTime),
+    [scheduledDate, scheduledTime]
+  );
 
   // Production watches the date and clears the time whenever it changes, so a
   // slot from a different day can never survive.

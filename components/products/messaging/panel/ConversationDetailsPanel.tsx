@@ -90,7 +90,7 @@ import { SetPrimaryGuestPage } from './SetPrimaryGuestPage';
 import { CreateServiceTaskPage } from './CreateServiceTaskPage';
 import { UnlinkConfirmModal, UnlinkTarget } from './UnlinkConfirmModal';
 import { useMessagingStore } from '@/lib/products/messaging/store';
-import { firstName, panelIdentity } from '@/lib/products/messaging/panel-selectors';
+import { firstName, panelIdentity, serviceTaskOwnerKey } from '@/lib/products/messaging/panel-selectors';
 import { callsByThread, upsellsByGuest } from '@/lib/products/messaging/panel-mock';
 import { LinkedReservation, Thread } from '@/lib/products/messaging/types';
 
@@ -344,7 +344,12 @@ export function ConversationDetailsPanel({
   };
 
   const upsells = primary ? upsellsByGuest[primary.guest.id] ?? [] : [];
-  const tasks = primary ? serviceTasks[primary.guest.id] ?? [] : [];
+  /* Service tasks hang off the primary GUEST, or off the THREAD when there is
+     no guest to hang them off — see `serviceTaskOwnerKey`. One key for the read
+     and the write, so a task raised on an anonymous conversation can actually
+     come back. */
+  const taskOwnerId = serviceTaskOwnerKey(thread, identity);
+  const tasks = serviceTasks[taskOwnerId] ?? [];
   const calls = callsByThread[thread.id] ?? [];
 
   const confirmUnlink = () => {
@@ -631,8 +636,7 @@ export function ConversationDetailsPanel({
                      nothing is destroyed — the ticket lives in Service Tickets.
                      The toast is the receipt. */
                   onUnlink={(task) => {
-                    if (!primary) return;
-                    unlinkServiceTask(primary.guest.id, task.id);
+                    unlinkServiceTask(taskOwnerId, task.id);
                     setToast('Service task unlinked');
                   }}
                 />
@@ -705,14 +709,16 @@ export function ConversationDetailsPanel({
                   onBack={pop}
                   onClose={onClose}
                   onSubmit={({ room, issue, quantity }) => {
-                    if (primary) {
-                      createServiceTask(primary.guest.id, {
-                        title: issue,
-                        status: 'open',
-                        room,
-                        quantity,
-                      });
-                    }
+                    /* No `if (primary)` guard: an anonymous conversation keys
+                       its tasks on the thread, so the write always lands and
+                       the tab the flow returns to always shows the row it just
+                       promised. The guard is what used to eat the task. */
+                    createServiceTask(taskOwnerId, {
+                      title: issue,
+                      status: 'open',
+                      room,
+                      quantity,
+                    });
                     setTab('tasks');
                     pop();
                   }}

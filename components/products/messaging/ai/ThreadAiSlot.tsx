@@ -189,6 +189,7 @@ export function ThreadAiSlot({ threadId }: { threadId: string }) {
   const dismissDraft = useMessagingStore((s) => s.dismissDraft);
   const sendDraft = useMessagingStore((s) => s.sendDraft);
   const resolveFact = useMessagingStore((s) => s.resolveFact);
+  const addFactToKnowledge = useMessagingStore((s) => s.addFactToKnowledge);
   const dismissTicketSuggestion = useMessagingStore((s) => s.dismissTicketSuggestion);
   const injectIntoComposer = useMessagingStore((s) => s.injectIntoComposer);
   const requestCreateTask = useMessagingStore((s) => s.requestCreateTask);
@@ -200,9 +201,19 @@ export function ThreadAiSlot({ threadId }: { threadId: string }) {
   const remaining = Math.max(0, (facts?.length ?? 0) - 1);
   const isAway = workspaceStatus === 'away';
 
-  const addFact = () => {
+  /**
+   * ACCEPT the fact. `text` is the sentence actually approved — the band's Add
+   * passes nothing and accepts the suggestion verbatim; the modal passes what
+   * the hotelier edited it into.
+   *
+   * ⚠ The argument used to be dropped (`onCommit={addFact}` against a no-arg
+   * handler), which made "edit, then add" byte-identical to "add". Nothing on
+   * this surface renders added facts yet, so it was invisible — and it would
+   * have become a real bug the day a KB surface showed what was added.
+   */
+  const addFact = (text?: string) => {
     if (!fact) return;
-    resolveFact(threadId, fact.id);
+    addFactToKnowledge(threadId, fact.id, text ?? fact.text);
     setIsEditingFact(false);
     // Post-Add is a TOAST, not an inline confirmation state on the band. The
     // band's job is finished the moment the fact is accepted, and a band that
@@ -234,7 +245,7 @@ export function ThreadAiSlot({ threadId }: { threadId: string }) {
             text={fact.text}
             remaining={remaining}
             onEdit={() => setIsEditingFact(true)}
-            onAdd={addFact}
+            onAdd={() => addFact()}
             onSkip={() => resolveFact(threadId, fact.id)}
           />
         )}

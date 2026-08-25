@@ -119,6 +119,39 @@ export function buildTimeOptions(
   return options;
 }
 
+/**
+ * The slot list, guaranteed to CONTAIN a send time that already exists.
+ *
+ * ⚠ Why this is needed. `buildTimeOptions` emits quarter-hour values with the
+ * seconds zeroed, and a `<select>` whose React value matches none of its
+ * options silently falls back to displaying the first one. A seeded schedule
+ * ("send in 3 hours", carrying live seconds) is never quarter-aligned, so the
+ * Reschedule modal opened saying 9:45 AM while the panel one click away said
+ * 12:42 PM — and confirming without touching the field kept 12:42, because the
+ * untouched state was still the real ISO. The field contradicted both the panel
+ * and itself.
+ *
+ * SNAPPING to the nearest quarter hour was the other option and it is worse: it
+ * would silently move a hotelier's send by up to 15 minutes just for opening a
+ * modal. So the exact time is INJECTED as its own option, in chronological
+ * order, labelled in the same register. The modal then opens reading the time
+ * the broadcast is actually going out, and every other option is a real slot.
+ */
+export function withExactOption(
+  options: { value: string; label: string }[],
+  isoValue: string
+): { value: string; label: string }[] {
+  if (!isoValue) return options;
+  if (options.some((o) => o.value === isoValue)) return options;
+  const exact = new Date(isoValue);
+  if (Number.isNaN(exact.getTime())) return options;
+
+  const injected = { value: isoValue, label: format(exact, 'h:mm a') };
+  const at = options.findIndex((o) => new Date(o.value).getTime() > exact.getTime());
+  if (at === -1) return [...options, injected];
+  return [...options.slice(0, at), injected, ...options.slice(at)];
+}
+
 /** Production's `isBeforeDate` — date-granularity past check. */
 export function isBeforeToday(dateValue: string, now: Date = new Date()): boolean {
   const day = parseDateInputValue(dateValue);

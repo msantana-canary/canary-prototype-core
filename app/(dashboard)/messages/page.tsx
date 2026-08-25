@@ -25,7 +25,7 @@ import {
   AssignmentScope,
 } from '@/components/products/messaging/ThreadScopeMenu';
 import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
-import { useMessagingStore } from '@/lib/products/messaging/store';
+import { sortByRecency, useMessagingStore } from '@/lib/products/messaging/store';
 import { guests } from '@/lib/core/data/guests';
 import { reservations } from '@/lib/core/data/reservations';
 import { panelIdentity } from '@/lib/products/messaging/panel-selectors';
@@ -143,9 +143,13 @@ export default function MessagesPage() {
       });
     }
 
-    // Sort by recency (newest lastMessageAt first) so the most recent thread
-    // renders at the top — also makes the auto-select-first effect land on it.
-    return [...filtered].sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
+    /* Sort by recency (newest lastMessageAt first) so the most recent thread
+       renders at the top — also makes the auto-select-first effect land on it.
+       The comparator is the STORE's, shared: the store lands the selection on
+       the "top" row after a folder switch / archive / block, and if the two
+       sorts ever disagreed that landing would highlight a row in the middle of
+       the list. (It did, until QA-1.) */
+    return sortByRecency(filtered);
   }, [threads, currentView, searchQuery, assignmentScope]);
 
   // Handle sending a message
@@ -195,14 +199,19 @@ export default function MessagesPage() {
    * "To:" field's commit, so a number typed and abandoned never leaves an empty
    * conversation in the inbox — see the gate note in `ComposeHeader`.
    *
-   * `createThreadFromPhone` already selects the new thread and drops compose
-   * mode, so by the time `sendMessage` runs the user is looking at the thread
-   * the message lands in.
+   * `createThreadFromPhone` already selects the thread and drops compose mode,
+   * so by the time `sendMessage` runs the user is looking at the thread the
+   * message lands in.
+   *
+   * ⚠ It may hand back an EXISTING thread. One number is one SMS conversation,
+   * so composing to a number the inbox already carries drops the message into
+   * that conversation rather than forking a parallel one — the compose pane
+   * closes onto the named thread, message included.
    */
   const handleSendFirstMessage = (phone: string, content: string) => {
-    const newThreadId = createThreadFromPhone(phone);
-    if (!newThreadId) return;
-    void sendMessage(newThreadId, content, 'staff');
+    const threadId = createThreadFromPhone(phone);
+    if (!threadId) return;
+    void sendMessage(threadId, content, 'staff');
   };
 
   // Auto-select first thread on mount (conversations only).

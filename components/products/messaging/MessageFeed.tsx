@@ -25,15 +25,69 @@ interface MessageFeedProps {
   guest?: Guest | null;
 }
 
+/**
+ * How close to the bottom still counts as "at the bottom". A couple of pixels
+ * of sub-pixel rounding must not read as "the user scrolled away".
+ */
+const PIN_TOLERANCE_PX = 24;
+
 export function MessageFeed({ messages, guest }: MessageFeedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  /** Was the feed resting at the bottom the last time anyone scrolled it? */
+  const isPinnedRef = useRef(true);
 
   // Auto-scroll to bottom when messages change — container-scoped.
   useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      isPinnedRef.current = true;
     }
   }, [messages]);
+
+  /**
+   * THE FEED FOLLOWS ITS OWN GROWTH.
+   *
+   * The only auto-scroll used to fire on the MESSAGE ARRAY changing, so
+   * anything that grew a message in place — the AI steps trace, which is the
+   * demo's hero observability click — pushed itself and the answer under the
+   * composer and left them there. Opening an 8-step trace on the newest message
+   * made the reply disappear.
+   *
+   * So the content column is observed, and a feed that WAS at the bottom is
+   * kept at the bottom while it grows. Two things this deliberately is not:
+   *
+   *  • It is not `scrollIntoView` on the trace. That walks every scrollable
+   *    ancestor to the document and drags the whole app shell (the reason the
+   *    original auto-scroll is container-scoped in the first place).
+   *  • It is not unconditional. A hotelier who has scrolled UP to read history
+   *    is reading history; yanking her back down because a trace opened
+   *    somewhere below would be the feed overruling her.
+   *
+   * Pinning is a position assignment, not an animation, so it adds no motion of
+   * its own — nothing here to reduce under `prefers-reduced-motion`. The trace's
+   * own 220ms open is already reduced-motion-aware in `ExpandRegion`, and the
+   * observer simply tracks whatever height it lands on, frame by frame.
+   */
+  useEffect(() => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content || typeof ResizeObserver === 'undefined') return;
+
+    const observer = new ResizeObserver(() => {
+      if (!isPinnedRef.current) return;
+      container.scrollTop = container.scrollHeight;
+    });
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, []);
+
+  const handleScroll = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    isPinnedRef.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight <= PIN_TOLERANCE_PX;
+  };
 
   if (messages.length === 0) {
     return (
@@ -47,8 +101,13 @@ export function MessageFeed({ messages, guest }: MessageFeedProps) {
   }
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-y-auto flex flex-col" style={{ paddingTop: 16 }}>
-      <div className="flex flex-col mt-auto">
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      className="flex-1 overflow-y-auto flex flex-col"
+      style={{ paddingTop: 16 }}
+    >
+      <div ref={contentRef} className="flex flex-col mt-auto">
         {messages.map((message, index) => {
           const showDateSeparator =
             index === 0 ||

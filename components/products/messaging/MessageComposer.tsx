@@ -90,6 +90,10 @@ import {
 import { AiOrb } from './AiOrb';
 import { MessageTemplatesModal } from './MessageTemplatesModal';
 import {
+  MergeTagContext,
+  interpolateMergeTags,
+} from '@/lib/products/messaging/message-templates';
+import {
   DEFAULT_TARGET,
   SOURCE_LANGUAGES,
   TRANSLATE_LANGUAGES,
@@ -126,6 +130,30 @@ interface MessageComposerProps {
    */
   injection?: { text: string; nonce: number } | null;
   onInjectionConsumed?: () => void;
+  /**
+   * THE THREAD'S KEPT DRAFT — text this conversation was left holding.
+   *
+   * The box seeds itself from this on mount and reports every keystroke back
+   * through `onDraftChange`, so switching conversations no longer destroys what
+   * was typed. It matters most for the AI draft card's "Edit": that consumes
+   * the card, which makes the composer the ONLY copy of the drafted reply.
+   *
+   * Optional: the compose pane ("New message") has no thread yet, so it takes
+   * neither prop and keeps the old throwaway behaviour.
+   */
+  draft?: string;
+  onDraftChange?: (text: string) => void;
+  /**
+   * The facts this conversation can fill a template's merge tags with. Absent
+   * on the compose pane, which has no thread and therefore no guest.
+   */
+  mergeContext?: MergeTagContext;
+  /**
+   * Whether this conversation has a live Apple Messages for Business session —
+   * the ONLY thing that may show the Apple Message Templates tab. Passed
+   * straight through from the thread's channel; see `Thread.channel`.
+   */
+  isAppleBusiness?: boolean;
 }
 
 /**
@@ -297,8 +325,23 @@ export function MessageComposer({
   topSlot,
   injection,
   onInjectionConsumed,
+  draft,
+  onDraftChange,
+  mergeContext,
+  isAppleBusiness = false,
 }: MessageComposerProps) {
-  const [message, setMessage] = useState('');
+  /**
+   * The text still lives in local state, and the component is still KEYED BY
+   * THREAD by its parent — that is what makes one guest's words structurally
+   * unable to appear in another's box. What changed in QA-1 is where the text
+   * GOES when the box unmounts: it is seeded from the thread's kept draft and
+   * written back on every change, instead of being dropped on the floor.
+   */
+  const [message, setMessageState] = useState(draft ?? '');
+  const setMessage = (next: string) => {
+    setMessageState(next);
+    onDraftChange?.(next);
+  };
   const [isFocused, setIsFocused] = useState(false);
   const [isIgniting, setIsIgniting] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
@@ -631,6 +674,21 @@ export function MessageComposer({
         onClose={() => setIsTemplatesOpen(false)}
         onUse={handleUseTemplate}
         onSendNow={handleSendTemplate}
+        /* The Apple tab is the THREAD's fact, not this component's choice —
+           an Apple-hosted payload has nowhere to go on an SMS conversation.
+           No thread in this prototype carries an AMB session, so the tab does
+           not render today; the gate is built on the real condition so it
+           lights up on its own the day one does. */
+        isAppleBusiness={isAppleBusiness}
+        /* "Use" hands the copy to a human to edit, so she gets it RESOLVED —
+           the picker's rows still show the literal tags (that is what tells
+           her which facts the template fills in), but a sentence she is about
+           to proofread should read the way the guest will read it. Absent the
+           merge context (the compose pane has no thread) nothing is resolved
+           and the literal goes in, which is the honest fallback. */
+        resolveBody={
+          mergeContext ? (body) => interpolateMergeTags(body, mergeContext) : undefined
+        }
       />
     </div>
   );

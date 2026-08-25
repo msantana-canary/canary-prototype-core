@@ -24,6 +24,7 @@ import { MessageComposer } from './MessageComposer';
 import { ThreadAiSlot } from './ai/ThreadAiSlot';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { Thread, Message } from '@/lib/products/messaging/types';
+import { DEMO_PROPERTY_NAME } from '@/lib/products/messaging/message-templates';
 import { Guest } from '@/lib/core/types/guest';
 import { Reservation } from '@/lib/core/types/reservation';
 import {
@@ -136,6 +137,29 @@ export function ThreadView({
   // edited on one conversation must not land in another one's box.
   const injection = useMessagingStore((s) => s.composerInjection);
   const clearComposerInjection = useMessagingStore((s) => s.clearComposerInjection);
+
+  // The thread's kept composer text. Selected per-thread so a keystroke in one
+  // conversation can't re-render the others' rows.
+  const draft = useMessagingStore((s) => s.composerDrafts[thread.id] ?? '');
+  const setComposerDraft = useMessagingStore((s) => s.setComposerDraft);
+
+  /**
+   * What a template's merge tags resolve to on THIS conversation.
+   *
+   * Assembled from the spotlight guest and stay the header is already naming,
+   * so a template inserted into the composer can never introduce a third
+   * account of who this is. Every field is optional and a tag with nothing
+   * behind it stays literal — see `interpolateMergeTags`.
+   */
+  const mergeContext = React.useMemo(
+    () => ({
+      guest_first_name: guest?.name?.trim().split(/\s+/)[0],
+      hotel_name: DEMO_PROPERTY_NAME,
+      arrival_date: reservation?.checkInDate,
+      confirmation_id: reservation?.confirmationCode,
+    }),
+    [guest?.name, reservation?.checkInDate, reservation?.confirmationCode]
+  );
 
   const isGuestTyping = typingThreadId === thread.id;
 
@@ -327,9 +351,21 @@ export function ThreadView({
              the next. That was survivable when the only way to fill it was to
              type; it stopped being survivable the moment the draft card could
              put an AI's reply to Chloe into Lucia's composer.
-             (Real per-thread drafts — kept, not cleared — are a separate
-             feature; this at least never shows one guest's text to another.) */
+
+             ── AND THE DRAFT IS KEPT NOW (QA-1) ───────────────────────────
+             The key still guarantees no bleed; `draft` / `onDraftChange` are
+             what stop the switch from DESTROYING the text on the way out.
+             Production keeps per-thread drafts, and the Edit-an-AI-draft path
+             made the old behaviour lossy in the worst place: Edit consumes the
+             card, so the composer was the only surviving copy of the reply and
+             one stray click erased it with no undo. */
           key={thread.id}
+          draft={draft}
+          onDraftChange={(text) => setComposerDraft(thread.id, text)}
+          mergeContext={mergeContext}
+          /* Apple Message Templates need an Apple session. Absent ⇒ SMS, which
+             is every thread here, so the tab stays closed. */
+          isAppleBusiness={thread.channel === 'AMB'}
           onSend={onSendMessage}
           placeholder="Type SMS message..."
           aiEnabled={aiEnabled}

@@ -5,7 +5,12 @@
  */
 
 export type MessageSender = 'guest' | 'staff' | 'ai';
-export type MessageChannel = 'SMS' | 'WhatsApp' | 'Email' | 'Web';
+/**
+ * `AMB` is Apple Messages for Business — an Apple-hosted session, not a carrier
+ * channel. It is the only channel that can carry an Apple message template, and
+ * it is the reason that tab is gated (see `Thread.channel`).
+ */
+export type MessageChannel = 'SMS' | 'WhatsApp' | 'Email' | 'Web' | 'AMB';
 export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'failed';
 export type ThreadStatus = 'inbox' | 'archived' | 'blocked';
 
@@ -123,6 +128,24 @@ export interface Message {
 export interface Thread {
   id: string;
   contactNumber: string;           // The phone number being messaged (always present)
+  /**
+   * The channel/session this conversation is being held on. Absent ⇒ `SMS`,
+   * which is every thread in this prototype.
+   *
+   * ⚠ THIS IS THE APPLE-TEMPLATE GATE (Miguel, QA-1). Apple Message Templates
+   * are an Apple Messages for Business artefact: production only offers that
+   * tab on a thread with a LIVE AMB session, because an Apple-hosted rich
+   * payload cannot be delivered down an SMS thread. The picker used to show the
+   * tab on every conversation, and "Send" on it pushed the template's raw body
+   * — merge tags and all — into an SMS as a DELIVERED staff message.
+   *
+   * Modelling the gate on the thread (rather than hiding the tab with a flag)
+   * is what makes it correct rather than merely quiet: the day this prototype
+   * grows an AMB thread, the tab appears on it and only on it. Today no thread
+   * carries `AMB`, so the tab never renders — which is the honest state, since
+   * there is no Apple session here to send into.
+   */
+  channel?: MessageChannel;
   linkedReservationIds: string[];   // Reservation IDs linked to this thread (empty = unlinked)
   lastMessage: string;
   lastMessageAt: Date;

@@ -137,6 +137,27 @@ export function panelIdentity(
   return { primary, ownStays, companions, samePhone, isAnonymous: false };
 }
 
+/**
+ * WHO A SERVICE TASK HANGS OFF — the key the store's `serviceTasks` map uses.
+ *
+ * Tasks follow the PERSON wherever there is one, which is why the seeded mock
+ * is keyed by guest id: Emily's open HVAC ticket belongs to Emily, not to the
+ * stay she happened to raise it on, and it should follow her into her next one.
+ *
+ * ⚠ AN ANONYMOUS THREAD HAS NO PERSON, and it used to have no key: the panel
+ * guarded the write with `if (primary)` while the form still said "the ticket
+ * is raised against this conversation's guest and appears under Service Tasks",
+ * so the task was silently discarded and the tab came back empty. The honest
+ * subject on an unlinked number is the CONVERSATION, so that is the key. If
+ * someone later links a guest, the thread-keyed tasks stay where they were
+ * raised rather than being re-attributed to a person who was not there when the
+ * request came in — production's re-attribution is a PMS operation this
+ * prototype does not model, and inventing one would be worse than not moving.
+ */
+export function serviceTaskOwnerKey(thread: Thread, identity: PanelIdentity): string {
+  return identity.primary ? identity.primary.guest.id : `thread:${thread.id}`;
+}
+
 /** First name for the "{First}'s Reservations" card. Falls back to the full name. */
 export function firstName(fullName: string): string {
   return fullName.trim().split(/\s+/)[0] || fullName;

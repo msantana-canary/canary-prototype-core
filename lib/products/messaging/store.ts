@@ -44,6 +44,32 @@ export interface ComposerInjection {
   nonce: number;
 }
 
+/**
+ * Digits-only view of a phone number, for IDENTITY comparisons.
+ *
+ * A thread is 1:1 with a contact number, so "+1 (650) 766-5555" and
+ * "+16507665555" are the same conversation. Formatting is a rendering choice;
+ * the digits are the fact. Used by `createThreadFromPhone` to refuse to fork a
+ * second thread onto a number the inbox already carries.
+ */
+function phoneKey(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
+/**
+ * The list's ONE sort: newest last message first.
+ *
+ * ⚠ This exists because the store used to auto-select `threads.filter(...)[0]`
+ * — insertion order — while the page rendered the list recency-sorted, so a
+ * folder switch (or an archive, or a block) highlighted a row in the MIDDLE of
+ * the list. The page's sort and the store's landing have to be the same sort or
+ * they will keep drifting apart; this is that sort, and `messages/page.tsx`
+ * calls it too.
+ */
+export function sortByRecency<T extends { lastMessageAt: Date }>(list: T[]): T[] {
+  return [...list].sort((a, b) => b.lastMessageAt.getTime() - a.lastMessageAt.getTime());
+}
+
 interface MessagingState {
   // State
   threads: Thread[];
@@ -83,10 +109,44 @@ interface MessagingState {
    */
   threadPrimaryReservationId: Record<string, string>;
   /**
-   * Service tasks by GUEST id, seeded from the mock and mutable because the
-   * panel can create one. Tasks follow the person, not the stay.
+   * Service tasks by OWNER key, seeded from the mock and mutable because the
+   * panel can create one. Tasks follow the person, not the stay — so the key is
+   * a GUEST id wherever the conversation has a guest.
+   *
+   * ⚠ An ANONYMOUS thread has no guest, and it used to have no key either: the
+   * panel guarded the write with `if (primary)`, so a task raised on an
+   * unlinked number was silently dropped while the form said it had been
+   * raised. Those threads now key on the THREAD (`thread:{id}`) — see
+   * `serviceTaskOwnerKey` in `panel-selectors.ts`. The conversation is the only
+   * durable subject there is until someone links a guest.
    */
   serviceTasks: Record<string, ServiceTask[]>;
+
+  /**
+   * COMPOSER TEXT, PER THREAD — an unsent reply is not a property of the box,
+   * it is a property of the conversation.
+   *
+   * The composer used to hold its text in component state keyed by thread id,
+   * which stopped one guest's draft bleeding into another's box but threw the
+   * text away on every switch. Production keeps per-thread drafts; so does this
+   * now, and that is also what makes an AI draft survive "Edit → look at
+   * something else → come back" (Edit consumes the card, so the composer is the
+   * only copy left).
+   *
+   * Absent ⇒ empty. Cleared on send.
+   */
+  composerDrafts: Record<string, string>;
+
+  /**
+   * Facts a human accepted into the AI's knowledge, newest first.
+   *
+   * Nothing renders this yet — there is no KB surface in this branch. It exists
+   * because the "Add Information to AI" modal is an EDITOR: it hands back the
+   * text the hotelier actually approved, and dropping that text on the floor
+   * made edit-then-add byte-identical to add-unedited. The queue event and the
+   * committed sentence are two different facts; this holds the second one.
+   */
+  knowledgeAdditions: string[];
 
   /* ── THE AI LOOP ─────────────────────────────────────────────────────────
      Observability opens in a SIDEBAR, quick actions open in a MODAL (Miguel's
@@ -123,7 +183,26 @@ interface MessagingState {
   toast: string | null;
 
   // Actions
+  /**
+   * A DELIBERATE OPEN — someone clicked the row. Marks the thread read, because
+   * a person is now looking at it.
+   */
   selectThread: (threadId: string) => void;
+  /**
+   * A PROGRAMMATIC LANDING — the selection had to go somewhere after a folder
+   * switch, an archive or a block. Selects WITHOUT marking read.
+   *
+   * ⚠ This split is the fix for an unread guest message vanishing from the
+   * badge because someone peeked at Archived and came back. Nobody read that
+   * thread; the app just had to point at something. Read is a claim about a
+   * HUMAN, and only `selectThread` may make it.
+   */
+  focusThread: (threadId: string) => void;
+  /**
+   * Put the selection on the top RECENCY-SORTED row of a folder, or clear it
+   * when the folder is empty. The one landing every non-user selection uses.
+   */
+  landOnTopOf: (view: 'inbox' | 'archived' | 'blocked') => void;
   setAiEnabled: (enabled: boolean) => void;
   isThreadAiEnabled: (threadId: string) => boolean;
   toggleThreadAi: (threadId: string) => void;
@@ -133,8 +212,17 @@ interface MessagingState {
   markThreadAsRead: (threadId: string) => void;
   startNewConversation: () => void;
   updateComposingPhone: (phoneNumber: string) => void;
+  /**
+   * Commit the compose pane's "To:" address.
+   *
+   * Returns the id of the thread the first message should land in — an EXISTING
+   * thread when the number already has one, otherwise a newly created thread.
+   * Null only when the number is unusable.
+   */
   createThreadFromPhone: (phoneNumber: string) => string | null;
   cancelComposing: () => void;
+  setComposerDraft: (threadId: string, text: string) => void;
+  clearComposerDraft: (threadId: string) => void;
   setGuestTyping: (threadId: string | null) => void;
   toggleGuestInfo: () => void;
   closeGuestInfo: () => void;
@@ -151,12 +239,13 @@ interface MessagingState {
   unlinkGuest: (threadId: string, reservationIds: string[]) => void;
   setThreadPrimary: (threadId: string, reservationId: string) => void;
   assignThread: (threadId: string, assignment?: ThreadAssignment) => void;
-  createServiceTask: (guestId: string, task: Omit<ServiceTask, 'id'>) => void;
+  /** `ownerId` is a guest id, or `thread:{id}` on an anonymous conversation. */
+  createServiceTask: (ownerId: string, task: Omit<ServiceTask, 'id'>) => void;
   /**
-   * Drop a service task off a guest's list. It UNLINKS the association, it does
+   * Drop a service task off an owner's list. It UNLINKS the association, it does
    * not close the ticket — the ticket's lifecycle belongs to Service Tickets.
    */
-  unlinkServiceTask: (guestId: string, taskId: string) => void;
+  unlinkServiceTask: (ownerId: string, taskId: string) => void;
 
   /* ── THE AI LOOP ─────────────────────────────────────────────────────── */
   openAiExplanation: (messageId: string) => void;
@@ -172,6 +261,11 @@ interface MessagingState {
   sendDraft: (threadId: string) => void;
   /** Consume the head of a thread's fact queue (added, edited-then-added, or skipped). */
   resolveFact: (threadId: string, factId: string) => void;
+  /**
+   * ACCEPT a suggested fact into the AI's knowledge, in the words the hotelier
+   * approved. Records the text, then consumes the queue entry.
+   */
+  addFactToKnowledge: (threadId: string, factId: string, text: string) => void;
   dismissTicketSuggestion: (threadId: string) => void;
   injectIntoComposer: (threadId: string, text: string) => void;
   clearComposerInjection: () => void;
@@ -198,6 +292,8 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   searchQuery: '',
   threadPrimaryReservationId: {},
   serviceTasks: serviceTasksByGuest,
+  composerDrafts: {},
+  knowledgeAdditions: [],
 
   // The AI loop
   aiExplanationMessageId: null,
@@ -212,11 +308,27 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   panelIntent: null,
   toast: null,
 
-  // Select a thread
+  // Open a thread deliberately — a person is looking at it, so it is read.
+  //
+  // Compose is dropped here too: clicking a conversation while the "To:" pane
+  // is up used to select the row and mark it read while the pane kept showing
+  // compose, so the click looked dead and quietly spent an unread dot on a
+  // thread nobody could see.
   selectThread: (threadId: string) => {
-    set({ selectedThreadId: threadId });
-    // Mark as read when selected
+    set({ selectedThreadId: threadId, isComposingNew: false, composingPhoneNumber: '' });
     get().markThreadAsRead(threadId);
+  },
+
+  // Land the selection somewhere after a folder switch / archive / block.
+  // Deliberately does NOT mark read — see the note on the action.
+  focusThread: (threadId: string) => {
+    set({ selectedThreadId: threadId });
+  },
+
+  landOnTopOf: (view: 'inbox' | 'archived' | 'blocked') => {
+    const top = sortByRecency(get().threads.filter((t) => t.status === view))[0];
+    if (top) get().focusThread(top.id);
+    else set({ selectedThreadId: null });
   },
 
   // Toggle the demo auto-response simulation (global)
@@ -238,7 +350,20 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
 
   // Send a message (staff, AI, or guest)
   sendMessage: async (threadId: string, content: string, sender: 'staff' | 'ai' | 'guest') => {
-    // If sending to an archived or blocked thread, reopen/unblock it
+    /**
+     * ⚠ THE ARCHIVE'S ONLY WAY BACK, AND THAT IS THE DESIGN (Miguel, QA-1).
+     *
+     * There is deliberately NO "re-open" button anywhere — not in the header,
+     * not in the kebab, not on the row. Re-open is not a filing action a
+     * hotelier performs; it is what HAPPENS when the conversation starts again.
+     * "Re-open is basically if we start chatting in the archived thread again,
+     * and then it goes back into the regular inbox."
+     *
+     * So this side effect is the feature: sending into an archived thread
+     * returns it to the inbox, and sending into a blocked one unblocks it.
+     * `reopenThread` exists for exactly this caller — it is not dead code, and
+     * it must not be wired to a button.
+     */
     const thread = get().threads.find((t) => t.id === threadId);
     if (thread && thread.status === 'archived') {
       get().reopenThread(threadId);
@@ -259,6 +384,8 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     // Add the message
     get().addMessage(threadId, newMessage);
     get().updateThreadLastMessage(threadId, newMessage);
+    // The draft became a message; it is no longer a draft.
+    if (sender === 'staff') get().clearComposerDraft(threadId);
   },
 
   // Add a message to a thread
@@ -310,12 +437,39 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     set({ composingPhoneNumber: phoneNumber });
   },
 
-  // Create thread from phone number (returns threadId if valid, null if invalid)
+  // Resolve the compose pane's address to a thread (returns null if unusable)
   createThreadFromPhone: (phoneNumber: string) => {
     // Validate: at least 10 digits
-    const digitsOnly = phoneNumber.replace(/\D/g, '');
+    const digitsOnly = phoneKey(phoneNumber);
     if (digitsOnly.length < 10) {
       return null;
+    }
+
+    /**
+     * ⚠ ONE NUMBER, ONE THREAD (Miguel, QA-1).
+     *
+     * "New message" to a number the inbox already carries lands IN that
+     * conversation — it never forks a second, identity-less thread beside the
+     * named one. SMS has no other model: the guest's phone will show one
+     * conversation whatever this app does, and two rows for one number reads as
+     * broken threading to anyone who has ever sent a text.
+     *
+     * The linkage already existed — the inbox SEARCH resolves this number to
+     * the named thread — so compose was the only surface ignoring it.
+     *
+     * The match wins whatever folder the thread is in: composing to an archived
+     * number re-opens it through the send (see `sendMessage`), which is exactly
+     * the journey back the archive is supposed to have.
+     */
+    const existing = get().threads.find((t) => phoneKey(t.contactNumber) === digitsOnly);
+    if (existing) {
+      set({
+        selectedThreadId: existing.id,
+        isComposingNew: false,
+        composingPhoneNumber: '',
+      });
+      get().markThreadAsRead(existing.id);
+      return existing.id;
     }
 
     // Create new thread with phone number only (no guest/reservation linked)
@@ -353,6 +507,25 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     });
   },
 
+  // Per-thread composer text. Empty is stored as absence so the map does not
+  // fill up with blanks for every thread anyone has ever clicked into.
+  setComposerDraft: (threadId: string, text: string) => {
+    set((state) => {
+      const composerDrafts = { ...state.composerDrafts };
+      if (text) composerDrafts[threadId] = text;
+      else delete composerDrafts[threadId];
+      return { composerDrafts };
+    });
+  },
+  clearComposerDraft: (threadId: string) => {
+    set((state) => {
+      if (!(threadId in state.composerDrafts)) return {};
+      const composerDrafts = { ...state.composerDrafts };
+      delete composerDrafts[threadId];
+      return { composerDrafts };
+    });
+  },
+
   // Set guest typing indicator
   setGuestTyping: (threadId: string | null) => {
     set({ typingThreadId: threadId });
@@ -371,14 +544,10 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   // Switch between inbox views
   setCurrentView: (view: 'inbox' | 'archived' | 'blocked') => {
     set({ currentView: view });
-
-    // Select most recent thread in the new view
-    const threadsInView = get().threads.filter((t) => t.status === view);
-    if (threadsInView.length > 0) {
-      get().selectThread(threadsInView[0].id);
-    } else {
-      set({ selectedThreadId: null });
-    }
+    // Land on the TOP VISIBLE row — the list is recency-sorted, so that is the
+    // most recent thread, not the first one the mock happens to declare. And
+    // `focusThread`, not `selectThread`: nobody opened this, so nothing is read.
+    get().landOnTopOf(view);
   },
 
   // Archive a thread
@@ -393,16 +562,17 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
 
     get().closeGuestInfo();
 
-    // Select most recent thread in inbox
-    const inboxThreads = get().threads.filter((t) => t.status === 'inbox');
-    if (inboxThreads.length > 0) {
-      get().selectThread(inboxThreads[0].id);
-    } else {
-      set({ selectedThreadId: null });
-    }
+    // Land on the inbox's top visible row, without reading it.
+    get().landOnTopOf('inbox');
   },
 
-  // Reopen an archived thread
+  /**
+   * Return an archived thread to the inbox.
+   *
+   * ⚠ DELIBERATELY UNREACHABLE FROM THE UI. Its one caller is `sendMessage` —
+   * see the ruling quoted there. Do not wire this to a button; the absence of a
+   * re-open control is the design, not a gap.
+   */
   reopenThread: (threadId: string) => {
     set((state) => ({
       threads: state.threads.map((thread) =>
@@ -425,13 +595,8 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
 
     get().closeGuestInfo();
 
-    // Select most recent thread in inbox
-    const inboxThreads = get().threads.filter((t) => t.status === 'inbox');
-    if (inboxThreads.length > 0) {
-      get().selectThread(inboxThreads[0].id);
-    } else {
-      set({ selectedThreadId: null });
-    }
+    // Land on the inbox's top visible row, without reading it.
+    get().landOnTopOf('inbox');
   },
 
   // Unblock a thread
@@ -529,23 +694,23 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     }));
   },
 
-  // Append a locally-created service task to a guest's list.
-  createServiceTask: (guestId: string, task: Omit<ServiceTask, 'id'>) => {
+  // Append a locally-created service task to an owner's list.
+  createServiceTask: (ownerId: string, task: Omit<ServiceTask, 'id'>) => {
     set((state) => ({
       serviceTasks: {
         ...state.serviceTasks,
-        [guestId]: [{ ...task, id: `task-${Date.now()}` }, ...(state.serviceTasks[guestId] ?? [])],
+        [ownerId]: [{ ...task, id: `task-${Date.now()}` }, ...(state.serviceTasks[ownerId] ?? [])],
       },
     }));
   },
 
-  // Unlink a service task from this guest — the row leaves the panel; the
+  // Unlink a service task from this owner — the row leaves the panel; the
   // ticket itself is untouched.
-  unlinkServiceTask: (guestId: string, taskId: string) => {
+  unlinkServiceTask: (ownerId: string, taskId: string) => {
     set((state) => ({
       serviceTasks: {
         ...state.serviceTasks,
-        [guestId]: (state.serviceTasks[guestId] ?? []).filter((task) => task.id !== taskId),
+        [ownerId]: (state.serviceTasks[ownerId] ?? []).filter((task) => task.id !== taskId),
       },
     }));
   },
@@ -632,6 +797,20 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
         [threadId]: (state.facts[threadId] ?? []).filter((fact) => fact.id !== factId),
       },
     }));
+  },
+
+  /**
+   * Accept the fact — in the hotelier's OWN words.
+   *
+   * `text` is the sentence that was actually approved: the band's Add sends the
+   * suggestion verbatim, and the "Add Information to AI" modal sends whatever
+   * the hotelier edited it into. The commit consumes its argument now; it used
+   * to drop it, which made an edited fact and an un-edited one the same event.
+   */
+  addFactToKnowledge: (threadId: string, factId: string, text: string) => {
+    const trimmed = text.trim();
+    if (trimmed) set((state) => ({ knowledgeAdditions: [trimmed, ...state.knowledgeAdditions] }));
+    get().resolveFact(threadId, factId);
   },
 
   dismissTicketSuggestion: (threadId: string) => {

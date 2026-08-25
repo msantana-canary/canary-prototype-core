@@ -68,8 +68,31 @@ interface MessageTemplatesModalProps {
   onClose: () => void;
   /** Preset tab: put this body in the composer input, replacing its contents. */
   onUse: (body: string) => void;
-  /** Apple tab: send this body now, as a staff message. */
-  onSendNow: (body: string) => void;
+  /**
+   * Apple tab: send this body now, as a staff message. Only ever called when
+   * `isAppleBusiness` is true — there is no other route to the Apple list.
+   */
+  onSendNow?: (body: string) => void;
+  /**
+   * THE APPLE GATE. Apple Message Templates are an Apple Messages for Business
+   * artefact and cannot be delivered down an SMS thread, so the tab renders
+   * only where an AMB session exists. Callers pass the FACT (this thread's
+   * channel), never a preference — see `Thread.channel`.
+   *
+   * Default false: a surface that has not thought about the gate does not get
+   * the tab. The broadcast composer is one of those on purpose (a broadcast has
+   * no Apple session and no single recipient).
+   */
+  isAppleBusiness?: boolean;
+  /**
+   * Applied to the body on the way OUT of the preset tab, never to the rows.
+   *
+   * The composer passes merge-tag interpolation here so the agent edits a
+   * resolved sentence; the broadcast composer passes nothing and inserts the
+   * literal, which is production's broadcast behaviour. The LIST always shows
+   * raw tags either way — that is the documented point of the list.
+   */
+  resolveBody?: (body: string) => string;
 }
 
 /**
@@ -165,6 +188,8 @@ export function MessageTemplatesModal({
   onClose,
   onUse,
   onSendNow,
+  isAppleBusiness = false,
+  resolveBody,
 }: MessageTemplatesModalProps) {
   /**
    * `CanaryTabs` is UNCONTROLLED (`defaultTab` + `onChange`, no `activeTab`
@@ -175,7 +200,10 @@ export function MessageTemplatesModal({
   const [activeTab, setActiveTab] = useState<TemplateTab>('preset');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const templates = activeTab === 'preset' ? PRESET_TEMPLATES : APPLE_TEMPLATES;
+  // Without the Apple session there is no Apple tab, so `activeTab` can only
+  // ever be 'preset' — the mirror is pinned rather than trusted.
+  const tab: TemplateTab = isAppleBusiness ? activeTab : 'preset';
+  const templates = tab === 'preset' ? PRESET_TEMPLATES : APPLE_TEMPLATES;
   const selected = templates.find((t) => t.id === selectedId) ?? null;
 
   const reset = () => {
@@ -190,10 +218,13 @@ export function MessageTemplatesModal({
 
   const handleCommit = () => {
     if (!selected) return;
-    if (activeTab === 'preset') {
-      onUse(selected.body);
+    if (tab === 'preset') {
+      // The ROW shows the template as authored; what lands in the composer is
+      // what the caller says it should be (resolved merge tags in a 1:1
+      // conversation, the literal in a broadcast).
+      onUse(resolveBody ? resolveBody(selected.body) : selected.body);
     } else {
-      onSendNow(selected.body);
+      onSendNow?.(selected.body);
     }
     reset();
     onClose();
@@ -226,7 +257,7 @@ export function MessageTemplatesModal({
             onClick={handleCommit}
             isDisabled={!selected}
           >
-            {activeTab === 'preset' ? 'Use' : 'Send'}
+            {tab === 'preset' ? 'Use' : 'Send'}
           </CanaryButton>
         </div>
       }
@@ -250,6 +281,12 @@ export function MessageTemplatesModal({
            the row, so the rule goes on the strip and the blue bar lands on top
            of it — which is how MainNav's tabs meet their own bar. */
         className="[&>div:first-child]:!px-6 [&>div:first-child]:border-b [&>div:first-child]:border-[#E5E5E5]"
+        /* The Apple tab is CONDITIONAL, on the thread's own channel — see
+           `isAppleBusiness`. With no AMB session there is nothing to send an
+           Apple-hosted payload into, so the tab is not rendered at all rather
+           than rendered-and-disabled: a disabled tab is a promise that
+           something is coming, and on an SMS thread nothing is. The strip stays
+           (it labels the list, and it is the same control MainNav uses). */
         tabs={[
           {
             id: 'preset',
@@ -262,17 +299,21 @@ export function MessageTemplatesModal({
               />
             ),
           },
-          {
-            id: 'apple',
-            label: 'Apple Message Templates',
-            content: (
-              <TemplateList
-                templates={APPLE_TEMPLATES}
-                selectedId={selectedId}
-                onSelect={setSelectedId}
-              />
-            ),
-          },
+          ...(isAppleBusiness
+            ? [
+                {
+                  id: 'apple',
+                  label: 'Apple Message Templates',
+                  content: (
+                    <TemplateList
+                      templates={APPLE_TEMPLATES}
+                      selectedId={selectedId}
+                      onSelect={setSelectedId}
+                    />
+                  ),
+                },
+              ]
+            : []),
         ]}
       />
     </CanaryModal>
