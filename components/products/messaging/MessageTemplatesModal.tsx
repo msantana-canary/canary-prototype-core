@@ -52,6 +52,7 @@ import {
   CanaryModal,
   CanaryTabs,
   colors,
+  TabSize,
   TabType,
 } from '@canary-ui/components';
 import {
@@ -271,6 +272,7 @@ export function MessageTemplatesModal({
             truth for which list is on screen. */}
         <CanaryTabs
           tabType={TabType.TEXT}
+          tabSize={TabSize.COMPACT}
           defaultTab="preset"
           onChange={(tabId) => {
             setActiveTab(tabId as TemplateTab);
@@ -278,12 +280,13 @@ export function MessageTemplatesModal({
             // nobody can see.
             setSelectedId(null);
           }}
-          /* 24px inset back onto the strip only, plus the frame's hairline under
-             it. `CanaryTabs` TEXT draws the active tab's 4px blue underline
+          /* 24px inset back onto the strip only, plus 16px of top air off the
+             header's rule, plus the frame's own hairline under the strip.
+             `CanaryTabs` TEXT draws the active tab's 4px blue underline
              `w-full` at the strip's bottom edge and nothing across the rest of
              the row, so the rule goes on the strip and the blue bar lands on top
              of it — which is how MainNav's tabs meet their own bar. */
-          className="[&>div:first-child]:!px-6 [&>div:first-child]:border-b [&>div:first-child]:border-[#E5E5E5]"
+          className="[&>div:first-child]:!px-6 [&>div:first-child]:!pt-4 [&>div:first-child]:border-b [&>div:first-child]:border-[#E5E5E5]"
           /* The Apple tab is CONDITIONAL, on the thread's own channel — see
              `isAppleBusiness`. With no AMB session there is nothing to send an
              Apple-hosted payload into, so the tab is not rendered at all rather
