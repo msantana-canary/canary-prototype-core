@@ -28,9 +28,44 @@
  * the `CanaryInputPhone` placeholder both draw.
  */
 
-/** Digits only — the identity view. Mirrors `phoneKey` in the store. */
+/** Digits only — the raw view, before the country code is reasoned about. */
 function digitsOf(value: string): string {
   return value.replace(/\D/g, '');
+}
+
+/**
+ * The US national ten digits, or `null` for anything this file refuses to
+ * interpret. The single place the `+1` equivalence is decided.
+ */
+function usNationalDigits(value: string): string | null {
+  const digits = digitsOf(value);
+  if (digits.length === 10) return digits;
+  if (digits.length === 11 && digits.startsWith('1')) return digits.slice(1);
+  return null;
+}
+
+/**
+ * IDENTITY. Two strings that return the same key are the same conversation.
+ *
+ * ⚠ THE STORE USED TO OWN A SECOND COPY OF THIS (QA-3, 2026-08-25). It compared
+ * raw digits, so `5005550013` and `+15005550013` were different numbers to the
+ * dedup and the same number to the formatter directly above — and the most
+ * natural way a US hotelier types a number forked a second, guest-less thread
+ * beside the named one, rendered in the same polished register as a real row.
+ * Two normalizers cannot disagree if there is only one, so the store imports
+ * this rather than restating it, and the comment at the top of this file
+ * ("formatting cannot fork a thread or fail a match") is now true.
+ *
+ * Non-US input is keyed on its digits unchanged: the formatter refuses rather
+ * than guesses, and identity refuses in exactly the same places.
+ */
+export function phoneIdentity(value: string): string {
+  return usNationalDigits(value) ?? digitsOf(value);
+}
+
+/** How many digits the user has actually typed, for the compose-gate's ≥10 test. */
+export function phoneDigitCount(value: string): number {
+  return digitsOf(value).length;
 }
 
 /**
@@ -43,9 +78,7 @@ function digitsOf(value: string): string {
  */
 export function formatPhoneForDisplay(value: string | undefined | null): string {
   if (!value) return '';
-  const digits = digitsOf(value);
-  const national =
-    digits.length === 10 ? digits : digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : null;
+  const national = usNationalDigits(value);
   if (!national) return value;
   return `(${national.slice(0, 3)}) ${national.slice(3, 6)}-${national.slice(6)}`;
 }

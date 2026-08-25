@@ -56,6 +56,7 @@ export default function MessagesPage() {
     currentView,
     searchQuery,
     selectThread,
+    focusThread,
     isThreadAiEnabled,
     toggleThreadAi,
     sendMessage,
@@ -214,16 +215,31 @@ export default function MessagesPage() {
     void sendMessage(threadId, content, 'staff');
   };
 
-  // Auto-select first thread on mount (conversations only).
-  // Skip while composing — startNewConversation nulls selectedThreadId, and without
-  // this guard the effect would instantly re-select thread #1 (spurious mark-as-read +
-  // clobbers the compose pane). On cancel, isComposingNew flips false and this re-runs,
-  // landing the user back on the inbox's first thread.
+  /**
+   * Auto-select the first thread on mount (conversations only).
+   *
+   * Skip while composing — startNewConversation nulls selectedThreadId, and
+   * without this guard the effect would instantly re-select thread #1 (spurious
+   * mark-as-read + clobbers the compose pane). On cancel, isComposingNew flips
+   * false and this re-runs, landing the user back on the inbox's first thread.
+   *
+   * ⚠ `focusThread`, NOT `selectThread` (QA-3). Nobody opened anything here —
+   * the app just had to point the selection somewhere, which is precisely the
+   * distinction the store draws: "Read is a claim about a HUMAN, and only
+   * `selectThread` may make it." Using the human verb cost real state twice.
+   * On MOUNT it spent the fixture's seeded unread dot on the top-recency thread
+   * before the demo had begun (nine dots seeded, eight on screen). On CANCEL it
+   * silently ate a dot the hotelier had just set by hand via "Mark as Unread" —
+   * Escape out of compose and the mark was gone, with no thread ever opened.
+   * Every other programmatic landing (folder switch, archive, block) already
+   * went through `landOnTopOf` → `focusThread` and preserved dots correctly;
+   * this effect was the one leak left.
+   */
   useEffect(() => {
     if (activeTab === 'conversations' && !selectedThreadId && !isComposingNew && filteredThreads.length > 0) {
-      selectThread(filteredThreads[0].id);
+      focusThread(filteredThreads[0].id);
     }
-  }, [activeTab, selectedThreadId, isComposingNew, filteredThreads, selectThread]);
+  }, [activeTab, selectedThreadId, isComposingNew, filteredThreads, focusThread]);
 
   return (
     <AppLayout activeTab={activeTab} onTabChange={setActiveTab}>

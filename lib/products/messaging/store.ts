@@ -18,6 +18,7 @@ import {
   TicketSuggestion,
 } from './types';
 import { mockThreads, mockMessages } from './mock-data';
+import { phoneDigitCount, phoneIdentity } from './phone';
 import { serviceTasksByGuest } from './panel-mock';
 import {
   draftsByThread,
@@ -54,16 +55,19 @@ export interface ComposerInjection {
 }
 
 /**
- * Digits-only view of a phone number, for IDENTITY comparisons.
+ * Identity view of a phone number, for IDENTITY comparisons.
  *
- * A thread is 1:1 with a contact number, so "+1 (650) 766-5555" and
- * "+16507665555" are the same conversation. Formatting is a rendering choice;
- * the digits are the fact. Used by `createThreadFromPhone` to refuse to fork a
- * second thread onto a number the inbox already carries.
+ * A thread is 1:1 with a contact number, so "+1 (650) 766-5555",
+ * "+16507665555" and "6507665555" are all the same conversation. Formatting is
+ * a rendering choice; the number is the fact. Used by `createThreadFromPhone`
+ * to refuse to fork a second thread onto a number the inbox already carries.
+ *
+ * ⚠ THIS IS AN ALIAS, NOT AN IMPLEMENTATION (QA-3). It used to be its own
+ * digits-only strip, which meant the surface carried two normalizers that
+ * disagreed about the US country code — see `phoneIdentity` in `./phone` for
+ * the thread that forked. One normalizer, imported, is the whole fix.
  */
-function phoneKey(value: string): string {
-  return value.replace(/\D/g, '');
-}
+const phoneKey = phoneIdentity;
 
 /**
  * The list's ONE sort: newest last message first.
@@ -514,11 +518,12 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
 
   // Resolve the compose pane's address to a thread (returns null if unusable)
   createThreadFromPhone: (phoneNumber: string) => {
-    // Validate: at least 10 digits
-    const digitsOnly = phoneKey(phoneNumber);
-    if (digitsOnly.length < 10) {
+    // Validate: at least 10 digits, counted on what was actually TYPED — the
+    // identity key normalizes `+1` away, so it must not be the thing measured.
+    if (phoneDigitCount(phoneNumber) < 10) {
       return null;
     }
+    const identity = phoneKey(phoneNumber);
 
     /**
      * ⚠ ONE NUMBER, ONE THREAD (Miguel, QA-1).
@@ -536,12 +541,20 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
      * number re-opens it through the send (see `sendMessage`), which is exactly
      * the journey back the archive is supposed to have.
      */
-    const existing = get().threads.find((t) => phoneKey(t.contactNumber) === digitsOnly);
+    const existing = get().threads.find((t) => phoneKey(t.contactNumber) === identity);
     if (existing) {
       set({
         selectedThreadId: existing.id,
         isComposingNew: false,
         composingPhoneNumber: '',
+        // ⚠ AND THE LIST FOLLOWS IT (QA-3). Composing from inside Archived used
+        // to open the resolved conversation on the right while the list went on
+        // showing the four archived rows with nothing selected — the exact
+        // self-contradiction the rule below fixed for unblock and for
+        // archived-send, walked back in through the compose door. The folder
+        // shown is the folder that HOLDS the thread, so an archived number
+        // stays in Archived until the send re-opens it (see `sendMessage`).
+        currentView: existing.status,
       });
       get().markThreadAsRead(existing.id);
       return existing.id;
@@ -569,6 +582,10 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
       selectedThreadId: newThreadId,
       isComposingNew: false,
       composingPhoneNumber: '',
+      // A brand-new thread is born in the inbox, so the list has to be showing
+      // the inbox to contain it. Composed from Archived, this used to leave the
+      // new conversation open on the right and unlisted on the left.
+      currentView: 'inbox' as const,
     }));
 
     return newThreadId;
@@ -618,7 +635,14 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
 
   // Switch between inbox views
   setCurrentView: (view: 'inbox' | 'archived' | 'blocked') => {
-    set({ currentView: view });
+    // Changing folders ends compose (QA-3). The landing below highlights a row
+    // in the new folder, and the compose pane was surviving on top of it — the
+    // list said "Sarah Martinez is open" while the right pane said "To:". That
+    // is the same list/pane disagreement the QA-1 row-click fix removed
+    // (`selectThread` drops compose for exactly this reason); the folder
+    // switcher was the other door into it. Leaving is unambiguous here: a
+    // half-typed number is not worth a screen that contradicts itself.
+    set({ currentView: view, isComposingNew: false, composingPhoneNumber: '' });
     // Land on the TOP VISIBLE row — the list is recency-sorted, so that is the
     // most recent thread, not the first one the mock happens to declare. And
     // `focusThread`, not `selectThread`: nobody opened this, so nothing is read.
