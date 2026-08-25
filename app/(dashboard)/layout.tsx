@@ -27,14 +27,33 @@ import {
 } from '@canary-ui/components';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 
-// Map V2 sidebar item IDs to routes. Only ids that exist in
-// standardMainSidebarSectionsV2 belong here; unmapped clicks are a no-op.
+/**
+ * Map V2 sidebar item IDs to routes.
+ *
+ * ⚠ EVERY ITEM IN THE NAV IS MAPPED, AND EVERY ROUTE EXISTS. Both halves of
+ * that sentence used to be false. Five items pointed at routes nobody had
+ * built, so a click dropped the presenter onto Next's unthemed 404 with the
+ * entire app shell gone; F&B was unmapped, so its click did nothing at all.
+ * Between them they covered both ways of getting this wrong.
+ *
+ * Four of these are the real thing — this repo carries Messages, Calls,
+ * Check-in and Checkout. The other six route to an in-shell placeholder that
+ * says plainly that the surface is not part of this prototype. A dead end and a
+ * dead button are both worse than a wall with writing on it; see
+ * `components/core/PrototypeSurfacePlaceholder`.
+ *
+ * Adding a nav item to the shell means adding it here AND creating its route.
+ * An id with no route is how the 404 happened in the first place.
+ */
 const itemRouteMap: Record<string, string> = {
+  // Built in this branch
   'messages': '/messages',
   'calls': '/calls',
-  'upsells': '/upsells',
   'check-in': '/check-in',
   'checkout': '/checkout',
+  // Real products, not built here — each has a placeholder route
+  'upsells': '/upsells',
+  'food-and-beverage': '/food-and-beverage',
   'digital-tips': '/digital-tips',
   'authorizations': '/authorizations',
   'contracts': '/contracts',

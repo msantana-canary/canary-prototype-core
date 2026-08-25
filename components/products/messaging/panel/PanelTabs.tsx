@@ -430,9 +430,17 @@ const UPSELL_TAG: Record<Upsell['status'], { label: string; color: TagColor }> =
 export function UpsellsTab({ upsells }: { upsells: Upsell[] }) {
   return (
     <>
+      {/* ⚠ THE "+" IS A DOCUMENTED STUB, not an oversight. Creating an upsell
+          is the Upsells product's job — the same reason the per-row
+          "Open {name} in Upsells" icons below are stubs — and this branch does
+          not carry that product. It was previously indistinguishable from the
+          live "+" controls in the neighbouring cards (Link a reservation,
+          Create service task), so it read as a broken button on a prime click
+          target. `isStub` drops the pointer cursor and the tooltip names the
+          destination; no flow is invented. Inventory: REDESIGN_NOTES. */}
       <SectionHeading
         title="Upsells"
-        actions={<IconAction path={mdiPlus} label="Add an upsell" />}
+        actions={<IconAction path={mdiPlus} label="Add an upsell in Upsells" isStub />}
       />
       {upsells.length === 0 ? (
         <EmptyState label="No upsells" />
@@ -467,12 +475,14 @@ export function UpsellsTab({ upsells }: { upsells: Upsell[] }) {
                 </div>
                 {/* Opening the upsell is the Upsells product's job — a stub
                     here, on the same icon-button register as the rest of the
-                    panel so a stub can't drift from a live control. */}
+                    panel so a stub can't drift from a live control. Same
+                    `!cursor-default` treatment as the card's "+", so the two
+                    stubs on this card read as one thing. */}
                 <CanaryButton
                   type={ButtonType.ICON_SECONDARY}
                   size={ButtonSize.COMPACT}
                   isRounded
-                  className="icon-btn-neutral icon-btn-30"
+                  className="icon-btn-neutral icon-btn-30 !cursor-default"
                   icon={
                     <Icon
                       path={mdiOpenInNew}

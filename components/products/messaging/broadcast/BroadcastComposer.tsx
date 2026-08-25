@@ -17,6 +17,7 @@ import Icon from '@mdi/react';
 import { mdiPaperclip, mdiFormatListBulleted, mdiClockOutline, mdiClose } from '@mdi/js';
 import { colors, CanaryModal, CanaryButton, ButtonType } from '@canary-ui/components';
 import { ScheduleSendTimeModal } from './ScheduleSendTimeModal';
+import { MessageTemplatesModal } from '../MessageTemplatesModal';
 import { formatScheduledMessageTime } from '@/lib/products/messaging/broadcast-schedule';
 
 interface BroadcastComposerProps {
@@ -62,6 +63,7 @@ export function BroadcastComposer({
   const [isFocused, setIsFocused] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
   const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
 
   const canSend = !!message.trim() && !disabled && recipientCount > 0;
@@ -97,9 +99,32 @@ export function BroadcastComposer({
     }
   };
 
-  const toolIcons = [
+  /**
+   * ⚠ TEMPLATES IS LIVE HERE NOW; ATTACH IS STILL DECORATIVE.
+   *
+   * The bulleted-list glyph went live in the Conversations composer and this
+   * one — the identical icon, one tab away — stayed inert with a hover wash and
+   * a pointer cursor still inviting the click. A demo driver who has just used
+   * templates in Conversations will try it here, and silence from a control
+   * that looks live is worse than no control at all.
+   *
+   * It opens the SAME `MessageTemplatesModal`, with two differences that are
+   * both production's:
+   *   • NO APPLE TAB. A broadcast has no Apple Messages for Business session
+   *     to send an Apple-hosted payload into.
+   *   • MERGE TAGS STAY LITERAL. A broadcast has no single guest to resolve
+   *     `{{ guest_first_name }}` against — production interpolates per
+   *     recipient at send time, so the composer must show the tag, not a name.
+   *     (The 1:1 composer resolves at insert; that deviation is documented on
+   *     `interpolateMergeTags`.) Passing no `resolveBody` is what expresses it.
+   */
+  const toolIcons: { path: string; label: string; onClick?: () => void }[] = [
     { path: mdiPaperclip, label: 'Attach file' },
-    { path: mdiFormatListBulleted, label: 'Templates' },
+    {
+      path: mdiFormatListBulleted,
+      label: 'Templates',
+      onClick: () => setIsTemplatesOpen(true),
+    },
   ];
 
   return (
@@ -186,6 +211,8 @@ export function BroadcastComposer({
               {toolIcons.map((tool) => (
                 <button
                   key={tool.label}
+                  type="button"
+                  onClick={tool.onClick}
                   aria-label={tool.label}
                   className="rounded-[4px] hover:bg-[#f0f0f0] transition-colors cursor-pointer"
                   style={{ padding: 6 }}
@@ -278,6 +305,13 @@ export function BroadcastComposer({
           </button>
         )}
       </CanaryModal>
+
+      {/* Templates — preset list only, literal merge tags. See `toolIcons`. */}
+      <MessageTemplatesModal
+        isOpen={isTemplatesOpen}
+        onClose={() => setIsTemplatesOpen(false)}
+        onUse={(body) => setMessage(body)}
+      />
 
       {/* Schedule send time */}
       <ScheduleSendTimeModal

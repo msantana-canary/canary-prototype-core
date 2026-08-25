@@ -493,11 +493,27 @@ export function IconAction({
   label,
   onClick,
   disabled,
+  isStub = false,
 }: {
   path: string;
   label: string;
   onClick?: () => void;
   disabled?: boolean;
+  /**
+   * A control the FRAMES draw but this branch has no destination for.
+   *
+   * ⚠ It stays rendered and it stays on this register — deleting it would
+   * change the panel's drawn anatomy, and fading it out would claim the action
+   * is temporarily unavailable, which is a different (and false) statement.
+   * What changes is the POINTER: `cursor-default` instead of `cursor-pointer`,
+   * so the control stops promising a click it cannot answer. The tooltip does
+   * the rest of the work by naming the product the action belongs to, exactly
+   * as the per-row "Open {name} in Upsells" stubs beside it already do.
+   *
+   * A stub also takes no `onClick`. A handler that does nothing is
+   * indistinguishable from a broken one, from the outside AND from the code.
+   */
+  isStub?: boolean;
 }) {
   return (
     <CanaryButton
@@ -506,7 +522,7 @@ export function IconAction({
       isRounded
       isDisabled={disabled}
       onClick={onClick}
-      className="icon-btn-neutral icon-btn-30"
+      className={`icon-btn-neutral icon-btn-30${isStub ? ' !cursor-default' : ''}`}
       icon={
         <Icon
           path={path}
