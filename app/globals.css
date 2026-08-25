@@ -227,6 +227,17 @@ body {
   border-radius: 4px !important;
 }
 
+/* ---- CanaryModal title: 20px → 18px --------------------------------------
+   DESIGN-SYSTEM CHANGE (Miguel, 2026-08-25). The library's modal title is
+   hardcoded `text-[20px] font-medium`; the surface's heading scale tops out
+   at 18px (panel headers), so the stock title out-shouts every sibling
+   header. Scoped to dialogs and keyed on the library's own class pair — the
+   same holding pattern as `.canary-tag-r4`; delete when the library moves.
+   Figma note: frames drawn at 20px get corrected to 18px in Miguel's pass. */
+[role='dialog'] .text-\[20px\].font-medium {
+  font-size: 18px !important;
+}
+
 /* ---- Conversation Details panel: tab strip rhythm ------------------------
    The panel's tab row is `CanaryTabs` (text / compact) — hover wash, active
    colour, underline indicator and count badge all come from the library. The
