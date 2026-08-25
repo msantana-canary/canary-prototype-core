@@ -18,9 +18,8 @@
  * (32 / 40 / 48 = small / medium / profile). Every other axis this component
  * carries is one the base cannot express, and none of them are decoration:
  *
- *   1. SHAPE. The base bakes `rounded-full`. This surface's avatars are
- *      rounded-8 SQUARES everywhere except the panel's one 48px portrait — a
- *      distinction the file argues for below, not an accident.
+ *   1. SHAPE. The base bakes `rounded-full`. Every avatar on this surface is a
+ *      rounded-8 SQUARE — no exceptions (see SHAPE below).
  *   2. TONE. The base's initials tile hardcodes `colorBlueDark1` on white as
  *      INLINE styles with no prop to reach them. The neutral/blue split above is
  *      how a staff message is told from a guest message in the avatar column.
@@ -37,6 +36,25 @@
  * a `tone`/custom colour on the initials tile, an icon fallback, an image
  * transform hook) are logged as foundation asks. Revisit when they land: at that
  * point this file should shrink to a thin wrapper, not be rewritten.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SHAPE — ONE SHAPE, EVERYWHERE (Miguel, 2026-08-25)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Rounded-8 square, with no per-surface escape hatch. This component briefly
+ * carried a `shape` prop so the Conversation Details panel's 48px portrait
+ * could be a CIRCLE, because that is how every panel frame draws it, and the
+ * build had an argument for it: in the feed an avatar is a row marker in a
+ * column of many, in the panel it is a portrait of the one person the surface
+ * is about — furniture vs. subject.
+ *
+ * Miguel's call: the cross-cutting avatar rule wins. One person's face should
+ * not change shape depending on which pane you are looking at them in, and the
+ * square is what the rest of the product has already agreed to. The prop is
+ * gone rather than defaulted, so the exception cannot quietly come back.
+ *
+ * ★ FIGMA PASS: the panel frames still draw a circle here. That is a frame to
+ * CORRECT, not a spec to match — same class of note as the other frame-drawn
+ * details the build overrode rather than reproduced.
  */
 
 import React from 'react';
@@ -45,16 +63,6 @@ import { mdiAccount } from '@mdi/js';
 import { colors } from '@canary-ui/components';
 
 export type AvatarTone = 'neutral' | 'blue';
-
-/**
- * SHAPE. The feed's avatars are rounded-8 squares (above). The Conversation
- * Details panel's 48px PROFILE avatar is a CIRCLE — that is how every panel
- * frame draws it, and it is a defensible distinction rather than a slip: in the
- * feed an avatar is a row marker in a column of many, while in the panel it is
- * a portrait of the one person the whole surface is about. One is furniture,
- * the other is a subject.
- */
-export type AvatarShape = 'square' | 'circle';
 
 interface AvatarProps {
   /** URL to profile image (optional) */
@@ -65,8 +73,6 @@ interface AvatarProps {
   size?: 'small' | 'medium' | 'large' | 'profile';
   /** Initials-tile colour register — gray by default, blue for staff. */
   tone?: AvatarTone;
-  /** Rounded-8 square (the feed) or a circle (the panel's profile block). */
-  shape?: AvatarShape;
   /** Optional CSS classes */
   className?: string;
 }
@@ -81,7 +87,6 @@ export function Avatar({
   initials,
   size = 'medium',
   tone = 'neutral',
-  shape = 'square',
   className = '',
 }: AvatarProps) {
   const sizeClasses = {
@@ -90,7 +95,7 @@ export function Avatar({
     large: 'w-14 h-14',
     profile: 'w-12 h-12',
   };
-  const radius = shape === 'circle' ? 'rounded-full' : 'rounded-[8px]';
+  const radius = 'rounded-[8px]';
   const textSize = size === 'profile' ? 'text-[16px] leading-[24px]' : 'text-[12px] leading-[18px]';
 
   if (src) {
@@ -104,9 +109,7 @@ export function Avatar({
           src={src}
           alt={initials}
           className="w-full h-full object-cover"
-          // A circle needs no re-crop: the source PNGs already ARE circles, so
-          // scaling them up would only push the face off-frame.
-          style={shape === 'circle' ? undefined : { transform: 'scale(1.45)' }}
+          style={{ transform: 'scale(1.45)' }}
         />
       </div>
     );

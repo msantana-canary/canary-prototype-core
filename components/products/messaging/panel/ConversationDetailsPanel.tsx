@@ -384,29 +384,52 @@ export function ConversationDetailsPanel({
   };
 
   /**
-   * Profile kebab. "Unlink guest" is DISABLED when the primary auto-linked: a
-   * phone match is a fact from the PMS, and unlinking it would only last until
-   * the next sync. The item still renders, carrying the reason.
+   * Profile kebab.
+   *
+   * ═══════════════════════════════════════════════════════════════════════════
+   * "Unlink guest" IS ABSENT WHEN THE PRIMARY AUTO-LINKED (Miguel, 2026-08-25)
+   * ═══════════════════════════════════════════════════════════════════════════
+   * THE BLOCK IS REAL, and the reason is worth keeping even though the UI no
+   * longer prints it: a phone match is a FACT from the PMS, not an assertion
+   * made in this panel, so unlinking it would only hold until the next sync
+   * re-asserted it. Production hard-blocks the action for exactly that reason.
+   *
+   * This used to render the item DISABLED, carrying that sentence as its hint —
+   * "you can't do this and here's why" beats a missing menu item, normally.
+   * Miguel's call reverses it here on a narrower point: the escape hatch the
+   * hint implies DOESN'T EXIST YET. There is no un-auto-link anywhere in the
+   * product, so a permanently dead row promises a door that was never built.
+   * Until one is, the honest menu is the one that offers only what works —
+   * "Change primary guest" re-points the spotlight at whoever is actually
+   * holding the phone, which is what a hotelier reaching for "unlink" on an
+   * auto-linked guest almost always wanted.
+   *
+   * ⚠ RESTORE THE DISABLED ITEM the day an unlink-override ships: the state and
+   * its copy are one `git log` away, and at that point a visible-but-blocked row
+   * teaches the rule instead of hiding it.
+   *
+   * The COMPANION rows in Linked Reservations still render their disabled
+   * "Unlink reservation" — that is a different question (this stay, not this
+   * person) and it is deliberately left alone.
    */
   const kebabItems: KebabItem[] = primary
     ? [
         { label: 'Change primary guest', onClick: () => push({ kind: 'primary' }) },
-        primary.isAutoLinked
-          ? {
-              label: 'Unlink guest',
-              disabled: true,
-              hint: `Automatically linked via matching phone number (${formatPhoneForDisplay(thread.contactNumber)})`,
-            }
-          : {
-              label: 'Unlink guest',
-              danger: true,
-              onClick: () =>
-                setUnlinkTarget({
-                  scope: 'guest',
-                  guestName: primary.guest.name,
-                  reservationIds: ownStays.map((lr) => lr.reservation.id),
-                }),
-            },
+        // Staff-linked only: the link was asserted here, so it can be withdrawn here.
+        ...(primary.isAutoLinked
+          ? []
+          : [
+              {
+                label: 'Unlink guest',
+                danger: true,
+                onClick: () =>
+                  setUnlinkTarget({
+                    scope: 'guest',
+                    guestName: primary.guest.name,
+                    reservationIds: ownStays.map((lr) => lr.reservation.id),
+                  }),
+              } satisfies KebabItem,
+            ]),
       ]
     : [];
 
@@ -452,11 +475,14 @@ export function ConversationDetailsPanel({
                 </h3>
               ) : (
                 <div className="flex items-start gap-3">
+                  {/* SQUARE, like every other avatar on the surface. The panel
+                      frames draw this 48px portrait as a circle and the build
+                      flagged it; Miguel ruled 2026-08-25 that the cross-cutting
+                      avatar shape wins over the frame (see Avatar.tsx). */}
                   <Avatar
                     src={primary?.guest.avatar}
                     initials={primary?.guest.initials ?? ''}
                     size="profile"
-                    shape="circle"
                   />
                   <div className="flex-1 min-w-0" style={{ paddingTop: 2 }}>
                     <h3

@@ -815,9 +815,17 @@ a.focus\:outline-none:focus-visible,
 .panel-accordion > div:first-child > svg {
   display: none !important;
 }
-/* Second child = the expanded body, and it exists only when expanded. */
+/* Second child = the expanded body, and it exists only when expanded.
+
+   THE BODY PAYS NO PADDING — not here, and not in the row modifier below. Both
+   accordions on this surface now ease their height open (`ExpandRegion`), and
+   padding declared OUT HERE sits outside the animated region: it does not
+   collapse with the content, so a closing accordion would shrink its record to
+   nothing and then blink away a leftover band of empty space. Each body carries
+   its own inset INSIDE the region instead — the drill-in's 8px card gap as a
+   margin, the companion row's 16px as padding. */
 .panel-accordion > div:nth-child(2) {
-  padding: 8px 0 0 !important;
+  padding: 0 !important;
 }
 
 /* ---- …the same accordion, sitting INSIDE a row list ----------------------
@@ -836,18 +844,16 @@ a.focus\:outline-none:focus-visible,
       interior row reads as a chip floating inside the list.
    3. THE ROW'S OWN WASH. `colorBlack8` (#FAFAFA), which is `CanaryListItem`'s
       default hover — the one wash every row on this surface answers with.
-   4. THE BODY PAYS NO PADDING. Its inset lives INSIDE the animated region (see
-      `ExpandRegion`), because padding out here does not collapse with the
-      content and would leave a band of empty row behind a closing accordion. */
+
+   (The body's zero padding used to be restated here as a fourth point; it moved
+   UP into the base class once the drill-in started animating too, because it is
+   now true of every `.panel-accordion` rather than of list rows specifically.) */
 .panel-accordion-row > div:first-child {
   padding: 12px 12px 12px 16px !important;
   border-radius: 0;
 }
 .panel-accordion-row > div:first-child:hover {
   background-color: #fafafa;
-}
-.panel-accordion-row > div:nth-child(2) {
-  padding: 0 !important;
 }
 
 /* ---- Orb avatar tile ----------------------------------------------------- */
