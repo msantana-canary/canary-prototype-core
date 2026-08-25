@@ -93,6 +93,7 @@ import { useMessagingStore } from '@/lib/products/messaging/store';
 import { firstName, panelIdentity, serviceTaskOwnerKey } from '@/lib/products/messaging/panel-selectors';
 import { callsByThread, upsellsByGuest } from '@/lib/products/messaging/panel-mock';
 import { LinkedReservation, Thread } from '@/lib/products/messaging/types';
+import { formatPhoneForDisplay } from '@/lib/products/messaging/phone';
 
 /* ─────────────────────────────────────────────────────────────────────────
    Navigation
@@ -394,7 +395,7 @@ export function ConversationDetailsPanel({
           ? {
               label: 'Unlink guest',
               disabled: true,
-              hint: `Automatically linked via matching phone number (${thread.contactNumber})`,
+              hint: `Automatically linked via matching phone number (${formatPhoneForDisplay(thread.contactNumber)})`,
             }
           : {
               label: 'Unlink guest',
@@ -444,7 +445,10 @@ export function ConversationDetailsPanel({
                   className="font-['Roboto',sans-serif] font-medium text-[17px] leading-[26px] truncate"
                   style={{ color: colors.colorBlack1, minHeight: 48, display: 'flex', alignItems: 'center' }}
                 >
-                  {thread.contactNumber}
+                  {/* The anonymous panel's title IS the number, so it gets
+                      the same hotelier register as the row and the header
+                      (QA-2). Display only. */}
+                  {formatPhoneForDisplay(thread.contactNumber)}
                 </h3>
               ) : (
                 <div className="flex items-start gap-3">
@@ -591,7 +595,7 @@ export function ConversationDetailsPanel({
                             isLink: true,
                             trailing: <CopyIcon value="" label="Copy name" />,
                           },
-                          { label: 'Phone', value: thread.contactNumber },
+                          { label: 'Phone', value: formatPhoneForDisplay(thread.contactNumber) },
                           {
                             label: 'Email',
                             value: 'Add email',

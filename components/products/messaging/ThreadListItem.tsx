@@ -41,6 +41,7 @@ import { colors, CanaryListItem, CanaryTag, CanaryTooltip, TagSize, TagVariant, 
 import Icon from '@mdi/react';
 import { mdiBedOutline, mdiRoomServiceOutline, mdiFlag } from '@mdi/js';
 import { useRowKeyActivation } from '@/lib/products/messaging/useRowKeyActivation';
+import { formatPhoneForDisplay } from '@/lib/products/messaging/phone';
 
 interface ThreadListItemProps {
   thread: Thread;
@@ -61,9 +62,14 @@ export function ThreadListItem({
 }: ThreadListItemProps) {
   const formattedTime = format(thread.lastMessageAt, 'h:mm a').toUpperCase();
 
-  // For phone-only threads, display the contact number
-  const guestName = guest?.name || thread.contactNumber;
-  const firstName = guest ? guestName.split(' ')[0] : thread.contactNumber;
+  // For phone-only threads, display the contact number — FORMATTED (QA-2). The
+  // row used to echo raw digits back at the hotelier, and sat beside fixture
+  // rows carrying raw E.164, so one list held two registers for one concept.
+  // `formatPhoneForDisplay` is display-only; `thread.contactNumber` is
+  // untouched, so identity and matching still run on digits.
+  const contactLabel = formatPhoneForDisplay(thread.contactNumber);
+  const guestName = guest?.name || contactLabel;
+  const firstName = guest ? guestName.split(' ')[0] : contactLabel;
   const initials = guest?.initials || '';
 
   // Note: canonical room strings already carry reservation status where

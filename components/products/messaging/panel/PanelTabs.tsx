@@ -61,6 +61,7 @@ import { ReservationRecord } from './ReservationRecord';
 import { deriveStayState } from '@/lib/products/messaging/panel-selectors';
 import { LinkedReservation, CallRecord, ServiceTask, Upsell } from '@/lib/products/messaging/types';
 import { useRowKeyActivation } from '@/lib/products/messaging/useRowKeyActivation';
+import { formatPhoneForDisplay } from '@/lib/products/messaging/phone';
 
 /* ─────────────────────────────────────────────────────────────────────────
    The tab strip
@@ -311,7 +312,7 @@ function CompanionRow({
         {
           label: 'Unlink reservation',
           disabled: true,
-          hint: `Automatically linked via matching phone number (${contactNumber})`,
+          hint: `Automatically linked via matching phone number (${formatPhoneForDisplay(contactNumber)})`,
         },
       ]
     : [{ label: 'Unlink reservation', onClick: onUnlink, danger: true }];
@@ -353,7 +354,7 @@ function CompanionRow({
                       className="truncate font-['Roboto',sans-serif] text-[13px] leading-[20px]"
                       style={{ color: colors.colorBlack3 }}
                     >
-                      {lr.guest.phone}
+                      {formatPhoneForDisplay(lr.guest.phone)}
                     </span>
                   </span>
                 )}

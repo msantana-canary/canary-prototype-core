@@ -337,7 +337,22 @@ export function buildJourneyTimeline(reservationId: string): GjMessageEntry[] {
     });
   }
 
-  touchpoints.sort((a, b) => (a.order !== b.order ? a.order - b.order : a.at.getTime() - b.at.getTime()));
+  /**
+   * ⚠ CLOCK FIRST, STAGE AS THE TIE-BREAK (QA-2, 2026-08-25). This used to sort
+   * by `STAGE_ORDER` first, which put Mid-Stay "Jul 15 · 10:00 AM" directly
+   * ABOVE Checkout "Jul 15 · 8:00 AM" on a vertical rail whose whole grammar is
+   * "later is further down" — the printed times contradicting the order they
+   * were printed in, on the hero guest's timeline.
+   *
+   * A rail is a SEQUENCE, so the timestamp is the sort. Stage order survives
+   * only where two touchpoints land on the same minute and something has to
+   * break the tie deterministically. Nothing else moves: across days the
+   * journey stages already run in chronological order, so the visible change is
+   * exactly the same-day inversions.
+   */
+  touchpoints.sort((a, b) =>
+    a.at.getTime() !== b.at.getTime() ? a.at.getTime() - b.at.getTime() : a.order - b.order
+  );
 
   // 3. Resolve each touchpoint's channel statuses against the stay's clock and
   //    the seeded failures.

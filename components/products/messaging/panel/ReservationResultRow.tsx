@@ -41,6 +41,7 @@ import { LifecycleTag, SelectedCheck } from './panel-ui';
 import { formatStayRangeCompact } from './panel-format';
 import { LinkedReservation } from '@/lib/products/messaging/types';
 import { useRowKeyActivation } from '@/lib/products/messaging/useRowKeyActivation';
+import { formatPhoneForDisplay } from '@/lib/products/messaging/phone';
 
 function Fact({ path, children }: { path: string; children: React.ReactNode }) {
   return (
@@ -86,7 +87,7 @@ export function ReservationResultRow({
           <LifecycleTag status={reservation.status} />
         </div>
         <div className="flex items-center gap-3 flex-wrap" style={{ marginTop: 2 }}>
-          {guest.phone && <Fact path={mdiPhoneOutline}>{guest.phone}</Fact>}
+          {guest.phone && <Fact path={mdiPhoneOutline}>{formatPhoneForDisplay(guest.phone)}</Fact>}
           <Fact path={mdiPound}>{reservation.confirmationCode}</Fact>
           <Fact path={mdiCalendarBlankOutline}>
             {formatStayRangeCompact(reservation.checkInDate, reservation.checkOutDate)}

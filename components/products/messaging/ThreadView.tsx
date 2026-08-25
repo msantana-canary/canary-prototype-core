@@ -23,6 +23,7 @@ import { MessageFeed } from './MessageFeed';
 import { MessageComposer } from './MessageComposer';
 import { ThreadAiSlot } from './ai/ThreadAiSlot';
 import { OverflowMenuKeys } from './OverflowMenuKeys';
+import { formatPhoneForDisplay } from '@/lib/products/messaging/phone';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import { Thread, Message } from '@/lib/products/messaging/types';
 import { DEMO_PROPERTY_NAME } from '@/lib/products/messaging/message-templates';
@@ -216,7 +217,10 @@ export function ThreadView({
           <div className="min-w-0" style={{ paddingLeft: 8 }}>
             <div className="flex items-center gap-2">
               <h2 className="font-['Roboto',sans-serif] font-medium text-[16px] leading-[24px] truncate" style={{ color: colors.colorBlack1 }}>
-                {guest?.name || thread.contactNumber}
+                {/* Phone-only threads render the number in the hotelier
+                    register, not raw digits (QA-2). Display only — the
+                    thread's stored `contactNumber` is untouched. */}
+                {guest?.name || formatPhoneForDisplay(thread.contactNumber)}
               </h2>
               {/* Loyalty tier — moved here from message blocks (Miguel 2026-07-20).
                   Renders in the thread list row and thread header only. */}

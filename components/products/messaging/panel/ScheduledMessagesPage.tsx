@@ -127,7 +127,22 @@ export function ScheduledMessagesPage({
             const status = cardStatus(entry);
             const isFirst = i === 0;
             const isLast = i === entries.length - 1;
-            const timestamp = entry.sentAt ? `Sent ${entry.sentAt}` : entry.scheduledFor ?? '';
+            /**
+             * ⚠ THE TIMESTAMP'S VERB IS THE CARD'S OWN TAG (QA-2, 2026-08-25).
+             * `buildJourneyTimeline` sets `sentAt` for anything ATTEMPTED, and
+             * a failure implies an attempt — so a card whose only channel
+             * failed still carried a `sentAt`, and this line printed
+             * "Sent Feb 5 · 10:00 AM" beside its own red Failed tag. Two
+             * registers on one card, contradicting each other.
+             *
+             * The rule the other eight cards were already following, now
+             * stated: the timestamp's first word IS the tag's word. Sent /
+             * Failed / Scheduled, one vocabulary, so the tag and the time can
+             * never disagree again.
+             */
+            const timestamp = entry.sentAt
+              ? `${status.label} ${entry.sentAt}`
+              : entry.scheduledFor ?? '';
 
             return (
               <div className="flex" key={`${entry.title}-${i}`}>

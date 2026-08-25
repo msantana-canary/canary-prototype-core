@@ -28,6 +28,7 @@ import { formatStayRangeRecord } from './panel-format';
 import { getGjRowStatus } from '@/lib/products/messaging/guest-journey-link';
 import { Reservation } from '@/lib/core/types/reservation';
 import { Guest } from '@/lib/core/types/guest';
+import { formatPhoneForDisplay } from '@/lib/products/messaging/phone';
 
 export function ReservationRecord({
   reservation,
@@ -40,7 +41,8 @@ export function ReservationRecord({
 }) {
   const rows: DetailRow[] = [
     { label: 'Dates', value: formatStayRangeRecord(reservation.checkInDate, reservation.checkOutDate) },
-    { label: 'Phone', value: guest.phone ?? 'No number assigned' },
+    // One phone register across the panel (QA-2) — see `phone.ts`.
+    { label: 'Phone', value: guest.phone ? formatPhoneForDisplay(guest.phone) : 'No number assigned' },
     { label: 'Email', value: guest.email ?? 'No email assigned' },
     { label: 'Room', value: reservation.room ?? '—' },
     {

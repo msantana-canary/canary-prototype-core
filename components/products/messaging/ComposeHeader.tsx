@@ -60,6 +60,22 @@ function isCommittable(phone: string): boolean {
   return phone.replace(/\D/g, '').length >= 10;
 }
 
+/**
+ * ⚠ REJECTION HAS TO BE VISIBLE (QA-2, 2026-08-25).
+ *
+ * `commit()` was `if (isCommittable(phone)) setIsCommitted(true)` with no else
+ * branch, so typing "ZZZ-garbage-!!!" or "123" and pressing Enter did NOTHING —
+ * no error, no shake, no hint, the garbage still sitting in the To: line. The
+ * gate itself is right and deliberate; what was missing is the product saying
+ * so. A dead-end that looks identical to a broken app is worse than a rule.
+ *
+ * The message names the FIX rather than the failure, and it is one line because
+ * the field is a single line: "Enter a valid phone number." Two shapes fail —
+ * too short, and not a number at all — and they get the same sentence, because
+ * from the hotelier's side there is one thing to do about either.
+ */
+const PHONE_ERROR = 'Enter a valid phone number';
+
 export function ComposeHeader({
   composingPhoneNumber = '',
   onComposingPhoneChange,
@@ -91,8 +107,21 @@ export function ComposeHeader({
    */
   const [isAiOn, setIsAiOn] = useState(true);
 
+  /**
+   * The rejection, held only after an ATTEMPTED commit. Never while typing: a
+   * number is un-committable for its first nine keystrokes and an error that
+   * appears on keystroke one is an error about nothing.
+   */
+  const [error, setError] = useState<string | null>(null);
+
   const commit = () => {
-    if (isCommittable(composingPhoneNumber)) setIsCommitted(true);
+    if (isCommittable(composingPhoneNumber)) {
+      setIsCommitted(true);
+      setError(null);
+      return;
+    }
+    // An empty field is not a mistake — it is the state this pane opens in.
+    setError(composingPhoneNumber.trim() ? PHONE_ERROR : null);
   };
 
   return (
@@ -121,7 +150,18 @@ export function ComposeHeader({
               autoFocus
               placeholder="Enter phone number"
               value={composingPhoneNumber}
-              onChange={(e) => onComposingPhoneChange?.(e.target.value)}
+              onChange={(e) => {
+                // Editing IS the retry. Clearing on the first keystroke stops
+                // the message shouting at someone already fixing it.
+                if (error) setError(null);
+                onComposingPhoneChange?.(e.target.value);
+              }}
+              /* The base's own error register: red hairline, the ⓘ glyph inside
+                 the field's right edge, and the pink chip underneath. Only the
+                 first of those survives `.field-chromeless` (this field is
+                 embedded — the header row owns the chrome), which is why the
+                 helper line below carries the sentence too. */
+              error={error ?? undefined}
               onBlur={commit}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') commit();
@@ -163,8 +203,18 @@ export function ComposeHeader({
           BEFORE the commit and goes blank after, because after the commit the
           instruction has been followed and the composer below is the next
           thing to read. */}
-      <div className="flex flex-1 min-h-0 items-center justify-center text-sm" style={{ color: colors.colorBlack4 }}>
-        {!isOpen && 'Enter a phone number to start a new conversation'}
+      {/* ⚠ THE INSTRUCTION LINE MUTATES INTO THE ERROR (QA-2). It is the one
+          piece of prose this pane has, it sits where the eye already is after
+          a failed Enter, and it is the only place a full sentence fits — the
+          header row is a single 40px line with a Cancel button on the end.
+          Same slot, same type ramp, error colour: the empty state and the
+          rejection are the same statement at two temperatures, so the pane
+          never grows a second explanatory line. */}
+      <div
+        className="flex flex-1 min-h-0 items-center justify-center text-sm"
+        style={{ color: error ? colors.error : colors.colorBlack4 }}
+      >
+        {!isOpen && (error ?? 'Enter a phone number to start a new conversation')}
       </div>
 
       {isOpen && (

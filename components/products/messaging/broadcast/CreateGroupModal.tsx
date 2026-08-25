@@ -83,6 +83,7 @@ import {
   BroadcastContactChannel,
   BroadcastGroupContact,
 } from '@/lib/products/messaging/broadcast-types';
+import { formatPhoneForDisplay, isPlausiblePhone } from '@/lib/products/messaging/phone';
 import { ModalFocusScope } from '@/components/products/messaging/ModalFocusScope';
 
 interface CreateGroupModalProps {
@@ -115,11 +116,32 @@ export function CreateGroupModal({ isOpen, onClose, onCreate }: CreateGroupModal
    * A contact needs a NUMBER and a CHANNEL. The name is optional in the form
    * and optional in the model, because half the lists this modal exists for are
    * built off a sheet of phone numbers with no names attached.
+   *
+   * ⚠ AND THE NUMBER HAS TO BE A NUMBER (QA-2, 2026-08-25). The gate used to be
+   * `entryPhone.trim().length > 0`, so "banana" enabled Add contact, landed as
+   * a row in the table, and Save built a real group around it. `isPlausiblePhone`
+   * is the shared E.164-ish test — an optional `+`, digits and the usual human
+   * separators, 10–15 digits — the same one the compose gate reads, so a number
+   * this form accepts is a number the rest of the product would.
    */
-  const canAddContact = entryPhone.trim().length > 0 && entryChannel !== '';
+  const phoneIsUsable = isPlausiblePhone(entryPhone);
+  const canAddContact = phoneIsUsable && entryChannel !== '';
+
+  /**
+   * Shown only once the field is NON-EMPTY and has lost focus at least once —
+   * an error on the first keystroke of a ten-digit number is an error about a
+   * number nobody has finished typing.
+   */
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const phoneError =
+    phoneTouched && entryPhone.trim() && !phoneIsUsable ? 'Enter a valid phone number' : undefined;
 
   const addContact = () => {
-    if (!canAddContact) return;
+    if (!canAddContact) {
+      // Enter on an unusable number must SAY so rather than doing nothing.
+      if (entryPhone.trim()) setPhoneTouched(true);
+      return;
+    }
     setContacts((prev) => [
       ...prev,
       {
@@ -129,6 +151,7 @@ export function CreateGroupModal({ isOpen, onClose, onCreate }: CreateGroupModal
         channel: entryChannel as BroadcastContactChannel,
       },
     ]);
+    setPhoneTouched(false);
     // Clear the row — it is a repeating action, not a form you fill in once.
     setEntryName('');
     setEntryPhone('');
@@ -142,6 +165,7 @@ export function CreateGroupModal({ isOpen, onClose, onCreate }: CreateGroupModal
   const reset = () => {
     setName('');
     setContacts([]);
+    setPhoneTouched(false);
     setEntryName('');
     setEntryPhone('');
     setEntryChannel('');
@@ -234,11 +258,25 @@ export function CreateGroupModal({ isOpen, onClose, onCreate }: CreateGroupModal
                 this is exactly the control the frame draws, not an approximation
                 of it. Its `onChange` hands back a STRING (not an event), which is
                 the one place this form's handlers differ from the others. */}
-            <div style={{ width: 210 }}>
+            {/* ⚠ `onBlur` RIDES THE WRAPPER. `CanaryInputPhoneProps` declares no
+                native input props at all — no `onBlur`, no `onKeyDown` — so the
+                "touched" signal is taken off the React blur that bubbles out of
+                the field. Logged with the other passthrough asks. */}
+            <div style={{ width: 210 }} onBlur={() => setPhoneTouched(true)}>
               <CanaryInputPhone
                 placeholder="+1 201-555-0123"
                 value={entryPhone}
-                onChange={setEntryPhone}
+                onChange={(v) => {
+                  // Editing is the retry — see the gate note above.
+                  if (phoneTouched) setPhoneTouched(false);
+                  setEntryPhone(v);
+                }}
+                /* The base's error register IN FULL here, unlike the compose
+                   header's chromeless field: this one keeps its box, so the red
+                   hairline, the red focus ring (which compiles now — ask #49)
+                   and the pink chip underneath all paint. No helper line of
+                   ours is needed; the base already has one. */
+                error={phoneError}
                 size={InputSize.NORMAL}
               />
             </div>
@@ -296,7 +334,10 @@ export function CreateGroupModal({ isOpen, onClose, onCreate }: CreateGroupModal
                   key: 'phone',
                   label: 'PHONE NUMBER',
                   render: (_value, row: BroadcastGroupContact) => (
-                    <span style={{ color: colors.colorBlack1 }}>{row.phone}</span>
+                    /* The table prints the hotelier register, not the raw string the
+                       field took — the placeholder above promises a formatted number
+                       and this row used to answer with `+12015550142`. */
+                    <span style={{ color: colors.colorBlack1 }}>{formatPhoneForDisplay(row.phone)}</span>
                   ),
                 },
                 {

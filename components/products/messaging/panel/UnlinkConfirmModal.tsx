@@ -22,6 +22,7 @@
 import React from 'react';
 import { CanaryModal, CanaryButton, ButtonType, ButtonColor, ButtonSize, colors } from '@canary-ui/components';
 import { ModalFocusScope } from '@/components/products/messaging/ModalFocusScope';
+import { formatPhoneForDisplay } from '@/lib/products/messaging/phone';
 
 export interface UnlinkTarget {
   scope: 'reservation' | 'guest';
@@ -73,8 +74,8 @@ export function UnlinkConfirmModal({
           {isGuest
             ? `Unlink ${target?.guestName} from this conversation? ${
                 count > 1 ? `All ${count} of their reservations` : 'Their reservation'
-              } will stop appearing here. Messages will continue going to ${contactNumber}.`
-            : `Unlink ${target?.guestName}'s reservation from this conversation? This reservation's details will no longer appear here. Messages will continue going to ${contactNumber}.`}
+              } will stop appearing here. Messages will continue going to ${formatPhoneForDisplay(contactNumber)}.`
+            : `Unlink ${target?.guestName}'s reservation from this conversation? This reservation's details will no longer appear here. Messages will continue going to ${formatPhoneForDisplay(contactNumber)}.`}
         </p>
       </CanaryModal>
     </ModalFocusScope>
