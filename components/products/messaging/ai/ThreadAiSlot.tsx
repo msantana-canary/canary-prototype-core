@@ -112,7 +112,7 @@ function TicketSuggestionBand({
         {label}
       </span>
       <span
-        className="block truncate font-['Roboto',sans-serif] font-medium text-[15px] leading-[23px]"
+        className="block truncate font-['Roboto',sans-serif] font-normal text-[14px] leading-[22px]"
         style={{ color: colors.colorBlack1 }}
       >
         {value}
@@ -124,12 +124,9 @@ function TicketSuggestionBand({
     <ContextBand
       tone="blue"
       icon={<Icon path={mdiRoomServiceOutline} size={0.95} color={colors.colorBlueDark1} />}
-      actions={
-        <>
-          <BandButton label="Dismiss" variant="outline" onClick={onDismiss} />
-          <BandButton label="Review" variant="primary" onClick={onReview} />
-        </>
-      }
+      actions={<BandButton label="Review" variant="primary" onClick={onReview} />}
+      onDismiss={onDismiss}
+      dismissLabel="Dismiss ticket suggestion"
     >
       <div className="flex items-center" style={{ gap: 28 }}>
         <Pair label="Room number" value={room} />
