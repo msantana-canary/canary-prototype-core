@@ -2242,8 +2242,12 @@ Everything in the AI loop now does something. What remains inert, and why:
   product surface this prototype does not carry. A fake destination would be
   worse than an honest dead link.
 - **Download Transcript** (call details, batch 3) — unchanged.
-- **Composer tool icons** (emoji / attach / translate / templates / service
-  ticket) — decorative since batch 2.
+- **Composer tool icons** (emoji / attach / ~~translate~~ ~~templates~~
+  ~~service ticket~~) — decorative since batch 2. Templates and Translate went
+  live 2026-08-24; **service ticket retired from this list 2026-08-25 (QA-4)**
+  — it now opens the Conversation Details panel's create-task drill-in via
+  `requestCreateTask`, prefilled with the thread's room, same as the
+  recommended-ticket band's Review. Emoji and Attach remain inert.
 - **Copilot pill, Insights, Reservations chip** (top bar) — other products.
 - **👍** — latches locally; there is no pipeline behind a compliment yet.
 - **Carrier error codes** — underlined as links, no destination (the vendor's
@@ -2593,8 +2597,10 @@ Whitfield (reserved, date ranges) — exercises both locator variants as drawn.
 
 Production grew one, so the prototype does. Sixth in the bare-icon row, after
 the service ticket, because those two are the toolbar's only "do a thing to this
-stay" affordances and production orders them that way. Same decorative `ToolIcon`
-treatment as its five siblings — no flow behind it in this branch.
+stay" affordances and production orders them that way. ~~Same decorative
+`ToolIcon` treatment as its five siblings — no flow behind it in this
+branch.~~ **Upsells is still inert; its neighbour is not** — the service ticket
+icon went live 2026-08-25 (QA-4), see the stub-inventory entry above.
 
 **`mdiCashMultiple`**, verified against the reference at 10×: the front note is
 identical, glyph for glyph (thick border, white interior, filled centre circle).
@@ -3711,6 +3717,15 @@ Unchanged entries stand. Three changes:
     `aria-modal`, no initial focus, no trap, no restore — the page behind the
     scrim stays fully operable from the keyboard, verified by toggling a control
     behind an open modal. Escape and × close correctly; everything else leaks.
+    ~~Wanted from the library.~~ **PARTIALLY COVERED by an app-level stopgap,
+    QA-4 (2026-08-25):** `ModalFocusScope` (all twelve call sites) now renders
+    the real `role="dialog"` + `aria-modal="true"` on its own wrapper div, on
+    top of the initial-focus/trap/restore it already did — the missing piece
+    turned out to be the same bug that broke the CanaryModal-title-18px rule
+    (`[role='dialog']` matched nothing because nothing rendered it). This ask
+    stays open only because it is an app-level patch on a `display: contents`
+    div, not the library rendering the role on the dialog itself — delete the
+    wrapper's ARIA the day `CanaryModal` does.
 59. **A DISMISSAL CONTRACT across the base surfaces.** `CanaryModal` owns Escape
     privately and the (still-unbuilt) inset side-panel variant will need it too.
     Two independent document listeners means one Escape closes both a modal and

@@ -12,13 +12,16 @@
  * blue on hover. The smaller/tighter treatment is what keeps a row of quiet
  * affordances from out-weighing the two live controls on the right.
  *
- * ── TWO OF THEM ARE LIVE NOW (2026-08-24) ─────────────────────────────────
+ * ── THREE OF THEM ARE LIVE NOW (2026-08-25) ───────────────────────────────
  * TEMPLATES opens `<MessageTemplatesModal>`; TRANSLATE opens the in-composer
- * translate row below. Both keep the same bare `ToolIcon` dress as their four
- * inert siblings — a tool that does something and a tool that does not should
- * not look like two different kinds of control, because which is which is a
- * fact about this BRANCH, not about the product. The translate icon does gain
- * one state the others have no use for: it stays BLUE while its row is open,
+ * translate row below; SERVICE TICKET opens the Conversation Details panel's
+ * create-task drill-in, prefilled with the thread's room (same mechanism as
+ * the recommended-ticket band's Review — see `requestCreateTask` below). All
+ * three keep the same bare `ToolIcon` dress as their three still-inert
+ * siblings — a tool that does something and a tool that does not should not
+ * look like two different kinds of control, because which is which is a fact
+ * about this BRANCH, not about the product. The translate icon does gain one
+ * state the others have no use for: it stays BLUE while its row is open,
  * because that row is the only toolbar affordance that leaves something on
  * screen behind it.
  *
@@ -89,6 +92,7 @@ import {
 } from '@mdi/js';
 import { AiOrb } from './AiOrb';
 import { MessageTemplatesModal } from './MessageTemplatesModal';
+import { useMessagingStore } from '@/lib/products/messaging/store';
 import {
   MergeTagContext,
   interpolateMergeTags,
@@ -154,6 +158,14 @@ interface MessageComposerProps {
    * straight through from the thread's channel; see `Thread.channel`.
    */
   isAppleBusiness?: boolean;
+  /**
+   * The current thread's room — prefilled into the service-ticket drill-in
+   * (see `ToolIcon`'s "Service ticket" wiring below). Absent on the compose
+   * pane ("New message"), which has no thread and therefore no room to
+   * prefill; the drill-in still opens, just blank, same as any other
+   * hand-started ticket.
+   */
+  room?: string;
 }
 
 /**
@@ -329,7 +341,10 @@ export function MessageComposer({
   onDraftChange,
   mergeContext,
   isAppleBusiness = false,
+  room,
 }: MessageComposerProps) {
+  const requestCreateTask = useMessagingStore((s) => s.requestCreateTask);
+
   /**
    * The text still lives in local state, and the component is still KEYED BY
    * THREAD by its parent — that is what makes one guest's words structurally
@@ -499,7 +514,20 @@ export function MessageComposer({
       id: 'composer-tool-templates',
       onClick: () => setIsTemplatesOpen(true),
     },
-    { path: mdiRoomServiceOutline, label: 'Service ticket', id: 'composer-tool-ticket' },
+    /**
+     * SERVICE TICKET — no longer a stub (QA-4, 2026-08-25). Opens the SAME
+     * Conversation Details drill-in the recommended-ticket band's Review
+     * button opens (`requestCreateTask`, the `panelIntent` mechanic — see
+     * REDESIGN_NOTES §7): the panel is told to open at `create-task`, prefilled
+     * with this thread's room. One entrance to that form rather than a second
+     * one that could drift from it.
+     */
+    {
+      path: mdiRoomServiceOutline,
+      label: 'Service ticket',
+      id: 'composer-tool-ticket',
+      onClick: () => requestCreateTask(room),
+    },
     /**
      * UPSELLS — production grew this one, so the prototype does too (design
      * review 2026-08-21). It sits AFTER the service ticket because the two are

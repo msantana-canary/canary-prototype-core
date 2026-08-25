@@ -375,6 +375,7 @@ export function ThreadView({
           draft={draft}
           onDraftChange={(text) => setComposerDraft(thread.id, text)}
           mergeContext={mergeContext}
+          room={reservation?.room}
           /* Apple Message Templates need an Apple session. Absent ⇒ SMS, which
              is every thread here, so the tab stays closed. */
           isAppleBusiness={thread.channel === 'AMB'}

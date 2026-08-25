@@ -534,7 +534,14 @@ body {
    inherits `currentColor` and follows the label.
 
    Logged as the sharpest ask in this group: a real `CanaryLink` / inline text
-   variant, plus a grey ButtonColor. */
+   variant, plus a grey ButtonColor.
+
+   ⚠ THE RULE, mis-applied three places and swept 2026-08-25 (QA-4): inline
+   IN A SENTENCE strips the chrome (this class); a STANDALONE action — its own
+   row, its own line, nothing either side of it — keeps stock TEXT so hover
+   actually paints. "Manage templates," "Upload Contacts" and "Go to Knowledge
+   Base" were all wearing this class with nothing around them to be inline
+   WITH; they are stock `ButtonType.TEXT` now. */
 .text-btn-inline {
   height: auto !important;
   padding: 0 !important;

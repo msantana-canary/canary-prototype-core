@@ -248,21 +248,21 @@ export function AiExplanationPanel() {
                         would be worse than an honest dead link. The empty
                         handler is the point — do not wire it.
 
-                        The library has no link primitive, so `ButtonType.TEXT`
-                        is the ancestor, and it pays for itself: TEXT resolves
-                        its content colour to `colorBlueDark1` and NORMAL is
-                        `text-[14px]`, both exactly the frame's. Only the BUTTON
-                        CHROME has to come off — the size ramp's height, the
-                        16px side padding, the medium weight and the hover wash —
-                        which is what `.text-btn-inline` is. The underline is
-                        ours; a link is the one thing the base cannot draw.
-                        Logged as the sharpest ask in the batch: a real
-                        `CanaryLink`. */}
-                    <CanaryButton
-                      type={ButtonType.TEXT}
-                      onClick={() => {}}
-                      className="text-btn-inline underline [text-underline-offset:2px] leading-[22px]"
-                    >
+                        STANDALONE action, not in-sentence prose (QA-4,
+                        2026-08-25): it used to fake a hyperlink — `.text-btn-
+                        inline` stripped the button chrome and an underline
+                        stood in for it, because "a link is the one thing the
+                        base cannot draw." That register is for caption text a
+                        link sits INSIDE (the failed-to-send / no-response
+                        footers); this is a standalone CTA below its own
+                        heading, so it now keeps the library's own TEXT chrome
+                        — box, padding, hover wash — same as its siblings
+                        ("Manage templates", "Upload Contacts"), and the
+                        underline goes with the chrome it was compensating for.
+                        `ButtonType.TEXT` still pays for itself: content colour
+                        resolves to `colorBlueDark1` and NORMAL is
+                        `text-[14px]`, both exactly the frame's. */}
+                    <CanaryButton type={ButtonType.TEXT} onClick={() => {}}>
                       Go to Knowledge Base
                     </CanaryButton>
                   </div>

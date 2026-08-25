@@ -196,15 +196,14 @@ export function CreateGroupModal({ isOpen, onClose, onCreate }: CreateGroupModal
         className="!max-w-[800px] [&>div:first-child]:border-b [&>div:first-child]:border-[#E5E5E5] [&>div:last-child]:border-t [&>div:last-child]:border-[#E5E5E5] [&>div:nth-child(2)]:min-h-[360px]"
         footer={
           <div className="flex items-center justify-between">
-            {/* Upload Contacts — a stub. `CanaryButton` TEXT stripped to an inline
-                label, the surface's standing workaround for the link primitive the
-                library has no component for (ask 45). The ⓘ sits outside it so the
-                button's accessible name stays the words. */}
+            {/* Upload Contacts — a stub. STANDALONE action, not in-sentence
+                prose (QA-4, 2026-08-25): it keeps the library's own TEXT
+                chrome rather than `.text-btn-inline`'s stripped-down caption-
+                link dress, so hover actually paints. Stock NORMAL TEXT already
+                renders `text-[14px]`/`font-medium`. The ⓘ sits outside it so
+                the button's accessible name stays the words. */}
             <div className="flex items-center" style={{ gap: 6 }}>
-              <CanaryButton
-                type={ButtonType.TEXT}
-                className="text-btn-inline font-['Roboto',sans-serif] !text-[14px] !font-medium"
-              >
+              <CanaryButton type={ButtonType.TEXT}>
                 Upload Contacts
               </CanaryButton>
               <Icon

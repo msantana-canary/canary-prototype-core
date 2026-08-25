@@ -242,13 +242,14 @@ export function MessageTemplatesModal({
         footer={
           <div className="flex items-center justify-between">
             {/* "Manage templates" — a route into Settings that this branch does
-                not own. `CanaryButton` TEXT stripped of its button metrics, the
-                same way every other inline text affordance on this surface fakes
-                the link primitive the library has no component for (ask 45). */}
-            <CanaryButton
-              type={ButtonType.TEXT}
-              className="text-btn-inline font-['Roboto',sans-serif] !text-[14px] !font-medium"
-            >
+                not own. STANDALONE action, not in-sentence prose, so it keeps
+                the library's own TEXT chrome (QA-4, 2026-08-25): `.text-btn-
+                inline` used to strip it — height, padding, hover wash — which
+                is the right move for a caption LINK but wrong here, where it
+                just made the button's hover look dead. Stock NORMAL TEXT
+                already renders `text-[14px]` and `font-medium`, so nothing
+                needs restating; the base's own box + 8% hover wash paint. */}
+            <CanaryButton type={ButtonType.TEXT}>
               Manage templates
             </CanaryButton>
 
