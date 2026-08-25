@@ -49,7 +49,7 @@
  * already closes the modal on Escape, and the layer exists purely so a panel
  * UNDERNEATH the modal does not close on the same keypress.
  *
- * ⚠ LIBRARY ASK #53: focus management on `CanaryModal` — `role="dialog"`,
+ * ⚠ LIBRARY ASK #58: focus management on `CanaryModal` — `role="dialog"`,
  * `aria-modal`, initial focus, a Tab trap and focus restore. Delete this file
  * and its wrappers the day it lands.
  */

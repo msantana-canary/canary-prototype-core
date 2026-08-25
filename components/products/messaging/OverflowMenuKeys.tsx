@@ -48,7 +48,7 @@
  * (`tabindex=0`, `role="button"`, `aria-haspopup="menu"`) rather than reaching
  * into the caller's node.
  *
- * ⚠ LIBRARY ASK #54: keyboard operation on `CanaryOverflowMenu` — focusable
+ * ⚠ LIBRARY ASK #57: keyboard operation on `CanaryOverflowMenu` — focusable
  * items with `role="menuitem"`, arrow navigation, Escape-closes-and-restores,
  * and a focusable trigger wrapper when the trigger slot is not itself a
  * control. Delete this file the day it lands.

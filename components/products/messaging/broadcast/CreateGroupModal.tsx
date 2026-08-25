@@ -261,7 +261,7 @@ export function CreateGroupModal({ isOpen, onClose, onCreate }: CreateGroupModal
             {/* ⚠ `onBlur` RIDES THE WRAPPER. `CanaryInputPhoneProps` declares no
                 native input props at all — no `onBlur`, no `onKeyDown` — so the
                 "touched" signal is taken off the React blur that bubbles out of
-                the field. Logged with the other passthrough asks. */}
+                the field. Logged as ask #61. */}
             <div style={{ width: 210 }} onBlur={() => setPhoneTouched(true)}>
               <CanaryInputPhone
                 placeholder="+1 201-555-0123"

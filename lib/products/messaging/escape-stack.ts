@@ -34,7 +34,7 @@ import { useEffect, useRef } from 'react';
  * while the library is busy closing the modal. Both listeners fire on the same
  * Escape; exactly one surface goes away.
  *
- * ⚠ LIBRARY ASK: a dismissal contract on the base surfaces — `CanaryModal` and
+ * ⚠ LIBRARY ASK #59: a dismissal contract on the base surfaces — `CanaryModal` and
  * a (still-unbuilt) inset side-panel variant should share one layer stack so
  * the app does not have to own this. Delete this module the day it lands.
  */

@@ -52,7 +52,7 @@ import { useCallback, useRef } from 'react';
  * this callback removes it — and no later render puts it back.
  *
  * ⚠ DELETE THIS the day `CanaryListItem` handles its own keys and stops
- * doubling its own role. It is a stopgap for a library gap, logged as the
+ * doubling its own role (ask #60). It is a stopgap for a library gap, logged as the
  * sharpest ask that batch produced, and it should not outlive the fix.
  */
 export function useRowKeyActivation(onActivate?: () => void) {

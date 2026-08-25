@@ -3391,3 +3391,355 @@ directories were re-created, which produced fresh add events. The route files
 were byte-identical throughout and all six serve 200 now. A fresh `pnpm dev` or
 a production build never sees this. Worth knowing before anyone debugs a
 "missing" route that is plainly on disk.
+
+---
+
+## QA-2 — keyboard, focus and polish (2026-08-25)
+
+The second half of the same 50-finding sweep. QA-1 took the demo-critical lane
+(flow logic, app chrome, dead feedback, mock coherence) and deliberately left
+these: everything a mouse never touches, plus the polish that only shows up if
+you watch closely. Five commits, four lanes.
+
+The whole batch shares one property worth stating up front: **none of it changes
+what the demo looks like.** Every ring is `:focus-visible`, every trap is keyed
+to Tab, every Escape goes through a stack that yields to whatever is on top.
+Drive the prototype with a pointer and it is unchanged to the pixel.
+
+### The through-line — three library gaps, one shape
+
+Three of the six keyboard findings were the SAME shape: a base component
+announces a capability in the accessibility tree and then does not implement it.
+
+| The base says | The base does |
+|---|---|
+| `CanaryButton` renders a real `<button>` | ...with `outline-none` at rest and no focus state, so the ring is 2px of transparent at every state |
+| `CanaryOverflowMenu` renders a menu | ...whose items are `<div onClick>` with no role, no tabindex, no keys, and no Escape |
+| `CanaryModal` draws a scrim over the page | ...with no `role="dialog"`, no initial focus, no trap, no restore — the page behind it stays fully operable |
+| `CanaryListItem` puts `role="button"` on the `<li>` | ...and on the inner div too, so every row is a button inside a button, the outer one click-inert |
+
+That is not four bugs, it is one habit: **the DRAWN state is complete and the
+ANNOUNCED state is aspirational.** Every fix below is a stopgap keyed to the
+library's own DOM or class names, and every one carries a "delete this file the
+day the base handles it" note, because the alternative — a parallel component
+set — is exactly the drift this branch spent batch 5 eliminating.
+
+### 1. The focus ring, second half
+
+Ask #49's root cause (batch 7) was the library's unlayered
+`.outline-none { outline: 2px solid transparent; outline-offset: 2px }` — the
+Tailwind v3 SHORTHAND, which sets outline-COLOUR where v4's sets only
+outline-style. That fix restored the ring on FIELDS, which declare
+`focus:outline-[#2858c4]` and were being blocked from painting it.
+
+Buttons are the other half and they are a different problem: they declare no
+focus state at all. So the fix is a `:focus-visible` treatment rather than a
+restatement, in the same unlayered block, keyed on the library's own class
+names:
+
+```css
+button.outline-none:focus-visible,
+a.outline-none:focus-visible,
+button.focus\:outline-none:focus-visible,   /* CanaryTabs, overflow trigger */
+a.focus\:outline-none:focus-visible,
+[role='button'].outline-none:focus-visible { outline-color: #2858c4; }
+```
+
+Three things make it safe. It sets only the COLOUR, so the geometry stays the
+library's (2px solid, +2px offset, already in the shorthand). It is
+element-qualified, so the field register above keeps its own −1px INSET ring
+instead of being overwritten. And `:focus-visible` does not match a
+pointer-focused button, so a mouse-driven demo paints nothing new.
+
+Measured after: `#2858c4 solid 2px / +2px` on "New message", the three
+thread-header icons, the composer tools and the modal commit buttons — and the
+ring fades in over the button's own 200ms `transition-all`, which is the
+library's, not ours.
+
+### 2. ONE DISMISSAL GRAMMAR — the decision this batch is really about
+
+The surface had four answers to Escape. `CanaryModal` handled it. `PanelShell`
+handled nothing, so all five slide-in panels ignored the modal keystroke while
+announcing `role="dialog"` over a full-viewport scrim. The panel's kebab
+listened for an outside mousedown only. `AssignSelect` closed but dropped focus
+on `<body>`.
+
+The obvious fix — a document listener per surface — is wrong, and it is worth
+writing down why, because it is the trap anyone re-doing this will fall into.
+**These surfaces nest.** The unlink confirm is a `CanaryModal` at z 50 opened
+from inside a panel at z 45; a kebab popover opens inside that same panel. Four
+independent listeners means one Escape closes all of them.
+
+So: `lib/products/messaging/escape-stack.ts`. One document listener, a LIFO
+stack of layers, and Escape reaches the topmost only.
+
+```
+  open a panel                 → layer 1
+  open a kebab inside it       → layer 2
+  Escape → kebab closes, focus returns to its trigger, PANEL STAYS
+  Escape → panel closes
+```
+
+**The modal layer is a deliberate no-op.** `CanaryModal` owns its own Escape and
+we cannot take it off, so a modal registers a layer that does nothing — its only
+job is to sit on top and absorb the keypress so the panel underneath does not go
+with it. Both listeners fire; exactly one surface leaves.
+
+Verified in a browser, in that exact sequence.
+
+### 3. Modals take, trap and return focus
+
+`ModalFocusScope` wraps all twelve `CanaryModal` call sites on this surface. It
+is a `display: contents` element — no box, no line box, no flex/grid
+participation, so it cannot move anything — which is the only reason wrapping
+twelve differently-shaped call sites was a two-line change each instead of a
+prop-plumbing exercise.
+
+In order: remember the opener → move focus in on the next frame (waiting one
+frame so a field with `autoFocus` wins) → trap Tab in a cycle at capture phase,
+pulling focus back if it arrives from outside → restore to the opener on close,
+**but only if the opener is still in the document**, because a modal whose
+commit deletes its own launcher has nowhere honest to go back to.
+
+Measured before: Tab three times from an open templates modal and you were on
+the composer's AI pill BEHIND the scrim, and Enter flipped it.
+
+### 4. Menus answer keys
+
+`OverflowMenuKeys` wraps `CanaryOverflowMenu` and drives it through the two
+doors the base exposes — a click on the trigger wrapper toggles, a click on an
+item runs it and closes — while reading open/closed off the base's own DOM
+shape (the popover is the root's second child and exists only while open). No
+private state is guessed at; the base still owns opening and dismissal.
+
+One unplanned win: `trigger` is a free slot and the workspace status pill hands
+it a `CanaryTag`, which is a `<span>`. That menu had **no tab stop at all** —
+unreachable rather than merely unusable. The wrapper makes the base's own
+trigger wrapper the control when the trigger slot is not one, so the pill is now
+`role="button" aria-haspopup="menu"` and operable.
+
+The panel's hand-rolled `Kebab` and `AssignSelect` get the same contract stated
+directly. `AssignSelect` finally matches `ScopeSelect` one surface over, which
+had the whole thing right already — arrows, Home/End, Escape-returns-to-trigger.
+One correction to the QA filing on the way: it claimed `AssignSelect` had no
+Escape handler. It did; what it lacked was the focus return.
+
+### 5. Send and status
+
+- **The delivery ladder.** Outbound starts at `sending` and walks to `sent`
+  (600ms) and `delivered` (1800ms). The two lower rungs already existed in
+  `MessageStatus` and `STATUS_LABELS` and were unreachable for any live send,
+  because `sendMessage` stamped `'delivered'` at creation. ⚠ The timings are
+  fiction and have to read as PLAUSIBLE rather than fast: under ~300ms the
+  ladder is a flicker, which is worse than not animating. Seeded failures never
+  enter the ladder; inbound has no receipt of its own and is untouched.
+- **The list follows the thread.** Unblock from inside Blocked used to collapse
+  the list to "No conversations" while the pane went on showing the whole
+  conversation, no row selected anywhere. Clearing the pane was the smaller fix
+  and the more surprising one — the hotelier is READING this conversation, and
+  taking it off screen as a reward for unblocking reads as an error. Following
+  also makes the rule uniform: archive and block already land you on the inbox's
+  top row, so **the list always shows the folder that holds your open thread.**
+- **The draft card takes a stance.** "Response drafted by AI" used to render
+  beside an "AI Off" pill, fully actionable. The pill is the hotelier saying
+  *I am handling this conversation*; the draft is the AI's offer to handle it.
+  While the first is true the second comes off screen. ⚠ HIDDEN, NOT DISCARDED —
+  `drafts[threadId]` is untouched, so toggling back On returns the same draft
+  word for word. A pause that destroyed the AI's work would make the toggle a
+  one-way door.
+- **The commit button names what it does.** With a time pinned the broadcast's
+  Send routes to the queue and skips the confirm (production parity, already
+  documented); the label went on promising an immediate blast. Now
+  "Schedule via SMS" — production's, and the same shape as the 1:1 composer's
+  "Send via SMS": the verb changes, the channel stays. The count drops out
+  because the pill directly above already states the WHEN, which is what a
+  scheduled blast is read for.
+
+### 6. The GJ timeline
+
+Two findings, one root cause: the page trusted `buildJourneyTimeline` to have
+put things in an order the page then contradicted in prose.
+
+- **Clock first, stage as the tie-break.** The sort was `STAGE_ORDER` first, so
+  Mid-Stay "Jul 15 · 10:00 AM" rendered directly above Checkout "Jul 15 ·
+  8:00 AM" on a rail whose entire grammar is *later is further down*. Nothing
+  moves across days — the journey stages were already chronological — so the
+  visible change is exactly the same-day inversions.
+- **The timestamp's verb IS the card's tag.** `sentAt` is set for anything
+  ATTEMPTED and a failure implies an attempt, so a fully-failed card printed
+  "Sent Feb 5 · 10:00 AM" beside its own red Failed tag. One vocabulary now —
+  Sent / Failed / Scheduled — so the tag and the time cannot disagree again.
+  Partial failures still read "Sent", correctly: something landed.
+
+### 7. Input validation, and one phone register
+
+- **Rejection became visible.** Compose's `commit()` was an `if` with no `else`.
+  The ≥10-digit gate is right and deliberate; the product simply never said so,
+  so garbage plus Enter was indistinguishable from a broken app. The base's error
+  register paints in the field, and the pane's ONE line of prose mutates from the
+  instruction into the rejection — same slot, same ramp, error colour. The pane
+  never grows a second explanatory line, because there is nowhere to put one: the
+  header row is a single 40px line with a Cancel button on the end.
+- **The new-group gate was the mirror image.** `entryPhone.trim().length > 0`
+  let "banana" through Add contact, into the table, and into a saved group. Both
+  surfaces read one shared `isPlausiblePhone` now.
+- **One phone register.** `formatPhoneForDisplay` in
+  `lib/products/messaging/phone.ts`, applied everywhere raw digits reached the
+  screen. ⚠ DISPLAY ONLY — `contactNumber` is untouched and the store still
+  matches on digits, so formatting can never fork a thread or fail a match. And
+  it REFUSES rather than guesses: ten digits (or eleven with a US country code)
+  become `(201) 555-0123`; anything else — short, international, alphabetic —
+  comes back byte-identical. A formatter that reshapes what it does not
+  understand turns a number a hotelier could still dial into one they cannot.
+
+### 8. Three small honesties
+
+- **Refresh answers now.** Both card-header refresh icons produced zero DOM
+  mutations while painting the same hover wash and pointer cursor as the live "+"
+  beside them. Refresh is the SAFE click — the control a demo audience tries
+  first *because* it cannot break anything. ⚠ It deliberately does NOT get the
+  `isStub` treatment: that register is for actions belonging to a product this
+  branch does not carry ("Add an upsell"). Refreshing a card is this panel's own
+  action and there is nothing to fetch — the data is a fixture, so a real refresh
+  would re-render byte-identical rows. So the glyph turns exactly one revolution
+  and then nothing changes, because nothing changed. Which is what a refresh
+  against unchanged data looks like in the real product too.
+- **Offline says what Away says.** `offline` was a selectable `WorkspaceStatus`
+  consumed by nothing but the pill's own colours. THE MUTATION RULE: the band's
+  tone, icon and second sentence never change; only the first sentence changes,
+  and what it names is WHO decided the property is not answering — a person or
+  the clock.
+
+  | status | copy |
+  |---|---|
+  | `away` | You are away. Auto response is enabled. |
+  | `offline` | Outside online hours. Auto response is enabled. |
+
+  ⚠ STILL NOT BUILT: a real schedule. Nothing compares the clock against the
+  "Online hours: 8:00 AM – 11:00 PM EST" the top bar prints as static text, so
+  the off-hours copy is reached by picking Offline from the pill rather than by
+  time passing. That is the honest demo shape — the copy exists and is reachable
+  — and the scheduler stays on the not-built list.
+- **Rachel Cohen's card is hers.** `res-rachel-nov.paymentCard.cardholderName`
+  read "Rachel Green", one drill-in from a thread the panel titles Rachel Cohen.
+  Fixed at the canonical data, plus the stale comment header in `ai-mock.ts`.
+
+### Files touched (QA-2)
+
+**New**
+- `lib/products/messaging/escape-stack.ts` — the LIFO Escape stack
+- `lib/products/messaging/phone.ts` — `formatPhoneForDisplay` + `isPlausiblePhone`
+- `components/products/messaging/ModalFocusScope.tsx`
+- `components/products/messaging/OverflowMenuKeys.tsx`
+
+**Changed** — `app/globals.css` · `MainNav` · `MessageTemplatesModal` ·
+`ThreadView` · `ThreadListItem` · `ComposeHeader` · `ai/ThreadAiSlot` ·
+`ai/AddInformationModal` · `ai/AiFeedbackModal` · `ai/CarrierErrorModal` ·
+`broadcast/BroadcastComposer` · `broadcast/BroadcastFilterPanel` ·
+`broadcast/BroadcastMessageBubble` · `broadcast/BroadcastScheduledPanel` ·
+`broadcast/CreateGroupModal` · `broadcast/ScheduleSendTimeModal` ·
+`broadcast/ScheduledBroadcastBlock` · `panel/AssignSelect` · `panel/PanelShell` ·
+`panel/PanelTabs` · `panel/panel-ui` · `panel/ConversationDetailsPanel` ·
+`panel/ScheduledMessagesPage` · `panel/ReservationRecord` ·
+`panel/ReservationResultRow` · `panel/UnlinkConfirmModal` ·
+`lib/products/messaging/store` · `lib/products/messaging/guest-journey-link` ·
+`lib/products/messaging/useRowKeyActivation` · `lib/core/data/reservations` ·
+`lib/products/messaging/ai-mock`
+
+### Stub inventory — QA-2 update
+
+Unchanged entries stand. Three changes:
+
+- **Both card-header "Refresh" icons are ON the list**, as *answering stubs*: a
+  one-revolution spin and no data change. A new sub-category, and the only member
+  of it. Distinguish it from `isStub` (which drops the pointer cursor and names
+  another product) — that register is for actions this branch cannot perform;
+  this one is for an action with nothing to do.
+- **The call-details PLAYBACK BAR is on the list.** Play, ±15s and the speed
+  chip are all inert and the source has always said so ("PLAYBACK IS DECORATIVE
+  BUT COHERENT" — there is no `<audio>` element anywhere, by design), but it was
+  absent from this inventory while "Download Transcript" on the same page was on
+  it. It is the most functional-looking dead control in the panel: a filled
+  primary play button and a live-computed scrubber. **Not changed in code, on
+  purpose** — the decorative-but-answering rationale in `CallDetailsPage.tsx` is
+  a standing ruling, not an oversight. Listed so a demo driver knows not to press
+  Play in front of SJ.
+- **The top-left property switcher is on the list.** `CanaryAppShellV2` renders
+  the hotel name with an always-present ⇅ chevron and `cursor: onPropertyClick ?
+  "pointer" : "default"`; this branch passes `property` and no handler. It sits
+  in the corner of every screenshot. **Shell territory, not changed here** — the
+  honest fix is library-side (hide the chevron when there is no handler), which
+  is ask #62 below; a branch-level no-op handler would buy a pointer cursor and
+  still leave the hover paint missing, because the component attaches no hover
+  state to that row at all.
+
+### Not in QA-2's scope, and still open
+
+- **Linking the primary guest's OWN stay lands with no feedback.** The flow
+  returns to the Linked Reservations tab (companions unchanged, correctly — a
+  guest's own stay is not their own companion) and the only trace is the
+  "Emily's Reservations" count ticking. The data routing is deliberate; the
+  rough edge is the silent landing. Cheapest fix is a success toast in `onLink`
+  — the Toast plumbing already exists in the panel and the service-task unlink
+  beside it already toasts.
+- **The link picker showed one reservation twice** for the query "Emily"
+  (identical rows, same confirmation code). Mock-data duplicate or a missing
+  dedupe in the picker; noticed during QA verification, never triaged.
+
+### ⚠ Library / build asks — additions
+
+56. **`CanaryButton` has no focus state.** It composes `cursor-pointer
+    outline-none` and names no `:focus-visible`, so with #52's hand-written
+    `.outline-none` shorthand in play, every button on every consuming surface
+    computes a 2px TRANSPARENT ring at focus. Same for `CanaryTabs`, the
+    overflow-menu trigger and the dialog/side-sheet close buttons, which use the
+    `focus:outline-none` variant of the same shorthand. Give them a real
+    `:focus-visible` treatment, or stop writing `outline-none` at rest so the UA
+    default survives. Companion to #52; both die together.
+57. **`CanaryOverflowMenu` has no keyboard.** Items are `<div onClick>` with no
+    `role`, no `tabindex` and no key handling; the only dismissal is a document
+    click-outside listener. A keyboard user can open a menu they can neither
+    operate nor close. Wanted: focusable `role="menuitem"` items, arrow
+    navigation, Escape-closes-and-restores-focus, and a focusable trigger
+    wrapper when the `trigger` slot is not itself a control (it takes any node —
+    ours is a `CanaryTag`).
+58. **`CanaryModal` has no focus management.** No `role="dialog"`, no
+    `aria-modal`, no initial focus, no trap, no restore — the page behind the
+    scrim stays fully operable from the keyboard, verified by toggling a control
+    behind an open modal. Escape and × close correctly; everything else leaks.
+59. **A DISMISSAL CONTRACT across the base surfaces.** `CanaryModal` owns Escape
+    privately and the (still-unbuilt) inset side-panel variant will need it too.
+    Two independent document listeners means one Escape closes both a modal and
+    the panel that launched it. Wanted: a shared layer stack, so nesting works
+    without every consuming app rebuilding one. Extends the "side-panel
+    standard" promotion item.
+60. **`CanaryListItem` announces a doubled role.** `role="button"` lands on the
+    `<li>` AND on the inner div, with identical accessible names and the click
+    handler on the inner one only — so the row reads as a button inside a
+    button and the outer, focusable node is click-inert. Extends the existing
+    "handle your own keys" ask on the same component; both are one fix.
+61. **`CanaryInputPhone` spreads no native input props.** `CanaryInputPhoneProps`
+    declares `value`/`onChange`/`defaultCountry`/`size`/`placeholder` and nothing
+    else — no `onBlur`, no `onKeyDown`, no `ref` passthrough to the events — so a
+    "touched" signal has to be taken off a React blur bubbling out of a wrapper
+    div. Its internal `onChange` also fires on `keyup`/`change`/`blur` rather
+    than `input`, which is worth documenting whatever else changes.
+62. **`CanarySidebarV2` draws a property-switcher chevron with no switcher.**
+    The ⇅ glyph renders unconditionally while `cursor` is branched on
+    `onPropertyClick`, and the row attaches no hover state at all — unlike the
+    back button directly below it in the same component. Hide the chevron when
+    there is no handler, or give the row the same hover register as its siblings.
+
+### ⚠ Dev-server note (second instance, same watcher)
+
+QA-1 logged the running dev server's watcher missing new route directories. It
+does the same thing to **CSS**: the 45-line addition to `app/globals.css` was not
+picked up at all — not on save, and not on `touch` — and the served chunk kept
+its old hash while JS HMR went on working normally. A second edit that changed
+CONTENT again did trigger the rebuild, after which the rule served correctly and
+was verified live.
+
+Worth knowing because the failure mode is silent and looks exactly like a broken
+selector: the rule is in the file, the page is freshly loaded, and the computed
+style has not moved. Check the served chunk before debugging the CSS. A fresh
+`pnpm dev` or a production build never sees this.

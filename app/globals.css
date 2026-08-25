@@ -638,7 +638,7 @@ body {
    −1px inset ring: inputs, selects and textareas also wear `.outline-none`,
    and an unqualified rule here would fight the block above for them.
 
-   ⚠ LIBRARY ASK #52a: give `CanaryButton` (and `CanaryTabs`, and the
+   ⚠ LIBRARY ASK #56: give `CanaryButton` (and `CanaryTabs`, and the
    overflow-menu trigger) a real `:focus-visible` treatment, or stop writing
    `outline-none` at rest so the UA default survives. Delete this block the day
    either lands. */
