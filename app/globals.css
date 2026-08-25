@@ -446,7 +446,35 @@ body {
    hover as opacity — 8% of the button colour on OUTLINED, and a fade of the
    LABEL on PRIMARY — where the frames darken/tint the fill and leave the label
    alone. Restoring the fill is four lines and keeps the register identical to
-   what Miguel signed off in batch 4; logged as the "tonal hover" library ask. */
+   what Miguel signed off in batch 4; logged as the "tonal hover" library ask.
+
+   ⚠ THE MUZZLE (QA-4, 2026-08-25). Two separate bugs, found by measuring
+   computed style rather than eyeballing: hover WAS painting on every band
+   button — `!bg-white`, the historical cascade-trap offender, is already gone
+   from the call site (see `BandButton` in `band-ui.tsx`) — but PRIMARY's fill
+   was going the WRONG DIRECTION. `colorBlueDark2` (#5E82D3) is a LIGHTER tint
+   than the rest-state `colorBlueDark1` fill (#2858C4) — the "DarkN" ladder
+   gets PALER as N climbs, it never gets darker than Dark1 — so "Add to AI" /
+   "Review" / "Send" visibly WASHED OUT on hover instead of darkening. Next to
+   OUTLINE's correct light-wash, a primary button going pale reads as inert:
+   the one direction primary can plausibly darken in is the one this rule
+   didn't take, and at a glance it registers as no hover at all.
+
+   THE FIX borrows the SELECTED-chip technique from `BroadcastFilterControls`
+   (`ValueChip`'s neighbour) for the same reason it exists there: a solid
+   `colorBlueDark1` fill has no darker named token to swap to, so the base
+   colour stays put and an inset black wash — the library's own 8%/16%
+   opacity ladder, painted as `box-shadow` instead of a second background so
+   it composites over the ACTUAL fill rather than replacing it — darkens it
+   instead. Inset shadows are clipped to the element's own border-radius, so
+   the r8 geometry is untouched.
+
+   PRESS gets its own step on both registers now too — previously :active had
+   no rule at all, so it inherited the SAME visual as :hover (an `!important`
+   hover rule stays true while the pointer is down and hovering, which is
+   always the case for a mouse press), meaning a press never looked different
+   from a hover. 16% is the library's own active opacity, one notch past
+   hover's 8%; OUTLINE steps to `colorBlueDark4`, one notch past Dark5. */
 .band-button {
   border-radius: 8px !important;
   padding-left: 14px !important;
@@ -461,10 +489,18 @@ body {
   opacity: 1 !important;
   background-color: #eaeef9 !important; /* colorBlueDark5 */
 }
-.band-button-primary:hover .button-bg {
-  background-color: #5e82d3 !important; /* colorBlueDark2 */
+.band-button-outline:active .button-bg {
+  opacity: 1 !important;
+  background-color: #c9d5f0 !important; /* colorBlueDark4 — one wash step past hover */
 }
-.band-button-primary:hover .button-content {
+.band-button-primary:hover .button-bg {
+  box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.08) !important;
+}
+.band-button-primary:active .button-bg {
+  box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.16) !important;
+}
+.band-button-primary:hover .button-content,
+.band-button-primary:active .button-content {
   opacity: 1 !important;
 }
 

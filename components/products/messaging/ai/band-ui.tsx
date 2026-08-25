@@ -72,16 +72,26 @@ export function ContextBand({
 }) {
   const chrome = tone === 'ai' ? undefined : TONE_CHROME[tone];
 
+  /* AMBER is the one-line, no-actions register (QA-4, 2026-08-25 — measured
+     against the Figma spec, `band-spec-2040-62994.png`, 764×34). Row-profiling
+     that render: 1px border, then interior fill of exactly 32px, split 7/18/7
+     around the 12px/18px `BandText compact` line — never the AI/ticket bands'
+     52, which exists for their taller two-line and button-bearing content. Give
+     amber its own 34px total (1 + 7 + 18 + 7 + 1) rather than let the shared
+     52 stretch a single caption line into extra dead air. AI and BLUE keep the
+     original numbers — the ticket band's two-line anatomy must not move. */
+  const isAmber = tone === 'amber';
+
   return (
     <div
       className={`flex items-center w-full ${tone === 'ai' ? 'ai-gradient-band' : 'rounded-[8px]'}`}
       style={{
         gap: 12,
-        minHeight: 52,
+        minHeight: isAmber ? 34 : 52,
         paddingLeft: 14,
         paddingRight: 12,
-        paddingTop: 8,
-        paddingBottom: 8,
+        paddingTop: isAmber ? 7 : 8,
+        paddingBottom: isAmber ? 7 : 8,
         ...(chrome ? { border: `1px solid ${chrome.border}`, backgroundColor: chrome.background } : {}),
       }}
     >
@@ -248,11 +258,14 @@ export function BandText({
  * notice are the SAME row anatomy — `ContextBand` + one icon + one `BandText`
  * caption, no actions — so the fix lives here once rather than twice.
  *
- * `size={0.5}` is a 12px glyph (`@mdi/react`'s numeric `size` renders
- * `1.5 * size` rem), centered by flex inside the 16px box — the same
- * shrunk-glyph-in-a-box move as the feedback icons' 20px box
- * (`.icon-btn-20`, size 0.6) and the dismiss ×'s 24px box (size 0.7)
- * elsewhere on this surface, just at the frame's smaller amber-row scale.
+ * ⚠ RE-MEASURED (QA-4, 2026-08-25): `size={0.5}` (a 12px glyph, `@mdi/react`'s
+ * numeric `size` rendering `1.5 * size` rem) read as too small against the
+ * Figma spec — Miguel's own call after the last resize. Row-profiling the
+ * spec PNG's glyph (mdi icons carry a 2px inset on all sides of their 24×24
+ * viewBox, so ink is ~83% of the nominal render) measured ~14×14px of ink,
+ * which back-solves to a ~16.8px nominal glyph — `size={0.7}`, the same value
+ * already used for the dismiss ×'s 24px box, now filling the amber icon's
+ * smaller 16px box instead of leaving the 4px of daylight `0.5` did.
  */
 export function AmberBandIcon({ path }: { path: string }) {
   return (
@@ -260,7 +273,7 @@ export function AmberBandIcon({ path }: { path: string }) {
       className="flex items-center justify-center shrink-0"
       style={{ width: 16, height: 16 }}
     >
-      <Icon path={path} size={0.5} color={AMBER_ICON} />
+      <Icon path={path} size={0.7} color={AMBER_ICON} />
     </span>
   );
 }
