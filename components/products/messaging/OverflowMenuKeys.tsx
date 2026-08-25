@@ -33,6 +33,8 @@
  *   ↓ ↑ Home End                           move between items
  *   Enter / Space                          activate (the base then closes)
  *   Escape                                 close AND RETURN FOCUS TO THE TRIGGER
+ *                                          — through the shared layer stack, so
+ *                                            a panel underneath does not go too
  *   Tab                                    close, and let focus move on
  *
  * Items get `role="menuitem"` and `tabIndex={-1}` as they are focused, and the
@@ -54,7 +56,8 @@
  * control. Delete this file the day it lands.
  */
 
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useEscapeLayer } from '@/lib/products/messaging/escape-stack';
 
 /** The base's popover is the root's second child, and only while open. */
 function popoverOf(root: HTMLElement | null): HTMLElement | null {
@@ -135,6 +138,35 @@ export function OverflowMenuKeys({
     focusTargetOf(root())?.focus();
   };
 
+  /**
+   * ── AND IT JOINS THE ESCAPE STACK (QA-3, 2026-08-25) ──────────────────────
+   *
+   * This wrapper answered Escape in its own React handler, which is a SECOND
+   * listener beside the shared one — and `preventDefault` does not suppress a
+   * separate document listener. So opening this menu over a `PanelShell` and
+   * pressing Escape once closed the menu AND the panel underneath it: exactly
+   * the double-dismissal `escape-stack`'s own note calls "worse than the bug it
+   * fixes", reached by the one popover that had not registered.
+   *
+   * ⚠ THE OPEN STATE IS READ OFF THE DOM, not held here — same as everything
+   * else in this file. The base keeps `isOpen` private, but the popover's
+   * PRESENCE is that state, so a `MutationObserver` on the base's root reports
+   * it for free and covers the mouse path as well as the keyboard one.
+   */
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const r = root();
+    if (!r) return;
+    const read = () => setIsOpen(!!popoverOf(r));
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(r, { childList: true });
+    return () => observer.disconnect();
+  }, []);
+
+  useEscapeLayer(isOpen, closeAndRestore);
+
   const onKeyDown = (event: React.KeyboardEvent) => {
     const r = root();
     if (!r) return;
@@ -162,10 +194,8 @@ export function OverflowMenuKeys({
     const index = items.findIndex((item) => item === active);
 
     switch (event.key) {
-      case 'Escape':
-        event.preventDefault();
-        closeAndRestore();
-        break;
+      // Escape is NOT handled here — see the layer registration above. Two
+      // handlers for one keypress is the bug, not the fix.
       case 'Tab':
         // Close, then let the browser move focus normally from the trigger.
         triggerWrapperOf(r)?.click();

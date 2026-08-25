@@ -752,6 +752,32 @@ export function Kebab({ items, label = 'More actions', width = 248 }: { items: K
    * parking on something Enter cannot fire.
    */
   const onKeyDown = (event: React.KeyboardEvent) => {
+    /**
+     * ⚠ A CONTROL NESTED IN AN ACCORDION HEADER KEEPS ITS OWN KEYS (QA-3).
+     *
+     * Three of these kebabs sit in `CanaryExpand` header slots (the Linked
+     * Reservations rows). That header is a `role="button"` div whose `onKeyDown`
+     * runs on ANY bubbled Enter/Space with no target guard: it called
+     * `preventDefault()` — which cancels the native click a `<button>` generates
+     * from Enter, so the menu never opened and the item never fired — and then
+     * toggled the record underneath. Pressing Enter on "Actions for James Brady"
+     * silently expanded James Brady instead, and Enter on "Unlink reservation"
+     * did it a second time rather than opening the confirm.
+     *
+     * So the keys this menu owns stop here. `stopPropagation`, deliberately NOT
+     * `preventDefault`: the native activation is exactly what has to survive —
+     * it is the ancestor's `preventDefault` that was killing it. Fixing it in
+     * the Kebab rather than at the three call sites means every future nesting
+     * inherits the fix.
+     *
+     * ⚠ LIBRARY ASK #61: `CanaryExpand`'s header should ignore key events whose
+     * target is not the header itself. A disclosure header that eats the
+     * keyboard of everything it contains cannot hold a control.
+     */
+    if (['Enter', ' ', 'Escape', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+      event.stopPropagation();
+    }
+
     if (!isOpen) {
       if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
       event.preventDefault();

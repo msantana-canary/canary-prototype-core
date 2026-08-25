@@ -60,7 +60,7 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { colors } from '@canary-ui/components';
 import { useReducedMotion } from '../motion';
 import { useEscapeLayer } from '@/lib/products/messaging/escape-stack';
@@ -118,6 +118,46 @@ export function PanelShell({ isOpen, onClose, children, label = 'Conversation De
    */
   useEscapeLayer(isOpen, onClose);
 
+  /**
+   * …AND ESCAPE PUTS FOCUS BACK WHERE IT CAME FROM (QA-3, 2026-08-25).
+   *
+   * Wiring Escape into the panel above delivered half a behaviour. Before it,
+   * a panel could not be closed out from under in-panel focus, because it could
+   * not be closed by key at all; after it, Escape unmounted the panel while
+   * focus was sitting on the "Close conversation details" button inside it, and
+   * focus fell to `<body>` — the keyboard user re-Tabs from the top of the
+   * document to get back to a conversation they never left.
+   *
+   * The pattern is already in this repo: `ModalFocusScope` captures
+   * `document.activeElement` on open and restores it on close, skipping a node
+   * the commit deleted. This is that half, and only that half — the panel still
+   * does not trap Tab and still takes no initial focus, both of which are
+   * deliberate (it is a companion to the conversation, not a takeover of it).
+   *
+   * ⚠ IT RESTORES ONLY WHEN FOCUS WAS STRANDED — inside the panel, or already
+   * on `<body>`. A hotelier who closed the panel by clicking something else on
+   * the page is looking at that something else, and yanking focus back to the
+   * ⓘ trigger would be its own bug.
+   */
+  const openerRef = useRef<HTMLElement | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!isOpen) return;
+    openerRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    return () => {
+      const opener = openerRef.current;
+      openerRef.current = null;
+      if (!opener || !document.contains(opener)) return;
+      const active = document.activeElement;
+      const stranded =
+        !active ||
+        active === document.body ||
+        (panelRef.current ? panelRef.current.contains(active) : false);
+      if (stranded) opener.focus();
+    };
+  }, [isOpen]);
+
   // Two-phase mount: `mounted` keeps the panel in the DOM through its exit
   // transition; `entered` drives the open/closed styles and flips on the second
   // animation frame, so the browser paints the off-screen start position first.
@@ -174,6 +214,7 @@ export function PanelShell({ isOpen, onClose, children, label = 'Conversation De
       />
 
       <div
+        ref={panelRef}
         role="dialog"
         aria-label={label}
         className="fixed overflow-hidden flex flex-col"
