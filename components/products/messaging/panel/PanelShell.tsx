@@ -28,8 +28,15 @@
  * Two shells meant two widths, two z-index pairs, two insets, two mount
  * mechanics kept "in step deliberately" by hand, and a shadow on one branch of
  * a surface whose standing rule is that nothing casts one. So the three
- * broadcast panels (filter/recipients, Message details, scheduled detail) are
- * on THIS shell now and `FloatingPanel` is deleted rather than left orphaned.
+ * broadcast panels (filter/recipients, Message details, scheduled detail) went
+ * on THIS shell and `FloatingPanel` was deleted rather than left orphaned.
+ *
+ * ⚠ FILTER/RECIPIENTS MOVED OFF THIS SHELL (2026-08-25) — it is a `CanaryModal`
+ * now (`BroadcastFilterPanel`'s own header explains why: Miguel's ruling was a
+ * modal all along, and the panel shape here was a spec miss from this very
+ * consolidation). Message details (`BroadcastDeliveryPanel`) and scheduled
+ * detail (`BroadcastScheduledPanel`) are still the two broadcast panels on this
+ * shell.
  *
  * What changed for them, and all of it is the standard asserting itself:
  * 480 → 600px, under-the-top-bar → over everything, 16px insets → 12px,
@@ -80,9 +87,10 @@ interface PanelShellProps {
   onClose: () => void;
   children: React.ReactNode;
   /**
-   * The dialog's accessible name. FIVE panels use this shell now — Conversation
-   * Details, the call-details drill-in, and the three broadcast ones — so the
-   * default is only a fallback, never a description.
+   * The dialog's accessible name. FOUR panels use this shell now — Conversation
+   * Details, the call-details drill-in, and the two remaining broadcast ones
+   * (filter/recipients moved to a `CanaryModal`, see above) — so the default is
+   * only a fallback, never a description.
    */
   label?: string;
 }
