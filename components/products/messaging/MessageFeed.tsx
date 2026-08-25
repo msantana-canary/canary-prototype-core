@@ -34,13 +34,33 @@ const PIN_TOLERANCE_PX = 24;
 export function MessageFeed({ messages, guest }: MessageFeedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  /** Was the feed resting at the bottom the last time anyone scrolled it? */
+  /** Is the feed resting at the bottom? */
   const isPinnedRef = useRef(true);
+  /**
+   * The scrollTop THIS COMPONENT last assigned.
+   *
+   * ⚠ Load-bearing, and the reason the naive version of this did not work.
+   * Scroll events are delivered asynchronously, so a `scrollTop = scrollHeight`
+   * during a 220ms expansion is followed — several frames later, after the
+   * content has grown further — by a scroll event measuring a gap that is no
+   * longer zero. Read literally, that event says "the user scrolled away", and
+   * the feed unpins itself halfway through following its own growth.
+   *
+   * Comparing against the value we set tells the two apart: a scroll event that
+   * agrees with the last assignment is our own echo and changes nothing; one
+   * that disagrees is a hand on the wheel.
+   */
+  const selfScrollTopRef = useRef<number | null>(null);
+
+  const pinToBottom = (el: HTMLDivElement) => {
+    el.scrollTop = el.scrollHeight;
+    selfScrollTopRef.current = el.scrollTop;
+  };
 
   // Auto-scroll to bottom when messages change — container-scoped.
   useEffect(() => {
     if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      pinToBottom(containerRef.current);
       isPinnedRef.current = true;
     }
   }, [messages]);
@@ -76,7 +96,7 @@ export function MessageFeed({ messages, guest }: MessageFeedProps) {
 
     const observer = new ResizeObserver(() => {
       if (!isPinnedRef.current) return;
-      container.scrollTop = container.scrollHeight;
+      pinToBottom(container);
     });
     observer.observe(content);
     return () => observer.disconnect();
@@ -85,6 +105,11 @@ export function MessageFeed({ messages, guest }: MessageFeedProps) {
   const handleScroll = () => {
     const el = containerRef.current;
     if (!el) return;
+    // Our own echo — see `selfScrollTopRef`. Never let it unpin the feed.
+    if (selfScrollTopRef.current !== null && Math.abs(el.scrollTop - selfScrollTopRef.current) < 1) {
+      return;
+    }
+    selfScrollTopRef.current = null;
     isPinnedRef.current =
       el.scrollHeight - el.scrollTop - el.clientHeight <= PIN_TOLERANCE_PX;
   };
