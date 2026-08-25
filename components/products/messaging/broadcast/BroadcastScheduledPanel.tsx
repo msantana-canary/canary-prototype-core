@@ -48,7 +48,7 @@ import {
   getGuestEntriesForGroup,
 } from '@/lib/products/messaging/broadcast-store';
 import { formatScheduledMessageTime } from '@/lib/products/messaging/broadcast-schedule';
-import { guests } from '@/lib/core/data/guests';
+import { resolveBroadcastGuest } from '@/lib/products/messaging/broadcast-contacts';
 import { reservations } from '@/lib/core/data/reservations';
 import { ModalFocusScope } from '@/components/products/messaging/ModalFocusScope';
 
@@ -78,7 +78,7 @@ function MetaRow({ iconPath, children }: { iconPath: string; children: React.Rea
 }
 
 function MemberRow({ guestId, isLast }: { guestId: string; isLast: boolean }) {
-  const guest = guests[guestId];
+  const guest = resolveBroadcastGuest(guestId);
   if (!guest) return null;
 
   const reservation = Object.values(reservations).find((r) => r.guestId === guestId);

@@ -77,7 +77,7 @@ import {
   BroadcastMessage,
   BroadcastRecipientStatus,
 } from '@/lib/products/messaging/broadcast-types';
-import { guests } from '@/lib/core/data/guests';
+import { resolveBroadcastGuest } from '@/lib/products/messaging/broadcast-contacts';
 import { reservations } from '@/lib/core/data/reservations';
 
 /**
@@ -149,7 +149,7 @@ function RecipientRow({
   status: BroadcastRecipientStatus;
   isLast: boolean;
 }) {
-  const guest = guests[guestId];
+  const guest = resolveBroadcastGuest(guestId);
   if (!guest) return null;
 
   // Room comes from whichever reservation this guest holds in the demo data.

@@ -52,6 +52,10 @@ import { JourneyStage, TimingAnchor, TimingDelta } from '@/lib/products/guest-jo
 import { reservations } from '@/lib/core/data/reservations';
 import { guests } from '@/lib/core/data/guests';
 import { Reservation } from '@/lib/core/types/reservation';
+// The demo's one calendar day, already declared once for Check-in and Checkout.
+// Imported rather than restated: a second copy of "today" is exactly the kind
+// of drift this file is being fixed for.
+import { DEMO_TODAY } from '@/lib/products/checkout/types';
 
 /* ─────────────────────────────────────────────────────────────────────────
    Shape (unchanged from the canon so the error register keeps its contract)
@@ -240,21 +244,49 @@ function atTime(d: Date, hour: number, minute: number): Date {
 }
 
 /**
+ * The demo's evening on the demo's day — the latest moment anything on this
+ * surface may claim to have already happened.
+ *
+ * `DEMO_TODAY` is a date, and the inbox's own last message lands at 6:32 PM on
+ * it, so the ceiling is that evening rather than midnight: everything the
+ * fixtures print as sent stays sent.
+ */
+const DEMO_NOW = (() => {
+  const [y, m, d] = DEMO_TODAY.split('-').map(Number);
+  return new Date(y, m - 1, d, 18, 30, 0, 0);
+})();
+
+/**
  * The moment this reservation is "at" — what separates a sent touchpoint from a
  * scheduled one. Derived from the stay's lifecycle rather than from the real
  * clock, because the prototype's reservation dates are scattered across 2025–26
  * and a real `Date.now()` would make half the mock incoherent.
+ *
+ * ⚠ AND CAPPED AT THE DEMO CLOCK (QA-3, 2026-08-25). The lifecycle derivation
+ * is a per-reservation "now", and for the hero stay — Emily, checked in, Mar 16
+ * to 18 — arrival + 1 day put it at Mar 17, 6:00 PM. So the Upsell scheduled for
+ * Mar 17 at 2:00 PM rendered "Sent Mar 17 · 2:00 PM", two clicks from a thread
+ * whose day separator says MAR. 16. A message sent tomorrow.
+ *
+ * The cap is not a special case for that stay; it is the rule the surface
+ * already runs on everywhere else. There is ONE today here, and nothing may be
+ * reported as done after it. A stay's own lifecycle can still put its clock
+ * EARLIER — an upcoming booking is still 30 days out — it just cannot put it
+ * in the future.
  */
 function reservationNow(res: Reservation, arrival: Date, departure: Date): Date {
-  if (res.status === 'checked-out' || res.status === 'cancelled' || res.status === 'no-show') {
-    return addDays(departure, 3);
-  }
-  if (res.status === 'checked-in') {
-    // Mid-stay: arrival + 1 day, early evening.
-    return atTime(addDays(arrival, 1), 18, 0);
-  }
-  // Reserved / upcoming — far enough out that only the booking has fired.
-  return addDays(arrival, -30);
+  const derived = (() => {
+    if (res.status === 'checked-out' || res.status === 'cancelled' || res.status === 'no-show') {
+      return addDays(departure, 3);
+    }
+    if (res.status === 'checked-in') {
+      // Mid-stay: arrival + 1 day, early evening.
+      return atTime(addDays(arrival, 1), 18, 0);
+    }
+    // Reserved / upcoming — far enough out that only the booking has fired.
+    return addDays(arrival, -30);
+  })();
+  return derived.getTime() > DEMO_NOW.getTime() ? DEMO_NOW : derived;
 }
 
 /** Email + SMS baseline, WhatsApp where the guest is reachable on it. */

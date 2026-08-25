@@ -29,7 +29,7 @@ import {
   isFilterEmpty,
   getActiveFilterCount,
 } from './broadcast-store';
-import { guests } from '@/lib/core/data/guests';
+import { resolveBroadcastGuest } from './broadcast-contacts';
 
 export interface AudienceFacts {
   /** Entries in the folder before any filter. */
@@ -101,7 +101,7 @@ export function getAudienceFacts(
       optedOut += 1;
       continue;
     }
-    if (!guests[entry.guestId]?.phone) {
+    if (!resolveBroadcastGuest(entry.guestId)?.phone) {
       noPhone += 1;
       continue;
     }

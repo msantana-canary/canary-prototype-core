@@ -387,7 +387,32 @@ export const mockBroadcastMessages: Record<string, BroadcastMessage[]> = {
 // on `!isBuiltInBroadcastFolder`). Seeded relative to "now" so the demo always
 // reads as a future send ("Scheduled for Today, ...") rather than a stale date.
 
-const inHours = (h: number): Date => new Date(Date.now() + h * 60 * 60 * 1000);
+/**
+ * ⚠ SNAPPED TO THE HOUR, AND THAT IS THE HYDRATION FIX (QA-3, 2026-08-25).
+ *
+ * This module is evaluated TWICE for one page — once on the server, once in the
+ * browser — and `Date.now()` returns a different answer each time. The two runs
+ * are a few hundred milliseconds apart, so most loads render the same clock
+ * string and agree; a load that happens to straddle a minute boundary renders
+ * "3:14 PM" on the server and "3:15 PM" on the client, React reports "a tree
+ * hydrated but some attributes of the server rendered HTML didn't match", and
+ * the dev overlay paints a red "1 Issue" pill in the corner for the rest of the
+ * session. Roughly one load in thirty, which is exactly often enough to happen
+ * on stage.
+ *
+ * Flooring to the top of the current hour makes both runs compute the SAME
+ * seed, because the thing that differs between them is far smaller than the
+ * granularity now being read. The seeds stay relative to real time — the point
+ * of seeding them this way — and "Scheduled for Today, 3:00 PM" reads better
+ * than a ragged minute anyway.
+ */
+const startOfHour = (): number => {
+  const d = new Date();
+  d.setMinutes(0, 0, 0);
+  return d.getTime();
+};
+
+const inHours = (h: number): Date => new Date(startOfHour() + h * 60 * 60 * 1000);
 
 export const mockScheduledBroadcasts: ScheduledBroadcast[] = [
   {
@@ -396,6 +421,6 @@ export const mockScheduledBroadcasts: ScheduledBroadcast[] = [
     body: 'Reminder: the closing dinner starts at 7 PM in the Terrace Room. Dress code is smart casual.',
     senderName: 'THERESA WEBB',
     sendAt: inHours(3),
-    createdAt: new Date(),
+    createdAt: inHours(0),
   },
 ];

@@ -24,7 +24,7 @@ import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
 import { getAudienceFacts } from '@/lib/products/messaging/broadcast-audience-facts';
 import { BROADCAST_TODAY } from '@/lib/products/messaging/broadcast-mock-data';
 import { Avatar } from '../Avatar';
-import { guests } from '@/lib/core/data/guests';
+import { resolveBroadcastGuest } from '@/lib/products/messaging/broadcast-contacts';
 
 export function BroadcastThread() {
   const {
@@ -221,7 +221,7 @@ function SendConfirmDetail({
       {/* Faces */}
       <div className="flex items-center">
         {shown.map((id, i) => {
-          const guest = guests[id];
+          const guest = resolveBroadcastGuest(id);
           if (!guest) return null;
           return (
             <span

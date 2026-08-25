@@ -23,7 +23,7 @@ import {
   canMessageGuest,
 } from './broadcast-store';
 import { isStatusExcluded } from './broadcast-audience-facts';
-import { guests } from '@/lib/core/data/guests';
+import { resolveBroadcastGuest } from './broadcast-contacts';
 
 export interface AudienceSplit {
   /** Selected and messageable — the actual send list. */
@@ -39,7 +39,7 @@ export interface AudienceSplit {
 }
 
 function lastNameOf(guestId: string): string {
-  const name = guests[guestId]?.name ?? '';
+  const name = resolveBroadcastGuest(guestId)?.name ?? '';
   return (name.split(' ').pop() ?? name).toLowerCase();
 }
 
@@ -102,6 +102,6 @@ export function notSendingCount(split: AudienceSplit): number {
 /** Production's row subtitle, verbatim — opted-out takes precedence. */
 export function guestRoomMethod(entry: BroadcastGuestEntry, room: string): string {
   if (entry.messagingOptedOut) return `${room} • Opted out from messaging`;
-  if (!guests[entry.guestId]?.phone) return `${room} • No phone number`;
+  if (!resolveBroadcastGuest(entry.guestId)?.phone) return `${room} • No phone number`;
   return room;
 }

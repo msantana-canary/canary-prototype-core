@@ -36,7 +36,7 @@ import {
   mockScheduledBroadcasts,
   BROADCAST_TODAY,
 } from './broadcast-mock-data';
-import { guests } from '@/lib/core/data/guests';
+import { registerGroupContacts, resolveBroadcastGuest } from './broadcast-contacts';
 import { useGuestJourneyStore } from '@/lib/products/guest-journey/store';
 
 export const emptyFilterCriteria: BroadcastFilterCriteria = {
@@ -237,7 +237,7 @@ export function getGuestEntriesForGroup(
  * is never selectable anywhere in the flow.
  */
 export function canMessageGuest(entry: BroadcastGuestEntry): boolean {
-  return !!guests[entry.guestId]?.phone && !entry.messagingOptedOut;
+  return !!resolveBroadcastGuest(entry.guestId)?.phone && !entry.messagingOptedOut;
 }
 
 /**
@@ -300,7 +300,7 @@ function getSelectableGuestIds(
 function buildRecipientDeliveries(guestIds: string[]): BroadcastRecipientDelivery[] {
   return guestIds.map((guestId, i) => ({
     guestId,
-    status: !guests[guestId]?.phone ? 'not-sent' : i % 5 === 3 ? 'sent' : 'delivered',
+    status: !resolveBroadcastGuest(guestId)?.phone ? 'not-sent' : i % 5 === 3 ? 'sent' : 'delivered',
   }));
 }
 
@@ -474,18 +474,31 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
    * `memberCount` is DERIVED from the contact list rather than passed —
    * every number on the broadcast surface is a `.length`, and a stored count
    * that can disagree with the list it counts is a bug waiting for its first
-   * edit. `memberGuestIds` stays empty: hand-entered contacts are not canonical
-   * guests (see `BroadcastGroupContact`), so the audience card correctly shows
-   * a group with no PMS-known guests in it.
+   * edit.
+   *
+   * ⚠ AND THE CONTACTS BECOME RECIPIENTS (QA-3, 2026-08-25). `memberGuestIds`
+   * used to stay empty on the reasoning that hand-entered contacts are not
+   * canonical PMS guests. That is true about where the record came from and
+   * false about whether you can text it, and the whole audience pipeline
+   * resolves recipients from `memberGuestIds` — so every group this flow could
+   * produce (the modal refuses to save without a contact) landed with "1 guest"
+   * on its rail row, "no one to send to" in the To strip and a permanently
+   * disabled "Send to 0 guests". The demo's create-a-group-and-blast-it path
+   * dead-ended by construction.
+   *
+   * `registerGroupContacts` admits them as ordinary entries under synthetic
+   * ids; `broadcast-contacts.ts` carries the whole argument.
    */
   createGroup: (name: string, contacts: BroadcastGroupContact[] = []) => {
     if (!name.trim()) return;
+
+    const memberGuestIds = registerGroupContacts(contacts);
 
     const newGroup: BroadcastGroup = {
       id: `group-${Date.now()}`,
       name: name.trim(),
       type: 'custom',
-      memberGuestIds: [],
+      memberGuestIds,
       contacts,
       isArchived: false,
       memberCount: contacts.length,
@@ -500,12 +513,19 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
        *
        * The three fields under it are `selectGroup`'s own resets, restated
        * because that action reads `allGroups` from `get()` and the new group is
-       * not in it until this `set` lands. A new group holds no canonical
-       * guests, so the selection is empty by construction rather than by
-       * calling `getSelectableGuestIds` on a list it cannot see yet.
+       * not in it until this `set` lands — which is also why the selection is
+       * computed here from the ids we just minted rather than by calling
+       * `getSelectableGuestIds` on a list it cannot see yet.
+       *
+       * Everyone the modal collected starts SELECTED, matching `selectGroup`'s
+       * own "auto-select all messageable guests": the hotelier just typed these
+       * numbers in one at a time, so asking them to tick each one again is the
+       * flow doubting work it watched them do.
        */
       selectedGroupId: newGroup.id,
-      selectedGuestIds: [],
+      selectedGuestIds: memberGuestIds.filter((guestId) =>
+        canMessageGuest({ guestId, reservationId: '' })
+      ),
       activeFilters: { ...emptyFilterCriteria },
       loadedSegmentId: null,
     }));

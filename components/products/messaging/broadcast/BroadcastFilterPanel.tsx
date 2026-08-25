@@ -65,7 +65,7 @@ import {
   LengthOfStay,
   GuestRecurrence,
 } from '@/lib/products/messaging/broadcast-types';
-import { guests } from '@/lib/core/data/guests';
+import { resolveBroadcastGuest } from '@/lib/products/messaging/broadcast-contacts';
 import { reservations } from '@/lib/core/data/reservations';
 import { Segment } from '@/lib/products/guest-journey/types';
 import { useGuestJourneyStore } from '@/lib/products/guest-journey/store';
@@ -87,7 +87,7 @@ function GuestRow({
   locked?: boolean;
   onToggle?: () => void;
 }) {
-  const guest = guests[entry.guestId];
+  const guest = resolveBroadcastGuest(entry.guestId);
   if (!guest) return null;
   const subtitle = guestRoomMethod(entry, roomOf(entry));
 
