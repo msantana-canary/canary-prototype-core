@@ -193,7 +193,7 @@ export const aiExplanations: Record<string, AiExplanation> = {
     result: "AI successfully responded to the guest's message",
   },
 
-  /* ── Thread 24 · Rachel Green ─────────────────────────────────────────── */
+  /* ── Thread 24 · Rachel Cohen ─────────────────────────────────────────── */
 
   m75: {
     understood: 'The guest asked about the rooftop bar',

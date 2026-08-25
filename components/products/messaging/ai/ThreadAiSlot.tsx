@@ -8,7 +8,7 @@
  *   suggested fact  (AI)    ← the agent asking to learn something
  *   recommended ticket (blue) ← a detection you can act on
  *   escalation      (amber) ← a guest has been waiting
- *   away            (amber) ← the property is not answering
+ *   not answering   (amber) ← away, or outside online hours
  *   ─────────────────────── the composer input
  *
  * AMBER IS ALWAYS NEAREST THE COMPOSER. That is the whole rule, and it is a
@@ -156,21 +156,49 @@ function EscalationBand({ minutes }: { minutes: number }) {
 }
 
 /**
- * The away notice. Global rather than per-thread — it is a fact about the
- * PROPERTY, so it shows on every conversation the moment the status pill flips,
- * which is also what makes it demo-able by clicking one control.
+ * The not-answering notice. Global rather than per-thread — it is a fact about
+ * the PROPERTY, so it shows on every conversation the moment the status pill
+ * flips, which is also what makes it demo-able by clicking one control.
  *
- * ⚠ NOT BUILT: the off-hours variant. Production distinguishes "a human set us
- * to Away" from "we are outside the online hours printed in the top bar", and
- * the second wants different copy ("Outside online hours. Auto response is
- * enabled."). It needs its own frame and its own schedule state; one band with
- * a `label` prop would have been the cheap version of a decision nobody has
- * made yet.
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ⚠ THE OFF-HOURS VARIANT IS BUILT NOW (QA-2, 2026-08-25)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * `offline` was a valid `WorkspaceStatus`, selectable from the status pill, and
+ * consumed by nothing but the pill's own colours: flipping to Offline produced
+ * NO band on any thread, while Away produced one on all of them. Two states
+ * that mean the same operational thing — the property is not answering, the AI
+ * is — and only one of them said so.
+ *
+ * THE MUTATION RULE, which is the whole of the decision here:
+ *
+ *   The band's TONE, ICON and second sentence never change. Only the FIRST
+ *   sentence changes, and what it names is WHO decided the property is not
+ *   answering — a person, or the clock.
+ *
+ *     away     "You are away. Auto response is enabled."
+ *     offline  "Outside online hours. Auto response is enabled."
+ *
+ * That is production's distinction ("a human set us to Away" vs "we are past
+ * the hours printed in the top bar") and production's second copy. It is one
+ * band with one prop rather than two components, because there is one fact
+ * being reported and one consequence; a second component would let the
+ * consequence drift.
+ *
+ * ⚠ WHAT IS STILL NOT BUILT: a real SCHEDULE. The top bar prints "Online hours:
+ * 8:00 AM – 11:00 PM EST" as static text, and nothing compares the clock
+ * against it. So the off-hours copy is reached by picking Offline from the
+ * pill, not by time passing. That is the honest demo shape — the copy exists
+ * and is reachable — and the scheduler stays on the not-built list.
  */
-function AwayBand() {
+const NOT_ANSWERING_COPY: Record<'away' | 'offline', string> = {
+  away: 'You are away. Auto response is enabled.',
+  offline: 'Outside online hours. Auto response is enabled.',
+};
+
+function NotAnsweringBand({ reason }: { reason: 'away' | 'offline' }) {
   return (
     <ContextBand tone="amber" icon={<Icon path={mdiForumOutline} size={0.85} color={AMBER_ICON} />}>
-      <BandText>You are away. Auto response is enabled.</BandText>
+      <BandText>{NOT_ANSWERING_COPY[reason]}</BandText>
     </ContextBand>
   );
 }
@@ -224,7 +252,8 @@ export function ThreadAiSlot({ threadId }: { threadId: string }) {
    */
   const draft = isThreadAiOn ? rawDraft : undefined;
 
-  const isAway = workspaceStatus === 'away';
+  // Both non-answering postures raise the band; only the sentence differs.
+  const notAnswering = workspaceStatus === 'away' || workspaceStatus === 'offline' ? workspaceStatus : null;
 
   /**
    * ACCEPT the fact. `text` is the sentence actually approved — the band's Add
@@ -247,7 +276,7 @@ export function ThreadAiSlot({ threadId }: { threadId: string }) {
     showToast('Added to AI knowledge');
   };
 
-  const nothingToShow = !draft && !fact && !ticket && !unansweredMinutes && !isAway;
+  const nothingToShow = !draft && !fact && !ticket && !unansweredMinutes && !notAnswering;
   if (nothingToShow) return null;
 
   return (
@@ -290,7 +319,7 @@ export function ThreadAiSlot({ threadId }: { threadId: string }) {
 
         {!!unansweredMinutes && <EscalationBand minutes={unansweredMinutes} />}
 
-        {isAway && <AwayBand />}
+        {notAnswering && <NotAnsweringBand reason={notAnswering} />}
       </div>
 
       <AddInformationModal

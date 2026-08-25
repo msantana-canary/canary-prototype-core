@@ -1145,7 +1145,7 @@ export const reservations: Record<string, Reservation> = {
     checkInStatus: 'Not Started',
     checkOutStatus: 'Not Started',
     rateCode: 'AAA',
-    paymentCard: { brand: 'Visa', last4: '2299', expiryMonth: 10, expiryYear: 2028, cardholderName: 'Rachel Green', postalCode: '02116' },
+    paymentCard: { brand: 'Visa', last4: '2299', expiryMonth: 10, expiryYear: 2028, cardholderName: 'Rachel Cohen', postalCode: '02116' },
   },
   'res-omar-nov': {
     id: 'res-omar-nov',

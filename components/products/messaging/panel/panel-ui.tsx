@@ -34,6 +34,7 @@ import {
   mdiContentCopy,
   mdiCheck,
   mdiDotsHorizontal,
+  mdiRefresh,
 } from '@mdi/js';
 import { Reservation } from '@/lib/core/types/reservation';
 import { useEscapeLayer } from '@/lib/products/messaging/escape-stack';
@@ -532,6 +533,63 @@ export function IconAction({
           title={label}
           id={glyphTitleId(label)}
         />
+      }
+    />
+  );
+}
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * REFRESH — AN HONEST STUB, NOT A DEAD ONE (QA-2, 2026-08-25)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Both card-header refresh icons produced ZERO DOM mutations on click while
+ * painting the same hover wash and pointer cursor as the live "+" beside them.
+ * Refresh is the SAFE CLICK — the one control a demo audience tries first,
+ * because it is the one that cannot break anything — so a refresh that visibly
+ * does nothing is the worst dead control on the panel.
+ *
+ * ⚠ WHY NOT `isStub`. The sibling treatment (drop the pointer, name the other
+ * product in the tooltip) is right for "Add an upsell", which belongs to a
+ * product this branch does not carry. It is wrong here: refreshing a card is
+ * THIS panel's own action, and there is genuinely nothing to fetch — the data
+ * is a fixture, so a real refresh would re-render byte-identical rows.
+ *
+ * So the control answers, and answers honestly: one revolution of the glyph,
+ * then nothing changes — because nothing changed. That is what a refresh
+ * against unchanged data looks like in the real product too. It stays a stub
+ * (no data path, on the inventory), but it stops being a control that ignores
+ * you.
+ *
+ * The spin is exactly ONE Tailwind revolution and then stops, so the glyph
+ * lands back at 0°. Re-entrant clicks are ignored rather than re-triggering,
+ * which would make the icon stutter mid-turn.
+ */
+const REFRESH_SPIN_MS = 1000;
+
+export function RefreshAction({ label }: { label: string }) {
+  const [isSpinning, setIsSpinning] = useState(false);
+
+  return (
+    <CanaryButton
+      type={ButtonType.ICON_SECONDARY}
+      size={ButtonSize.COMPACT}
+      isRounded
+      onClick={() => {
+        if (isSpinning) return;
+        setIsSpinning(true);
+        setTimeout(() => setIsSpinning(false), REFRESH_SPIN_MS);
+      }}
+      className="icon-btn-neutral icon-btn-30"
+      icon={
+        <span className={`flex items-center justify-center${isSpinning ? ' animate-spin' : ''}`}>
+          <Icon
+            path={mdiRefresh}
+            size={0.72}
+            color={colors.colorBlack1}
+            title={label}
+            id={glyphTitleId(label)}
+          />
+        </span>
       }
     />
   );

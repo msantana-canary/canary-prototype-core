@@ -49,6 +49,7 @@ import {
   IconAction,
   Kebab,
   KebabItem,
+  RefreshAction,
   LifecycleTag,
   PanelTag,
   PANEL_PAD,
@@ -241,7 +242,7 @@ export function LinkedReservationsTab({
         title="Linked Reservations"
         actions={
           <>
-            <IconAction path={mdiRefresh} label="Refresh linked reservations" />
+            <RefreshAction label="Refresh linked reservations" />
             <IconAction path={mdiPlus} label="Link a reservation" onClick={onLink} />
           </>
         }
@@ -532,7 +533,7 @@ export function ServiceTasksTab({
         title="Service Tasks"
         actions={
           <>
-            <IconAction path={mdiRefresh} label="Refresh service tasks" />
+            <RefreshAction label="Refresh service tasks" />
             <IconAction path={mdiPlus} label="Create service task" onClick={onCreate} />
           </>
         }
