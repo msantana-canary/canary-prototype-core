@@ -3232,3 +3232,162 @@ production build.
 55. **`CanaryTabs` is uncontrolled with no `activeTab`.** Three consumers now
     mirror `onChange` into local state purely so something outside can read which
     tab is live — the templates modal needs it to name the footer's verb.
+
+---
+
+## QA-1 — the verified fix batch (2026-08-25)
+
+A QA sweep produced 50 confirmed findings. QA-1 is the demo-critical subset:
+flow logic, app chrome, dead feedback, and mock coherence. Keyboard, focus and
+the remaining polish are QA-2's and are deliberately untouched here.
+
+Three of Miguel's rulings shaped the batch and are recorded in the code as well
+as here, because a decision that lives only in a doc gets re-litigated by the
+next person who reads the code.
+
+### Ruling 1 — archived threads get no re-open button
+
+> *"Re-open is basically if we start chatting in the archived thread again, and
+> then it goes back into the regular inbox."*
+
+The QA finding was "archived conversations have no re-open affordance anywhere,
+and the store even ships an unwired `reopenThread`". That is not a gap. Re-open
+is not a filing action a hotelier performs on a conversation; it is what
+HAPPENS to a conversation when it starts again. So:
+
+- **`sendMessage`'s reopen side effect IS the feature**, not an accident, and it
+  is commented as such at the call site. Sending into an archived thread returns
+  it to the inbox; sending into a blocked one unblocks it.
+- **`reopenThread` stays and stays unreachable from the UI.** It is not dead
+  code — `sendMessage` is its one caller — and the comment on it says in as many
+  words: do not wire this to a button.
+- Composing a new message to an archived number reaches the same door, since
+  compose now resolves to the existing thread (below) and the send re-opens it.
+
+The affordance a demo actually needs here is undo-by-continuing, and that is
+what it has.
+
+### Ruling 2 — one number, one thread
+
+`createThreadFromPhone` compared nothing. Composing to a number the inbox
+already carried built a second, identity-less thread at the top of the list
+while the named one sat mid-list — two live conversations for one phone number.
+SMS has no such model: the guest's handset will show one thread whatever this
+app does.
+
+It now matches on digits (formatting is a rendering choice; the digits are the
+fact), selects the existing thread, and lets the composed first message land in
+it. The linkage was never missing — inbox SEARCH already resolved that number
+to the named thread — compose was simply the one surface ignoring it.
+
+### Ruling 3 — Apple Message Templates are AMB-only
+
+Apple Message Templates are Apple Messages for Business payloads. Production
+gates the tab on a thread having a live AMB session, because an Apple-hosted
+rich payload cannot be delivered down an SMS thread. The prototype showed the
+tab on every conversation, and its "Send" pushed the template body verbatim
+into the feed — raw `{{ guest_first_name }}` in a DELIVERED staff message, with
+the thread-list row previewing the same token at the top of the inbox.
+
+The gate is built on the real condition rather than hidden behind a flag:
+`Thread.channel` carries the session, `MessageChannel` gains `AMB`, and the
+picker renders the tab only for an AMB thread. **No thread in this prototype is
+AMB, so the tab never renders today** — which is the honest state, since there
+is no Apple session here to send into — and the raw-token Send path is out of
+reach as a consequence rather than by suppression. The day an AMB thread exists,
+the tab lights up on it and only on it.
+
+The Apple list stays in `message-templates.ts`. It is real production data, and
+deleting it would lose the thing the gate exists to gate.
+
+**Merge tags, and one deliberate deviation.** Production interpolates at SEND
+time. Preset "Use" now interpolates at INSERT time, because "Use" hands the copy
+to a human to edit and a sentence she is invited to proofread while three of its
+facts still read `{{ guest_first_name }}` is a sentence she cannot proofread —
+the first thing anyone does with it is type the name in by hand, which is worse
+than the tag because a hand-typed name does not update. The PICKER ROWS keep
+their literal tags (that is what tells her which facts get filled in), and so
+does the BROADCAST composer, which has no single guest to resolve against.
+A tag with no fact behind it is left exactly as written; silence would be a lie
+about what the template says.
+
+`PRESET_TEMPLATES[0]` also stopped hardcoding "Canary Test Hotel" — a different
+property's name in a message sent from this one — and uses `{{ hotel_name }}`
+like its two tag-bearing siblings.
+
+### What else went in
+
+**Flow.** Per-thread composer drafts in the store (the component stays keyed by
+thread, so cross-guest bleed is still structurally impossible; what changed is
+that the text is kept rather than dropped — it matters most for the AI draft
+card's Edit, which consumes the card and leaves the composer holding the only
+copy). `selectThread` split from `focusThread`, so a folder switch, archive or
+block lands the selection without marking an unopened thread read. Both land on
+the top RECENCY-sorted row using the page's own comparator. Clicking a row while
+composing exits compose. Anonymous threads key service tasks on the thread.
+Reschedule opens on the broadcast's real send time. The feed follows its own
+growth so the hero trace click stops hiding the answer.
+
+**Chrome.** Every nav item is mapped and every route exists — four real, six to
+an in-shell placeholder. See the stub inventory below. The broadcast composer's
+Templates icon is live.
+
+**Feedback.** The inline-background-beats-hover-class bug swept to zero across
+the whole app (six more elements, four products). The broadcast filter chips
+gained the `CanaryChip` hover/press ladder they never had. The fact-edit modal's
+commit consumes its argument.
+
+**Mock coherence.** One timeline: March 16, 2026. Detailed in the commit; the
+rule that came out of it is now in `mock-data.ts`'s header — *a step narrative is
+a claim about data on screen beside it*, so those notes are maintained against
+`reservations.ts` rather than written freehand.
+
+### Stub inventory — QA-1 update
+
+Unchanged entries stand. Two changes:
+
+- **The Upsells "+" is now ON the list.** It was not, which is why QA flagged it
+  as a dead control: it rendered as a full `CanaryButton` indistinguishable from
+  the live "+" buttons beside it (Link a reservation, Create service task, both
+  of which work). Creating an upsell belongs to the Upsells product and this
+  branch does not carry it, so the control stays and stops pretending. The panel's
+  `IconAction` gained an `isStub` register — pointer cursor dropped, tooltip
+  names the destination — applied to the "+" and to the per-row
+  "Open {name} in Upsells" icons so the two stubs on one card read as one thing.
+  A stub still takes no `onClick`: a handler that does nothing is
+  indistinguishable from a broken one, from outside AND from the code.
+- **The broadcast composer's Templates icon LEFT the list** — it is wired.
+  Its neighbour, the broadcast attach icon, remains decorative. Both were absent
+  from the inventory entirely (it covered the 1:1 composer's icons only), which
+  is how the Templates twin stayed dead after its Conversations counterpart went
+  live. Adding a decorative icon to a composer means adding it here.
+- **Six side-nav items are no longer stubs OR dead ends.** Upsells, F&B, Digital
+  Tips, Authorizations, Contracts and Clients on File route to
+  `PrototypeSurfacePlaceholder`. Five of them previously hit Next's unthemed 404
+  with the whole shell gone; F&B was unmapped and did nothing. The placeholder is
+  deliberately not a mocked-up empty product screen — that would be a worse lie
+  than the 404, because nobody would catch it. It names the PROTOTYPE as the
+  thing that stops there, not the product.
+
+### Known, deliberate, and left alone
+
+- **Thread 1 / `m2`'s six steps** stay frame-verbatim (Room 504, Gold Elite)
+  against Emily's real 153 / Diamond Elite. Logged Figma copy nit; it gets fixed
+  in Figma first.
+- **Marco's row stays "112 (RESERVED)"** — a drawn frame exemplar. His message
+  became a pre-arrival request instead, which keeps the recommended-ticket band
+  coherent as a room-prep ticket.
+- **Room 407** carries a one-day checkout-boundary overlap between two check-in
+  reservations. Pre-existing, in another product's data, and no messaging thread
+  names that room.
+- **Thread 1's 6:32 PM last message** sits ahead of the inbox's ~10:30 AM
+  cluster. Frame-driven and untouched.
+
+### ⚠ Dev-server note (not a code issue)
+
+Creating six route directories in one pass left the running dev server's watcher
+having registered only the first three; the other three 404'd until their
+directories were re-created, which produced fresh add events. The route files
+were byte-identical throughout and all six serve 200 now. A fresh `pnpm dev` or
+a production build never sees this. Worth knowing before anyone debugs a
+"missing" route that is plainly on disk.
