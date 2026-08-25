@@ -96,6 +96,8 @@ export function AiFeedbackModal() {
         onClose={closeFeedbackModal}
         title="Help us improve future responses"
         size="large"
+        /* One width for the content-modal family (Miguel 8/25): 800px. */
+        className="!max-w-[800px]"
         footer={
           /* CanaryModal draws no rules of its own. The frames rule BOTH the
              header and the footer, so the two dividers are hand-bled back out

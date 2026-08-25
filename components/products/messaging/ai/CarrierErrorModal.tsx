@@ -59,7 +59,15 @@ export function CarrierErrorModal() {
 
   return (
     <ModalFocusScope isOpen={!!messageId}>
-      <CanaryModal isOpen={!!messageId} onClose={close} title="Message Not Delivered" size="large">
+      <CanaryModal
+        isOpen={!!messageId}
+        onClose={close}
+        title="Message Not Delivered"
+        size="large"
+        /* One width for the content-modal family (Miguel 8/25): 800px, matching
+           the templates/group modals — bare size="large" is 896 and drifted. */
+        className="!max-w-[800px]"
+      >
         {/* The frame rules the header; CanaryModal does not. Bleed out through
             its `px-6 py-4` body padding and ink the line ourselves. */}
         <div
