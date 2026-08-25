@@ -661,6 +661,72 @@ a.focus\:outline-none:focus-visible,
   outline-color: #2858c4;
 }
 
+/* ---- ONE RING REGISTER, NOT TWO (QA-3, 2026-08-25) ----------------------
+   The block above keys on the LIBRARY'S class names, which was right for the
+   problem it solved and wrong as a boundary. Everything the branch adopted or
+   hand-rolled carries no `outline-none` at all, so it fell through to the UA
+   default — `auto 1px rgb(0, 95, 204)`, a hairline in a different blue. Both
+   rings were VISIBLE, so nothing was inaccessible; the surface just painted
+   two different focus rings depending on which control you happened to Tab to,
+   which reads as an unfinished screen rather than a considered one.
+
+   Measured on the UA ring: the workspace status pill (an adopted `<div
+   role="button">` whose only class is `cursor-pointer`), every thread row
+   (`li[role="button"]`), the AI On/Off toggle, both thread-list filter
+   comboboxes, the whole side nav, and the items inside an open menu.
+
+   So the register is stated by ROLE — what the control IS — rather than by
+   whose stylesheet dressed it. The geometry matches the library's own
+   shorthand (2px solid, +2px offset) so the two blocks are the same ring, and
+   the fields' −1px inset variant above is untouched: nothing here matches an
+   `<input>`, `<select>` or `<textarea>`.
+
+   ⚠ SPECIFICITY IS DELIBERATE. These selectors are LESS specific than the
+   library-keyed block above, so a control that carries both keeps the
+   colour-only restatement and the library's own geometry. */
+button:focus-visible,
+a[href]:focus-visible,
+summary:focus-visible,
+[role='button']:focus-visible,
+[role='menuitem']:focus-visible,
+[role='option']:focus-visible,
+[role='tab']:focus-visible,
+[role='switch']:focus-visible,
+[role='combobox']:focus-visible {
+  outline: 2px solid #2858c4;
+  outline-offset: 2px;
+}
+
+/* The thread rows take the ring INSIDE their own edge. They are edge-to-edge
+   cards in a scrolling column with 8px between them, so a +2px offset draws
+   into the gap and clips against the scroller's top and bottom — the same
+   reason the fields above went to −1px. */
+li[role='button']:focus-visible {
+  outline-offset: -2px;
+}
+
+/* ---- …and the ring does not FADE IN (QA-3, 2026-08-25) ------------------
+   `CanaryButton` composes `transition-all duration-200`, and `transition-all`
+   is `transition-property: all` — which, once the block above restates
+   `outline-color` on `:focus-visible`, animates the ring from the library's
+   transparent to #2858c4 over 200ms. A same-tick read at focus returns
+   `rgba(0,0,0,0)`: the ring is fully invisible on the frame the button is
+   focused and only arrives a fifth of a second later. Tab across a row of
+   icon buttons and the ring trails the focus.
+
+   The list is `all` FIRST and `outline-color` SECOND on purpose: a property
+   named twice takes its LAST entry, so everything the library meant to animate
+   still animates for 200ms and only the ring is instant. Enumerating the
+   library's intended properties instead would have to be re-audited every time
+   the base changes one. Scoped to `.transition-all` — exactly the controls
+   whose transition reaches the outline — so nothing else is touched. */
+button.transition-all,
+a.transition-all,
+[role='button'].transition-all {
+  transition-property: all, outline-color;
+  transition-duration: 200ms, 0s;
+}
+
 /* ---- Chromeless fields — CanaryTextArea / CanaryInput -------------------
    The composer's input and the compose header's "To:" field. Both are EMBEDDED
    fields: the parent card owns the border, the radius and the focus ring, so
