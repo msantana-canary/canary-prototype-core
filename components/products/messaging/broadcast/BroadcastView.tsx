@@ -6,8 +6,10 @@
  * columns) and the broadcast Thread card (all the remaining width).
  * The old three-column flush layout and the Active/Archived + Manage-segments
  * control band are gone — Active is simply the default state, Archived lives in
- * the GROUPS kebab, and "Manage segments" is reachable only from the filter
- * modal's Guest Segments mode.
+ * the GROUPS kebab. "Manage segments" is NOT currently reachable from anywhere:
+ * the filter modal's "Start from a segment" section (its only door) is hidden
+ * behind `SHOW_START_FROM_SEGMENT` in `BroadcastFilterPanel.tsx` (Miguel,
+ * 2026-08-26 — not in the Figma frame; the segments feature resurfaces later).
  */
 
 'use client';

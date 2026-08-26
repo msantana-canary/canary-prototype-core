@@ -2,19 +2,21 @@
  * BroadcastFilterControls — the attribute controls for the filter surface.
  *
  * Extracted from the Builder modal before it was deleted. The team jam settled
- * on a PANEL rather than a modal, but the Builder's control anatomy and its
- * live-match logic won, so they survive here as primitives the panel composes.
+ * on a PANEL rather than a modal (later corrected back to a modal, 2026-08-25),
+ * but the Builder's control anatomy and its live-match logic won, so they
+ * survive here as primitives the modal composes.
  *
  * Sized for a panel column rather than a 760px modal: the loyalty chips are
- * smaller, and the type-to-chip inputs carry their chips INSIDE the field.
+ * smaller. The code fields (Rate code / Group code / Room number) used to run
+ * a hand-rolled `TypeToChipInput` with its chips in a tray above the field —
+ * deleted 2026-08-26 in favour of the library's own `CanaryInputMultiple`,
+ * which draws the chips INSIDE the bordered field per Figma 1435-17906.
  */
 
 'use client';
 
 import React, { useState } from 'react';
-import Icon from '@mdi/react';
-import { mdiCloseCircle } from '@mdi/js';
-import { colors, CanaryInput, InputSize } from '@canary-ui/components';
+import { colors } from '@canary-ui/components';
 import {
   BroadcastFilterCriteria,
   LoyaltyTier,
@@ -29,13 +31,24 @@ export const LOYALTY_TIERS: { value: LoyaltyTier; label: string }[] = [
   { value: 'diamond-elite', label: 'Diamond Elite' },
 ];
 
-/** Section label above each attribute group. */
+/**
+ * Section label above each non-input attribute group (Loyalty status, Length
+ * of stay, Guest recurrence). Restyled 2026-08-26 to be pixel-identical to the
+ * base label `CanaryInputMultiple`/`CanaryInput` render internally at
+ * `InputSize.NORMAL` (`dist/index.mjs` `LABEL_CLASSES.normal`) — Miguel:
+ * "you'll notice that the label styling will be different so the other
+ * non-inputs should match." Deltas from the old style: weight 500 → 400 (no
+ * `font-medium`), `colors.colorBlack1` → Tailwind `text-black` (the base
+ * hardcodes `text-black`, not the token), bottom gap 8px → 4px (`mb-1`).
+ *
+ * `CanaryFormLabel` (the OTHER exported label) does not fit: it renders 14px
+ * at NORMAL with `font-weight: 500` and `colors.colorBlack2` — a different,
+ * more prominent register meant for standalone labeled fields, not this
+ * compact one. Hand-rolled here on purpose, not a base-component gap.
+ */
 export function FilterSectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p
-      className="font-['Roboto',sans-serif] font-medium text-[12px] leading-[18px]"
-      style={{ color: colors.colorBlack1, marginBottom: 8 }}
-    >
+    <p className="block text-black font-['Roboto',sans-serif] text-[12px] leading-[18px] mb-1">
       {children}
     </p>
   );
@@ -120,81 +133,6 @@ export function FilterChip({
     >
       {label}
     </button>
-  );
-}
-
-/** A committed value inside a type-to-chip field. */
-function ValueChip({ label, onRemove }: { label: string; onRemove: () => void }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1 rounded-[4px] shrink-0"
-      style={{
-        height: 22,
-        paddingLeft: 8,
-        paddingRight: 4,
-        backgroundColor: colors.colorBlack7,
-        color: colors.colorBlack1,
-      }}
-    >
-      <span className="font-['Roboto',sans-serif] text-[12px] leading-[18px]">{label}</span>
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={`Remove ${label}`}
-        className="shrink-0 cursor-pointer flex items-center"
-      >
-        <Icon path={mdiCloseCircle} size={0.55} color={colors.colorBlack3} />
-      </button>
-    </span>
-  );
-}
-
-/**
- * Type-to-chip field. Committed values render INSIDE the field above the input,
- * so the control reads as one object rather than an input with detached chips
- * beneath it. Enter commits, matching the old modal's mechanic and helper text.
- */
-export function TypeToChipInput({
-  placeholder,
-  chips,
-  onAdd,
-  onRemove,
-}: {
-  placeholder: string;
-  chips: string[];
-  onAdd: (value: string) => void;
-  onRemove: (value: string) => void;
-}) {
-  const [value, setValue] = useState('');
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      {chips.length > 0 && (
-        <div
-          className="flex flex-wrap gap-1.5 rounded-[6px]"
-          style={{ padding: 8, border: `1px solid ${colors.colorBlack6}` }}
-        >
-          {chips.map((c) => (
-            <ValueChip key={c} label={c} onRemove={() => onRemove(c)} />
-          ))}
-        </div>
-      )}
-      <CanaryInput
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && value.trim()) {
-            e.preventDefault();
-            const v = value.trim().toUpperCase();
-            if (!chips.includes(v)) onAdd(v);
-            setValue('');
-          }
-        }}
-        size={InputSize.NORMAL}
-        helperText="Press Enter to add"
-      />
-    </div>
   );
 }
 

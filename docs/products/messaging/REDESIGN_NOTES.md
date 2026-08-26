@@ -3855,3 +3855,132 @@ regardless, so the badge has nothing to report either way.
   across midnight. Left alone because the broadcast folders are seeded relative
   to "today" ON PURPOSE and pinning them would change which arrivals the demo
   shows.
+
+## Batch 8 — Filter modal, Figma-compliant (2026-08-26)
+
+The broadcast filter modal ("In-house guests" / "Arriving today" / etc.) brought
+into line with Miguel's frame, Figma 1435-17906. Five changes, one gate, one
+deletion.
+
+### 1. Fixed 887×738 geometry — supersedes the 1300px width
+
+`BroadcastFilterPanel.tsx`
+
+The team-jam canon line "A panel won the filter surface" (2026-07-30, above)
+was already superseded once, on 2026-08-25, when Miguel ruled the surface back
+to a modal — "for broadcasts we had it as a modal." That modal then ran
+`!max-w-[1300px]`, a width picked because two columns didn't fit the 800px
+family, not because it was measured off a frame. This batch measures it:
+`!max-w-[887px]`, with the two columns and the gutter now exact —
+24px outer insets, two 407.5px columns, a 24px gutter
+(24+407.5+24+407.5+24 = 887) — carried by the modal body's own `px-6`/`gap-6`
+rather than per-column padding.
+
+The body slot also gets a FIXED flex-basis (666px = 738 total − the header's
+72px) with `grow-0`/`shrink`/`min-h-0`, so the modal's rendered height stops
+being a function of how many guests match. Miguel: "the height just shortens,
+that can't happen." Verified at 21, 1, and 0 matches — identical modal height
+in all three; `max-h-[90vh]` still clamps (and compresses the body, never the
+header) on short viewports.
+
+### 2. Rate code / Group code / Room number → `CanaryInputMultiple`
+
+`BroadcastFilterPanel.tsx` · `BroadcastFilterControls.tsx`
+
+Miguel's verdict on the hand-rolled `TypeToChipInput`: it was doing the wrong
+thing — chips belonged INSIDE the bordered field, not in a tray drawn above it.
+`TypeToChipInput` and its `ValueChip` are deleted; all three code fields are now
+the base `CanaryInputMultiple`, which draws each value as a `CanaryChip`
+REMOVABLE inside the bordered field, above the type-in line, with a
+focus-within outline and blur-commit for free. The one gap: the base does not
+normalize on commit, so `normalizeCodeValues` (upper-case + de-dupe) wraps
+`onChange` before it reaches the store — codes are case-insensitive
+identifiers, and the base correctly has no opinion on that. Helper text is now
+`Press "Enter" to add`, matching the quoted "Enter" in the Figma anatomy.
+
+No further library gaps found: `CanaryInputMultiple`'s anatomy (label above the
+field, chips inside, helper text below) already matches Figma 1435-17906
+without an override. The ask ledger stays at #63; nothing new logged for this
+control.
+
+### 3. Non-input labels match the base input label
+
+`BroadcastFilterControls.tsx`
+
+Miguel: "you'll notice that the label styling will be different so the other
+non-inputs should match." `FilterSectionLabel` — now only above Loyalty status,
+Length of stay and Guest recurrence, since Rate code/Group code/Room number
+carry their own label via `CanaryInputMultiple` — is restyled pixel-identical
+to the base input label at `InputSize.NORMAL`: weight 500 → 400,
+`colors.colorBlack1` → Tailwind `text-black` (the base hardcodes the Tailwind
+class, not the token), bottom gap 8px → 4px. `CanaryFormLabel` was checked
+first and doesn't fit — it renders 14px, weight 500, `colors.colorBlack2`, a
+different and more prominent register meant for standalone labeled fields — so
+this stays a hand-restyled `<p>`, not a base-component swap.
+
+### 4. Trailing-check roster — supersedes leading checkbox + in-modal NOT SENDING roll-up
+
+`BroadcastFilterPanel.tsx` · `broadcast-audience-split.ts`
+
+The Figma row has no leading checkbox: selection reads as a trailing 20px check
+(`colors.colorBlueDark1`, darkening to `colors.colorBlack1` on hover) at the
+row's right edge, over a hover-washed (`colors.colorBlack8`) hit target.
+`GuestRow` drops `CanaryCheckbox` and its `mdiLockOutline` "locked" state for a
+hand-rolled `role="checkbox"` div — a conscious, Figma-driven exception to the
+base-components-are-the-floor rule, since no base row anatomy has a
+checkbox-less, trailing-indicator toggle. `aria-checked` carries the state;
+Enter/Space toggles like a click.
+
+The modal's NOT SENDING roll-up — the collapsed bar, the four reason groups,
+"Include all" — is gone. Unreachable guests (no phone, opted out) now render
+INLINE in the same sorted list, greyed (`colors.colorBlack3` name + sub-line),
+`aria-disabled="true"`, not toggleable, with their reason folded into the
+sub-line by `guestRoomMethod` (e.g. "118 STD · No phone number" — shorter, and
+Figma's `·` separator, not production's "Opted out from messaging"). The count
+semantics are unchanged: "N guests match" still counts everyone matched,
+reachable or not; the send list is still `selectedGuestIds`. `ReasonGroup` is
+deleted.
+
+`getAudienceSplit` keeps its full `sending`/`unreachable`/`statusHeld`/
+`userRemoved` shape — trimming it to only what this one call site now paints
+would be a bigger change than this batch asked for — but its two other
+exports, `summariseNotSending` and `notSendingCount`, had exactly one caller
+each (this same file, inside the deleted roll-up) and are now genuinely dead;
+both are deleted. A repo-wide check found no OTHER surface (`BroadcastToStrip`,
+`BroadcastDeliveryPanel` / "Message details") importing anything from
+`broadcast-audience-split.ts` — the reason-grouping logic this file was built
+to carry does not currently survive anywhere else, worth flagging since the
+opposite was the working assumption going in. New export:
+`sortGuestsByLastName`, the same comparator `getAudienceSplit`'s buckets were
+already sorted by, applied across the merged `visible` set so the roster reads
+in "normal sort position" instead of matched-then-grouped-by-reason.
+
+### 5. "Start from a segment" — gated off
+
+`BroadcastFilterPanel.tsx` · `BroadcastView.tsx`
+
+Not in the Figma frame. `SHOW_START_FROM_SEGMENT = false` (same idiom as
+`SHOW_SOURCES_CHIP` in `MessageBubble.tsx`) hides the label, `CanarySelect` and
+Save button; `handleStartFrom`, `segmentOptions`, `sourceSegmentId` and the
+Save-as-segment nested modal all stay wired but unreachable, ready to flip back
+when the segments feature resurfaces. `BroadcastView.tsx`'s header comment,
+which claimed "Manage segments is reachable only from the filter modal's Guest
+Segments mode," is corrected — right now it is reachable from nowhere.
+
+### ⚠ Focus-visible ring gap, found not fixed
+
+The new checkbox row is a real focusable control (`tabIndex`, `role="checkbox"`,
+`aria-checked`, Enter/Space), but `app/globals.css`'s existing role-keyed
+`:focus-visible` block (QA-3, 2026-08-25) lists `button`, `a[href]`, `summary`,
+`[role='button']`, `[role='menuitem']`, `[role='option']`, `[role='tab']`,
+`[role='switch']`, `[role='combobox']` — `[role='checkbox']` is not among them,
+so the row currently takes focus with no visible ring. Left as a documented gap
+rather than patched in this batch, which named exactly two stale comments as
+the drive-by-fix budget. The fix is a one-line addition to that existing
+selector list, in the same pattern the list already follows.
+
+### Files touched (Batch 8)
+
+`components/products/messaging/broadcast/BroadcastFilterPanel.tsx` ·
+`BroadcastFilterControls.tsx` · `BroadcastView.tsx` ·
+`lib/products/messaging/broadcast-audience-split.ts`

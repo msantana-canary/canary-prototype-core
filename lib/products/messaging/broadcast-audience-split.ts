@@ -2,13 +2,22 @@
  * Audience split — who is receiving, who isn't, and why.
  *
  * Extracted from the Ledger variant's roster before that arm was deleted. The
- * ledger LAYOUT lost the A/B, but its reason-grouping was the useful part and
- * survives here for the filter panel's NOT SENDING section.
+ * ledger LAYOUT lost the A/B, but its reason-grouping was the useful part.
+ *
+ * As of 2026-08-26 the filter modal no longer has a NOT SENDING roll-up —
+ * `BroadcastFilterPanel` renders unreachable guests inline instead — so
+ * `getAudienceSplit`'s only remaining consumer there reads `.visible` (via
+ * `sortGuestsByLastName`) and reachability per row, not the `sending` /
+ * `statusHeld` / `userRemoved` buckets. Those stay computed and exported: the
+ * split itself is still a reasonable general-purpose utility, and trimming it
+ * down to only what one call site currently paints would be a bigger change
+ * than this batch asked for. `guestRoomMethod` is this file's other export
+ * still in use, now also covering the inline reason on an unreachable row's
+ * sub-line rather than a NOT SENDING group header.
  *
  * Filter-EXCLUDED guests deliberately never appear: they are outside the
  * audience entirely, and the filter chips on the To strip already account for
- * them. NOT SENDING is only about people inside the audience who aren't
- * receiving.
+ * them.
  */
 
 import {
@@ -46,6 +55,17 @@ function lastNameOf(guestId: string): string {
 const byLastName = (a: BroadcastGuestEntry, b: BroadcastGuestEntry) =>
   lastNameOf(a.guestId).localeCompare(lastNameOf(b.guestId));
 
+/**
+ * The filter modal's ONE merged roster (2026-08-26) — reachable and
+ * unreachable guests interleaved in "normal sort position" rather than split
+ * into a matched list plus a separate NOT SENDING roll-up. Same comparator
+ * `getAudienceSplit`'s buckets already sorted by, just applied across the
+ * combined `visible` set instead of within each bucket.
+ */
+export function sortGuestsByLastName(entries: BroadcastGuestEntry[]): BroadcastGuestEntry[] {
+  return [...entries].sort(byLastName);
+}
+
 export function getAudienceSplit(
   groupId: string,
   allGroups: BroadcastGroup[],
@@ -81,27 +101,19 @@ export function getAudienceSplit(
   };
 }
 
-/** "2 unreachable · 3 already checked in" — the NOT SENDING bar's summary. */
-export function summariseNotSending(split: AudienceSplit): string {
-  const parts: string[] = [];
-  if (split.unreachable.length) parts.push(`${split.unreachable.length} unreachable`);
-  if (split.statusHeld.length) {
-    const out = split.statusHeld.filter((e) => e.checkInStatus === 'checked-out').length;
-    parts.push(
-      `${split.statusHeld.length} already checked ${out > split.statusHeld.length / 2 ? 'out' : 'in'}`
-    );
-  }
-  if (split.userRemoved.length) parts.push(`${split.userRemoved.length} you unchecked`);
-  return parts.join(' · ');
-}
-
-export function notSendingCount(split: AudienceSplit): number {
-  return split.unreachable.length + split.statusHeld.length + split.userRemoved.length;
-}
-
-/** Production's row subtitle, verbatim — opted-out takes precedence. */
+/**
+ * The row subtitle. Reachable guests get the bare room; unreachable guests
+ * (opted out or no phone on file) get the room plus a humanized inline reason
+ * — the filter modal's ONLY surface for that fact as of 2026-08-26, now that
+ * the NOT SENDING roll-up (collapsed bar + reason groups) is gone from this
+ * modal and rows render inline instead. Separator and wording match Figma
+ * 1435-17906's Lucas Fernandes row ("118 STD · No phone number") rather than
+ * production's longer "Opted out from messaging".
+ */
 export function guestRoomMethod(entry: BroadcastGuestEntry, room: string): string {
-  if (entry.messagingOptedOut) return `${room} • Opted out from messaging`;
-  if (!resolveBroadcastGuest(entry.guestId)?.phone) return `${room} • No phone number`;
+  if (entry.messagingOptedOut) return room ? `${room} · Opted out` : 'Opted out';
+  if (!resolveBroadcastGuest(entry.guestId)?.phone) {
+    return room ? `${room} · No phone number` : 'No phone number';
+  }
   return room;
 }
