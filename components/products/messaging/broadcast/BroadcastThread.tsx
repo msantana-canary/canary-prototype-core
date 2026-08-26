@@ -131,7 +131,6 @@ export function BroadcastThread() {
           recipientCount={recipientCount}
           canSchedule={canSchedule}
           onSchedule={scheduleBroadcast}
-          showSendCount
           topSlot={
             <BroadcastToStrip
               audienceName={groupName}
