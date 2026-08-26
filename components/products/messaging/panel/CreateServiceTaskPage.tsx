@@ -39,7 +39,13 @@ export function CreateServiceTaskPage({
    * approved. Review is a hand-off; this is what gets handed over.
    */
   defaultIssue?: string;
-  onBack: () => void;
+  /**
+   * Absent on DIRECT entry (composer cloche / amber band "Review"): the page
+   * is the panel's entry point there, nothing sits beneath it in the stack,
+   * so there's nothing to walk back to (Miguel, 2026-08-26 demo-day review).
+   * `PanelHeader` already renders no back arrow when `onBack` is omitted.
+   */
+  onBack?: () => void;
   onClose: () => void;
   onSubmit: (task: { room: string; issue: string; quantity?: number }) => void;
 }) {

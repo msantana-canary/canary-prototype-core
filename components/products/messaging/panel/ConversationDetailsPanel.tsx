@@ -99,14 +99,27 @@ import { formatPhoneForDisplay } from '@/lib/products/messaging/phone';
    Navigation
    ───────────────────────────────────────────────────────────────────────── */
 
-type PanelRoute =
+type PanelRoute = (
   | { kind: 'reservations' }
   | { kind: 'scheduled'; reservationId: string }
   | { kind: 'call'; callId: string }
   | { kind: 'link' }
   | { kind: 'primary' }
   /** `room` / `issue` are the recommended-ticket band's prefill (see below). */
-  | { kind: 'create-task'; room?: string; issue?: string };
+  | { kind: 'create-task'; room?: string; issue?: string }
+) & {
+  /**
+   * THE GENERAL RULE, NOT A SPECIAL CASE (Miguel, 2026-08-26 demo-day review).
+   * A drill-in that is the panel's ENTRY page — reached by `setStack([...])`
+   * replacing the whole stack rather than by `push` onto an existing one —
+   * has nothing beneath it to go back TO, so it renders no back arrow. A page
+   * `push`ed from the root (or from another drill-in) always has the root
+   * "beneath" it and keeps the arrow. Only the panelIntent-driven direct entry
+   * (composer cloche / amber band "Review" → create-task) sets this today;
+   * see the grep note where it's set for why it's the only one.
+   */
+  isEntryPage?: boolean;
+};
 
 type TabId = 'linked' | 'upsells' | 'tasks' | 'calls';
 
@@ -379,10 +392,16 @@ export function ConversationDetailsPanel({
    * with the band's room and issue. The `nonce` in the intent is what makes two
    * identical Reviews two events rather than one, and clearing the intent here
    * keeps it from replaying when the panel re-opens later.
+   *
+   * `isEntryPage: true` is what this DIRECT entry gets that an in-panel
+   * `push({ kind: 'create-task' })` (from the Tasks tab) does not: it's the
+   * whole stack replaced from empty, not appended, so there is nothing behind
+   * this page to walk back to (Miguel, 2026-08-26 — "it's just the service
+   * ticket that they care about, [it] shouldn't have a back button").
    */
   useEffect(() => {
     if (panelIntent?.kind !== 'create-task') return;
-    setStack([{ kind: 'create-task', room: panelIntent.room, issue: panelIntent.issue }]);
+    setStack([{ kind: 'create-task', room: panelIntent.room, issue: panelIntent.issue, isEntryPage: true }]);
     setDepth(1);
     clearPanelIntent();
   }, [panelIntent, clearPanelIntent]);
@@ -799,7 +818,9 @@ export function ConversationDetailsPanel({
                      well be messaging about a room that is not their own. */
                   defaultRoom={r.room ?? primary?.reservation.room}
                   defaultIssue={r.issue}
-                  onBack={pop}
+                  /* No back arrow on the direct-entry page — see `isEntryPage`
+                     on `PanelRoute`. */
+                  onBack={r.isEntryPage ? undefined : pop}
                   onClose={onClose}
                   onSubmit={({ room, issue, quantity }) => {
                     /* No `if (primary)` guard: an anonymous conversation keys
