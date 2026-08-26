@@ -1,5 +1,17 @@
 /**
- * CreateServiceTaskPage — raise a ticket without leaving the conversation.
+ * CreateServiceTaskPage — the panel-drill-in SHELL around `CreateServiceTaskForm`.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * THIN WRAPPER, NOT THE FORM (Miguel, 2026-08-26 — "Composer = modal")
+ * ═══════════════════════════════════════════════════════════════════════════
+ * The fields, prefill props, validation and submit-building logic moved to
+ * `CreateServiceTaskForm` — this file now owns only PANEL behaviour: the
+ * header (title, back/close), the scrolling body's chrome, and the sticky
+ * footer button. Two of this page's three entrances still land here exactly
+ * as before — the Tasks tab's Create (a `push`, keeps the back arrow) and the
+ * amber ticket band's Review (`panelIntent` direct entry, prefilled, no back
+ * arrow). The THIRD — the composer's service-ticket cloche — now opens
+ * `CreateServiceTaskModal` instead; see that file and `MessageComposer.tsx`.
  *
  * Three fields, and the interesting thing about them is what they are NOT:
  *
@@ -15,14 +27,20 @@
  *   QUANTITY is optional. "Two towels" is a quantity; "HVAC is broken" is not.
  *
  * Submit stays disabled until Room and Issue both carry something: a ticket with
- * no room and no issue is a ticket nobody can action.
+ * no room and no issue is a ticket nobody can action. That gate now lives in
+ * `CreateServiceTaskForm`; this shell only reads it back through
+ * `onCanSubmitChange` to disable its own footer button.
  */
 
 'use client';
 
-import React, { useState } from 'react';
-import { colors, CanaryInput, InputSize, InputType } from '@canary-ui/components';
+import React, { useRef, useState } from 'react';
 import { PanelFooterAction, PanelHeader, PANEL_PAD } from './panel-ui';
+import {
+  CreateServiceTaskForm,
+  CreateServiceTaskFormHandle,
+  CreateServiceTaskSubmission,
+} from './CreateServiceTaskForm';
 
 export function CreateServiceTaskPage({
   defaultRoom,
@@ -40,20 +58,18 @@ export function CreateServiceTaskPage({
    */
   defaultIssue?: string;
   /**
-   * Absent on DIRECT entry (composer cloche / amber band "Review"): the page
-   * is the panel's entry point there, nothing sits beneath it in the stack,
-   * so there's nothing to walk back to (Miguel, 2026-08-26 demo-day review).
-   * `PanelHeader` already renders no back arrow when `onBack` is omitted.
+   * Absent on DIRECT entry (the amber band "Review" — the composer cloche no
+   * longer routes here, see the modal above): the page is the panel's entry
+   * point there, nothing sits beneath it in the stack, so there's nothing to
+   * walk back to (Miguel, 2026-08-26 demo-day review). `PanelHeader` already
+   * renders no back arrow when `onBack` is omitted.
    */
   onBack?: () => void;
   onClose: () => void;
-  onSubmit: (task: { room: string; issue: string; quantity?: number }) => void;
+  onSubmit: (task: CreateServiceTaskSubmission) => void;
 }) {
-  const [room, setRoom] = useState(defaultRoom ?? '');
-  const [issue, setIssue] = useState(defaultIssue ?? '');
-  const [quantity, setQuantity] = useState('');
-
-  const canSubmit = room.trim().length > 0 && issue.trim().length > 0;
+  const formRef = useRef<CreateServiceTaskFormHandle>(null);
+  const [canSubmit, setCanSubmit] = useState(false);
 
   return (
     <div className="w-full h-full shrink-0 flex flex-col min-h-0">
@@ -63,51 +79,19 @@ export function CreateServiceTaskPage({
         className="flex-1 min-h-0 overflow-y-auto scrollbar-invisible flex flex-col"
         style={{ padding: PANEL_PAD, gap: 16 }}
       >
-        <CanaryInput
-          label="Room Number"
-          type={InputType.TEXT}
-          size={InputSize.NORMAL}
-          placeholder="Enter room number"
-          value={room}
-          onChange={(e) => setRoom(e.target.value)}
+        <CreateServiceTaskForm
+          ref={formRef}
+          defaultRoom={defaultRoom}
+          defaultIssue={defaultIssue}
+          onSubmit={onSubmit}
+          onCanSubmitChange={setCanSubmit}
         />
-        <CanaryInput
-          label="Issue type"
-          type={InputType.TEXT}
-          size={InputSize.NORMAL}
-          placeholder="Write Issue here"
-          value={issue}
-          onChange={(e) => setIssue(e.target.value)}
-        />
-        <CanaryInput
-          label="Quantity"
-          type={InputType.NUMBER}
-          size={InputSize.NORMAL}
-          placeholder="Enter Quantity"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-        />
-        <span
-          className="font-['Roboto',sans-serif] text-[12px] leading-[18px]"
-          style={{ color: colors.colorBlack4 }}
-        >
-          The ticket is raised against this conversation&apos;s guest and appears under Service
-          Tasks.
-        </span>
       </div>
 
       <PanelFooterAction
         label="Submit"
         disabled={!canSubmit}
-        onClick={() => {
-          if (!canSubmit) return;
-          const parsed = Number(quantity);
-          onSubmit({
-            room: room.trim(),
-            issue: issue.trim(),
-            quantity: Number.isFinite(parsed) && parsed > 0 ? parsed : undefined,
-          });
-        }}
+        onClick={() => formRef.current?.submit()}
       />
     </div>
   );

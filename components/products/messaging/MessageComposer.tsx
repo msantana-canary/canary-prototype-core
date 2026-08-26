@@ -14,16 +14,24 @@
  *
  * ── THREE OF THEM ARE LIVE NOW (2026-08-25) ───────────────────────────────
  * TEMPLATES opens `<MessageTemplatesModal>`; TRANSLATE opens the in-composer
- * translate row below; SERVICE TICKET opens the Conversation Details panel's
- * create-task drill-in, prefilled with the thread's room (same mechanism as
- * the recommended-ticket band's Review — see `requestCreateTask` below). All
- * three keep the same bare `ToolIcon` dress as their three still-inert
- * siblings — a tool that does something and a tool that does not should not
- * look like two different kinds of control, because which is which is a fact
- * about this BRANCH, not about the product. The translate icon does gain one
- * state the others have no use for: it stays BLUE while its row is open,
- * because that row is the only toolbar affordance that leaves something on
- * screen behind it.
+ * translate row below; SERVICE TICKET opens `<CreateServiceTaskModal>`,
+ * prefilled with the thread's room. All three keep the same bare `ToolIcon`
+ * dress as their three still-inert siblings — a tool that does something and
+ * a tool that does not should not look like two different kinds of control,
+ * because which is which is a fact about this BRANCH, not about the product.
+ * The translate icon does gain one state the others have no use for: it stays
+ * BLUE while its row is open, because that row is the only toolbar affordance
+ * that leaves something on screen behind it.
+ *
+ * ⚠ SERVICE TICKET MOVED OFF THE PANEL, ONTO A MODAL (Miguel, 2026-08-26 demo-
+ * day review: "Composer = modal"). It used to route through the same
+ * `panelIntent`/`requestCreateTask` mechanic the recommended-ticket band's
+ * Review still uses — opening the Conversation Details panel straight to its
+ * create-task drill-in. That made the cloche the one composer tool that broke
+ * the "tool row launches a modal" rule Templates already followed. The cloche
+ * now opens `CreateServiceTaskModal` directly and no longer touches
+ * `panelIntent` at all; the band's Review is untouched — see
+ * `ai/ThreadAiSlot.tsx`, the mechanic's one remaining caller.
  *
  * Right cluster: the AI pill, then a single square blue send button.
  *
@@ -93,6 +101,7 @@ import {
 import { AiOrb } from './AiOrb';
 import { ToolIcon } from './composer-ui';
 import { MessageTemplatesModal } from './MessageTemplatesModal';
+import { CreateServiceTaskModal } from './CreateServiceTaskModal';
 import { useMessagingStore } from '@/lib/products/messaging/store';
 import {
   MergeTagContext,
@@ -160,13 +169,20 @@ interface MessageComposerProps {
    */
   isAppleBusiness?: boolean;
   /**
-   * The current thread's room — prefilled into the service-ticket drill-in
-   * (see `ToolIcon`'s "Service ticket" wiring below). Absent on the compose
-   * pane ("New message"), which has no thread and therefore no room to
-   * prefill; the drill-in still opens, just blank, same as any other
-   * hand-started ticket.
+   * The current thread's room — prefilled into `CreateServiceTaskModal` (see
+   * `ToolIcon`'s "Service ticket" wiring below). Absent on the compose pane
+   * ("New message"), which has no thread and therefore no room to prefill;
+   * the modal still opens, just blank, same as any other hand-started ticket.
    */
   room?: string;
+  /**
+   * Who a service task raised from THIS composer hangs off — the exact same
+   * key the Conversation Details panel computes (`serviceTaskOwnerKey`), so a
+   * ticket raised from the cloche lands in the same place one raised from the
+   * Tasks tab would. Absent on the compose pane, which has no thread and
+   * therefore no owner to raise a ticket against; the submit guards on it.
+   */
+  taskOwnerId?: string;
 }
 
 /**
@@ -281,8 +297,10 @@ export function MessageComposer({
   mergeContext,
   isAppleBusiness = false,
   room,
+  taskOwnerId,
 }: MessageComposerProps) {
-  const requestCreateTask = useMessagingStore((s) => s.requestCreateTask);
+  const createServiceTask = useMessagingStore((s) => s.createServiceTask);
+  const showToast = useMessagingStore((s) => s.showToast);
 
   /**
    * The text still lives in local state, and the component is still KEYED BY
@@ -299,6 +317,7 @@ export function MessageComposer({
   const [isFocused, setIsFocused] = useState(false);
   const [isIgniting, setIsIgniting] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const [isTranslateOpen, setIsTranslateOpen] = useState(false);
   const [translateSource, setTranslateSource] = useState('en');
   const [translateTarget, setTranslateTarget] = useState<TranslateLanguage>(DEFAULT_TARGET);
@@ -418,6 +437,29 @@ export function MessageComposer({
     if (!disabled) onSend(body);
   };
 
+  /**
+   * The cloche's create-task submit. Same write the panel's `onSubmit` fires
+   * (`createServiceTask`, same task shape) — see `ConversationDetailsPanel`'s
+   * `create-task` route for the sibling call this mirrors.
+   *
+   * Guarded on `taskOwnerId`: absent only on the compose pane ("New message"),
+   * which has no thread and therefore no owner to raise a ticket against. The
+   * cloche opening a modal it cannot submit would be worse than the modal not
+   * opening at all, but nothing in this branch routes a click there today —
+   * logged here rather than silently swallowed.
+   */
+  const handleCreateServiceTask = (task: { room: string; issue: string; quantity?: number }) => {
+    if (!taskOwnerId) return;
+    createServiceTask(taskOwnerId, {
+      title: task.issue,
+      status: 'open',
+      room: task.room,
+      quantity: task.quantity,
+    });
+    setIsCreateTaskModalOpen(false);
+    showToast('Service task created');
+  };
+
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // Send on Enter (without Shift)
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -454,18 +496,20 @@ export function MessageComposer({
       onClick: () => setIsTemplatesOpen(true),
     },
     /**
-     * SERVICE TICKET — no longer a stub (QA-4, 2026-08-25). Opens the SAME
-     * Conversation Details drill-in the recommended-ticket band's Review
-     * button opens (`requestCreateTask`, the `panelIntent` mechanic — see
-     * REDESIGN_NOTES §7): the panel is told to open at `create-task`, prefilled
-     * with this thread's room. One entrance to that form rather than a second
-     * one that could drift from it.
+     * SERVICE TICKET — no longer a stub (QA-4, 2026-08-25), and no longer the
+     * panel's `panelIntent` mechanic (Miguel, 2026-08-26 — "Composer = modal").
+     * Opens `CreateServiceTaskModal` directly, prefilled with this thread's
+     * room — the SAME form the Tasks tab's Create and the amber band's Review
+     * use (`CreateServiceTaskForm`), just under a modal shell instead of a
+     * panel drill-in. One shared form rather than a second one that could
+     * drift from it; see REDESIGN_NOTES' Batch 11 entry for the "one form,
+     * two shells" note.
      */
     {
       path: mdiRoomServiceOutline,
       label: 'Service ticket',
       id: 'composer-tool-ticket',
-      onClick: () => requestCreateTask(room),
+      onClick: () => setIsCreateTaskModalOpen(true),
     },
     /**
      * UPSELLS — production grew this one, so the prototype does too (design
@@ -656,6 +700,16 @@ export function MessageComposer({
         resolveBody={
           mergeContext ? (body) => interpolateMergeTags(body, mergeContext) : undefined
         }
+      />
+
+      {/* The service-ticket modal. Mounted by the COMPOSER, same reasoning as
+          the templates picker above: every exit writes to this component's own
+          state or calls a handler this component already owns. */}
+      <CreateServiceTaskModal
+        isOpen={isCreateTaskModalOpen}
+        defaultRoom={room}
+        onClose={() => setIsCreateTaskModalOpen(false)}
+        onSubmit={handleCreateServiceTask}
       />
     </div>
   );

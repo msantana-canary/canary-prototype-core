@@ -4205,3 +4205,106 @@ worth confirming, so `reopenThread` is untouched.
 `components/products/messaging/panel/ConversationDetailsPanel.tsx` ·
 `components/products/messaging/panel/CreateServiceTaskPage.tsx` ·
 `lib/products/messaging/store.ts`
+
+## Batch 11 — Demo-day review, continued: "Composer = modal" (2026-08-26)
+
+Miguel's ruling, stated plainly: **"Composer = modal."** Anything the
+composer's tool row launches opens a MODAL. Templates already conformed — it
+has opened `MessageTemplatesModal` since batch 5. The service-ticket cloche was
+the one violator: it opened the Conversation Details panel straight to its
+create-task drill-in, which meant one tool in the row behaved like every other
+control on the surface's right-hand panel while its five siblings behaved like
+dialogs. Production agrees — ticket creation is a centred `CanaryDialog` from
+every entry point, panel included.
+
+### 1. The cloche now opens `CreateServiceTaskModal`
+
+`components/products/messaging/CreateServiceTaskModal.tsx` (new) ·
+`components/products/messaging/MessageComposer.tsx`
+
+The composer's service-ticket tool icon (`mdiRoomServiceOutline`) no longer
+calls `requestCreateTask` — the `panelIntent` mechanic that told the
+Conversation Details panel to reset its stack and land on `create-task`. It
+now sets local state (`isCreateTaskModalOpen`) and opens
+`CreateServiceTaskModal`, mounted by the composer for the same reason
+`MessageTemplatesModal` is: every exit writes to state or calls a handler this
+component already owns, so the modal has no business living anywhere else.
+
+The modal joins the CONTENT-MODAL FAMILY exactly the way `AddInformationModal`
+and `CreateGroupModal` do — `ModalFocusScope` + `CanaryModal`, `size="large"` +
+`!max-w-[800px]` + the family's header/footer hairline classes, copied
+verbatim from `AddInformationModal.tsx`. The 18px title rides
+`ModalFocusScope`'s own CSS hook, same as every sibling. Footer is Cancel
+(outlined) + Submit (primary, disabled until the form validates) — the same
+pair `AddInformationModal` and `CreateGroupModal` draw. Escape and focus
+trapping come free from `ModalFocusScope`, which is the whole point of that
+wrapper existing.
+
+**Submit fires the same create logic the panel version fires** —
+`createServiceTask(taskOwnerId, { title, status: 'open', room, quantity })` —
+and then, unlike the panel drill-in (which fires no toast on create today),
+closes the modal and shows **"Service task created"**, matching the register
+of "Thread archived" / "Feedback submitted" (sentence case, past tense, no
+trailing period).
+
+### 2. One form, two shells
+
+`components/products/messaging/panel/CreateServiceTaskForm.tsx` (new) ·
+`components/products/messaging/panel/CreateServiceTaskPage.tsx`
+
+The three fields (Room number, Issue type, Quantity), the prefill props, the
+validation gate and the submit-building logic moved out of
+`CreateServiceTaskPage` into a new shared `CreateServiceTaskForm`.
+`CreateServiceTaskPage` is now a THIN panel-shell wrapper — `PanelHeader`,
+the scrolling body's chrome, a sticky `PanelFooterAction` — around that shared
+form; its panel behavior (back/close, the entry-page no-back-arrow rule from
+Batch 10, post-submit `setTab('tasks'); pop()`) is unchanged.
+
+Two shells now render the one form:
+
+- **The panel drill-in** (`CreateServiceTaskPage`) — still reached by the
+  Tasks tab's Create (`push`, keeps the back arrow) and the amber ticket
+  band's Review (`panelIntent` direct entry, prefilled, no back arrow).
+  Unchanged behavior, new internals.
+- **The modal** (`CreateServiceTaskModal`, new) — reached only by the
+  composer's cloche.
+
+Because the two shells put the visible Submit button in different places (the
+panel's is a fixed footer bar OUTSIDE the scrolling body; the modal's lives in
+`CanaryModal`'s `footer` prop), the form can't own that button itself — it
+exposes validity via an `onCanSubmitChange` callback and an imperative
+`submit()` on a forwarded ref, and each shell's own button reads the one and
+calls the other. Same fields, same three-fields-and-what-they-are-NOT
+reasoning as before (room prefilled, issue free text, quantity optional) — see
+the comment on `CreateServiceTaskForm` itself.
+
+### 3. What's left of `panelIntent`
+
+`lib/products/messaging/store.ts` · `components/products/messaging/ai/ThreadAiSlot.tsx`
+
+Nothing to delete. `panelIntent` / `requestCreateTask` had exactly two callers
+before this batch — the composer cloche and the amber recommended-ticket
+band's Review (`ThreadAiSlot.tsx`, `onReview={() => requestCreateTask(ticket.room,
+ticket.issueType)}`). The cloche is the one that moved; Review is untouched
+and is now the mechanism's ONLY caller. The `isEntryPage` plumbing on
+`PanelRoute` (Batch 10 §1) stays for the same reason — Review's direct entry
+still `setStack`s a populated route with `isEntryPage: true`, so it still
+renders no back arrow. Batch 10's own text ("servicing both the composer
+cloche AND the amber band's Review") is superseded by this entry: read it as
+"servicing the amber band's Review" going forward.
+
+### 4. No Figma frame yet
+
+The create-task MODAL (as opposed to the pre-existing panel drill-in, which
+does have a drawn frame) has no drawn Figma frame — this batch built it
+straight from the content-modal family's existing pattern
+(`AddInformationModal` / `CreateGroupModal`), the same way Batch 8's filter
+modal and others have before a frame existed. Goes on the Figma-pass list.
+
+### Files touched (Batch 11)
+
+`components/products/messaging/CreateServiceTaskModal.tsx` (new) ·
+`components/products/messaging/panel/CreateServiceTaskForm.tsx` (new) ·
+`components/products/messaging/panel/CreateServiceTaskPage.tsx` ·
+`components/products/messaging/MessageComposer.tsx` ·
+`components/products/messaging/ThreadView.tsx`

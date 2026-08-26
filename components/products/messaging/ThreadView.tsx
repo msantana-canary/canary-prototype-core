@@ -25,6 +25,7 @@ import { ThreadAiSlot } from './ai/ThreadAiSlot';
 import { OverflowMenuKeys } from './OverflowMenuKeys';
 import { formatPhoneForDisplay } from '@/lib/products/messaging/phone';
 import { useMessagingStore } from '@/lib/products/messaging/store';
+import { panelIdentity, serviceTaskOwnerKey } from '@/lib/products/messaging/panel-selectors';
 import { Thread, Message } from '@/lib/products/messaging/types';
 import { DEMO_PROPERTY_NAME } from '@/lib/products/messaging/message-templates';
 import { Guest } from '@/lib/core/types/guest';
@@ -164,6 +165,22 @@ export function ThreadView({
   );
 
   const isGuestTyping = typingThreadId === thread.id;
+
+  /**
+   * Who a service task raised from the composer's cloche hangs off — computed
+   * the SAME way the Conversation Details panel computes it
+   * (`panelIdentity` + `serviceTaskOwnerKey`), so a ticket raised from the
+   * cloche lands under the exact owner key a ticket raised from the panel's
+   * Tasks tab would. Two call sites reading one pair of pure selectors rather
+   * than the panel's identity math getting re-derived by hand here.
+   */
+  const threadPrimaryReservationId = useMessagingStore(
+    (s) => s.threadPrimaryReservationId[thread.id]
+  );
+  const taskOwnerId = React.useMemo(
+    () => serviceTaskOwnerKey(thread, panelIdentity(thread, threadPrimaryReservationId)),
+    [thread, threadPrimaryReservationId]
+  );
 
   /**
    * The kebab's items, as `CanaryOverflowMenu` models them. The component owns
@@ -376,6 +393,7 @@ export function ThreadView({
           onDraftChange={(text) => setComposerDraft(thread.id, text)}
           mergeContext={mergeContext}
           room={reservation?.room}
+          taskOwnerId={taskOwnerId}
           /* Apple Message Templates need an Apple session. Absent ⇒ SMS, which
              is every thread here, so the tab stays closed. */
           isAppleBusiness={thread.channel === 'AMB'}
