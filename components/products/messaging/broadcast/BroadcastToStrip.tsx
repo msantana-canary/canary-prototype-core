@@ -23,9 +23,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import Icon from '@mdi/react';
 import {
-  mdiLoginVariant,
+  mdiLogin,
   mdiBedOutline,
-  mdiLogoutVariant,
+  mdiLogout,
   mdiAccountMultipleOutline,
   mdiFilterVariant,
   mdiClose,
@@ -41,9 +41,9 @@ import {
 } from '@/lib/products/messaging/broadcast-types';
 
 const FOLDER_ICON: Record<BuiltInGroupType, string> = {
-  arrivals: mdiLoginVariant,
+  arrivals: mdiLogin,
   'in-house': mdiBedOutline,
-  departures: mdiLogoutVariant,
+  departures: mdiLogout,
 };
 
 const TIER_LABEL: Record<LoyaltyTier, string> = {

@@ -19,9 +19,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Icon from '@mdi/react';
 import {
-  mdiLoginVariant,
+  mdiLogin,
   mdiBedOutline,
-  mdiLogoutVariant,
+  mdiLogout,
   mdiAccountMultipleOutline,
   mdiPlus,
   mdiDotsHorizontal,
@@ -32,9 +32,9 @@ import { useBroadcastStore } from '@/lib/products/messaging/broadcast-store';
 import { getFolderPopulation } from '@/lib/products/messaging/broadcast-audience-facts';
 
 const builtInIcons: Record<string, string> = {
-  arrivals: mdiLoginVariant,
+  arrivals: mdiLogin,
   'in-house': mdiBedOutline,
-  departures: mdiLogoutVariant,
+  departures: mdiLogout,
 };
 
 /**
