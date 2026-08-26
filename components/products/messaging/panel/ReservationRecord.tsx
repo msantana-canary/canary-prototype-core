@@ -23,7 +23,7 @@ import React from 'react';
 import { colors } from '@canary-ui/components';
 import Icon from '@mdi/react';
 import { mdiChevronRight } from '@mdi/js';
-import { CopyIcon, DetailRow, DetailRows } from './panel-ui';
+import { CopyIcon, DetailRow, DetailRows, OpenRecordIcon } from './panel-ui';
 import { formatStayRangeRecord } from './panel-format';
 import { getGjRowStatus } from '@/lib/products/messaging/guest-journey-link';
 import { Reservation } from '@/lib/core/types/reservation';
@@ -52,14 +52,23 @@ export function ReservationRecord({
     },
     {
       label: 'Pre-arrival Check-in',
+      // Production's plain register (2026-08-26 ruling): the status word is a
+      // plain non-interactive value, in the same visual register as
+      // Confirmation number's — never a link. The only click is the trailing
+      // open icon, and only when a record actually exists to open.
       value: reservation.checkInStatus ?? 'Not Started',
-      // "Submitted" reads as a jump — it's a record you can go and look at.
-      isLink: reservation.checkInStatus === 'Submitted' || reservation.checkInStatus === 'Completed',
+      trailing:
+        reservation.checkInStatus === 'Submitted' || reservation.checkInStatus === 'Completed'
+          ? <OpenRecordIcon label="Open check-in record" />
+          : undefined,
     },
     {
       label: 'Checkout',
       value: reservation.checkOutStatus ?? '—',
-      isLink: reservation.checkOutStatus === 'Submitted' || reservation.checkOutStatus === 'Completed',
+      trailing:
+        reservation.checkOutStatus === 'Submitted' || reservation.checkOutStatus === 'Completed'
+          ? <OpenRecordIcon label="Open checkout record" />
+          : undefined,
     },
   ];
 

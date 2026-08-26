@@ -34,6 +34,7 @@ import {
   mdiContentCopy,
   mdiCheck,
   mdiDotsHorizontal,
+  mdiOpenInNew,
   mdiRefresh,
 } from '@mdi/js';
 import { Reservation } from '@/lib/core/types/reservation';
@@ -290,6 +291,45 @@ export function CopyIcon({ value, label }: { value: string; label?: string }) {
           color={colors.colorBlueDark1}
           title={name}
           id={glyphTitleId(name)}
+        />
+      }
+    />
+  );
+}
+
+/**
+ * Open-record affordance — the check-in/checkout rows' trailing icon
+ * (batch, 2026-08-26). Production renders the status word ("Submitted") as a
+ * PLAIN, non-interactive span and puts the only click on a small open-in-new
+ * icon beside it, shown ONLY when a record exists — the same shape
+ * Confirmation number already draws with `CopyIcon`. `OpenRecordIcon` is that
+ * component's SIBLING rather than a new register: same `CanaryButton`
+ * anatomy, same TINY/`.icon-btn-20` size, the same rest colour
+ * (`colorBlack3`, matching a plain value rather than `CopyIcon`'s link-blue)
+ * and the same neutral hover wash via `.icon-btn-neutral`.
+ *
+ * The click is a NO-OP for now — production opens a check-in/checkout details
+ * modal this branch has not built (see the accepted-stubs note in
+ * REDESIGN_NOTES, alongside playback + the property switcher). It deliberately
+ * does NOT navigate to `/check-in`; that would assert a destination production
+ * does not use.
+ */
+export function OpenRecordIcon({ label }: { label: string }) {
+  return (
+    <CanaryButton
+      type={ButtonType.ICON_SECONDARY}
+      size={ButtonSize.TINY}
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
+      className="icon-btn-neutral icon-btn-20"
+      icon={
+        <Icon
+          path={mdiOpenInNew}
+          size={0.62}
+          color={colors.colorBlack3}
+          title={label}
+          id={glyphTitleId(label)}
         />
       }
     />
