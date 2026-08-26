@@ -663,6 +663,14 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
 
     // Land on the inbox's top visible row, without reading it.
     get().landOnTopOf('inbox');
+
+    // The receipt (Miguel, 2026-08-26 demo-day review). One call site here
+    // covers every entry point that goes through this action — the thread
+    // header's Archive icon today, and any future kebab/menu path — rather
+    // than each caller firing its own toast. Unarchiving stays silent: the
+    // QA ruling that messaging into an archived thread re-opens it is a
+    // quiet recovery, not a confirmed action, so `reopenThread` is untouched.
+    get().showToast('Thread archived');
   },
 
   /**

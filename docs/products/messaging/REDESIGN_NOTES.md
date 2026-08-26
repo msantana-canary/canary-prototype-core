@@ -4143,3 +4143,65 @@ first frame, since it renders whatever `detailsOpen` already is.
 `components/products/messaging/panel/ReservationRecord.tsx` ·
 `components/products/messaging/panel/panel-ui.tsx` ·
 `components/products/messaging/panel/ConversationDetailsPanel.tsx`
+
+## Batch 10 — Demo-day review, continued: entry-page back button, archive toast (2026-08-26)
+
+Two more fixes out of the same 2026-08-26 demo-day review pass (Batches 8 and
+9 were the first two). Related only in timing.
+
+### 1. Direct-entry drill-ins render no back arrow
+
+`panel/ConversationDetailsPanel.tsx` · `panel/CreateServiceTaskPage.tsx`
+
+Miguel, on the create-service-task page reached from the composer's cloche
+icon: it "shouldn't have a back button because it's just the service ticket
+that they care about." The general rule, not a one-off for this page: a
+drill-in that is the panel's ENTRY page — reached by `setStack([...])`
+replacing the whole stack rather than by `push` onto an existing one — has
+nothing beneath it to walk back to, so it renders no back arrow. A page
+`push`ed from the root (or from another drill-in) always has the root
+beneath it and keeps the arrow.
+
+Mechanically: `PanelRoute` gained an `isEntryPage?: boolean` field
+(intersected across every route kind, so the concept generalizes even though
+only one kind uses it today). The panelIntent effect — the ONE call site that
+`setStack`s a populated array outright, servicing both the composer cloche
+AND the amber recommended-ticket band's "Review" — sets `isEntryPage: true`
+on the route it creates. The in-panel `push({ kind: 'create-task' })` from
+the Tasks tab does not set it, so that path keeps its back arrow (the stack
+still has the root "beneath" it there, in the sense that matters — the user
+was just standing on it). The create-task render block passes
+`onBack={r.isEntryPage ? undefined : pop}`; `CreateServiceTaskPage.onBack` is
+now optional, matching `PanelHeader.onBack`, which already rendered no arrow
+when the prop was omitted — no change needed there. The X (close) is
+untouched in both cases; only the arrow is conditional. `grep`-confirmed:
+`create-task` is the only page ever reached via a direct `setStack([{...}])`
+populate — every other kind only ever arrives via `push`, so no other page's
+behavior changes.
+
+### 2. Archive fires a toast
+
+`lib/products/messaging/store.ts`
+
+Miguel: "Archive should have a toast saying 'thread archived.'" `archiveThread`
+now calls `get().showToast('Thread archived')` after it re-files the thread,
+closes the panel, and lands on the inbox's top row — one call site, so every
+entry point that goes through this action gets the receipt (today that's the
+thread header's Archive icon; `grep` for `archiveThread` turned up exactly one
+caller, `app/(dashboard)/messages/page.tsx`'s `ThreadView onArchive`). The
+message matches the surface's existing toast register (sentence case, past
+tense, no trailing period — "Feedback submitted", "Added to AI knowledge").
+Unarchiving stays silent on purpose: the QA ruling that messaging into an
+archived thread re-opens it is a quiet recovery, not a user-initiated action
+worth confirming, so `reopenThread` is untouched.
+
+### Related, same-day, landed separately
+
+**AI feedback submit now closes the panel after the toast** (commit
+`79784a2a`) — noted here for the record, not re-implemented in this batch.
+
+### Files touched (Batch 10)
+
+`components/products/messaging/panel/ConversationDetailsPanel.tsx` ·
+`components/products/messaging/panel/CreateServiceTaskPage.tsx` ·
+`lib/products/messaging/store.ts`
