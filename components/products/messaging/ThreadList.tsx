@@ -57,6 +57,11 @@ export function ThreadList({
   search,
 }: ThreadListProps) {
   const threadPrimaryReservationId = useMessagingStore((s) => s.threadPrimaryReservationId);
+  // Rows scroll under the search band with only 4px of air, so scrolled rows
+  // used to slice mid-glyph against it (Miguel 8/26: "either increase the
+  // padding … or add a fade"). The fade: a top scrim over the scroll zone,
+  // present only once the list is actually scrolled.
+  const [isScrolled, setIsScrolled] = React.useState(false);
 
   return (
     <div className="w-full h-full flex flex-col min-h-0">
@@ -116,7 +121,25 @@ export function ThreadList({
             `list-none m-0` cancels the UA's marker and block margins; the
             horizontal padding is set inline below, which also cancels the UA's
             40px `padding-inline-start`. */}
-        <ul className="flex-1 overflow-y-auto scrollbar-invisible flex flex-col gap-2 list-none m-0" style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 8, paddingBottom: 16 }}>
+        <div className="relative flex-1 min-h-0 flex flex-col">
+          {/* Top scrim — rows dissolve under the search band instead of slicing
+              against its 4px pad. Overlay, not a mask, so the band itself stays
+              crisp; pointer-events-none keeps the first row clickable through
+              it; hidden at rest so the top row reads full-strength. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 z-10 transition-opacity duration-150"
+            style={{
+              height: 24,
+              background: `linear-gradient(to bottom, ${colors.colorWhite}, transparent)`,
+              opacity: isScrolled ? 1 : 0,
+            }}
+          />
+          <ul
+            className="flex-1 overflow-y-auto scrollbar-invisible flex flex-col gap-2 list-none m-0"
+            style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 8, paddingBottom: 16 }}
+            onScroll={(e) => setIsScrolled(e.currentTarget.scrollTop > 0)}
+          >
           {threads.length === 0 ? (
             <li className="list-none p-8 text-center font-['Roboto',sans-serif] text-[14px]" style={{ color: colors.colorBlack4 }}>
               No conversations
@@ -147,7 +170,8 @@ export function ThreadList({
               );
             })
           )}
-        </ul>
+          </ul>
+        </div>
       </CanaryCard>
     </div>
   );
