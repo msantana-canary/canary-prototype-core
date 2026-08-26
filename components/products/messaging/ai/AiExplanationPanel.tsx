@@ -200,9 +200,9 @@ export function AiExplanationPanel() {
     if (!canSubmitFeedback(feedback)) return;
     showToast('Feedback submitted');
     setFeedback(EMPTY_FEEDBACK);
-    // Back to the explanation rather than out of the panel: the answer you were
-    // reading is still the answer you were reading.
-    window.setTimeout(() => setDepth(0), 0);
+    // Submit ends the loop (Miguel 2026-08-26): toast + the whole panel closes,
+    // same exit the 👎 modal takes — supersedes the earlier back-to-explanation.
+    closeAiExplanation();
   };
 
   return (
