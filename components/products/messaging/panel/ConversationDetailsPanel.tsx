@@ -317,7 +317,28 @@ export function ConversationDetailsPanel({
   const { primary, ownStays, companions, samePhone, isAnonymous } = identity;
 
   const [tab, setTab] = useState<TabId>('linked');
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  /**
+   * Reservation details open BY DEFAULT for a linked thread (Miguel,
+   * 2026-08-26 demo-day review: "the sidebar should show reservation details
+   * already"). Anonymous threads keep the collapsed default — the low-weight
+   * "Show thread details" treatment for a bare phone number is a deliberate,
+   * data-justified call from the 2026-08-25 panel rebuild, not an oversight —
+   * so the initial value is DERIVED from `isAnonymous` rather than hardcoded.
+   */
+  const [detailsOpen, setDetailsOpen] = useState(!isAnonymous);
+  /**
+   * ARRIVAL DOES NOT ANIMATE, only user toggles do — same mechanism
+   * `ReservationsPage`'s `hasToggled` uses for its spotlight stay, which opens
+   * on mount for the identical reason: growing the band open while the pane is
+   * still landing would read as the page settling rather than as an answer to
+   * anything nobody asked for. `hasToggledDetails` gates the band's own CSS
+   * transitions below rather than an `ExpandRegion`'s `animateOnMount`,
+   * because this band (unlike `ReservationsPage`'s per-stay accordion) is not
+   * conditionally mounted — it is one grid-template-rows div that is always
+   * present, so "don't animate yet" has to mean "no transition property" for
+   * exactly the render where it either mounts or arrives on a new thread.
+   */
+  const [hasToggledDetails, setHasToggledDetails] = useState(false);
   const [stack, setStack] = useState<PanelRoute[]>([]);
   const [depth, setDepth] = useState(0);
   const [unlinkTarget, setUnlinkTarget] = useState<UnlinkTarget | null>(null);
@@ -329,9 +350,18 @@ export function ConversationDetailsPanel({
     setStack([]);
     setDepth(0);
     setTab('linked');
-    setDetailsOpen(false);
+    // `isAnonymous` is read here for the NEW thread's identity — by the time
+    // this effect fires, `identity` has already been recomputed for
+    // `thread.id` (its own `useMemo` depends on `thread`).
+    setDetailsOpen(!isAnonymous);
+    setHasToggledDetails(false);
     setUnlinkTarget(null);
     setToast(null);
+    // Only `thread.id` may re-run this. Linking or unlinking a guest
+    // mid-thread also flips `isAnonymous`, and that narrower event must not
+    // re-trigger this whole reset (stack, tab, toast) the way an actual thread
+    // switch should.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [thread.id]);
 
   useEffect(() => {
@@ -555,7 +585,10 @@ export function ConversationDetailsPanel({
                 paddingTop: PILL_OVERHANG,
                 marginBottom: detailsOpen ? TABS_GAP_OPEN : TABS_GAP_CLOSED,
                 backgroundColor: detailsOpen ? BAND_BG : 'transparent',
-                transition: reduced
+                // No transition until the user has actually toggled once —
+                // arrival (mount, or landing on a new thread already open)
+                // must render its resting state directly, not ease into it.
+                transition: reduced || !hasToggledDetails
                   ? 'none'
                   : ['background-color', 'border-bottom-color', 'margin-bottom']
                       .map((p) => `${p} ${detailsOpen ? BAND_OPEN_MS : BAND_CLOSE_MS}ms ease-out`)
@@ -575,7 +608,10 @@ export function ConversationDetailsPanel({
                   isOpen={detailsOpen}
                   labelClosed={isAnonymous ? 'Show thread details' : 'Show reservation details'}
                   labelOpen={isAnonymous ? 'Hide thread details' : 'Hide reservation details'}
-                  onToggle={() => setDetailsOpen((v) => !v)}
+                  onToggle={() => {
+                    setHasToggledDetails(true);
+                    setDetailsOpen((v) => !v);
+                  }}
                 />
               </div>
 
@@ -583,7 +619,11 @@ export function ConversationDetailsPanel({
                 style={{
                   display: 'grid',
                   gridTemplateRows: detailsOpen ? '1fr' : '0fr',
-                  transition: reduced
+                  // Same arrival-is-static rule as the zone above: no
+                  // transition on the render that first opens (or arrives
+                  // already open on a fresh thread) — only a user toggle
+                  // afterward earns the ease.
+                  transition: reduced || !hasToggledDetails
                     ? 'none'
                     : detailsOpen
                       ? `grid-template-rows ${BAND_OPEN_MS}ms cubic-bezier(0.16, 1, 0.3, 1)`
@@ -595,7 +635,7 @@ export function ConversationDetailsPanel({
                     minHeight: 0,
                     overflow: 'hidden',
                     opacity: detailsOpen ? 1 : 0,
-                    transition: reduced
+                    transition: reduced || !hasToggledDetails
                       ? 'none'
                       : detailsOpen
                         ? 'opacity 170ms ease-out 60ms'

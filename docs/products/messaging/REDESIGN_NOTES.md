@@ -3984,3 +3984,162 @@ in the same pattern the list already follows.
 `components/products/messaging/broadcast/BroadcastFilterPanel.tsx` ·
 `BroadcastFilterControls.tsx` · `BroadcastView.tsx` ·
 `lib/products/messaging/broadcast-audience-split.ts`
+
+## Batch 9 — Demo-day review, second pass: composer parity, production-format status rows, details open by default (2026-08-26)
+
+Three fixes out of Miguel's 2026-08-26 demo-day review (Batch 8 was the
+first). Unrelated to each other except in timing — one composer, one panel
+row format, one default-state call — so they land as one entry rather than
+three thin ones.
+
+### 1. Broadcast composer re-synced to the Conversations composer
+
+`BroadcastComposer.tsx` · **new** `components/products/messaging/composer-ui.tsx`
+(`ToolIcon` extracted from it) · `MessageComposer.tsx` (import only, zero
+behaviour change) · `broadcast/BroadcastThread.tsx`
+
+Miguel: the To strip is fine, but "everything underneath it is wrong." It
+was — `BroadcastComposer` had stayed on its July-28 baseline (hand-rolled
+`<textarea>`, a second hairline above the toolbar, padding-6 icon buttons with
+a hover-wash box, a 32px text-pill Send) through every batch that rebuilt
+`MessageComposer` on top of it, and the two composers had quietly drifted
+apart. This batch re-syncs everything below the strip:
+
+- **`ToolIcon` moved out of `MessageComposer.tsx`** into a new shared
+  `composer-ui.tsx` so both composers' toolbars render through one component
+  instead of two hand-tuned copies of the same idea. `MessageComposer`'s own
+  six call sites are untouched — it now imports what it used to define.
+  Broadcast's Attach and Templates icons take the identical bare-18px,
+  gray→blue-on-hover treatment; the Schedule clock (custom-group audiences
+  only) joins the same row and goes blue via `isActive` once a time is pinned,
+  the same latch Conversations' Translate tool uses.
+- **The textarea is now `CanaryTextArea`** with Conversations' exact classes
+  (`field-chromeless textarea-composer scrollbar-invisible`) and the same
+  manual autosize effect (22px floor, 140px cap) — the hand-rolled
+  `<textarea>` had no autosize at all. Placeholder stays `"Type message..."`,
+  deliberately NOT copied from the SMS-specific 1:1 wording: a broadcast is
+  channel-neutral.
+- **The second hairline is gone.** Only the rule under the To strip remains
+  (untouched, per the brief — `BroadcastToStrip.tsx` was not opened).
+- **The card shell is now `CanaryCard`** at `CardPadding.COMPACT`, and it
+  DOES host the full-bleed strip — see the ⚠ below for how and the new
+  library ask that comes out of it.
+- **Send lost its label.** "Send to N guests" / "Schedule via SMS" / "Send"
+  is gone; the button is `MessageComposer`'s exact icon-only square
+  (`CanaryButton` ICON_PRIMARY COMPACT, `icon-btn-28 icon-btn-r8
+  icon-btn-nodim`, white `mdiSend` at 0.7, full-strength blue even while
+  disabled). The recipient count already lives in the To strip and the
+  scheduled pill already states the WHEN — the button repeating either fact
+  was saying the same sentence twice. The accessible name still carries the
+  verb: the mdi `Icon`'s `title` reads "Send broadcast" or "Schedule
+  broadcast" once a time is pinned, same title-as-name pattern every icon
+  button on this surface already uses. `showSendCount` — the prop that used
+  to gate the retired label — is now dead with nothing to gate, so it's
+  removed from `BroadcastComposerProps` and its one call site in
+  `BroadcastThread.tsx` rather than left as an inert prop nobody can act on.
+
+All broadcast-only logic survived untouched: `canSend`'s `recipientCount > 0`
+gate, the send-confirm modal and its "Review recipients" link, the
+schedule-vs-confirm routing in `requestSend`, the scheduled pill with its
+clear ✕, and the templates modal's broadcast deltas (no Apple tab, literal
+merge tags).
+
+⚠ **`CanaryCard` HOSTS THE FULL-BLEED STRIP — it does not structurally
+refuse it, but it does not offer it either.** `CanaryCard` wraps every child
+in exactly one `p-3` (12px, at COMPACT) div; there is no separate edge-to-edge
+slot the way `MessageComposer`'s own `topSlot` gets by living entirely OUTSIDE
+its card. Broadcast's To strip has to stay INSIDE this card — it shares the
+card's rounded top corners and its hairline has to run the card's full width
+— so it rides a negative-margin bleed wrapper: `margin: -12px -12px 0 -12px`
+cancels the COMPACT padding on three sides and lands the strip flush against
+the card's own 1px border, identical to where the hand-rolled shell had it;
+the bottom margin stays 0 so the textarea resumes at the ordinary inset right
+after. `overflow-hidden` alongside the existing `!rounded-[12px]` override
+clips the strip's square corners to the card's rounded ones — the one thing
+the hand-rolled shell got for free from `overflow-clip` and this trick has to
+ask for explicitly. Measured against the previous DOM, the geometry is
+pixel-identical. Logged as library ask #64 below rather than left as a
+one-off trick, since any future full-bleed header/footer inside a
+`CanaryCard` (a table's zebra row, a media card's cover image) will hit the
+same wall.
+
+### 2. Check-in / Checkout rows → production's plain-status + conditional open-icon format
+
+`panel/ReservationRecord.tsx` · `panel/panel-ui.tsx` (**new** `OpenRecordIcon`,
+sibling of `CopyIcon`)
+
+Verified against production's Vue source: the status word ("Submitted") is a
+PLAIN, non-interactive span — never a link — and the only clickable element is
+a small open-in-new icon beside it, rendered ONLY when a check-in/checkout
+record exists, opening a details modal overlay. Our two rows were doing the
+opposite: the whole value was `isLink`-blue with no icon and no modal behind
+it. Miguel's ruling: format them like Confirmation number — plain value,
+trailing icon.
+
+`isLink` is dropped from both rows; the value now renders in `DetailRows`'
+plain `colorBlack2` register, same as Confirmation number's. `OpenRecordIcon`
+is `CopyIcon`'s sibling rather than a new register — same `CanaryButton`
+anatomy, same TINY / `.icon-btn-20` size, same neutral hover wash via
+`.icon-btn-neutral` — with the rest colour changed to `colorBlack3` (an
+outline glyph beside a plain value, not `CopyIcon`'s link-blue) and it renders
+in the row's `trailing` slot ONLY when `checkInStatus`/`checkOutStatus` is
+`'Submitted'` or `'Completed'` — the exact condition that used to gate
+`isLink`. The click is a NO-OP, added to the accepted-stubs list alongside
+playback and the property switcher: production opens a check-in/checkout
+details modal this branch has not built, and the icon deliberately does NOT
+navigate to `/check-in` — that would assert a destination production doesn't
+use. The Guest Scheduled Messages row (its own `isLink`/red-error register,
+unrelated to this fix) is untouched.
+
+### 3. Reservation details open by default
+
+`panel/ConversationDetailsPanel.tsx`
+
+Miguel: "the sidebar should show reservation details already." `detailsOpen`
+now initialises to `!isAnonymous` instead of a hardcoded `false`, and the
+thread-change reset effect sets the same derived value rather than forcing it
+closed — switching threads lands on a linked guest with the band already
+open. Anonymous threads keep the collapsed default on purpose: the low-weight
+"Show thread details" treatment for a bare phone number was a deliberate,
+data-justified call from the panel's 2026-08-21 rebuild, not an oversight, so
+the state is DERIVED from `isAnonymous` rather than two independent defaults
+that could drift.
+
+Arrival does not animate — only a user's own toggle does, reusing the
+mechanism `ReservationsPage`'s spotlight-stay accordion already established
+for the identical problem (its header comment: "the arrival does not animate,
+only the toggles do"). That page gates an `ExpandRegion`'s `animateOnMount`
+off a `hasToggled` flag; this band isn't built on `ExpandRegion` — it's one
+always-mounted `grid-template-rows` div, not a conditionally-mounted body — so
+the same idea is applied one layer down: a new `hasToggledDetails` flag
+(`false` until the `ExpanderPill` is actually clicked, reset alongside
+`detailsOpen` on every thread change) guards all three of the band's own CSS
+transitions (`background-color`/`border-bottom-color`/`margin-bottom` on the
+zone, `grid-template-rows` on the grid, `opacity` on the inner content). Until
+the first toggle, every one of those properties renders with `transition:
+'none'`, so a linked thread arrives already open with no grow-in; the first
+click (and every one after) restores the full 220ms open / 160ms close
+easing. The expander pill correctly reads "Hide reservation details" from the
+first frame, since it renders whatever `detailsOpen` already is.
+
+### ⚠ Library ask — addition
+
+64. **`CanaryCard` has exactly one children slot, padded, with no full-bleed
+    option.** `cardPadding`/`padding` apply to a single wrapping div around
+    `children`; there is no header/footer-style slot that reaches the card's
+    own edges the way `title`/`footer` reach the border-top/border-bottom but
+    not the sides. A full-bleed strip inside a padded card currently has to
+    cancel the padding by hand with a negative-margin wrapper sized to match
+    whatever `cardPadding` resolves to — brittle if the padding scale ever
+    changes underneath it. Wanted: an `edgeSlot` (or a `padding="none"` on a
+    per-child basis) that reaches the card's own border on all sides.
+
+### Files touched (Batch 9)
+
+`components/products/messaging/broadcast/BroadcastComposer.tsx` ·
+**new** `components/products/messaging/composer-ui.tsx` ·
+`components/products/messaging/MessageComposer.tsx` ·
+`components/products/messaging/broadcast/BroadcastThread.tsx` ·
+`components/products/messaging/panel/ReservationRecord.tsx` ·
+`components/products/messaging/panel/panel-ui.tsx` ·
+`components/products/messaging/panel/ConversationDetailsPanel.tsx`
