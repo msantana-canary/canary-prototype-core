@@ -746,6 +746,7 @@ summary:focus-visible,
 [role='option']:focus-visible,
 [role='tab']:focus-visible,
 [role='switch']:focus-visible,
+[role='checkbox']:focus-visible,
 [role='combobox']:focus-visible {
   outline: 2px solid #2858c4;
   outline-offset: 2px;

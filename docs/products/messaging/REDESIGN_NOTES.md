@@ -3967,17 +3967,17 @@ when the segments feature resurfaces. `BroadcastView.tsx`'s header comment,
 which claimed "Manage segments is reachable only from the filter modal's Guest
 Segments mode," is corrected — right now it is reachable from nowhere.
 
-### ⚠ Focus-visible ring gap, found not fixed
+### ⚠ Focus-visible ring gap, found not fixed — CLOSED in the follow-up commit
 
 The new checkbox row is a real focusable control (`tabIndex`, `role="checkbox"`,
 `aria-checked`, Enter/Space), but `app/globals.css`'s existing role-keyed
 `:focus-visible` block (QA-3, 2026-08-25) lists `button`, `a[href]`, `summary`,
 `[role='button']`, `[role='menuitem']`, `[role='option']`, `[role='tab']`,
 `[role='switch']`, `[role='combobox']` — `[role='checkbox']` is not among them,
-so the row currently takes focus with no visible ring. Left as a documented gap
-rather than patched in this batch, which named exactly two stale comments as
-the drive-by-fix budget. The fix is a one-line addition to that existing
-selector list, in the same pattern the list already follows.
+so the row took focus with no visible ring. The batch left it documented rather
+than patched (its drive-by budget named exactly two stale comments); the commit
+after the batch added `[role='checkbox']:focus-visible` to that selector list,
+in the same pattern the list already follows.
 
 ### Files touched (Batch 8)
 
