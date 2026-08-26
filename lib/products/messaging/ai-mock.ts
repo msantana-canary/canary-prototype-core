@@ -215,6 +215,28 @@ export const aiExplanations: Record<string, AiExplanation> = {
     ],
     result: "AI successfully responded to the guest's message",
   },
+
+  /* ── Thread 3 · Brooklyn Simmons (enrichment batch) ───────────────────── */
+
+  m301: {
+    understood: 'The guest reported the wifi repeatedly dropping in their room',
+    sources: [
+      'Wifi troubleshooting: forgetting and rejoining the "Statler_Guest" network resolves most drop-outs.',
+      'Persistent connectivity issues are ticketed to IT with the room number',
+    ],
+    result: "AI successfully responded to the guest's message",
+  },
+
+  /* ── Thread 18 · Yuki Tanaka (enrichment batch) ───────────────────────── */
+
+  m351: {
+    understood: 'The guest asked whether turndown service is available nightly during their stay',
+    sources: [
+      'Turndown service runs nightly from 7:00 PM to 9:00 PM.',
+      'Nightly turndown is included for Platinum Elite members',
+    ],
+    result: "AI successfully responded to the guest's message",
+  },
 };
 
 /* ─────────────────────────────────────────────────────────────────────────
