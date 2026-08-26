@@ -627,6 +627,45 @@ const rawMessages: Record<string, Message[]> = {
   ],
   // Brooklyn's conversation
   '3': [
+    // ── Arrival day (2026-03-14) — enriched pre-existing sparse thread. The
+    // three original messages (m6–m8) are unchanged and remain the thread's
+    // tail; this exchange is earlier history only. See REDESIGN_NOTES.md.
+    {
+      id: 'm300',
+      threadId: '3',
+      sender: 'guest',
+      content: 'Hi, just checked into 130 and the wifi keeps dropping every few minutes. Anything you can do?',
+      timestamp: new Date('2026-03-14T16:20:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm301',
+      threadId: '3',
+      sender: 'ai',
+      content:
+        'Sorry about that! Try forgetting the network and rejoining "Statler_Guest" — that clears the drop for most rooms. I\'ve also flagged it to our IT team in case it happens again.',
+      timestamp: new Date('2026-03-14T16:26:00'),
+      channel: 'SMS',
+      status: 'delivered',
+      sourceCount: 2,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Brooklyn Simmons — Room 130, Checked In Today' },
+        { tool: 'Classify_intent', note: 'Wifi Connectivity Issue' },
+        { tool: 'Search_knowledge_base', note: 'Wifi Troubleshooting — Rejoin "Statler_Guest" Network' },
+        { tool: 'Create_service_ticket', note: 'IT — Wifi Drop Reported In Room 130' },
+        { tool: 'Compose_reply', note: 'Give Fix, Note IT Flagged' },
+      ],
+    },
+    {
+      id: 'm302',
+      threadId: '3',
+      sender: 'guest',
+      content: 'That did it, thank you!',
+      timestamp: new Date('2026-03-14T16:45:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
     {
       id: 'm6',
       threadId: '3',
@@ -727,6 +766,36 @@ const rawMessages: Record<string, Message[]> = {
   ],
   // Liam's conversation
   '6': [
+    // ── Day before arrival (2026-03-15) — enriched pre-existing sparse
+    // thread. The three original messages (m13–m15) are unchanged and remain
+    // the thread's tail; this exchange is earlier history only.
+    {
+      id: 'm310',
+      threadId: '6',
+      sender: 'guest',
+      content: "Hi, checking in tomorrow morning — any chance of an early check-in? Also could you add a couple extra pillows to the room?",
+      timestamp: new Date('2026-03-15T18:40:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm311',
+      threadId: '6',
+      sender: 'staff',
+      content: "We'll do our best on an early check-in, just depends on same-day departures — I've flagged your reservation. And I've noted the extra pillows for room 318 ahead of your arrival.",
+      timestamp: new Date('2026-03-15T18:50:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm312',
+      threadId: '6',
+      sender: 'guest',
+      content: 'Appreciate it, see you tomorrow!',
+      timestamp: new Date('2026-03-15T18:52:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
     {
       id: 'm13',
       threadId: '6',
@@ -765,6 +834,36 @@ const rawMessages: Record<string, Message[]> = {
   ],
   // Olivia's conversation
   '7': [
+    // ── Arrival day (2026-03-15) — enriched pre-existing sparse thread. The
+    // three original messages (m16–m18) are unchanged and remain the
+    // thread's tail; this exchange is earlier history only.
+    {
+      id: 'm320',
+      threadId: '7',
+      sender: 'guest',
+      content: 'Hi! Just arrived — is the pool open today, and what time does the spa close?',
+      timestamp: new Date('2026-03-15T12:10:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm321',
+      threadId: '7',
+      sender: 'staff',
+      content: 'Welcome, Olivia! The pool is open until 9 PM today, and the spa desk closes at 8 PM — walk-ins are welcome if a treatment slot is free.',
+      timestamp: new Date('2026-03-15T12:16:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm322',
+      threadId: '7',
+      sender: 'guest',
+      content: "Perfect, we'll head down after we unpack.",
+      timestamp: new Date('2026-03-15T12:18:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
     {
       id: 'm16',
       threadId: '7',
@@ -842,6 +941,37 @@ const rawMessages: Record<string, Message[]> = {
   ],
   // Emma's conversation
   '9': [
+    // ── Arrival morning (2026-03-16, earlier the same day) — enriched
+    // pre-existing sparse thread. The three original messages (m22–m24) are
+    // unchanged and remain the thread's tail; this exchange is earlier
+    // history only.
+    {
+      id: 'm330',
+      threadId: '9',
+      sender: 'guest',
+      content: "Hi, we've arrived early and our room might not be ready yet — could you hold our bags until then?",
+      timestamp: new Date('2026-03-16T07:40:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm331',
+      threadId: '9',
+      sender: 'staff',
+      content: "Of course! Bring them to the bell desk and we'll tag them for you — I'll text you the moment 409 is ready.",
+      timestamp: new Date('2026-03-16T07:44:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm332',
+      threadId: '9',
+      sender: 'guest',
+      content: 'Great, thank you!',
+      timestamp: new Date('2026-03-16T07:46:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
     {
       id: 'm22',
       threadId: '9',
@@ -881,6 +1011,55 @@ const rawMessages: Record<string, Message[]> = {
   ],
   // Priya's conversation
   '17': [
+    // ── Arrival day (2026-03-15) — enriched pre-existing sparse thread
+    // (was a single unanswered guest message). The original m62 is
+    // unchanged and remains the thread's final, still-unanswered message —
+    // this history is earlier only.
+    {
+      id: 'm340',
+      threadId: '17',
+      sender: 'guest',
+      content: 'Hi, just got in for a work trip — is there a business center where I could print some documents before a meeting tomorrow?',
+      timestamp: new Date('2026-03-15T13:40:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm341',
+      threadId: '17',
+      sender: 'staff',
+      content: 'Welcome, Priya! The business center is on the mezzanine level, open 24 hours — printing and a coffee machine are both there, no charge.',
+      timestamp: new Date('2026-03-15T13:46:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm342',
+      threadId: '17',
+      sender: 'guest',
+      content: 'Perfect, quick follow-up — can my invoice be itemized separately for the room and any incidentals? My company needs a clean expense report.',
+      timestamp: new Date('2026-03-15T14:00:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm343',
+      threadId: '17',
+      sender: 'staff',
+      content: "Absolutely — I've noted your account to itemize room charges separately from incidentals at checkout. Happy to email the folio to your billing contact too.",
+      timestamp: new Date('2026-03-15T14:10:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm344',
+      threadId: '17',
+      sender: 'guest',
+      content: "That would be great, I'll send the email over before I leave.",
+      timestamp: new Date('2026-03-15T14:12:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
     {
       id: 'm62',
       threadId: '17',
@@ -893,6 +1072,64 @@ const rawMessages: Record<string, Message[]> = {
   ],
   // Yuki's conversation
   '18': [
+    // ── Arrival day (2026-03-14) — enriched pre-existing sparse thread
+    // (was a single unanswered guest message). The original m63 is
+    // unchanged and remains the thread's final, still-unanswered message —
+    // this history is earlier only.
+    {
+      id: 'm350',
+      threadId: '18',
+      sender: 'guest',
+      content: "Hello, we've just checked into 511 — thank you! Is turndown service available every night during our stay?",
+      timestamp: new Date('2026-03-14T12:50:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm351',
+      threadId: '18',
+      sender: 'ai',
+      content:
+        "You're so welcome, Ms. Tanaka! Turndown service runs nightly from 7–9 PM as a Platinum Elite amenity — just let us know if you'd like to skip any evening.",
+      timestamp: new Date('2026-03-14T13:22:00'),
+      channel: 'SMS',
+      status: 'delivered',
+      sourceCount: 2,
+      aiSteps: [
+        { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Yuki Tanaka — Room 511, Checked In Today' },
+        { tool: 'Classify_intent', note: 'Amenity Question — Turndown Service' },
+        { tool: 'Guest Profile', note: 'Platinum Elite — Nightly Turndown Included' },
+        { tool: 'Search_knowledge_base', note: 'Turndown Service — Nightly, 7:00–9:00 PM' },
+        { tool: 'Compose_reply', note: 'Confirm Hours, Offer To Opt Out Any Night' },
+      ],
+    },
+    {
+      id: 'm352',
+      threadId: '18',
+      sender: 'guest',
+      content: 'Wonderful, please do it every night.',
+      timestamp: new Date('2026-03-14T13:24:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm353',
+      threadId: '18',
+      sender: 'guest',
+      content: 'One more thing — is there decaf for the in-room coffee maker? I try to avoid caffeine after lunch.',
+      timestamp: new Date('2026-03-14T18:30:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm354',
+      threadId: '18',
+      sender: 'staff',
+      content: "Great question — I'll have housekeeping drop a few decaf pods in 511 this afternoon.",
+      timestamp: new Date('2026-03-14T18:36:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
     {
       id: 'm63',
       threadId: '18',
@@ -956,6 +1193,36 @@ const rawMessages: Record<string, Message[]> = {
   ],
   // Hiroshi's conversation
   '21': [
+    // ── Earlier the same day (2026-03-15) — enriched pre-existing sparse
+    // thread. The two original messages (m68–m69) are unchanged and remain
+    // the thread's tail; this exchange is earlier history only.
+    {
+      id: 'm360',
+      threadId: '21',
+      sender: 'guest',
+      content: 'I think I left my laptop charger in the business center after a call earlier — could someone check?',
+      timestamp: new Date('2026-03-15T19:05:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm361',
+      threadId: '21',
+      sender: 'staff',
+      content: "Found it! Front desk has your charger — I can send it up to room 510, or you're welcome to grab it there anytime.",
+      timestamp: new Date('2026-03-15T19:20:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm362',
+      threadId: '21',
+      sender: 'guest',
+      content: "I'll swing by the desk, thank you!",
+      timestamp: new Date('2026-03-15T19:22:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
     {
       id: 'm68',
       threadId: '21',
@@ -1026,6 +1293,37 @@ const rawMessages: Record<string, Message[]> = {
   ],
   // Rachel's conversation
   '24': [
+    // ── Earlier the same day (2026-03-15, pre-arrival — she checks in
+    // 2026-03-16) — enriched pre-existing sparse thread. The three original
+    // messages (m74–m76) are unchanged and remain the thread's tail; this
+    // exchange is earlier history only.
+    {
+      id: 'm370',
+      threadId: '24',
+      sender: 'guest',
+      content: "Hi! We're arriving tomorrow for our anniversary — could you help us book a dinner reservation on-site for the 16th?",
+      timestamp: new Date('2026-03-15T10:05:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm371',
+      threadId: '24',
+      sender: 'staff',
+      content: "Happy anniversary in advance, Rachel! I've booked a 7:30 PM table at the rooftop restaurant for the 16th and noted it as a celebration — the team will have a little something waiting.",
+      timestamp: new Date('2026-03-15T10:15:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
+    {
+      id: 'm372',
+      threadId: '24',
+      sender: 'guest',
+      content: "That's so sweet, thank you!",
+      timestamp: new Date('2026-03-15T10:18:00'),
+      channel: 'SMS',
+      status: 'delivered',
+    },
     {
       id: 'm74',
       threadId: '24',

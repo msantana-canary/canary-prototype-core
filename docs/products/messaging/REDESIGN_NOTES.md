@@ -4308,3 +4308,71 @@ modal and others have before a frame existed. Goes on the Figma-pass list.
 `components/products/messaging/panel/CreateServiceTaskPage.tsx` ·
 `components/products/messaging/MessageComposer.tsx` ·
 `components/products/messaging/ThreadView.tsx`
+
+## Batch 12 — Mock data: 8 sparse threads enriched for SJ demo realism (2026-08-26)
+
+Mock DATA only — zero component/logic changes. Miguel: some conversations read
+as 3–4-message filler; enrich a handful into fuller, realistic exchanges
+without needing to demo every feature.
+
+**The rule used:** APPEND-HISTORY-ONLY. For each target thread, new
+`guest`/`staff`/`ai` messages were inserted at the FRONT of that thread's
+array — timestamped earlier (same day or an earlier day, always inside the
+guest's own reservation window per `lib/core/data/reservations.ts`) — and
+every pre-existing message in that thread (id, content, timestamp, sender,
+status, steps) was left byte-for-byte untouched, in its original order. The
+thread's existing FINAL message keeps its id and timestamp, so list-preview
+text, `lastMessageAt`, sort order and unread state in `mockThreads` needed no
+changes at all — confirmed by diff (zero deletions, only insertions; the
+`mockThreads` array and the `mockThreads`-adjacent exemplar thread blocks
+show no diff hunks).
+
+**Exemplar threads — untouched, verified by diff:** thread `1` (Emily Smith,
+full AI loop), `2` (Miguel Andre Briones Santana Rodriguez, fact queue), `4`
+(Marco Bitanga-Sevilla, recommended-ticket band + Review), `14` (John
+Smith/Sarah Smith/James Brady shared-phone + folio script), `16` (anonymous
+`(212) 555-0000`), `20` (Lucia Rossi, escalation), `25` (Chloe Dubois, AI
+draft card).
+
+**Threads enriched (8), all guest ↔ staff unless noted, new messages in
+`m3xx` id ranges to avoid any collision with the existing `m1`–`m105`/`m200`–
+`m205` ids:**
+
+| Thread | Guest | Before → After | New topic added (earlier) | Existing tail (untouched) |
+|---|---|---|---|---|
+| 3 | Brooklyn Simmons (Rm 130) | 3 → 6 | Wifi drop-out fix — **AI reply** with `aiSteps`/`sourceCount` | Check-out procedure |
+| 6 | Liam Johnson (Rm 318) | 3 → 6 | Pre-arrival early check-in + extra pillows — staff | Parking options |
+| 7 | Olivia Brown-Henderson (Rm 204) | 3 → 6 | Pool/spa hours on arrival — staff | Breakfast hours |
+| 9 | Emma Wilson-Rodriguez (Rm 409) | 3 → 6 | Early-arrival luggage hold at bell desk — staff | Late check-out fee |
+| 17 | Priya Sharma (Rm 419) | 1 → 6 | Business-center/printing, then itemized-invoice billing — staff ×2 | Airport taxi request (still unanswered, as before) |
+| 18 | Yuki Tanaka (Rm 511) | 1 → 6 | Turndown-service hours — **AI reply** with `aiSteps`/`sourceCount`; then decaf coffee pods — staff | Japanese-restaurant ask (still unanswered, as before) |
+| 21 | Hiroshi Nakamura (Rm 510) | 2 → 5 | Lost laptop charger, found at front desk — staff | Room-service-after-midnight (existing AI reply) |
+| 24 | Rachel Cohen (Rm 416) | 3 → 6 | Anniversary dinner reservation booked — staff | Rooftop-bar hours (existing AI reply) |
+
+Two AI replies total (Brooklyn's wifi fix, Yuki's turndown hours) — both carry
+a full `aiSteps` trace in the same tool-name/note shape as the rest of the
+file (reservation lookup → intent → KB search → compose), and a `sourceCount`
+set directly on the message (no entry added to `ai-mock.ts`'s
+`aiExplanations`, so these two have no "why" sidebar — acceptable, the sidebar
+is optional per-message anatomy). Every other new reply is `sender: 'staff'`
+per Miguel's steps-are-load-bearing preference. All new messages use
+`channel: 'SMS'`, `status: 'delivered'` — the same values every other message
+in the file uses; no new status values introduced.
+
+Rooms, dates and (where mentioned) loyalty tiers in the new copy are pulled
+from `lib/core/data/reservations.ts` / `guests.ts` for each guest — e.g. Emma
+Wilson-Rodriguez's existing AI trace already establishes she has no loyalty
+tier on file, so her new message doesn't invent one; Yuki Tanaka's Platinum
+Elite tier (confirmed in `guests.ts`) backs the turndown-service AI step.
+Two threads (17, 18) message the property the day before/day of arrival —
+the same pre-arrival pattern the Emily Smith exemplar already uses.
+
+Not touched: `broadcast-mock-data.ts`, `guest-journey-link.ts`,
+`panel-mock.ts` (upsells/service-tasks/calls), `ai-mock.ts` (explanations/
+drafts/facts/tickets/carrier errors), `store.ts`, any component.
+
+`pnpm tsc --noEmit` clean.
+
+### Files touched (Batch 12)
+
+`lib/products/messaging/mock-data.ts`
