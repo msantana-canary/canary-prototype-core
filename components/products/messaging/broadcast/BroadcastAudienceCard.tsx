@@ -15,7 +15,7 @@ import { BroadcastGroupList } from './BroadcastGroupList';
 
 export function BroadcastAudienceCard() {
   return (
-    <div className="h-full flex flex-col shrink-0 gap-4" style={{ width: 320 }}>
+    <div className="h-full w-full flex flex-col gap-4">
       {/* Card 1 — status trio */}
       <div
         className="shrink-0 overflow-clip rounded-[12px]"

@@ -47,10 +47,11 @@ export function BroadcastView() {
         className="flex h-full gap-4 min-h-0"
         style={{ paddingLeft: 24, paddingRight: 24, paddingBottom: 24, paddingTop: 16 }}
       >
-        {/* Audience card — CONTENT-SIZED, not a share of the canvas. Its two
-            internal columns are equal (212 + 1px divider + 212), so the card is
-            as wide as they make it and no wider. */}
-        <div className="h-full flex shrink-0">
+        {/* Audience card — 35% of the content row, the SAME share the
+            Conversations thread list takes (page.tsx), so the two surfaces'
+            left pillars align at any viewport width (Miguel 2026-08-26;
+            supersedes the content-sized 320px card). */}
+        <div className="h-full flex" style={{ flexBasis: '35%', flexGrow: 0, flexShrink: 1 }}>
           <BroadcastAudienceCard />
         </div>
 
