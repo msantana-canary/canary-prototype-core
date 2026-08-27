@@ -13,7 +13,7 @@
 
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { DateSeparator } from './DateSeparator';
 import { Message } from '@/lib/products/messaging/types';
@@ -24,6 +24,9 @@ import { useMessagingStore } from '@/lib/products/messaging/store';
 interface MessageFeedProps {
   messages: Message[];
   guest?: Guest | null;
+  /** Which thread this feed is showing — see `openSnapshot` below; this is
+   *  the ONLY way the feed can tell "just switched here" from "still here". */
+  threadId: string;
 }
 
 /**
@@ -32,12 +35,51 @@ interface MessageFeedProps {
  */
 const PIN_TOLERANCE_PX = 24;
 
-export function MessageFeed({ messages, guest }: MessageFeedProps) {
+export function MessageFeed({ messages, guest, threadId }: MessageFeedProps) {
   // Maya's live "AI thinking" demo sequence (see `useThreadDemoSequence`) —
   // read once here rather than inside every `MessageBubble`, and handed down
   // only to the ONE message it names. Null on every other thread/message.
   const demoThinkingMessageId = useMessagingStore((s) => s.demoThinkingMessageId);
   const demoThinkingLabel = useMessagingStore((s) => s.demoThinkingLabel);
+
+  /**
+   * NEW-MESSAGE ARRIVAL — which ids get a gentle entrance (`.message-arrival-
+   * enter` in `globals.css`) vs. render static. See Miguel's polish-pass fix
+   * #1 (2026-08-27): the demo sequence's guest message and AI block used to
+   * pop into the feed with no transition, but a thread's EXISTING history
+   * must never cascade in when you open it.
+   *
+   * `openSnapshot` is "the message ids that were already here the moment
+   * THIS thread was opened" — captured once per `threadId`, the same
+   * "adjust state while rendering" pattern React documents for resetting
+   * state when a prop changes (https://react.dev/reference/react/useState
+   * #storing-information-from-previous-renders): read during render, so the
+   * very first paint of a newly-opened thread already has the right
+   * snapshot, no one-frame flash where last thread's snapshot is still live.
+   *
+   * Deliberately NOT a `useMemo` — this is a piece of remembered STATE (what
+   * was here when we arrived), not a derived value safe to recompute from
+   * current inputs; React is allowed to discard a memo and recompute it later
+   * from `messages`, which would silently forget the snapshot and misclassify
+   * every already-landed message as a fresh arrival.
+   *
+   * A message id NOT in the snapshot is "new" — arrived after the thread was
+   * already on screen — and that flag is READ ONLY ONCE, at the render where
+   * that id's row first mounts (a one-shot CSS `animation`, not a `transition`,
+   * so there is nothing to keep in sync on later re-renders; see the class
+   * itself). It is never written back into the snapshot, so it stays "new"
+   * for the rest of this thread-open session — harmless, since the class only
+   * plays once on mount regardless of how many times the row's props change
+   * afterward.
+   */
+  const [openSnapshot, setOpenSnapshot] = useState<{ threadId: string; seenIds: Set<string> }>(
+    () => ({ threadId, seenIds: new Set(messages.map((m) => m.id)) })
+  );
+  if (threadId !== openSnapshot.threadId) {
+    setOpenSnapshot({ threadId, seenIds: new Set(messages.map((m) => m.id)) });
+  }
+  const isNewArrival = (messageId: string) =>
+    openSnapshot.threadId === threadId && !openSnapshot.seenIds.has(messageId);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -148,16 +190,23 @@ export function MessageFeed({ messages, guest }: MessageFeedProps) {
               new Date(messages[index - 1].timestamp)
             );
 
+          // Read once per id — see `isNewArrival` above for why re-reading it
+          // on later renders would be harmless anyway (a CSS animation only
+          // plays when the class is present at the row's OWN mount).
+          const arrivalClass = isNewArrival(message.id) ? 'message-arrival-enter' : undefined;
+
           return (
             <React.Fragment key={message.id}>
               {showDateSeparator && (
                 <DateSeparator label={formatDateSeparator(new Date(message.timestamp))} />
               )}
-              <MessageBubble
-                message={message}
-                guest={guest}
-                thinkingLabel={message.id === demoThinkingMessageId ? demoThinkingLabel ?? undefined : undefined}
-              />
+              <div className={arrivalClass}>
+                <MessageBubble
+                  message={message}
+                  guest={guest}
+                  thinkingLabel={message.id === demoThinkingMessageId ? demoThinkingLabel ?? undefined : undefined}
+                />
+              </div>
             </React.Fragment>
           );
         })}

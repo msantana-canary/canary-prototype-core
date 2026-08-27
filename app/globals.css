@@ -264,6 +264,33 @@ body {
   }
 }
 
+/* ---- Message entrance — newly-appended demo messages only (2026-08-27) --
+   Miguel's polish-pass fix #1: Maya's guest message and the AI block popped
+   into the feed with no transition. `MessageFeed` applies this class ONLY to
+   a message id that arrives AFTER its thread's feed is already on screen
+   (the demo sequence's two inserts, or any other message appended live to an
+   open thread) — every message present at the moment a thread is OPENED
+   renders with no class at all, so there is no cascade on mount. A one-shot
+   CSS `animation` (not a `transition`) is what makes that gate free: an
+   element born WITHOUT the class simply never runs it, no JS state machine
+   needed to distinguish "existing" from "new" at paint time.
+
+   ~200ms, ease-out, a small 4px rise settling to rest — quiet enough to read
+   as "arriving," not a bounce. */
+@keyframes message-arrive {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.message-arrival-enter {
+  animation: message-arrive 200ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .message-arrival-enter {
+    /* No transform, no fade — the message is simply present, instantly. */
+    animation: none;
+  }
+}
+
 /* ---- CanaryTag radius: 2 → 4 ---------------------------------------------
    DESIGN-SYSTEM CHANGE (Miguel, 2026-08-20). `CanaryTag` hardcodes
    `rounded-[2px]`; at the sizes this surface uses it, 2px reads as a hard

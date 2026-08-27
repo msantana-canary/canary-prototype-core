@@ -381,7 +381,7 @@ export function ThreadView({
       </div>
 
       {/* Messages */}
-      <MessageFeed messages={messages} guest={guest} />
+      <MessageFeed messages={messages} guest={guest} threadId={thread.id} />
 
       {/* Typing Indicator — 10px Roboto caption above the composer.
           REUSES the existing `typingThreadId` flow (ThreadList's row already
@@ -390,10 +390,43 @@ export function ThreadView({
           DRESS changes here, per Miguel's Claude-desktop reference for
           Maya's live sequence (2026-08-27): colorBlack4 → colorBlack3, the
           generic "Guest" → the actual guest's name, and a static line grows a
-          small staggered three-dot pulse in place of a literal "...". */}
+          small staggered three-dot pulse in place of a literal "...".
+
+          ── POLISH PASS (2026-08-27) — 4px above the composer, and it shimmers ──
+
+          1. THE 4px GAP. Without correction this caption sits ~28px above the
+             composer CARD's top border, not 4px: `MessageComposer`'s own root
+             carries 16px of padding-top, and its topSlot wrapper (`<div
+             style={{marginBottom: 12}}>{topSlot}</div>` — always rendered,
+             since `topSlot` is a live `<ThreadAiSlot/>` element even on the
+             renders where that component returns null) collapses its empty
+             top/bottom margins together and into its neighbours, contributing
+             its own 12px even with nothing visibly in it. `pb-1` (4px) used to
+             sit on TOP of that. `marginBottom: -24` below cancels the 28px
+             down to the 4px Miguel called for (pb-1 dropped to 0, so
+             0 + 16 + 12 - 24 = 4). Both composer numbers are shared by every
+             thread's composer, so the correction lives here — on the one
+             caption that needs to sit unusually close — rather than trimming
+             `MessageComposer`'s general-purpose padding for every
+             conversation. This is a fixed offset, not a live measurement: if
+             either of those two composer numbers ever changes, this constant
+             has to move with it.
+
+          2. THE SHIMMER. `.ai-thinking-label` + `.ai-gradient-quiet`, reused
+             VERBATIM — the exact pair `MessageBubble`'s `AiThinkingLabel`
+             already applies to the AI's own crossfading status caption — so
+             "Maya Patel is typing" and "Reading the conversation…" shimmer off
+             one register, not two. That class paints via `background-clip:
+             text` + `color: transparent`, which is why the old inline
+             `color: colorBlack3` had to go: an inline style always outranks a
+             class, and leaving it in place would have silently painted the
+             text solid over an invisible gradient. Reduced motion rides the
+             same rule (`animation: none` there) — nothing extra to do here —
+             and the dots keep pulsing regardless; a static caption composes
+             with them exactly as well as a shimmering one. */}
       {isGuestTyping && (
-        <div className="px-4 pb-1 flex items-baseline gap-0.5">
-          <p className="font-['Roboto',sans-serif] text-[10px] leading-[16px]" style={{ color: colors.colorBlack3 }}>
+        <div className="px-4 flex items-baseline gap-0.5" style={{ marginBottom: -24 }}>
+          <p className="ai-thinking-label ai-gradient-quiet font-['Roboto',sans-serif] text-[10px] leading-[16px]">
             {guest?.name || 'Guest'} is typing
           </p>
           <TypingEllipsis />

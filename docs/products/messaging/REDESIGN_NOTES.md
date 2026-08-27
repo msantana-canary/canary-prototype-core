@@ -4518,6 +4518,23 @@ Flag for the Figma coverage pass as an enumerate item on **flow #9** (per the
 external MASTER_COVERAGE tracker) alongside whatever else that flow is still
 missing.
 
+### 4. Polish pass on Miguel's review (2026-08-27)
+
+Four fixes on the sequence above, no new batch: (1) newly-appended demo
+messages get a 200ms ease-out fade + 4px rise (`.message-arrival-enter`,
+`globals.css`) — `MessageFeed` snapshots each thread's message ids the moment
+it's opened, so only ids that arrive AFTER that snapshot animate; a thread's
+existing history never cascades on open. (2) the typing caption now sits a
+measured 4px above the composer card (was ~28px — the composer's own 16px
+padding-top plus its topSlot wrapper's 12px collapsed margin), via a `-24px`
+correction on the caption itself rather than trimming the shared composer.
+(3) the typing caption reuses `.ai-thinking-label` + `.ai-gradient-quiet`
+verbatim, so it shimmers identically to the AI's own thinking label — one
+register, not two. (4) the thinking-slot label was 2px off "Canary"'s
+midline (a bare span blockifying inside its grid cell, vs. the completed
+chip's own internal flex row); both crossfade cells now get `display: flex;
+alignItems: center` so thinking and completed states measure delta 0 alike.
+
 ### Files touched (Batch 13)
 
 `lib/products/messaging/mock-data.ts` · `lib/products/messaging/ai-mock.ts` ·

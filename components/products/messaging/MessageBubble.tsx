@@ -455,13 +455,40 @@ export function MessageBubble({ message, guest, thinkingLabel }: MessageBubblePr
                   continuous animation rather than one thing vanishing and
                   another popping in. Every non-demo message has `isThinking`
                   permanently false, so only the (already-populated) steps
-                  layer ever paints — no grid, no transition, no change. */}
+                  layer ever paints — no grid, no transition, no change.
+
+                  ── VERTICAL CENTERING (Miguel's polish-pass fix #4, measured
+                  2026-08-27) ── The title row is `flex items-center`, which
+                  centers this whole grid span against "Canary"'s midline —
+                  but a CSS grid ITEM with an inline-level child (a bare
+                  `<span>`) gets BLOCKIFIED to `display: block`, and a plain
+                  block box has no `align-items` of its own: whatever sits
+                  inside it just falls to normal inline baseline layout. The
+                  completed chip reads centered anyway because `CanaryButton`
+                  wraps ITSELF in a flex row internally; `AiThinkingLabel` is a
+                  bare span with no such wrapper, so it landed 2px low — its
+                  OWN 12px/18px text metrics baseline-aligning inside a block
+                  box, rather than being centered against the row's cross-axis
+                  the way a flex child would be.
+
+                  The fix: give EACH stacked cell `display: flex; alignItems:
+                  center` — the same "flex items-center row anatomy" the
+                  completed chip already gets for free — rather than patching
+                  `AiThinkingLabel` alone. Both cells stretch to the grid
+                  span's own height (CSS Grid's `align-items: stretch`
+                  default, since neither this span nor its parent overrides
+                  it) and now both center their content inside that stretched
+                  box the same way, so there is nothing left for the crossfade
+                  to jump between — thinking and completed states measure
+                  delta 0 against "Canary"'s midline alike. */}
               {isThinking || lastThinkingLabel ? (
                 <span className="relative inline-grid shrink-0">
                   <span
                     aria-hidden={!isThinking}
                     style={{
                       gridArea: '1 / 1',
+                      display: 'flex',
+                      alignItems: 'center',
                       opacity: isThinking ? 1 : 0,
                       transition: 'opacity 250ms ease',
                       pointerEvents: isThinking ? 'auto' : 'none',
@@ -472,6 +499,8 @@ export function MessageBubble({ message, guest, thinkingLabel }: MessageBubblePr
                   <span
                     style={{
                       gridArea: '1 / 1',
+                      display: 'flex',
+                      alignItems: 'center',
                       opacity: isThinking ? 0 : 1,
                       transition: 'opacity 250ms ease',
                       pointerEvents: isThinking ? 'none' : 'auto',
