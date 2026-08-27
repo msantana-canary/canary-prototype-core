@@ -394,22 +394,25 @@ export function MessageBubble({ message, guest, thinkingLabel }: MessageBubblePr
   return (
     <div
       className="flex items-start gap-3"
-      /* Full-block hover wash (Figma): `colorBlack8` (#FAFAFA) across the whole
-       * row, not just the footer, so the footer's hover-only icons read as
-       * sitting on one surface instead of floating over nothing. Painted as an
-       * inline value driven by `isHovered` rather than a `hover:bg-*` class —
-       * the known trap in this codebase (see `ThreadListItem`'s `hoverColor`
-       * note): this same div already carries an inline `style` object for its
-       * padding, and any inline `backgroundColor` set elsewhere would out-rank
-       * a Tailwind hover class outright. State-driven inline is the only door
-       * that reliably wins.
+      /* Hover wash — AI MESSAGES ONLY (Miguel 8/27: "the wash means there's
+       * something here"). AI rows reveal the ⓘ/👍/👎 icons on hover, so the
+       * `colorBlack8` wash marks that there is something to find; guest and
+       * staff rows reveal nothing, and a wash over nothing is an affordance
+       * lie. Production agrees: its only bubble hover marks clickability
+       * (broadcast details). Supersedes the 8/25 blanket block-wash.
+       * Painted as an inline value driven by `isHovered` rather than a
+       * `hover:bg-*` class — the known trap in this codebase (see
+       * `ThreadListItem`'s `hoverColor` note): this same div already carries
+       * an inline `style` object for its padding, and any inline
+       * `backgroundColor` set elsewhere would out-rank a Tailwind hover class
+       * outright. State-driven inline is the only door that reliably wins.
        */
       style={{
         paddingLeft: 16,
         paddingRight: 16,
         paddingTop: 8,
         paddingBottom: 8,
-        backgroundColor: isHovered ? colors.colorBlack8 : 'transparent',
+        backgroundColor: isAI && isHovered ? colors.colorBlack8 : 'transparent',
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
