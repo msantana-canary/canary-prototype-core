@@ -22,13 +22,25 @@
  *
  * The segmented control, the in-card Filters row and the search-row Filters
  * popover were all removed on the way here.
+ *
+ * ── SJ COMPARISON TOGGLE (2026-08-27) ──────────────────────────────────────
+ * A FOURTH zone, `shrink-0` below the scroll container with a hairline above
+ * it (the same divider register the header uses): a compact "List: Current /
+ * Proposed" pair so SJ can flip the shared link between today's row and the
+ * no-preview/unread-wash "Proposed" row (see `ThreadListItem`'s header note
+ * for the variant itself). `listVariant` is local state here, in-memory only,
+ * default `'current'` — deliberately NOT lifted to the page or the store,
+ * since nothing outside this card needs it and the broadcast rail never
+ * mounts `ThreadList` in the first place. This is demo chrome for the async
+ * review thread, not a shipped control — delete this zone, the state, and
+ * `ThreadListItem`'s `listVariant` prop once the direction is ruled.
  */
 
 'use client';
 
 import React from 'react';
-import { colors, CanaryCard, CardPadding } from '@canary-ui/components';
-import { ThreadListItem } from './ThreadListItem';
+import { colors, CanaryCard, CardPadding, CanaryChip, ChipType } from '@canary-ui/components';
+import { ThreadListItem, ThreadListVariant } from './ThreadListItem';
 import { Thread } from '@/lib/products/messaging/types';
 import { panelIdentity } from '@/lib/products/messaging/panel-selectors';
 import { useMessagingStore } from '@/lib/products/messaging/store';
@@ -62,6 +74,10 @@ export function ThreadList({
   // padding … or add a fade"). The fade: a top scrim over the scroll zone,
   // present only once the list is actually scrolled.
   const [isScrolled, setIsScrolled] = React.useState(false);
+
+  // SJ comparison toggle — see the header note. In-memory only, not
+  // persisted, default 'current'.
+  const [listVariant, setListVariant] = React.useState<ThreadListVariant>('current');
 
   return (
     <div className="w-full h-full flex flex-col min-h-0">
@@ -166,11 +182,64 @@ export function ThreadList({
                   isSelected={thread.id === selectedThreadId}
                   onClick={() => onSelectThread(thread.id)}
                   isTyping={thread.id === typingThreadId}
+                  listVariant={listVariant}
                 />
               );
             })
           )}
           </ul>
+        </div>
+
+        {/* SJ comparison toggle (2026-08-27) — demo chrome, not a shipped
+            control. A `shrink-0` fourth zone below the scroll container, with
+            a hairline above it matching the header's own divider, so it reads
+            as meta-chrome rather than part of the working list. Centered
+            rather than edge-anchored: it is a comparison affordance for
+            reviewing the list, not a scoped-to-the-list-content action like
+            search or the folder/assignment selects above. Remove this whole
+            block (and `listVariant`) once the direction is ruled. */}
+        <div
+          className="shrink-0 flex items-center justify-center gap-2"
+          style={{
+            borderTop: `1px solid ${colors.colorBlack6}`,
+            paddingTop: 8,
+            paddingBottom: 8,
+          }}
+        >
+          <span
+            className="font-['Roboto',sans-serif] text-[11px] uppercase tracking-wide"
+            style={{ color: colors.colorBlack4 }}
+          >
+            List:
+          </span>
+          {/* Two `CanaryChip`s, not `CanarySegmentedControl` — the chip
+              already carries real keyboard support (role="button", tabIndex,
+              Enter/Space) out of the box, where the segmented control's own
+              buttons would too but at a fixed, larger px-4/py-2 footprint
+              this strip doesn't need. `size="compact"` (32px/12px) keeps the
+              pair small and discreet without a custom className override. */}
+          <div
+            role="group"
+            aria-label="Thread list comparison variant"
+            className="flex items-center gap-1"
+          >
+            <CanaryChip
+              label="Current"
+              chipType={ChipType.SELECTABLE}
+              size="compact"
+              isSelected={listVariant === 'current'}
+              onClick={() => setListVariant('current')}
+              className="font-['Roboto',sans-serif]"
+            />
+            <CanaryChip
+              label="Proposed"
+              chipType={ChipType.SELECTABLE}
+              size="compact"
+              isSelected={listVariant === 'proposed'}
+              onClick={() => setListVariant('proposed')}
+              className="font-['Roboto',sans-serif]"
+            />
+          </div>
         </div>
       </CanaryCard>
     </div>

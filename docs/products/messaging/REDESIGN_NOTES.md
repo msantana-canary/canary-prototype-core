@@ -4560,3 +4560,18 @@ Upsells first, Linked Reservations second, for every thread — default tab and
 the thread-switch reset both follow, badge/remount logic is id-keyed so the
 reorder is inert there. `pnpm tsc --noEmit` clean. Files: `broadcast/
 BroadcastComposer.tsx` · `panel/ConversationDetailsPanel.tsx`.
+
+## Batch 14 — SJ comparison toggle: list variant (2026-08-27)
+
+SJ gave async feedback on the thread list; added a live in-app toggle so the
+shared link can flip between it live rather than over screenshots. A "List:
+Current / Proposed" `CanaryChip` pair (compact/SELECTABLE) sits in its own
+hairline-topped `shrink-0` strip at the bottom of the thread-list card
+(`ThreadList.tsx`), in-memory state only, default Current. "Proposed"
+(`ThreadListItem.tsx`) drops the message-preview line, relocates the dot/flag
+indicator cluster onto the room/ticket line, and washes unread rows `#F4F7FD`
+— a step lighter than the selected row's `colorBlueDark5` (`#EAEEF9`), no
+border, dot unchanged. Loyalty badge untouched in both states. Deliberate demo
+chrome, comparison affordance pending SJ's ruling — remove `listVariant` and
+the toggle strip once the direction lands. `pnpm tsc --noEmit` clean. Files:
+`ThreadList.tsx` · `ThreadListItem.tsx`.

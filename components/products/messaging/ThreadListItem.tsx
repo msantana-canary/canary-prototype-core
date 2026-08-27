@@ -29,6 +29,18 @@
  * that was invisible next to the blue selected row, and the two states have to
  * be told apart at a glance. Neutral vs. blue also keeps "where my pointer is"
  * and "what is open" in different colour families. Unread = dot only.
+ *
+ * ── SJ COMPARISON TOGGLE (2026-08-27), STATE B "PROPOSED" ─────────────────
+ * `listVariant` is demo chrome for the async list-review thread (see
+ * `ThreadList`'s footer strip) — NOT a shipped product decision. 'current'
+ * (default) renders every line above untouched. 'proposed' drops the preview
+ * line entirely (the indicator cluster relocates onto the room/ticket line,
+ * right-hugging the same way) and washes unread rows — not escalated-but-read
+ * ones, the wash keys off `thread.isUnread` specifically — with a step lighter
+ * than the selected row's colorBlueDark5, via `CanaryListItem`'s own
+ * `backgroundColor` prop (which the base already no-ops when `isSelected`, so
+ * selected keeps its stronger, bordered treatment untouched). Remove
+ * `listVariant` and this note once the direction is ruled.
  */
 
 import React from 'react';
@@ -43,6 +55,17 @@ import { mdiBedOutline, mdiRoomServiceOutline, mdiFlag } from '@mdi/js';
 import { useRowKeyActivation } from '@/lib/products/messaging/useRowKeyActivation';
 import { formatPhoneForDisplay } from '@/lib/products/messaging/phone';
 
+/** SJ comparison toggle — see the header note. 'current' = today's list,
+ *  byte-for-byte. 'proposed' = no preview line + unread wash. */
+export type ThreadListVariant = 'current' | 'proposed';
+
+// Unread wash for the 'proposed' variant only. Lighter than the selected
+// row's `colors.colorBlueDark5` (#EAEEF9) by design — #F4F7FD is one step
+// further toward white so an unread row never reads with the same weight as
+// a selected one. Not a library token (colorBlueDark5 is already the
+// lightest rung in that ramp), hence the literal hex.
+const UNREAD_WASH_PROPOSED = '#F4F7FD';
+
 interface ThreadListItemProps {
   thread: Thread;
   guest?: Guest;
@@ -50,6 +73,9 @@ interface ThreadListItemProps {
   isSelected?: boolean;
   onClick?: () => void;
   isTyping?: boolean;
+  /** SJ comparison toggle, in-memory/demo-only — see the header note. Defaults
+   *  to 'current' so every other caller (there are none today) stays inert. */
+  listVariant?: ThreadListVariant;
 }
 
 export function ThreadListItem({
@@ -59,7 +85,9 @@ export function ThreadListItem({
   isSelected = false,
   onClick,
   isTyping = false,
+  listVariant = 'current',
 }: ThreadListItemProps) {
+  const isProposed = listVariant === 'proposed';
   const formattedTime = format(thread.lastMessageAt, 'h:mm a').toUpperCase();
 
   // For phone-only threads, display the contact number — FORMATTED (QA-2). The
@@ -82,6 +110,75 @@ export function ThreadListItem({
   // Production parity: `unread_count > 0 || is_escalated`.
   const showDot = !!(thread.isUnread || thread.isEscalated);
   const rowRef = useRowKeyActivation(onClick);
+
+  /**
+   * The right-hugging indicator cluster (dot + flag) — pulled out to a
+   * variable so 'proposed' can relocate it onto the room/ticket line while
+   * 'current' keeps it exactly where it always was, on the preview line,
+   * without two copies of the `CanaryTooltip` markup drifting apart.
+   */
+  const indicatorCluster = (showDot || thread.isFlagged) ? (
+    <div className="flex items-center gap-[6px] shrink-0">
+      {/* Attention dot — unread OR escalated (production parity:
+          `unread_count > 0 || is_escalated`). Escalated turns amber
+          (warning), matching production's `.isEscalated` variant;
+          plain unread stays pink. Rendered only when it applies: an
+          always-present transparent box would push a lone flag off the
+          right margin. */}
+      {showDot && (
+        <div
+          className="w-[10px] h-[10px] rounded-full shrink-0"
+          style={{
+            backgroundColor: thread.isEscalated ? colors.warning : colors.colorPink1,
+          }}
+        />
+      )}
+      {/* The flag's explanation is a `CanaryTooltip`, not the native
+          `title` attribute it used to be, and not @mdi/react's `title`
+          prop — that one auto-generates an `aria-labelledby` id from a
+          module-level counter, which differs between the server and
+          client renders and trips React hydration. CanaryTooltip touches
+          no ids, so that hazard does not reach it.
+          (The same hydration note still governs the failure icon in the
+          Conversation Details panel.)
+
+          TWO THINGS THE BASE MADE US DO, both measured rather than
+          assumed:
+
+          1. THE SPAN CARRIES NO `aria-label` ANY MORE. The base renders
+             its bubble ALWAYS — hidden by `opacity: 0`, which does not
+             remove a node from the accessibility tree — and never marks
+             it `aria-hidden`. So the bubble's sentence is folded into
+             the accessible name of every ancestor, this row's button
+             included. With the old `aria-label` still on the span the
+             row announced the sentence TWICE. Deleting the label leaves
+             the bubble as the single source of it, which is exactly what
+             the row said before.
+          2. NO SHADOW. The base's bubble ships Tailwind's `shadow`;
+             this branch draws none, anywhere.
+
+          The bubble is `position: absolute` and `whitespace-nowrap`, so
+          it lives or dies by its ancestors' overflow. Measured here: the
+          bubble is 370×26 inside a 405×80 row and clears all eight
+          clipping ancestors with zero cut on every side. It sits ABOVE
+          the flag and to its LEFT — which is the only reason a 370px
+          bubble fits beside an indicator 20px from the row's right edge.
+          Both facts are contingent on this row's size; a shorter or
+          narrower row would clip it. Logged as a foundation ask
+          (portal the bubble / let it wrap / flip on collision). */}
+      {thread.isFlagged && (
+        <CanaryTooltip
+          content="Potential guest frustration detected. AI paused to avoid escalation."
+          position={TooltipPosition.TOP}
+          className="shrink-0 [&>div]:!shadow-none"
+        >
+          <span className="flex items-center shrink-0 cursor-help">
+            <Icon path={mdiFlag} size={0.83} color="#E40046" />
+          </span>
+        </CanaryTooltip>
+      )}
+    </div>
+  ) : null;
 
   return (
     /**
@@ -130,6 +227,14 @@ export function ThreadListItem({
       onClick={onClick}
       isSelected={isSelected}
       selectedBackgroundColor={colors.colorBlueDark5}
+      /* 'proposed' unread wash. The base's own `bgColor` ternary
+         (`isSelected ? selectedBackgroundColor : backgroundColor`) already
+         ignores this prop on a selected row, so there is no need to guard
+         `!isSelected` here too — selected keeps its stronger, bordered
+         EAEEF9 treatment no matter what this resolves to. Keyed off
+         `thread.isUnread` specifically, not `showDot` — an escalated-but-read
+         row still gets its amber dot but no wash; only UNREAD rows wash. */
+      backgroundColor={isProposed && thread.isUnread ? UNREAD_WASH_PROPOSED : undefined}
       hoverColor="rgba(0,0,0,0.08)"
       padding="compact"
       alignment="start"
@@ -175,8 +280,15 @@ export function ThreadListItem({
           </span>
         </div>
 
-        {/* Room + status (plain text, not a tag) + request count */}
-        {(room || (requestCount && requestCount > 0)) && (
+        {/* Room + status (plain text, not a tag) + request count. In
+            'proposed', this line also inherits the indicator cluster — the
+            preview line below it never renders in that variant, so the dot
+            and flag need a line to live on, and this is the row's only other
+            candidate. A `flex-1` spacer keeps the cluster right-hugging the
+            same way it always has, even on rows with no room/ticket content
+            to sit beside it. 'current' is untouched: the cluster only ever
+            lands here when `isProposed`. */}
+        {(room || (requestCount && requestCount > 0) || (isProposed && indicatorCluster)) && (
           <div className="flex items-center gap-3">
             {room && (
               <div className="flex items-center gap-1">
@@ -200,82 +312,31 @@ export function ThreadListItem({
                 </span>
               </div>
             ) : null}
+            {isProposed && indicatorCluster && (
+              <>
+                <span className="flex-1" />
+                {indicatorCluster}
+              </>
+            )}
           </div>
         )}
 
         {/* Preview + the right-hugging indicator cluster (siblings, not
-            alternatives — see the header note). */}
-        <div className="flex items-center gap-2">
-          <p
-            className={`flex-1 min-w-0 font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate ${isTyping ? 'italic' : ''}`}
-            style={{ color: colors.colorBlack3 }}
-          >
-            {isTyping ? `${firstName} is typing...` : thread.lastMessage}
-          </p>
-
-          {(showDot || thread.isFlagged) && (
-            <div className="flex items-center gap-[6px] shrink-0">
-              {/* Attention dot — unread OR escalated (production parity:
-                  `unread_count > 0 || is_escalated`). Escalated turns amber
-                  (warning), matching production's `.isEscalated` variant;
-                  plain unread stays pink. Rendered only when it applies: an
-                  always-present transparent box would push a lone flag off the
-                  right margin. */}
-              {showDot && (
-                <div
-                  className="w-[10px] h-[10px] rounded-full shrink-0"
-                  style={{
-                    backgroundColor: thread.isEscalated ? colors.warning : colors.colorPink1,
-                  }}
-                />
-              )}
-              {/* The flag's explanation is a `CanaryTooltip`, not the native
-                  `title` attribute it used to be, and not @mdi/react's `title`
-                  prop — that one auto-generates an `aria-labelledby` id from a
-                  module-level counter, which differs between the server and
-                  client renders and trips React hydration. CanaryTooltip touches
-                  no ids, so that hazard does not reach it.
-                  (The same hydration note still governs the failure icon in the
-                  Conversation Details panel.)
-
-                  TWO THINGS THE BASE MADE US DO, both measured rather than
-                  assumed:
-
-                  1. THE SPAN CARRIES NO `aria-label` ANY MORE. The base renders
-                     its bubble ALWAYS — hidden by `opacity: 0`, which does not
-                     remove a node from the accessibility tree — and never marks
-                     it `aria-hidden`. So the bubble's sentence is folded into
-                     the accessible name of every ancestor, this row's button
-                     included. With the old `aria-label` still on the span the
-                     row announced the sentence TWICE. Deleting the label leaves
-                     the bubble as the single source of it, which is exactly what
-                     the row said before.
-                  2. NO SHADOW. The base's bubble ships Tailwind's `shadow`;
-                     this branch draws none, anywhere.
-
-                  The bubble is `position: absolute` and `whitespace-nowrap`, so
-                  it lives or dies by its ancestors' overflow. Measured here: the
-                  bubble is 370×26 inside a 405×80 row and clears all eight
-                  clipping ancestors with zero cut on every side. It sits ABOVE
-                  the flag and to its LEFT — which is the only reason a 370px
-                  bubble fits beside an indicator 20px from the row's right edge.
-                  Both facts are contingent on this row's size; a shorter or
-                  narrower row would clip it. Logged as a foundation ask
-                  (portal the bubble / let it wrap / flip on collision). */}
-              {thread.isFlagged && (
-                <CanaryTooltip
-                  content="Potential guest frustration detected. AI paused to avoid escalation."
-                  position={TooltipPosition.TOP}
-                  className="shrink-0 [&>div]:!shadow-none"
-                >
-                  <span className="flex items-center shrink-0 cursor-help">
-                    <Icon path={mdiFlag} size={0.83} color="#E40046" />
-                  </span>
-                </CanaryTooltip>
-              )}
-            </div>
-          )}
-        </div>
+            alternatives — see the header note). 'proposed' drops this line
+            entirely — no message preview, per the SJ comparison toggle — and
+            the cluster relocates to the room/ticket line above instead of
+            disappearing with it. */}
+        {!isProposed && (
+          <div className="flex items-center gap-2">
+            <p
+              className={`flex-1 min-w-0 font-['Roboto',sans-serif] text-[14px] leading-[22px] truncate ${isTyping ? 'italic' : ''}`}
+              style={{ color: colors.colorBlack3 }}
+            >
+              {isTyping ? `${firstName} is typing...` : thread.lastMessage}
+            </p>
+            {indicatorCluster}
+          </div>
+        )}
       </div>
     </CanaryListItem>
   );
