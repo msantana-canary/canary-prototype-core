@@ -412,21 +412,21 @@ export function ThreadView({
              either of those two composer numbers ever changes, this constant
              has to move with it.
 
-          2. THE SHIMMER. `.ai-thinking-label` + `.ai-gradient-quiet`, reused
-             VERBATIM — the exact pair `MessageBubble`'s `AiThinkingLabel`
-             already applies to the AI's own crossfading status caption — so
-             "Maya Patel is typing" and "Reading the conversation…" shimmer off
-             one register, not two. That class paints via `background-clip:
-             text` + `color: transparent`, which is why the old inline
-             `color: colorBlack3` had to go: an inline style always outranks a
-             class, and leaving it in place would have silently painted the
-             text solid over an invisible gradient. Reduced motion rides the
-             same rule (`animation: none` there) — nothing extra to do here —
-             and the dots keep pulsing regardless; a static caption composes
-             with them exactly as well as a shimmering one. */}
+          2. THE SHIMMER. `.ai-thinking-label` for the animation + clip, with
+             the `.shimmer-grey` variant (Miguel 8/27: "Maya Patel typing
+             should be grey") — same glint the AI's crossfading status caption
+             carries, but on a colorBlack3-grey ramp: the motion is the shared
+             register, the purple stays the AI's alone. The class paints via
+             `background-clip: text` + `color: transparent`, which is why the
+             old inline `color: colorBlack3` had to go: an inline style always
+             outranks a class, and leaving it in place would have silently
+             painted the text solid over an invisible gradient. Reduced motion
+             rides the same rule (`animation: none` there) — nothing extra to
+             do here — and the dots keep pulsing regardless; a static caption
+             composes with them exactly as well as a shimmering one. */}
       {isGuestTyping && (
         <div className="px-4 flex items-baseline gap-0.5" style={{ marginBottom: -24 }}>
-          <p className="ai-thinking-label ai-gradient-quiet font-['Roboto',sans-serif] text-[10px] leading-[16px]">
+          <p className="ai-thinking-label shimmer-grey font-['Roboto',sans-serif] text-[10px] leading-[16px]">
             {guest?.name || 'Guest'} is typing
           </p>
           <TypingEllipsis />

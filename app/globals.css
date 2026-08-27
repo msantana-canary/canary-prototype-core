@@ -246,6 +246,20 @@ body {
   }
 }
 
+/* Grey variant of the shimmer — the GUEST typing caption (Miguel 2026-08-27:
+   "Maya Patel typing should be grey"). Same animation, same band geometry,
+   but a colorBlack3 base with a lighter sweep: the glint belongs to the
+   register, the AI ramp's purple belongs to the AI. */
+.ai-thinking-label.shimmer-grey {
+  background-image: linear-gradient(
+    90deg,
+    #666666 0%,
+    #b3b3b3 30%,
+    #666666 60%,
+    #666666 100%
+  );
+}
+
 /* The typing indicator's staggered ellipsis (ThreadView, above the composer)
    — three dots pulsing in sequence rather than a static "...". Tasteful and
    small: opacity only, no movement beyond the 1px lift at peak. */
