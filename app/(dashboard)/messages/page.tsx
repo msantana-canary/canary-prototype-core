@@ -26,6 +26,7 @@ import {
 } from '@/components/products/messaging/ThreadScopeMenu';
 import { BroadcastView } from '@/components/products/messaging/broadcast/BroadcastView';
 import { sortByRecency, useMessagingStore } from '@/lib/products/messaging/store';
+import { useThreadDemoSequence } from '@/lib/products/messaging/useThreadDemoSequence';
 import { guests } from '@/lib/core/data/guests';
 import { reservations } from '@/lib/core/data/reservations';
 import { panelIdentity } from '@/lib/products/messaging/panel-selectors';
@@ -82,6 +83,13 @@ export default function MessagesPage() {
     if (!selectedThreadId) return null;
     return threads.find((t) => t.id === selectedThreadId) || null;
   }, [threads, selectedThreadId]);
+
+  /**
+   * Maya Patel's scripted, live "AI thinking" sequence — plays once, the first
+   * time her thread is selected this session (a reload replays it; see the
+   * hook for the full script and its StrictMode-safe cleanup).
+   */
+  useThreadDemoSequence(selectedThreadId);
 
   /**
    * The thread's PRIMARY person — the same spotlight the Conversation Details

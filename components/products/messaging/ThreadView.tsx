@@ -103,6 +103,28 @@ function IconAction({
   );
 }
 
+/**
+ * Three small dots, staggered — the typing indicator's animated ellipsis
+ * (2026-08-27, Claude-desktop reference). `aria-hidden`: the visible text
+ * beside it already says "is typing", so a screen reader gets the fact once
+ * rather than reading three periods.
+ */
+function TypingEllipsis() {
+  return (
+    <span aria-hidden="true" className="inline-flex" style={{ gap: 1 }}>
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="typing-dot font-['Roboto',sans-serif] text-[10px] leading-[16px]"
+          style={{ color: colors.colorBlack3, animationDelay: `${i * 160}ms` }}
+        >
+          .
+        </span>
+      ))}
+    </span>
+  );
+}
+
 interface ThreadViewProps {
   thread: Thread;
   guest: Guest | null;
@@ -361,12 +383,20 @@ export function ThreadView({
       {/* Messages */}
       <MessageFeed messages={messages} guest={guest} />
 
-      {/* Typing Indicator */}
+      {/* Typing Indicator — 10px Roboto caption above the composer.
+          REUSES the existing `typingThreadId` flow (ThreadList's row already
+          swaps its preview for an italic "{name} is typing…"; this is the
+          same flag's other reader) rather than a second mechanism — only the
+          DRESS changes here, per Miguel's Claude-desktop reference for
+          Maya's live sequence (2026-08-27): colorBlack4 → colorBlack3, the
+          generic "Guest" → the actual guest's name, and a static line grows a
+          small staggered three-dot pulse in place of a literal "...". */}
       {isGuestTyping && (
-        <div className="px-4 pb-1">
-          <p className="font-['Roboto',sans-serif] text-[10px] leading-[16px]" style={{ color: colors.colorBlack4 }}>
-            Guest is typing
+        <div className="px-4 pb-1 flex items-baseline gap-0.5">
+          <p className="font-['Roboto',sans-serif] text-[10px] leading-[16px]" style={{ color: colors.colorBlack3 }}>
+            {guest?.name || 'Guest'} is typing
           </p>
+          <TypingEllipsis />
         </div>
       )}
 

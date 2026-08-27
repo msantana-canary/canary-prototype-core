@@ -17,13 +17,21 @@
  * is to have it say three and then show four.
  *
  * ── THE COPY ──────────────────────────────────────────────────────────────
- * Thread 1's two explanations (`m4` success, `m3` non-response) are the FRAMES,
- * verbatim — including the inconsistencies the audit logged as fix-in-post:
- * "Chilli's" with two Ls against the message's "Chili's", the double space in
- * "MIX,  and Red's Place", bullet 1 ending in a period where 2 and 3 do not,
- * and "What AI understood" in sentence case beside three title-case headings.
- * They are reproduced on purpose so the build matches the design file. Do not
- * tidy them here — they get fixed in Figma first.
+ * Thread 1's `m4` explanation is the FRAME, verbatim — including the
+ * inconsistencies the audit logged as fix-in-post: "Chilli's" with two Ls
+ * against the message's "Chili's", the double space in "MIX,  and Red's
+ * Place", bullet 1 ending in a period where 2 and 3 do not, and "What AI
+ * understood" in sentence case beside three title-case headings. It is
+ * reproduced on purpose so the build matches the design file. Do not tidy it
+ * here — it gets fixed in Figma first.
+ *
+ * ⚠ `m3` is NO LONGER part of that verbatim pair (Miguel, 2026-08-27). It used
+ * to be the frame's own non-response state, declining the SAME restaurant
+ * question `m4` then answered — a self-contradiction once both states sit in
+ * one thread. `m3`'s message content moved to a genuinely decline-worthy
+ * billing ask, and this entry's `understood`/`sources` were rewritten to
+ * match; `intro` and `actionTaken` are still the frame's own wording,
+ * untouched. See `mock-data.ts`, thread `1`, for the message-side half.
  *
  * Every other explanation is invented but internally coherent: it uses the
  * thread's real guest, room and stay, and its sources are the knowledge-base
@@ -53,13 +61,19 @@ export const aiExplanations: Record<string, AiExplanation> = {
     result: "AI successfully responded to the guest's message",
   },
 
-  // NON-RESPONSE — frame 2038:58955, verbatim. Hangs on the GUEST message the
-  // agent left alone, which is why it has no message band to recap.
+  // NON-RESPONSE — frame 2038:58955's `intro`/`actionTaken` wording, verbatim.
+  // Hangs on the GUEST message the agent left alone, which is why it has no
+  // message band to recap. `understood`/`sources` are REWRITTEN (2026-08-27)
+  // for the billing ask `m3` now carries — see the header note above.
   m3: {
     intro:
       "Based on the context of the guest's message, AI chose not to respond. Review the details below to understand what triggered this decision.",
-    understood: 'The guest asked a question about the hotel',
-    sources: DINING_SOURCES,
+    understood: "The guest asked to split their bill across two cards at check-out, with their company covering the room",
+    sources: [
+      'Splitting a folio across two cards requires a signed authorisation at the front desk.',
+      'A billing request can be noted on the reservation for the front desk to complete at check-out.',
+      'The AI agent cannot authorise a split payment across cards.',
+    ],
     actionTaken:
       'To prevent miscommunication or further escalation, AI flagged the message for staff so a team member can step in and provide a more thoughtful resolution',
     result: 'AI chose not to respond',
@@ -234,6 +248,19 @@ export const aiExplanations: Record<string, AiExplanation> = {
     sources: [
       'Turndown service runs nightly from 7:00 PM to 9:00 PM.',
       'Nightly turndown is included for Platinum Elite members',
+    ],
+    result: "AI successfully responded to the guest's message",
+  },
+
+  /* ── Thread 27 · Maya Patel — the live "AI thinking" demo (2026-08-27) ───
+     Merged onto `mayaDemoAiReply` by `useThreadDemoSequence` when the
+     scripted sequence lands, not by the module-load decoration pass below —
+     see `mock-data.ts` for why this message doesn't exist at load time. */
+  m83: {
+    understood: "Maya asked for a late checkout on her Thursday departure",
+    sources: [
+      'Club Members receive a complimentary late check-out until 1:00 PM, based on housekeeping availability.',
+      'Housekeeping must be notified before 9:00 AM for an afternoon clean',
     ],
     result: "AI successfully responded to the guest's message",
   },

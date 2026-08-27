@@ -19,6 +19,7 @@ import { DateSeparator } from './DateSeparator';
 import { Message } from '@/lib/products/messaging/types';
 import { Guest } from '@/lib/core/types/guest';
 import { formatDateSeparator, isSameCalendarDay } from '@/lib/utils/date-helpers';
+import { useMessagingStore } from '@/lib/products/messaging/store';
 
 interface MessageFeedProps {
   messages: Message[];
@@ -32,6 +33,12 @@ interface MessageFeedProps {
 const PIN_TOLERANCE_PX = 24;
 
 export function MessageFeed({ messages, guest }: MessageFeedProps) {
+  // Maya's live "AI thinking" demo sequence (see `useThreadDemoSequence`) —
+  // read once here rather than inside every `MessageBubble`, and handed down
+  // only to the ONE message it names. Null on every other thread/message.
+  const demoThinkingMessageId = useMessagingStore((s) => s.demoThinkingMessageId);
+  const demoThinkingLabel = useMessagingStore((s) => s.demoThinkingLabel);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   /** Is the feed resting at the bottom? */
@@ -146,7 +153,11 @@ export function MessageFeed({ messages, guest }: MessageFeedProps) {
               {showDateSeparator && (
                 <DateSeparator label={formatDateSeparator(new Date(message.timestamp))} />
               )}
-              <MessageBubble message={message} guest={guest} />
+              <MessageBubble
+                message={message}
+                guest={guest}
+                thinkingLabel={message.id === demoThinkingMessageId ? demoThinkingLabel ?? undefined : undefined}
+              />
             </React.Fragment>
           );
         })}

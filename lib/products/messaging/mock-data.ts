@@ -10,7 +10,7 @@
  * longer disagree about what a touchpoint is called. See that file's header.
  */
 
-import { Thread, Message } from './types';
+import { Thread, Message, AiStep } from './types';
 import { aiExplanations, carrierErrorsByMessage } from './ai-mock';
 
 
@@ -570,15 +570,35 @@ const rawMessages: Record<string, Message[]> = {
       ],
     },
     // AI-DECLINED EXEMPLAR — the frame puts it on this message.
+    //
+    // ⚠ CONTENT CHANGED (Miguel, 2026-08-27) — decline-context fix. This used
+    // to be "Give me a list of nearby restaurants", the SAME question `m4`
+    // answers two minutes later: the AI declined a question and then answered
+    // it, which contradicts itself the moment a hotelier reads both states in
+    // one thread. Billing is a genuinely decline-worthy ask (needs a human),
+    // so it now carries its own question and `m3b` below carries the
+    // restaurant one `m4` was always answering. See `ai-mock.ts` for the
+    // matching explanation edit.
     {
       id: 'm3',
       threadId: '1',
       sender: 'guest',
-      content: 'Give me a list of nearby restaurants',
+      content: 'One more thing — can you split my bill across two cards when I check out? My company is covering the room.',
       timestamp: new Date('2026-03-16T18:30:00'),
       channel: 'SMS',
       status: 'delivered',
       aiDeclined: true,
+    },
+    // NEW (2026-08-27) — the restaurant question `m4` actually answers. `m3`
+    // no longer asks it, so the dining reply needs its own prompt.
+    {
+      id: 'm3b',
+      threadId: '1',
+      sender: 'guest',
+      content: 'Also — any good restaurant recommendations nearby?',
+      timestamp: new Date('2026-03-16T18:31:00'),
+      channel: 'SMS',
+      status: 'delivered',
     },
     {
       id: 'm4',
@@ -1543,6 +1563,87 @@ const rawMessages: Record<string, Message[]> = {
       status: 'delivered',
     },
   ],
+};
+
+/**
+ * MAYA'S LIVE "AI THINKING" DEMO SEQUENCE (2026-08-27) — content only.
+ *
+ * NOT part of `rawMessages`: her thread (`'27'`, above) stays seeded with just
+ * the one "complimentary breakfast" message. These two — her late-checkout ask
+ * and Canary's reply — are injected into the thread AT RUNTIME by
+ * `useThreadDemoSequence`, the first time Miguel selects her thread in a
+ * session, so a page reload finds the thread back at one message and replays
+ * the whole typing → thinking → landed sequence for rehearsal. That hook owns
+ * the timing; this is just the authored content, kept beside her seeded
+ * history the way every other thread's `aiSteps` are.
+ *
+ * "Tomorrow" doesn't hold as her checkout phrase: the mock world's "now" is
+ * Monday 2026-03-16 (every thread's latest timestamp tops out there), and her
+ * stay (`res-maya-nov`) checks out Thursday the 19th — three days out, not
+ * one. Both messages name the weekday instead.
+ *
+ * The 1:00 PM complimentary hour is Club Member's own line — under Diamond
+ * Elite's proactive 2:00 PM (Emily Smith, thread '1', `m201`), and clear of
+ * the fee-based $40/$50 lines Elite tiers get waived at the desk (`m2`, `m23`
+ * in `ai-mock.ts`): a lower loyalty tier, a humbler complimentary hour, no
+ * contradiction with either.
+ */
+export const MAYA_DEMO_THREAD_ID = '27';
+
+const MAYA_DEMO_AI_TIMESTAMP = new Date('2026-03-16T19:07:00');
+
+export const mayaDemoGuestMessage: Message = {
+  id: 'm82',
+  threadId: MAYA_DEMO_THREAD_ID,
+  sender: 'guest',
+  content:
+    "Such a lovely stay so far! Is there any chance of a late checkout this Thursday? We'd love a slow morning.",
+  timestamp: new Date('2026-03-16T19:05:00'),
+  channel: 'SMS',
+  status: 'delivered',
+};
+
+/**
+ * Present-progressive — what the header's status label crossfades through
+ * while the message is still "thinking" (Claude-desktop style). Same five
+ * beats as `mayaDemoAiSteps` below, narrated live instead of logged after the
+ * fact; keep the two lists in step if either changes.
+ */
+export const mayaDemoThinkingLabels: string[] = [
+  'Reading the conversation…',
+  "Looking up Maya's reservation…",
+  'Checking the late-checkout policy…',
+  "Checking housekeeping's schedule…",
+  'Writing a reply…',
+];
+
+const mayaDemoAiSteps: AiStep[] = [
+  { tool: 'Review_conversation_history', note: "Reviewed Maya's Thread — Room 331, Club Member, No Open Issues" },
+  { tool: 'Search_for_reservation_by_calling_phone_number', note: 'Found Maya Patel — Room 331, Departing Thursday, Mar. 19' },
+  { tool: 'Search_knowledge_base', note: 'Late Check-Out — Club Members Receive A Complimentary 1:00 PM Late Check-Out' },
+  { tool: 'Check_room_status', note: 'Room 331 Has No Same-Day Arrival — Clear With Housekeeping For An Afternoon Clean' },
+  { tool: 'Compose_reply', note: 'Confirmed 1:00 PM Late Check-Out For Thursday' },
+];
+
+/**
+ * The LANDED message — content + steps only. `sourceCount` and
+ * `aiExplanation` are merged in by the hook from `aiExplanations.m83`
+ * (`ai-mock.ts`) at sequence-completion — the same decoration `mockMessages`
+ * runs below for every other AI message, just run late because this message
+ * doesn't exist at module load. `status: 'sending'` so the hook can walk it
+ * up `LADDER_SENT_MS` / `LADDER_DELIVERED_MS` like any other live send (see
+ * `useThreadDemoSequence`).
+ */
+export const mayaDemoAiReply: Message = {
+  id: 'm83',
+  threadId: MAYA_DEMO_THREAD_ID,
+  sender: 'ai',
+  content:
+    "Of course, Maya — I've noted a 1:00 PM late checkout for Room 331 this Thursday, complimentary with your Club membership. Enjoy the slow morning!",
+  timestamp: MAYA_DEMO_AI_TIMESTAMP,
+  channel: 'SMS',
+  status: 'sending',
+  aiSteps: mayaDemoAiSteps,
 };
 
 /**

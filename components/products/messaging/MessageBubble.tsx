@@ -79,7 +79,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Message, MessageStatus } from '@/lib/products/messaging/types';
 import { Guest } from '@/lib/core/types/guest';
 import { format } from 'date-fns';
@@ -281,15 +281,48 @@ function StepsToggle({
   );
 }
 
+/**
+ * The header's live status label, DEMO ONLY (Maya Patel's scripted "AI
+ * thinking" sequence — see `useThreadDemoSequence`). Sits in the exact slot
+ * `StepsToggle` normally occupies, both stacked in one grid cell so the
+ * transition between them is an OPACITY crossfade rather than a layout swap —
+ * see `MessageBubble`'s render for how the two trade places.
+ *
+ * `.ai-thinking-label` is a slow, quiet sweep across the SAME AI ramp tokens
+ * `.ai-gradient-text` uses for the "Canary" name (`.ai-gradient-quiet` pins it
+ * to the 40% structural-rail strength, same as the steps trace's own rail) —
+ * one ramp, everywhere the agent is "moving," never a private gradient.
+ */
+function AiThinkingLabel({ label }: { label: string }) {
+  return (
+    <span
+      className="ai-thinking-label ai-gradient-quiet font-['Roboto',sans-serif] text-[12px] leading-[18px] whitespace-nowrap"
+    >
+      {label}
+    </span>
+  );
+}
+
 interface MessageBubbleProps {
   message: Message;
   guest?: Guest | null;
+  /**
+   * DEMO ONLY. Non-empty while THIS message is still "thinking" (Maya's
+   * scripted sequence, mid-flight): the header shows this crossfading status
+   * label instead of the Completed-N-Steps toggle, the reply body and the
+   * whole footer (delivery caption, feedback) stay withheld, and none of it
+   * animates in until the sequence hands back `undefined`. Every other
+   * message on the surface — which is every message, outside that one demo
+   * beat — never receives this prop and renders exactly as it always has.
+   */
+  thinkingLabel?: string;
 }
 
-export function MessageBubble({ message, guest }: MessageBubbleProps) {
+export function MessageBubble({ message, guest, thinkingLabel }: MessageBubbleProps) {
   const isGuest = message.sender === 'guest';
   const isAI = message.sender === 'ai';
   const formattedTime = format(message.timestamp, 'h:mm a').toUpperCase();
+  const isThinking = !!thinkingLabel;
 
   // Steps stay CLOSED on mount — every AI message has them, so defaulting open
   // would bury the conversation under its own audit trail.
@@ -299,6 +332,34 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isHelpful, setIsHelpful] = useState(false);
   const [isNotHelpful, setIsNotHelpful] = useState(false);
+
+  /**
+   * DEMO ONLY — the crossfade's two halves.
+   *
+   * `lastThinkingLabel` keeps the OUTGOING label on screen while it fades:
+   * the moment `thinkingLabel` goes from a string to `undefined` (sequence
+   * complete), this still holds the last one shown, so the fading-out layer
+   * below has something to fade FROM instead of going blank a frame early.
+   *
+   * `isBodyRevealed` gates the reply paragraph's own fade-in the same way
+   * `ExpandRegion` gates its height: mount closed, then flip on the next
+   * frame so the browser has an `opacity: 0` to transition away from. For
+   * every non-demo message `thinkingLabel` is always `undefined`, so this
+   * starts (and stays) `true` with no transition ever run — zero regression.
+   */
+  const [lastThinkingLabel, setLastThinkingLabel] = useState(thinkingLabel);
+  const [isBodyRevealed, setIsBodyRevealed] = useState(!isThinking);
+  useEffect(() => {
+    if (thinkingLabel) setLastThinkingLabel(thinkingLabel);
+  }, [thinkingLabel]);
+  useEffect(() => {
+    if (isThinking) {
+      setIsBodyRevealed(false);
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => setIsBodyRevealed(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [isThinking]);
 
   /**
    * THE THREE ENTRY POINTS INTO THE AI LOOP, taken one at a time from the store
@@ -379,7 +440,7 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
             {displayName}
           </span>
 
-          {isAI && steps.length > 0 && (
+          {isAI && (steps.length > 0 || isThinking) && (
             <>
               <span
                 aria-hidden="true"
@@ -388,11 +449,50 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
               >
                 ·
               </span>
-              <StepsToggle
-                count={steps.length}
-                isOpen={isStepsOpen}
-                onToggle={() => setIsStepsOpen((v) => !v)}
-              />
+              {/* DEMO CROSSFADE — both layers always mounted, stacked in one
+                  grid cell, trading opacity over 250ms. This is what makes
+                  "the status label crossfades into the real chip" a single
+                  continuous animation rather than one thing vanishing and
+                  another popping in. Every non-demo message has `isThinking`
+                  permanently false, so only the (already-populated) steps
+                  layer ever paints — no grid, no transition, no change. */}
+              {isThinking || lastThinkingLabel ? (
+                <span className="relative inline-grid shrink-0">
+                  <span
+                    aria-hidden={!isThinking}
+                    style={{
+                      gridArea: '1 / 1',
+                      opacity: isThinking ? 1 : 0,
+                      transition: 'opacity 250ms ease',
+                      pointerEvents: isThinking ? 'auto' : 'none',
+                    }}
+                  >
+                    <AiThinkingLabel label={thinkingLabel ?? lastThinkingLabel ?? ''} />
+                  </span>
+                  <span
+                    style={{
+                      gridArea: '1 / 1',
+                      opacity: isThinking ? 0 : 1,
+                      transition: 'opacity 250ms ease',
+                      pointerEvents: isThinking ? 'none' : 'auto',
+                    }}
+                  >
+                    {steps.length > 0 && (
+                      <StepsToggle
+                        count={steps.length}
+                        isOpen={isStepsOpen}
+                        onToggle={() => setIsStepsOpen((v) => !v)}
+                      />
+                    )}
+                  </span>
+                </span>
+              ) : (
+                <StepsToggle
+                  count={steps.length}
+                  isOpen={isStepsOpen}
+                  onToggle={() => setIsStepsOpen((v) => !v)}
+                />
+              )}
             </>
           )}
 
@@ -455,15 +555,28 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
           </ExpandRegion>
         )}
 
-        {/* Body */}
-        <p
-          className="font-['Roboto',sans-serif] text-[14px] leading-[22px] whitespace-pre-wrap"
-          style={{ color: colors.colorBlack1 }}
-        >
-          {message.content}
-        </p>
+        {/* Body — withheld entirely while `isThinking` (DEMO ONLY: there is no
+            reply yet), then fades in over 250ms once the sequence lands. See
+            `isBodyRevealed` above; every non-demo message renders here
+            immediately, same as always. */}
+        {!isThinking && (
+          <p
+            className="font-['Roboto',sans-serif] text-[14px] leading-[22px] whitespace-pre-wrap"
+            style={{
+              color: colors.colorBlack1,
+              opacity: isBodyRevealed ? 1 : 0,
+              transition: 'opacity 250ms ease-out',
+            }}
+          >
+            {message.content}
+          </p>
+        )}
 
-        {/* Footer row — caption(s), the sources chip, and hover feedback. */}
+        {/* Footer row — caption(s), the sources chip, and hover feedback.
+            DEMO ONLY: withheld while `isThinking` — there is no delivery
+            status, no sources and nothing to rate yet, so hover ⓘ/👍/👎 stay
+            off the surface until the sequence actually lands them. */}
+        {!isThinking && (
         <div className="flex items-center gap-2 flex-wrap" style={{ marginTop: 6, minHeight: 20 }}>
           {isFailed ? (
             <CaptionLink
@@ -558,6 +671,7 @@ export function MessageBubble({ message, guest }: MessageBubbleProps) {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

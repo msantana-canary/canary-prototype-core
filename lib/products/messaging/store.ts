@@ -220,6 +220,21 @@ interface MessagingState {
   /** One toast for the whole surface. Set a message; it clears itself. */
   toast: string | null;
 
+  /* ── DEMO SEQUENCES (2026-08-27) ─────────────────────────────────────────
+     Maya Patel's scripted "AI thinking" sequence — see
+     `useThreadDemoSequence`. Deliberately NOT persisted: this store carries
+     no persistence middleware, so a page reload resets all three below to
+     their defaults, which is what makes "reload = replay" true for free. */
+
+  /** The AI message currently mid-sequence (header shows the crossfading
+   *  status label instead of "Completed N Steps"). Null ⇒ no live sequence. */
+  demoThinkingMessageId: string | null;
+  /** The label `demoThinkingMessageId`'s header is currently showing. */
+  demoThinkingLabel: string | null;
+  /** Per-thread: has this thread's scripted sequence already played this
+   *  session? Sparse map; absent ⇒ not yet played. */
+  demoSequencePlayed: Record<string, boolean>;
+
   // Actions
   /**
    * A DELIBERATE OPEN — someone clicked the row. Marks the thread read, because
@@ -319,6 +334,10 @@ interface MessagingState {
   clearToast: () => void;
   /** Find a message anywhere in the log. The AI surfaces address by id. */
   findMessage: (messageId: string) => Message | undefined;
+
+  /* ── DEMO SEQUENCES ──────────────────────────────────────────────────── */
+  /** Set (or clear, with `null`/`null`) the live "thinking" status label. */
+  setDemoThinking: (messageId: string | null, label: string | null) => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set, get) => ({
@@ -351,6 +370,11 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   composerInjection: null,
   panelIntent: null,
   toast: null,
+
+  // Demo sequences
+  demoThinkingMessageId: null,
+  demoThinkingLabel: null,
+  demoSequencePlayed: {},
 
   // Open a thread deliberately — a person is looking at it, so it is read.
   //
@@ -984,5 +1008,10 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
       if (found) return found;
     }
     return undefined;
+  },
+
+  /* ── DEMO SEQUENCES ──────────────────────────────────────────────────── */
+  setDemoThinking: (messageId: string | null, label: string | null) => {
+    set({ demoThinkingMessageId: messageId, demoThinkingLabel: label });
   },
 }));

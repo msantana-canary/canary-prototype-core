@@ -4376,3 +4376,156 @@ drafts/facts/tickets/carrier errors), `store.ts`, any component.
 ### Files touched (Batch 12)
 
 `lib/products/messaging/mock-data.ts`
+
+## Batch 13 — Live "AI thinking" demo sequence (Maya) + Emily decline-context fix (2026-08-27)
+
+Two changes this pass, both for the SJ demo: a scripted, live sequence in one
+thread, and a surgical content fix in the exemplar thread.
+
+### 1. Maya Patel's live "AI thinking" sequence
+
+**Trigger.** The FIRST time Maya's thread (`'27'`) is selected in a session —
+`useThreadDemoSequence(selectedThreadId)`, called from `messages/page.tsx`.
+"In a session" is a new, deliberately NON-persisted store flag
+(`demoSequencePlayed`); this store carries no persistence middleware, so a
+page **reload replays the whole sequence** for rehearsal. Re-selecting her
+thread again without reloading finds it already landed, same as any other
+conversation.
+
+**Script** (Claude desktop's crossfading status label is the reference —
+Miguel):
+1. **Typing (~2.5s)** — "Maya Patel is typing" above the composer, with a
+   small staggered three-dot pulse (`.typing-dot` in `globals.css`).
+2. **Guest message lands** — "Such a lovely stay so far! Is there any chance
+   of a late checkout **this Thursday**? We'd love a slow morning." Thread
+   preview/sort updates the normal way (`updateThreadLastMessage`).
+
+   ⚠ **"Tomorrow" doesn't hold.** The mock world's "now" is Monday
+   2026-03-16 (every thread's latest timestamp tops out there); Maya's stay
+   (`res-maya-nov`) checks out **Thursday the 19th** — three days out, not
+   one. Both her message and the AI's reply name the weekday instead of
+   saying "tomorrow."
+3. **Beat (~500ms), then the AI block appears THINKING** — `AiOrbTile` +
+   "Canary," and in the slot "Completed N Steps" normally occupies, a status
+   label crossfades (250ms fade / 1.4s hold, per label) through: *Reading the
+   conversation… → Looking up Maya's reservation… → Checking the
+   late-checkout policy… → Checking housekeeping's schedule… → Writing a
+   reply…* — a quiet shimmer rides the same AI ramp tokens `.ai-gradient-text`
+   uses (`.ai-thinking-label` + `.ai-gradient-quiet`, `app/globals.css`), at
+   the same 40% "structural rail" strength the steps trace's own rail uses.
+4. **Completion** — the label crossfades into the real "Completed 5 Steps ⌄"
+   chip, the reply fades in (~250ms): "Of course, Maya — I've noted a 1:00 PM
+   late checkout for Room 331 this Thursday, complimentary with your Club
+   membership. Enjoy the slow morning!" — then the delivery caption walks the
+   normal Sending → Sent → Delivered ladder (`walkDeliveryLadder`,
+   `LADDER_SENT_MS` / `LADDER_DELIVERED_MS`, unchanged from any other live
+   send).
+5. From there it's a full first-class AI message: 5-step expandable record
+   (`Review_conversation_history` / `Search_for_reservation_by_calling_phone_
+   number` / `Search_knowledge_base` / `Check_room_status` / `Compose_reply`),
+   `sourceCount: 2`, an `aiExplanations.m83` entry (`ai-mock.ts`), hover
+   ⓘ/👍/👎 all live. Observability continues exactly as it does on every
+   other AI message.
+
+**The 1:00 PM hour**, cohered against the rest of the mock world rather than
+invented in isolation: it sits under Diamond Elite's own proactive 2:00 PM
+(Emily Smith, thread `1`, `m201`: "as a Diamond Elite member we've noted a
+complimentary 2:00 PM late checkout") and clear of the fee-based $40/$50 lines
+Elite tiers get waived at the desk (`m2`, `m23` in `ai-mock.ts`). Club Member
+is a separate, lower loyalty tier from the Silver/Gold/Platinum/Diamond Elite
+ladder, so a humbler complimentary hour for it — proactively noted, same as
+Emily's — contradicts neither.
+
+**Typing indicator — restyled, not duplicated.** `typingThreadId`
+(`store.ts`) already flowed through `ThreadList` (row preview swaps to an
+italic "{name} is typing…") and `ThreadView` (a static caption above the
+composer, "Guest is typing" at `colorBlack4`). Reused as-is for the trigger
+mechanism; only the above-composer caption's DRESS changed per this brief:
+`colorBlack4` → `colorBlack3`, the generic "Guest" → the actual guest's name,
+and a new `TypingEllipsis` (`ThreadView.tsx`) grows the staggered dot pulse
+where the line used to just say "...". `ThreadList`'s own row-level indicator
+is untouched — out of scope, and it already carries the guest's first name.
+
+**Mechanics.** `lib/products/messaging/useThreadDemoSequence.ts` drives the
+whole thing off `setTimeout`s (offsets: 0 / 2500 / 3000 / 4650 / 6300 / 7950 /
+9600 / 11250ms), reading/writing the store imperatively
+(`useMessagingStore.getState()` / `.setState()`) rather than through React
+state, since a timer callback isn't a component. Two new pieces of store
+state carry it: `demoThinkingMessageId` / `demoThinkingLabel` (which message
+is "thinking" and what its header currently shows — read by `MessageFeed`,
+handed to exactly one `MessageBubble` as its new `thinkingLabel` prop) and
+`demoSequencePlayed` (session-scoped, per thread). `MessageBubble` renders the
+crossfade as two permanently-mounted, opacity-toggled layers stacked in one
+CSS grid cell — the label and the "Completed N Steps" chip — so the swap is
+one continuous 250ms transition rather than a mount/unmount pop; the reply
+body and the whole footer (delivery caption, sources, feedback) are withheld
+entirely while `thinkingLabel` is set and fade in once it clears.
+
+⚠ **Interruption.** Switching away from Maya's thread mid-sequence cancels
+every pending timer and fast-forwards straight to the landed state (both
+messages present, real content/steps/explanation, sequence marked played) —
+never a stranded half-typed guest message or a half-thought AI block. The
+cleanup distinguishes a REAL switch-away from React StrictMode's dev-only
+mount→cleanup→mount (which Next's dev server runs, and which would otherwise
+read as "the user already left" on every single selection) by checking
+whether the STORE's `selectedThreadId` has actually changed by the time
+cleanup runs — see the hook's own header comment for the full reasoning. Every
+message-insertion point is additionally idempotent (checks the id isn't
+already in the array first), so even the pathological case of a full page
+unmount/remount without a reload can't duplicate a step.
+
+**Content lives in `mock-data.ts`, not the hook.** `MAYA_DEMO_THREAD_ID`,
+`mayaDemoGuestMessage`, `mayaDemoThinkingLabels`, `mayaDemoAiReply` (with its
+`aiSteps`) sit beside her seeded thread — same place every other thread's
+`aiSteps` live — deliberately NOT inside `rawMessages`, so they don't exist at
+module load and a reload finds the thread back at one message.
+
+### 2. Emily's decline-context fix (thread `1`, the exemplar)
+
+Surgical, minimal diff. Her 6:30 PM guest message (`m3`, `aiDeclined`) used to
+ask "Give me a list of nearby restaurants" — the SAME question `m4` answered
+two minutes later, so the AI declined a question and then answered it in the
+same thread. Now:
+
+- **`m3`'s content** → "One more thing — can you split my bill across two
+  cards when I check out? My company is covering the room." Billing/split-
+  payment is a genuinely decline-worthy ask (needs a human) — unlike a
+  restaurant list.
+- **`m3`'s `aiExplanations` entry** (`ai-mock.ts`) → `understood` and
+  `sources` rewritten to match (billing-policy-flavored: a signed-
+  authorisation requirement, a front-desk note, and "the AI agent cannot
+  authorise a split payment across cards" — mirroring `m103`'s existing
+  folio-transfer decline almost exactly). `intro` and `actionTaken` are
+  UNTOUCHED — still the frame's own verbatim wording.
+- **New `m3b`** (6:31 PM, guest) → "Also — any good restaurant
+  recommendations nearby?" — the question `m4` was always answering, now
+  asked. `m4` itself, its steps, its DINING explanation, and everything after
+  are byte-for-byte untouched; the thread's `lastMessage`/`lastMessageAt`
+  (`mockThreads`) already read `m4`, so nothing there needed touching either.
+
+The file header's own long-standing note — "Thread 1's two explanations (`m4`
+success, `m3` non-response) are the FRAMES, verbatim... do not tidy them
+here" — no longer holds for `m3`; it's been updated to say so, with the
+reasoning, rather than left to contradict the entry beneath it.
+
+### 3. No Figma frame yet
+
+The THINKING state (the crossfading status label, in place of "Completed N
+Steps") has no drawn Figma frame — built straight from the Claude-desktop
+reference and the existing AI-message anatomy, the same way other undrawn
+states in this file have been before a frame existed (see Batch 11 §4).
+Flag for the Figma coverage pass as an enumerate item on **flow #9** (per the
+external MASTER_COVERAGE tracker) alongside whatever else that flow is still
+missing.
+
+### Files touched (Batch 13)
+
+`lib/products/messaging/mock-data.ts` · `lib/products/messaging/ai-mock.ts` ·
+`lib/products/messaging/store.ts` ·
+`lib/products/messaging/useThreadDemoSequence.ts` (new) ·
+`components/products/messaging/MessageBubble.tsx` ·
+`components/products/messaging/MessageFeed.tsx` ·
+`components/products/messaging/ThreadView.tsx` ·
+`app/(dashboard)/messages/page.tsx` · `app/globals.css`
+
+`pnpm tsc --noEmit` clean.
