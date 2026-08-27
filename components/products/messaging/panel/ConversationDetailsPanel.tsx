@@ -19,7 +19,7 @@
  *      │ None                ⇅ │ │ 4                             › │
  *      └───────────────────────┘ └─────────────────────────────────┘
  *                    ( Show reservation details ⌄ )
- *      ── Linked Reservations · Upsells ③ · Service Tasks · Call History ──
+ *      ── Upsells ③ · Linked Reservations · Service Tasks · Call History ──
  *
  * One person in the spotlight; her stays behind a count; everything else
  * attached to her behind four tabs. Every number on screen is DERIVED — the
@@ -121,11 +121,18 @@ type PanelRoute = (
   isEntryPage?: boolean;
 };
 
-type TabId = 'linked' | 'upsells' | 'tasks' | 'calls';
+type TabId = 'upsells' | 'linked' | 'tasks' | 'calls';
 
+/**
+ * ORDER: Upsells first (Miguel, 2026-08-27 review) — for every thread, linked
+ * or anonymous. `PanelTabBar`/`CanaryTabs` key off `id`, not array position
+ * (see `PanelTabs.tsx`: the badge lookup is `t.id === 'upsells'`, the strip's
+ * remount key is the reported active `id`), so reordering this array carries
+ * no index-coupled side effects to chase.
+ */
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'linked', label: 'Linked Reservations' },
   { id: 'upsells', label: 'Upsells' },
+  { id: 'linked', label: 'Linked Reservations' },
   { id: 'tasks', label: 'Service Tasks' },
   { id: 'calls', label: 'Call History' },
 ];
@@ -329,7 +336,14 @@ export function ConversationDetailsPanel({
   );
   const { primary, ownStays, companions, samePhone, isAnonymous } = identity;
 
-  const [tab, setTab] = useState<TabId>('linked');
+  /**
+   * Upsells first, for every thread — same reason the `TABS` array leads with
+   * it (Miguel, 2026-08-27 review). Not conditioned on `isAnonymous`: the
+   * Upsells badge already derives from data and stays absent when there is
+   * nothing to show, which is enough of a signal on its own without a second,
+   * thread-shape-dependent landing tab to keep in sync with it.
+   */
+  const [tab, setTab] = useState<TabId>('upsells');
   /**
    * Reservation details open BY DEFAULT for a linked thread (Miguel,
    * 2026-08-26 demo-day review: "the sidebar should show reservation details
@@ -362,7 +376,7 @@ export function ConversationDetailsPanel({
   useEffect(() => {
     setStack([]);
     setDepth(0);
-    setTab('linked');
+    setTab('upsells');
     // `isAnonymous` is read here for the NEW thread's identity — by the time
     // this effect fires, `identity` has already been recomputed for
     // `thread.id` (its own `useMemo` depends on `thread`).

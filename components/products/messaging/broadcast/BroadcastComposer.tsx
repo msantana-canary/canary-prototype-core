@@ -44,14 +44,26 @@
  * `topSlot` gets by living OUTSIDE its card entirely. Broadcast's To strip has
  * to stay INSIDE this card (it shares the card's top corners and the hairline
  * under it has to run the card's full width), so it rides a negative-margin
- * bleed wrapper instead: `margin: -12px -12px 0 -12px` cancels the COMPACT
+ * bleed wrapper instead: `margin: -12px -12px 16px -12px` cancels the COMPACT
  * padding on three sides and lands the strip flush against the card's own 1px
- * border — exactly where the hand-rolled version had it — while the bottom
- * margin stays at 0 so the textarea below resumes at the ordinary 12px inset.
- * `overflow-hidden` alongside the `!rounded-[12px]` override clips the
- * strip's square corners to the card's rounded ones, which is the one thing
- * this trick needs and the hand-rolled shell got for free from
- * `overflow-clip`. Measured against the previous DOM: identical geometry.
+ * border — exactly where the hand-rolled version had it. `overflow-hidden`
+ * alongside the `!rounded-[12px]` override clips the strip's square corners to
+ * the card's rounded ones, which is the one thing this trick needs and the
+ * hand-rolled shell got for free from `overflow-clip`.
+ *
+ * ⚠ THE BOTTOM MARGIN IS NOT 0 (Miguel, 2026-08-27 review: "'Type message' is
+ * crowding the strip"). It used to be — the reasoning at the time was that a
+ * 0 margin would let the card's own padding-top "resume" below the bleed, the
+ * same way it does for every other child. That reasoning doesn't survive the
+ * box model: padding-top only offsets the FIRST child's start position: once
+ * that offset is spent pulling the strip up flush with the border, nothing
+ * reintroduces it for the sibling below. A 0 bottom margin measured out to a
+ * true 0px gap between the hairline and the textarea, not the 12px inset the
+ * comment here used to claim. 16px restores visible air below the line —
+ * deliberately more than Conversations' plain 12px inset, since broadcast has
+ * a strip + hairline stacked above the field that Conversations doesn't. Sides
+ * and the card's bottom padding are untouched, so both composers still match
+ * there.
  */
 
 'use client';
@@ -182,10 +194,10 @@ export function BroadcastComposer({
               See the header note: this negative margin cancels the card's own
               12px padding on three sides so the strip and its hairline reach
               the card's 1px border exactly as the hand-rolled shell drew them;
-              the bottom stays at 0 so the textarea below resumes at the
-              ordinary inset. */}
+              the 16px bottom margin is deliberate breathing room below the
+              hairline, not the card's ordinary inset resuming on its own. */}
           {topSlot && (
-            <div style={{ margin: '-12px -12px 0 -12px' }}>
+            <div style={{ margin: '-12px -12px 16px -12px' }}>
               {topSlot}
               <div className="w-full h-[1px]" style={{ backgroundColor: colors.colorBlack6 }} />
             </div>
@@ -299,13 +311,21 @@ export function BroadcastComposer({
         </CanaryCard>
       </div>
 
-      {/* Send confirmation (production parity) */}
+      {/* Send confirmation (production parity).
+          JOINING THE MODAL FAMILY (Miguel, 2026-08-27 review) — this one was
+          already `ModalFocusScope`-wrapped (so the 18px title override in
+          `.modal-focus-scope` already applied), but it was missing the family's
+          header/footer hairlines every other content modal carries — see
+          `ai/AddInformationModal.tsx`'s `CanaryModal` call, copied verbatim
+          below MINUS its `!max-w-[800px]`: Miguel's call is this modal keeps
+          its own `size="small"` rather than growing to the family's 800px. */}
       <ModalFocusScope isOpen={isConfirmOpen}>
         <CanaryModal
           isOpen={isConfirmOpen}
           onClose={() => setIsConfirmOpen(false)}
           title={`Send to ${recipientCount} guest${recipientCount !== 1 ? 's' : ''}?`}
           size="small"
+          className="[&>div:first-child]:border-b [&>div:first-child]:border-[#E5E5E5] [&>div:last-child]:border-t [&>div:last-child]:border-[#E5E5E5]"
           footer={
             <div className="flex justify-end gap-2">
               <CanaryButton type={ButtonType.OUTLINED} onClick={() => setIsConfirmOpen(false)}>

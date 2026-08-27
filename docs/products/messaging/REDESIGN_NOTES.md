@@ -4546,3 +4546,17 @@ alignItems: center` so thinking and completed states measure delta 0 alike.
 `app/(dashboard)/messages/page.tsx` · `app/globals.css`
 
 `pnpm tsc --noEmit` clean.
+
+### 5. Same review, continued (2026-08-27, demo-day-2 batch continued)
+
+Three more: broadcast composer's textarea gets 16px of air below the To-strip
+hairline (was landing flush — the negative-margin bleed's old 0 bottom margin
+never actually left the 12px inset the comment claimed); the send-confirm
+modal joins the content-modal family (header/footer hairlines, copied from
+`ai/AddInformationModal.tsx`) while keeping its own `size="small"` rather than
+the family's `!max-w-[800px]` (it was already `ModalFocusScope`-wrapped, so
+the 18px title override was already live); and the panel's tabs reorder to
+Upsells first, Linked Reservations second, for every thread — default tab and
+the thread-switch reset both follow, badge/remount logic is id-keyed so the
+reorder is inert there. `pnpm tsc --noEmit` clean. Files: `broadcast/
+BroadcastComposer.tsx` · `panel/ConversationDetailsPanel.tsx`.
