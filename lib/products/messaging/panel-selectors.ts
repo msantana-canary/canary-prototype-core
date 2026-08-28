@@ -19,6 +19,16 @@
  * reservation — Emily's family that has a separate room but is connected to
  * her." A guest listed as her own companion is a tautology, and the frame that
  * shows Emily inside Emily's linked list is a stale iteration.
+ *
+ * THE PICKER DEDUPES BY GUEST, NOT BY RESERVATION. `samePhone` is reservation-
+ * level data (it has to be — that's what `preferredReservationId` sets), but
+ * "Set primary guest" is asking "which PERSON are you talking to," and a guest
+ * with several of their own stays on this number — Emily has four — is one
+ * candidate, not four identical rows. Same bug class as the already-fixed
+ * James Brady picker nit: identical rows read as broken data, not as choices.
+ * `companions` stays reservation-level and undeduped on purpose — a companion
+ * really can hold more than one linked stay, and each is its own fact for the
+ * Linked Reservations tab.
  */
 
 import { Thread, LinkedReservation } from './types';
@@ -60,6 +70,21 @@ export function sortStays(list: LinkedReservation[]): LinkedReservation[] {
   });
 }
 
+/**
+ * One row per PERSON, not per reservation — keeps the first (best-sorted)
+ * stay for each guest. Feed this a list that is already `sortStays`-ordered
+ * so "first occurrence" means "the stay you'd want representing them," not an
+ * arbitrary pick.
+ */
+function dedupeByGuest(list: LinkedReservation[]): LinkedReservation[] {
+  const seen = new Set<string>();
+  return list.filter((lr) => {
+    if (seen.has(lr.guest.id)) return false;
+    seen.add(lr.guest.id);
+    return true;
+  });
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    Resolution
    ───────────────────────────────────────────────────────────────────────── */
@@ -90,7 +115,11 @@ export interface PanelIdentity {
   ownStays: LinkedReservation[];
   /** Everyone else linked to the thread — the Linked Reservations tab. */
   companions: LinkedReservation[];
-  /** Every linked reservation sharing the thread's phone — the picker's list. */
+  /**
+   * The picker's candidate list — one row per GUEST sharing the thread's
+   * phone, not one per reservation. A guest with several of their own stays
+   * on this number is deduped down to their best-sorted stay.
+   */
   samePhone: LinkedReservation[];
   /** No linked reservations at all ⇒ the phone number IS the conversation. */
   isAnonymous: boolean;
@@ -132,7 +161,7 @@ export function panelIdentity(
 
   const ownStays = sortStays(linked.filter((lr) => lr.guest.id === primaryGuestId));
   const companions = sortStays(linked.filter((lr) => lr.guest.id !== primaryGuestId));
-  const samePhone = sortStays(linked.filter((lr) => lr.isAutoLinked));
+  const samePhone = dedupeByGuest(sortStays(linked.filter((lr) => lr.isAutoLinked)));
 
   return { primary, ownStays, companions, samePhone, isAnonymous: false };
 }

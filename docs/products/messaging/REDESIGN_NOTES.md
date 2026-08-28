@@ -4575,3 +4575,16 @@ border, dot unchanged. Loyalty badge untouched in both states. Deliberate demo
 chrome, comparison affordance pending SJ's ruling — remove `listVariant` and
 the toggle strip once the direction lands. `pnpm tsc --noEmit` clean. Files:
 `ThreadList.tsx` · `ThreadListItem.tsx`.
+
+## Batch 15 — "too many Emily Smiths" fix (2026-08-28)
+
+Bug: the Set-primary-guest picker on thread 1 showed Emily Smith four times
+(once per her own linked stay) because `samePhone` filtered by
+`isAutoLinked` but never deduped by guest — a person-picker built on
+reservation-level data. `companions`/Linked Reservations was already correct
+(self-exclusion holds). Fix: `panelIdentity` now runs `samePhone` through a
+new `dedupeByGuest` (keep first, i.e. best-sorted, stay per guest) in
+`panel-selectors.ts`; `companions` is intentionally left undeduped since a
+companion can legitimately hold more than one linked stay. Same latent bug
+existed on thread 14 (John Smith x3) and is fixed by the same change.
+`pnpm tsc --noEmit` clean. File: `panel-selectors.ts`.
