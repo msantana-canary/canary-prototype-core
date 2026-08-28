@@ -3692,9 +3692,26 @@ Unchanged entries stand. Three changes:
   rough edge is the silent landing. Cheapest fix is a success toast in `onLink`
   — the Toast plumbing already exists in the panel and the service-task unlink
   beside it already toasts.
-- **The link picker showed one reservation twice** for the query "Emily"
+~~- **The link picker showed one reservation twice** for the query "Emily"
   (identical rows, same confirmation code). Mock-data duplicate or a missing
-  dedupe in the picker; noticed during QA verification, never triaged.
+  dedupe in the picker; noticed during QA verification, never triaged.~~
+  **FIXED in Batch 15 (2026-08-28).** Traced `LinkReservationPage`'s search
+  (filters `reservationList` — `lib/core/data/reservations.ts` — by guest
+  name, maps to `ReservationResultRow`) and audited the full mock set: all
+  132 reservations have unique `id` and `confirmationCode` values today, and
+  Emily's 6 stays are 6 distinct records — no literal duplicate exists to
+  remove. A scripted sweep of every 2–3 char substring of all 103 guest
+  names against all 132 reservations (1,029 queries) confirms zero queries
+  produce a repeated reservation id — the described duplicate does not
+  reproduce against current data, most likely resolved as a side effect of
+  an intervening data-integrity pass (`res-john-jul`'s confirmation-code
+  collision with `res-emily-jul` was fixed the same way, see the comment at
+  `reservations.ts:400`) with this note never marked closed. Added a
+  defensive id-based dedupe to the search `useMemo` anyway, since the code
+  path had no structural guarantee against it — same bug class as this
+  batch's Set-primary-guest fix below, just guarded in the search picker
+  instead of the identity selector. `pnpm tsc --noEmit` clean. File:
+  `LinkReservationPage.tsx`.
 
 ### ⚠ Library / build asks — additions
 
@@ -4588,3 +4605,8 @@ new `dedupeByGuest` (keep first, i.e. best-sorted, stay per guest) in
 companion can legitimately hold more than one linked stay. Same latent bug
 existed on thread 14 (John Smith x3) and is fixed by the same change.
 `pnpm tsc --noEmit` clean. File: `panel-selectors.ts`.
+
+Same batch, sibling picker: also closed the long-open "link picker showed
+Emily twice" note above (`Not in QA-2's scope` list) — audit found the mock
+data clean today, added a defensive id-dedupe to `LinkReservationPage`'s
+search regardless. See the struck-through entry for the full trace.

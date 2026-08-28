@@ -69,12 +69,22 @@ export function LinkReservationPage({
   const results: LinkedReservation[] = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (q.length < MIN_QUERY) return [];
+    const seenIds = new Set<string>();
     return reservationList
       .filter((res) => {
         if (alreadyLinkedIds.includes(res.id)) return false;
         if (res.status === 'cancelled' || res.status === 'no-show') return false;
         const guest = guests[res.guestId];
         return !!guest && guest.name.toLowerCase().includes(q);
+      })
+      .filter((res) => {
+        // Defensive: one row per reservation id. `reservationList` comes from
+        // a keyed Record so this shouldn't trip today, but a search result
+        // showing the same stay twice reads as broken data, not a choice —
+        // same bug class the Set-primary-guest picker hit (Batch 15).
+        if (seenIds.has(res.id)) return false;
+        seenIds.add(res.id);
+        return true;
       })
       .slice(0, 12)
       .map((res) => ({
